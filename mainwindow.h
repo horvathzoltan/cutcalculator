@@ -1,6 +1,7 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
+#include "ui/adapters/log_view_adapter.h"
 #include <QMainWindow>
 
 QT_BEGIN_NAMESPACE
@@ -19,5 +20,7 @@ public:
 
 private:
     Ui::MainWindow *ui;
+    LogViewAdapter* _logAdapter = nullptr;   // pointer
+    void initEventLogWidget();
 };
 #endif // MAINWINDOW_H

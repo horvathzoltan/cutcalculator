@@ -1,0 +1,11 @@
+
+adj snippetet régi és új kóddal, +/‑ jelek nélkül, külön blokkban
+
+
+a project állapotát ebben a formátumban kérem:
+🧩 Állapottábla – 2025.10.xx. (frissítve, esti,reggeli,déli stb... állapot)
+# Tevékenység Terv Kész Új Köv Megjegyzés
+
+az sos és a tűzoltást jelölt tűz ikonnal, ezek a blokkok kellenek:
+a táblázat, a 🚀 Sprint fókusz (🔥 SOS pontokkal), a 📌 Mai eredmények és az 👉 Holnap fókusz.
+
