@@ -6,6 +6,7 @@
 #include "project_root_locator.h"
 
 QString FileNameHelper::_binaryPath = "";
+bool FileNameHelper::s_bootstrapped = false;
 
 FileNameHelper::FileNameHelper() {
     _initialized = init(__FILE__);
@@ -54,10 +55,49 @@ bool FileNameHelper::init(const char* file) {
 #endif
 }
 
-FileNameHelper& FileNameHelper::instance(const char* file) {
+FileNameHelper& FileNameHelper::instance() {
+    Q_ASSERT_X(s_bootstrapped, "FileNameHelper",
+               "Call setBinaryPath(argv0) in main() before instance()");
+
+#ifndef QT_DEBUG
+    if (!s_bootstrapped) {
+        qFatal("FileNameHelper::instance: bootstrap missing (setBinaryPath not called)");
+    }
+#endif
+
     static FileNameHelper helper;
-    Q_UNUSED(file); // már inicializált konstruktorban
     return helper;
+}
+
+void FileNameHelper::setBinaryPath(const char* argv0) {
+    Q_ASSERT(argv0 && *argv0);
+    if (!argv0 || !*argv0) {
+        qFatal("FileNameHelper::setBinaryPath: invalid argv0");
+    }
+    if (s_bootstrapped) {
+        qWarning() << "FileNameHelper::setBinaryPath called twice; ignoring";
+        return;
+    }
+    _binaryPath = QFileInfo(QString::fromUtf8(argv0)).absolutePath();
+    s_bootstrapped = true;
+}
+
+QString FileNameHelper::getSettingsFilePath(bool forWrite) {
+    Q_ASSERT_X(s_bootstrapped, "FileNameHelper",
+               "setBinaryPath(argv0) must be called before getSettingsFilePath");
+#ifndef QT_DEBUG
+    if (!s_bootstrapped) qFatal("getSettingsFilePath: bootstrap missing");
+#endif
+
+    const QString binIni = QDir(_binaryPath).filePath("settings.ini");
+    if (forWrite) return binIni;
+
+    if (QFileInfo::exists(binIni)) return binIni;
+
+    const QString testIni = QDir(_testdataPath).filePath("settings.ini");
+    if (QFileInfo::exists(testIni)) return testIni;
+
+    return binIni; // create here on first run
 }
 
 QString FileNameHelper::getWorkingFolder() const {
@@ -95,12 +135,15 @@ QString FileNameHelper::getLeftoversCsvFile() const {
     return fn;
 }
 
-QString FileNameHelper::getSettingsFilePath()  {
+/*QString FileNameHelper::getSettingsFilePath()  {
     //QString exeDir = QCoreApplication::applicationDirPath();
     //QDir dir(exeDir);
     //return dir.filePath("settings.ini");
     return  QDir(_binaryPath).filePath("settings.ini");
-}
+}*/
+
+
+
 
 
 QString FileNameHelper::generateTimestamp() const {

@@ -19,6 +19,7 @@ private:
     static QString _binaryPath;
     bool _initialized = false;
     InitSource _initSource = None;
+    static bool s_bootstrapped;
 
     // 🛡️ Privát konstruktor
     FileNameHelper();
@@ -28,12 +29,10 @@ private:
     QString getRalColorsFolder() const;
 public:
     // 🔁 Példány elérése
-    static FileNameHelper& instance(const char* file = __FILE__);
+    static FileNameHelper& instance();
 
 
-    static void setBinaryPath(const char* argv0) {
-        _binaryPath = QFileInfo(QString::fromUtf8(argv0)).absolutePath();
-    }
+    static void setBinaryPath(const char* argv0);
     bool isTestMode() const { return _isTest; }
     //bool isInited() const { return _isInited; }
 
@@ -63,8 +62,6 @@ public:
     // maradékék stock fájlnév
     QString getLeftoversCsvFile() const;
 
-    //Settings fájlnév bin/exe mellett, vagy testfolderben
-    static QString getSettingsFilePath();
 
     QString getMovementLogFilePathForDate(const QDate &date) const;
     QString getMovementLogFileNameForDate(const QDate &date) const;
@@ -78,4 +75,7 @@ public:
     QString getRalPlastic1CsvFile() const;
     QString getRalPlastic2CsvFile() const;
     //QString getRalEffectCsvFile() const;
+    //Settings fájlnév bin/exe mellett, vagy testfolderben
+    //static QString getSettingsFilePath();
+    QString getSettingsFilePath(bool forWrite);
 };

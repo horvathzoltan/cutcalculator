@@ -2,10 +2,10 @@
 
 #include <QString>
 #include <QSizeF>
-#include "model/identifiableentity.h"
+#include "common/model/identifiable_entity.h"
 #include "common/color/namedcolor.h"
 #include "materials/model/material_type.h"
-#include "model/crosssectionshape.h"
+#include "materials/model/crosssectionshape.h"
 #include "materials/model/cutting_mode.h"
 #include "materials/model/painting_mode.h"
 

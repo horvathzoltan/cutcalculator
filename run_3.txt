@@ -1,3 +1,88 @@
+📊 Állapottábla – jelenlegi helyzet
+Modul / Feladat	Állapot	Megjegyzés
+MaterialMaster törzs	✅ Alapmodell megvan	CSV‑ből beolvasás még hiányzik
+CrossSectionShape	✅ Átvéve, működik	materials/model alatt
+NamedColor (core)	✅ Átvéve	Importer külön modulba szétválasztás folyamatban
+CsvReader utility	⚠️ Függőség	Szétválasztás után csak az importernek kell
+FileNameHelper	⚠️ Részben kész	_binaryPath bootstrap, settings/testdata fallback tisztázás kell
+Settings.ini kezelés	🚧 Tervezés alatt	Bináris mellől olvasás + testdata fallback
+Testdata mappa	✅ Megvan (/home/zoli/CutData)	Integráció a FileNameHelper‑be
+OrderManager (megrendelések)	🚧 Specifikáció kész	Implementáció még nincs
+CutCalculator (szükséglet)	🚧 Specifikáció kész	need_calculator modul implementáció indul
+UI réteg (Qt)	🚧 Tervezés	Material list, Product tree, Order entry, Needs preview
+Audit funkció	🚧 Tervezés	Audit trail + log view
+🛠️ Implementációs terv – lépések
+FileNameHelper tisztázása
+
+Kötelező setBinaryPath(argv0) a main‑ben.
+
+getSettingsFilePath(bool forWrite) → bináris mellől olvasás, testdata fallback.
+
+Dokumentálni a keresési sorrendet.
+
+NamedColor szétválasztás
+
+Core osztály marad tisztán.
+
+Új RalImporter modul, ami CSV‑ből tölti a mapet.
+
+Így a core nem függ a CsvReader‑től.
+
+MaterialMaster beolvasás
+
+MaterialImporter osztály, ami a materials.csv‑t tölti be.
+
+Auditálható hibakezelés (RowError, FileContext).
+
+ProductDefinition globális táblázat
+
+Hierarchikus struktúra (Roletta → Rugós → Tetőtéri).
+
+Levonási szabályok + szerelékek táblázatos formában.
+
+Verziózás: új szabályok új rendelésekhez.
+
+OrderManager implementáció
+
+OrderHeader + OrderLine modellek.
+
+Autocomplete ügyfél + szín.
+
+Export CSV/JSON a CutCalculator számára.
+
+CutCalculator (need_calculator)
+
+Számítási logika: méret − levonás, darabszám × fix mennyiség.
+
+Aggregálás: azonos ügyfél + termék + szín.
+
+Audit jelzés, ha hiányzik szabály.
+
+UI réteg (Qt)
+
+Material list view.
+
+Product tree + need table.
+
+Order entry dialog (autocomplete, auto‑increment tételszám).
+
+Needs preview (real‑time számítás).
+
+Audit funkció
+
+AuditEntry modell.
+
+AuditService naplózza szabályváltozásokat.
+
+AuditLogView jelzi hibákat.
+
+🎯 Röviden
+Most ott tartunk, hogy a core modellek (MaterialMaster, CrossSectionShape, NamedColor) már át vannak véve, de a FileNameHelper + settings/testdata tisztázása, valamint a ProductDefinition + OrderManager + CutCalculator implementációja van előttünk.
+
+Ez a terv olyan checklist, amin holnap szépen végig tudunk menni, mint az előző projektben az állapottáblánkon.
+
+***
+
 📘 CutCalculator – Követelmény + Funkcionális specifikáció
 🎯 Cél
 A CutCalculator feladata, hogy a megrendelésekből kiszámolja a gyártáshoz szükséges anyagokat (vágási méretek és szerelési darabok), a ProductDefinition szabályok alapján.
