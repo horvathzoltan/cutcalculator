@@ -34,7 +34,7 @@ int main(int argc, char *argv[])
     // itt initelünk mindet
     FileNameHelper::setBinaryPath(argv[0]);
     Logger::Init(Logger::ErrLevel::INFO, Logger::DbgLevel::TRACE, false, false);
-    SettingsManager::instance().load(argc, argv);
+    SettingsManager::instance().detectTestMode(argc, argv);
 
     // --test eventlogger
     if (SettingsManager::instance().isTestMode()) {

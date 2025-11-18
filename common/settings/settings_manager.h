@@ -1,96 +1,92 @@
 #pragma once
 
 //#include "../model/cutting/optimizer/targetheuristic.h"
+#include <QFile>
 #include <QSettings>
 
-namespace SettingsKeys {
-inline constexpr auto CuttingPlanFileName    = "cutting_plan_file_name";
-// oszlopméret
-// inline constexpr auto TableInputHeader       = "table_input_header";
-// inline constexpr auto TableResultsHeader     = "table_results_header";
-// inline constexpr auto TableStockHeader       = "table_stock_header";
-// inline constexpr auto TableLeftoversHeader   = "table_leftovers_header";
-// inline constexpr auto TableStorageAuditHeader   = "table_storageaudit_header";
-// inline constexpr auto TableRelocationOrderHeader   = "table_relocationorder_header";
-// inline constexpr auto CuttingInstructionTableHeader   = "table_cuttinginstruction_header";
+// namespace SettingsKeys {
+// inline constexpr auto CuttingPlanFileName = "cutting_plan_file_name";
 
-// ablakméret
-inline constexpr auto WindowGeometry = "window_geometry";
-// splitter
-//inline constexpr auto MainSplitterState = "main_splitter_state";
+// inline constexpr auto DataPath = "datapath";
+// // oszlopméret
+// // inline constexpr auto TableInputHeader       = "table_input_header";
+// // inline constexpr auto TableResultsHeader     = "table_results_header";
+// // inline constexpr auto TableStockHeader       = "table_stock_header";
+// // inline constexpr auto TableLeftoversHeader   = "table_leftovers_header";
+// // inline constexpr auto TableStorageAuditHeader   = "table_storageaudit_header";
+// // inline constexpr auto TableRelocationOrderHeader   = "table_relocationorder_header";
+// // inline constexpr auto CuttingInstructionTableHeader   = "table_cuttinginstruction_header";
 
-// CuttingStrategy
-//inline constexpr auto CuttingStrategy = "cutting_strategy";
+// // ablakméret
+// inline constexpr auto WindowGeometry = "window_geometry";
+// // splitter
+// //inline constexpr auto MainSplitterState = "main_splitter_state";
 
-// optimize számlálók
-//inline constexpr auto MaterialCounter = "material_counter";
-//inline constexpr auto LeftoverCounter = "leftover_counter";
+// // CuttingStrategy
+// //inline constexpr auto CuttingStrategy = "cutting_strategy";
 
-}
+// // optimize számlálók
+// //inline constexpr auto MaterialCounter = "material_counter";
+// //inline constexpr auto LeftoverCounter = "leftover_counter";
 
-// enum class TestMode {
-//     None,
-//     Maki,
-//     Full
-// };
+// }
+
+class SettingsStore {
+public:
+    explicit SettingsStore(){}
+
+    void init(const QString&path){
+        // már inicializálva?
+        if (_settings) {
+            qFatal("❌ SettingsStore már inicializálva van, reinit nem engedélyezett!");
+            return;
+        }
+
+        // üres string?
+        if (path.isEmpty()) {
+            qFatal("❌ SettingsStore init: üres path nem engedélyezett!");
+            return;
+        }
+
+        // fájl létezik?
+        if (!QFile::exists(path)) {
+            qFatal("❌ SettingsStore init: a fájl nem létezik: %s",
+                   qPrintable(path));
+            return;
+        }
+
+        // minden rendben → inicializálás
+
+        _settings = std::make_unique<QSettings>(path, QSettings::IniFormat);
+        qInfo("✅ Settings inicializálva: %s", qPrintable(path));
+    }
+
+    QVariant value(const QString& key, const QVariant& defaultValue = QVariant()) const {
+        return _settings?_settings->value(key, defaultValue):defaultValue;
+    }
+
+    void setValue(const QString& key, const QVariant& value) {
+        if(_settings)
+            _settings->setValue(key, value);
+    }
+
+    void sync() {if(_settings) _settings->sync(); }
+
+    bool isInitialized() const {
+        return _settings != nullptr;
+    }
+
+private:
+    std::unique_ptr<QSettings> _settings = nullptr;;
+};
+
 
 class SettingsManager {
 public:
     static SettingsManager& instance();
 
-
-    QString cuttingPlanFileName() const;
-    void setCuttingPlanFileName(const QString& fn);
-
-    // // Input tábla
-    // void setInputTableHeaderState(const QByteArray& state);
-    // QByteArray inputTableHeaderState() const;
-
-    // // Results tábla
-    // void setResultsTableHeaderState(const QByteArray& state);
-    // QByteArray resultsTableHeaderState() const;
-
-    // // Stock tábla
-    // void setStockTableHeaderState(const QByteArray& state);
-    // QByteArray stockTableHeaderState() const;
-
-    // // Leftovers tábla
-    // void setLeftoversTableHeaderState(const QByteArray& state);
-    // QByteArray leftoversTableHeaderState() const;
-
-    // // storage audit tábla
-    // void setStorageAuditTableHeaderState(const QByteArray &state);
-    // QByteArray storageAuditTableHeaderState() const;
-
-    // // RelocationOrder tábla
-    // void setRelocationOrderTableHeaderState(const QByteArray &state);
-    // QByteArray relocationOrderTableHeaderState() const;
-
-
-    // // cuttingInstructionTableHeaderState
-    // void setCuttingInstructionTableHeaderState(const QByteArray &state);
-    // QByteArray cuttingInstructionTableHeaderState() const;
-
-    // ablakmléret
-    void setWindowGeometry(const QByteArray& state);
-    QByteArray windowGeometry() const;
-
-    //splitter
-    // void setMainSplitterState(const QByteArray& state);
-    // QByteArray mainSplitterState() const;
-
-    // CuttingStrategy
-//    void setCuttingStrategy(Cutting::Optimizer::TargetHeuristic h);
-//    Cutting::Optimizer::TargetHeuristic cuttingStrategy() const;
-
-    // optimizercounters
-    // int materialCounter() const;
-    // int leftoverCounter() const;
-    // int nextMaterialCounter();
-    // int nextLeftoverCounter();
-
-    void save();
-    void load(int argc, char* argv[]);
+    //void save();
+    void detectTestMode(int argc, char* argv[]);
 
     QString testProfile() const { return _testProfile; }
 
@@ -101,14 +97,52 @@ public:
     }
 
 private:
-    SettingsManager();
+    static inline const auto DataPath = "datapath";
+public:
+    QString dataPath() const {
+        return _store.value(DataPath).toString();
+    }
 
-    QSettings _settings;
+    void setDataPath(const QString& path) {
+        persist(DataPath, path);
+    }
+
+private:
+    static inline const auto CuttingPlanFileName = "cutting_plan_file_name";
+public:
+    //CuttingPlanFileName
+    QString cuttingPlanFileName() const{
+        return _store.value(CuttingPlanFileName).toString();
+    }
+
+    void setCuttingPlanFileName(const QString& fn) {
+        //_cuttingPlan_FileName = fn;
+        persist(CuttingPlanFileName, fn);
+    }
+
+
+private:
+    static inline const auto WindowGeometry = "window_geometry";
+public:
+    // ablakméret
+    void setWindowGeometry(const QByteArray& state) {
+        _store.setValue(WindowGeometry, state);
+    }
+
+    QByteArray windowGeometry() const {
+        return _store.value(WindowGeometry).toByteArray();
+    }
+
+private:
+    SettingsManager();
+    //QSettings _settings;
+    //std::unique_ptr<QSettings> _settings;
+    SettingsStore _store;
     QString _testProfile = "none";
 
     void persist(const QString& key, const QString& value);
     void persist(const QString &key, const QByteArray &value);
 
-    void detectTestMode(int argc, char *argv[]);
+  //  void detectTestMode_(int argc, char *argv[]);
 };
 

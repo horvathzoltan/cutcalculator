@@ -94,10 +94,9 @@ QString FileNameHelper::getSettingsFilePath(bool forWrite) {
 
     if (QFileInfo::exists(binIni)) return binIni;
 
+    if(_testdataPath.isEmpty()) return "";
     const QString testIni = QDir(_testdataPath).filePath("settings.ini");
-    if (QFileInfo::exists(testIni)) return testIni;
-
-    return binIni; // create here on first run
+    return testIni;
 }
 
 QString FileNameHelper::getWorkingFolder() const {

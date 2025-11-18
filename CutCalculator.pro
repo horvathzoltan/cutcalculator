@@ -13,9 +13,11 @@ DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs depr
 
 SOURCES += \
     common/color/namedcolor.cpp \
+    common/color/ral_importer.cpp \
     common/logger/event_logger.cpp \
     common/logger/logger.cpp \
     common/settings/settings_manager.cpp \
+    common/utils/filehelper.cpp \
     common/utils/filename_helper.cpp \
     common/utils/project_root_locator.cpp \
     main.cpp \
@@ -28,6 +30,10 @@ SOURCES += \
 HEADERS += \
     common/color/colorconstants.h \
     common/color/namedcolor.h \
+    common/color/ral_importer.h \
+    common/color/ralsystem.h \
+    common/csv/csvhelper.h \
+    common/csv/csvimporter.h \
     common/logger/event_logger.h \
     common/logger/logger.h \
     common/model/hierarchical_entity.h \
@@ -36,6 +42,7 @@ HEADERS += \
     common/system/buildnumber.h \
     common/system/signal_helper.h \
     common/system/sysinfo_helper.h \
+    common/utils/filehelper.h \
     common/utils/filename_helper.h \
     common/utils/project_root_locator.h \
     mainwindow.h \
@@ -59,4 +66,5 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 DISTFILES += \
     README.md \
     run_2.txt \
-    run_3.txt
+    run_3.txt \
+    testdata/settings.ini
