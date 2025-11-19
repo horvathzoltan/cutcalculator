@@ -319,13 +319,17 @@ void Logger::error2(const QString& msg,  const LocInfo& locinfo){
         Logger::message(DEFMSG+"\n" + msg);
         return;
     }
-    if(_errlevel>ErrLevel::ERROR_) return;
+    //if(_errlevel>ErrLevel::ERROR_) return;
 
     auto li = locinfo.ToString();
     auto st = Logger::zStackTrace();
 
     auto msg2 = ToString(ErrLevel::ERROR_, msg, li, st);
     err_message(ErrLevel::ERROR_, msg2);
+
+    // 🔴 Végzetes hiba → kilépés
+    std::exit(EXIT_FAILURE);
+    //std::abort(); // azonnali kilépés, core dump
 }
 
 void Logger::warning2(const QString& msg, const LocInfo& locinfo){

@@ -7,10 +7,10 @@ bool RalImporter::loadRalColors(const QList<RalSource>& sources) {
     NamedColor::clearRalColors();
 
     for (const RalSource& src : sources) {
-        CsvReader::FileContext ctx(src.filePath);
+        CsvImporter::FileContext ctx(src.filePath);
 
         auto converter = [system = src.system](const QVector<QString>& row,
-                                               CsvReader::FileContext& ctx)
+                                               CsvImporter::FileContext& ctx)
             -> std::optional<std::pair<QString, NamedColor>> {
             // Sorindex auditáláshoz
             int line = ctx.currentLineNumber();
@@ -34,7 +34,7 @@ bool RalImporter::loadRalColors(const QList<RalSource>& sources) {
             return std::pair<QString, NamedColor>(code.toUpper(), nc);
         };
 
-        const auto items = CsvReader::readAndConvert<std::pair<QString, NamedColor>>(ctx, converter);
+        const auto items = CsvImporter::readAndConvert<std::pair<QString, NamedColor>>(ctx, converter);
 
         if (ctx.hasErrors()) {
             zWarning(QString("⚠️ Hibák az importálás során (%1 sor):").arg(ctx.errorsSize()));

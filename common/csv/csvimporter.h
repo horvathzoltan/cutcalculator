@@ -10,22 +10,7 @@
 #include "common/utils/filehelper.h"
 #include "common/logger/logger.h"
 
-namespace CsvReader{
-// inline QList<QVector<QString>> read(const QString& filepath, QChar separator = ';'){
-//     QFile file(filepath);
-//     if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-//         QString msg = L("❌ Nem sikerült megnyitni a csv fájlt:").arg(filepath);
-//         zWarning(msg);
-//         return {};
-//     }
-
-//     QTextStream in(&file);
-//     in.setEncoding(QStringConverter::Utf8);
-//     const auto rows = FileHelper::parseCSV(&in, separator);
-//     return rows;
-// }
-
-//template<typename T>
+namespace CsvImporter{
 
 struct RowError{
 private:
@@ -96,7 +81,7 @@ public:
 inline QList<QVector<QString>> read(const QString& filepath, QChar separator = QChar()) {
     QFile file(filepath);
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        QString msg = L("❌ Nem sikerült megnyitni a csv fájlt:").arg(filepath);
+        QString msg = L("❌ Nem sikerült megnyitni a csv fájlt: %1").arg(filepath);
         zWarning(msg);
         return {};
     }
@@ -109,7 +94,7 @@ inline QList<QVector<QString>> read(const QString& filepath, QChar separator = Q
      //   zInfo("🔍 Automatikus szeparátor keresés...");
         separator = FileHelper::detectSeparatorSmart(&in);
         if (separator.isNull()) {
-    //        zWarning(L("❌ Nem sikerült szeparátort detektálni a fájlban:").arg(filepath));
+            zWarning(L("❌ Nem sikerült szeparátort detektálni a fájlban: %1").arg(filepath));
             return {};
         }
         file.seek(0); // 🔁 Vissza az elejére, újraolvasáshoz
@@ -121,7 +106,7 @@ inline QList<QVector<QString>> read(const QString& filepath, QChar separator = Q
 }
 
 template<typename T>
-static QVector<T> readAndConvert(CsvReader::FileContext& ctx,
+static QVector<T> readAndConvert(CsvImporter::FileContext& ctx,
                                  std::function<std::optional<T>(const QVector<QString>&, FileContext&)> converter,
                                  bool skipHeader = true)
 {

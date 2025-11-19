@@ -1,12 +1,15 @@
 #include "mainwindow.h"
 
 #include <QApplication>
+#include <QMessageBox>
+
 #include "common/system/signal_helper.h"
 #include "common/logger/event_logger.h"
 #include "common/system/sysinfo_helper.h"
 #include "common/settings/settings_manager.h"
 #include "test/test_manager.h"
 #include "common/utils/filename_helper.h"
+#include "common/startup/startup_manager.h"
 
 int main(int argc, char *argv[])
 {
@@ -31,10 +34,17 @@ int main(int argc, char *argv[])
     QCoreApplication::setOrganizationName("horvathzoltan");
     QCoreApplication::setOrganizationDomain("https://github.com/horvathzoltan");
 
-    // itt initelünk mindet
-    FileNameHelper::setBinaryPath(argv[0]);
+    // itt initelünk mindet - először a loggert hogy tudjunk loggolni
     Logger::Init(Logger::ErrLevel::INFO, Logger::DbgLevel::TRACE, false, false);
+
+    auto sysInfo = SysInfoHelper::instance().sysInfo();
+    zInfo(sysInfo);
+    zEvent(sysInfo);
+
+
+    FileNameHelper::setBinaryPath(argv[0]);    
     SettingsManager::instance().detectTestMode(argc, argv);
+    FileNameHelper::instance().setDataRootPath(SettingsManager::instance().dataRootPath());
 
     // --test eventlogger
     if (SettingsManager::instance().isTestMode()) {
@@ -45,13 +55,10 @@ int main(int argc, char *argv[])
     // 🔧 Eseménynapló fájl megnyitása még az init előtt
     EventLogger::instance().setLogFile("eventlog.txt");
 
-    auto sysInfo = SysInfoHelper::instance().sysInfo();
-    zInfo(sysInfo);
-    zEvent(sysInfo);
 
     QApplication a(argc, argv);
 
-    /*
+
     StartupManager manager;
     StartupStatus status = manager.runStartupSequence();
 
@@ -65,7 +72,7 @@ int main(int argc, char *argv[])
                              "Az alkalmazás elindult, de a következő problémák felmerültek:\n\n" +
                                  status.warnings().join("\n"));
     }
-    */
+
     MainWindow w;
     w.show();
     return a.exec();
