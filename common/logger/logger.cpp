@@ -1,3 +1,4 @@
+#include "log_manager.h"
 #include "logger.h"
 #include <QDebug>
 #include <csignal>
@@ -11,7 +12,7 @@ Logger::ErrLevel Logger::_errlevel = Logger::ErrLevel::INFO;
 Logger::DbgLevel Logger::_dbglevel = Logger::DbgLevel::TRACE;
 bool Logger::_isBreakOnError = false;
 bool Logger::_isVerbose = false;
-bool Logger::_isInited = false;
+bool Logger::_isInited = true; // 🔴 alapból működő;
 
 std::function<void(const QString& str)> Logger::_func = nullptr;
 
@@ -111,6 +112,9 @@ void Logger::dbg_message(DbgLevel level, const QString& msg)
         break;
     }
 
+    // központi fájlba
+    LogManager::instance().write(LogManager::Channel::Errors, msg);
+
     if(_func)
     {
         _func(msg);
@@ -151,6 +155,10 @@ void Logger::err_message(ErrLevel level, const QString& msg)
         //guimode = GUIModes::INFO;
         break;
     }
+
+    // központi fájlba
+    LogManager::instance().write(LogManager::Channel::Errors, msg);
+
     if(_func)
     {
         _func(msg);
@@ -331,6 +339,18 @@ void Logger::error2(const QString& msg,  const LocInfo& locinfo){
     std::exit(EXIT_FAILURE);
     //std::abort(); // azonnali kilépés, core dump
 }
+
+LogStream Logger::warning2(const LocInfo& l){
+        return LogStream(Logger::WARNING, l);
+    }
+
+LogStream Logger::info2(const LocInfo& l){
+        return LogStream(Logger::INFO, l);
+    }
+
+LogStream Logger::error2(const LocInfo& l){
+        return LogStream(Logger::ERROR_, l);
+    }
 
 void Logger::warning2(const QString& msg, const LocInfo& locinfo){
     if(!_isInited) {

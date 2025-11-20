@@ -1,4 +1,5 @@
 #include "event_logger.h"
+#include "log_manager.h"
 #include <QDebug>
 
 
@@ -7,15 +8,20 @@ EventLogger& EventLogger::instance() {
     return inst;
 }
 
-void EventLogger::setLogFile(const QString& path) {
-    fileName = path;
+// void EventLogger::setLogFile(const QString& path) {
+//     fileName = path;
 
-    auto a = timestamped("🟢 START");
+//     auto a = timestamped("🟢 START");
 
-    if (!writeToFile(a)) {
-        qWarning() << "⚠️ Nem sikerült megnyitni az event log fájlt:" << path;
-    }
-}
+//     if (!LogManager::instance().write(a); {
+//         qWarning() << "⚠️ Nem sikerült megnyitni az event log fájlt:" << path;
+//     }
+// }
+
+// void EventLogger::setLogFile(const QString& path) {
+//     LogManager::instance().setFile(LogManager::Channel::Events, path);
+//     LogManager::instance().write(LogManager::Channel::Events,  timestamped("🟢 START"));
+// }
 
 QString EventLogger::timestamped(const QString& msg) {
     return QString("[%1] %2")
@@ -39,7 +45,7 @@ void EventLogger::zEvent_(const QString& msg) {
         qInfo().noquote() << "EVENT:" << line;
     }
     emitEvent(line);
-    writeToFile(line);
+    LogManager::instance().write(LogManager::Channel::Events, line);
 }
 
 void EventLogger::zEvent_(const QStringList& lines) {
@@ -52,17 +58,17 @@ void EventLogger::zEvent_(Level level, const QString& msg) {
 }
 
 
-bool EventLogger::writeToFile(const QString& line) {
-    if (fileName.isEmpty()) return false;
+// bool EventLogger::writeToFile(const QString& line) {
+//     if (fileName.isEmpty()) return false;
 
-    QFile file(fileName);
-    if (!file.open(QIODevice::Append | QIODevice::Text))
-        return false;
+//     QFile file(fileName);
+//     if (!file.open(QIODevice::Append | QIODevice::Text))
+//         return false;
 
-    QTextStream out(&file);
-    out << line << "\n";
-    return true;
-}
+//     QTextStream out(&file);
+//     out << line << "\n";
+//     return true;
+// }
 
 
 QStringList EventLogger::loadRecentEvents(int maxLines) {

@@ -2,6 +2,7 @@
 #define LOGGER_H
 
 #include <QString>
+#include <QVariant>
 
 #define L(msg) QStringLiteral(msg)
 //#if defined(Q_OS_LINUX)
@@ -16,17 +17,12 @@
 #endif
 //#endif
 
+#define zError(...)   Logger::error2(__VA_ARGS__ __VA_OPT__(,) getLocInfo)
+#define zWarning(...) Logger::warning2(__VA_ARGS__ __VA_OPT__(,) getLocInfo)
+#define zInfo(...)    Logger::info2(__VA_ARGS__ __VA_OPT__(,) getLocInfo)
 
-#define zError(msg) Logger::error2((msg), getLocInfo)
-
-#define zWarning(msg) Logger::warning2((msg), getLocInfo)
-#define zInfo(msg) Logger::info2((msg), getLocInfo)
 #define zDebug() Logger::debug2(getLocInfo)
 #define zTrace() Logger::trace2(getLocInfo)
-
-#define zError2(msg,i) Logger::error2((msg), getLocInfo,(i))
-#define zWarning2(msg,i) Logger::warning2((msg), getLocInfo,(i))
-#define zInfo2(msg,i) Logger::info2((msg), getLocInfo,(i))
 
 #define zMessage(msg) Logger::message((msg))
 
@@ -86,6 +82,41 @@ public:
     static void message(const QString& msg);
 
     static void SetFunction(std::function<void(const QString& str)> f){ _func = f;};
+    static class LogStream warning2(const LocInfo &locinfo);
+    static class LogStream error2(const LocInfo &locinfo);
+    static class LogStream info2(const LocInfo &locinfo);
+};
+
+class LogStream {
+    Logger::ErrLevel level;
+    Logger::LocInfo loc;
+    QString buffer;
+public:
+    LogStream(Logger::ErrLevel lvl, const Logger::LocInfo& l)
+        : level(lvl), loc(l) {}
+
+    template<typename T>
+    LogStream& operator<<(const T& value) {
+        buffer += QVariant(value).toString();
+        return *this;
+    }
+
+    // 🔧 noquote() csak a szintaxis miatt van, semmit nem csinál
+    LogStream& noquote() { return *this; }
+
+    ~LogStream() {
+        switch(level) {
+        case Logger::ERROR_:
+            Logger::error2(buffer, loc);
+            break;
+        case Logger::WARNING:
+            Logger::warning2(buffer, loc);
+            break;
+        case Logger::INFO:
+            Logger::info2(buffer, loc);
+            break;
+        }
+    }
 };
 
 

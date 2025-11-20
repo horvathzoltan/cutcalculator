@@ -17,7 +17,7 @@ public:
     enum Level{ Info,Warning,Error };
     static EventLogger& instance();
 
-    void setLogFile(const QString& path);
+    //void setLogFile(const QString& path);
     void zEvent_(const QString& msg);
     void zEvent_(const QStringList& msg);
     void zEvent_(Level level, const QString& msg);
@@ -33,7 +33,7 @@ private:
     EventLogger() = default;
     //QFile file;
     QString fileName;
-    bool writeToFile(const QString &line);
+    //bool writeToFile(const QString &line);
     QString timestamped(const QString &msg);
     bool _isVerbose = false;
 

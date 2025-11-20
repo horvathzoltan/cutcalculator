@@ -4,6 +4,7 @@
 #include <QDir>
 #include <QFileInfo>
 #include <QString>
+#include "common/logger/logger.h"
 
 //3. 🧠 Lehetőség singletonná alakításra
 // 📁 Tesztfájl elérési segédfüggvények
@@ -27,21 +28,24 @@ private:
             void setRootPath(const QString& path, InitSource source ) {
                 _initSource = source;
                 if (_initialized) {
-                    qWarning() << "FileNameHelper::setRootPath called twice; ignoring";
+                    zWarning() << "FileNameHelper::setRootPath called twice; ignoring";
                     return;
                 }
 
                 _rootPath = QDir::cleanPath(path);
                 if (_rootPath.isEmpty()) {
-                    qWarning() << "ℹ️ FileNameHelper: empty datapath";
+                    zWarning() << "ℹ️ FileNameHelper: empty datapath";
                 } else {
                     _initialized = true;
-                    qInfo().noquote() << "✅ RootPath set:" << _rootPath;
+                    zInfo().noquote() << "✅ RootPath set:" << _rootPath;
                 }
             }
 
             QString filePath(const QString& fileName) const {
                 Q_ASSERT_X(_initialized, "FileNameHelper","setRootPath(path) must be called");
+                if(fileName.isEmpty()) {
+                    return _rootPath;
+                }
 
                 return QDir(_rootPath).filePath(fileName);
             }
@@ -71,6 +75,7 @@ public:
     static FileNameHelper& instance();
 
     static void setBinaryPath(const char* argv0);
+    static QString binaryPath(){ return _brc.filePath(""); }
     void setDataRootPath(const QString& path);
     //QString dataRootPath() const;
 

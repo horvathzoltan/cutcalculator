@@ -94,7 +94,7 @@ QString FileNameHelper::getNew_LogFileName() const {
 
 QString FileNameHelper::getLogFolder() const {
     // bináris neve (pl. CutCalculator)
-    QString programName = QFileInfo(QCoreApplication::applicationFilePath()).baseName();
+    QString programName = "CutCalculator";//QFileInfo(QCoreApplication::applicationFilePath()).baseName();
     return _drc.filePath(programName + "_logs");
 }
 
