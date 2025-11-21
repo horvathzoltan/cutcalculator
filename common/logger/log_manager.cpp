@@ -7,24 +7,39 @@ LogManager& LogManager::instance() {
 
 LogManager::LogManager(QObject* parent)
     : QObject(parent)
-{
-    // nincs globális timer; csatornánként hozunk létre
-}
+{}
 
-void LogManager::ensureTimer(Channel ch) {
-    if (timers.contains(ch) && timers[ch]) return;
-
-    auto t = new QTimer(this);
-    t->setInterval(2000);      // alapértelmezett: 2s csend után flush
-    t->setSingleShot(true);
-    connect(t, &QTimer::timeout, this, [this, ch]() { flush(ch); });
-    timers.insert(ch, t);
-}
-
-void LogManager::setFile(Channel ch, const QString& path) {
+void LogManager::initChannels(const QString& folderPath, const QSet<Channel>& channels) {
     QMutexLocker locker(&mutex);
-    fileNames[ch] = path;
-    ensureTimer(ch);
+    folder = folderPath;
+    activeChannels = channels;
+
+    for (Channel ch : channels) {
+        fileNames[ch] = folder + "/" + generateFileName(ch);
+    }
+}
+
+void LogManager::moveToFolder(const QString& newFolder) {
+    flushAll();
+
+    QMutexLocker locker(&mutex);
+    folder = newFolder;
+    for (Channel ch : activeChannels) {
+        const auto fname = generateFileName(ch);
+        QString oldFile = fileNames[ch];
+        QString newFile = folder + "/" + fname;
+        fileNames[ch] = newFile;
+        if (!oldFile.isEmpty() && oldFile != newFile) {
+            QFile::rename(oldFile, newFile);
+        }
+        ensureTimer(ch);
+        timers[ch]->stop();
+    }
+}
+
+void LogManager::enableBuffering(bool on) {
+    QMutexLocker locker(&mutex);
+    useBuffering = on;
 }
 
 void LogManager::setFlushInterval(Channel ch, int msec) {
@@ -33,16 +48,12 @@ void LogManager::setFlushInterval(Channel ch, int msec) {
     timers[ch]->setInterval(msec);
 }
 
-QString LogManager::currentFile(Channel ch) const {
-    QMutexLocker locker(&mutex);
-    return fileNames.value(ch);
-}
-
 void LogManager::write(Channel ch, const QString& line) {
-    QString tsLine = timestamped(line) + "\n";
+    if (!activeChannels.contains(ch)) return;
+
+    const QString tsLine = timestamped(line) + "\n";
 
     if (!useBuffering) {
-        // pre‑Qt: azonnali flush, lock nélkül
         QString path;
         {
             QMutexLocker locker(&mutex);
@@ -56,20 +67,18 @@ void LogManager::write(Channel ch, const QString& line) {
             }
         }
     } else {
-        // post‑Qt: buffer + timer
         QMutexLocker locker(&mutex);
         ensureTimer(ch);
         buffers[ch] += tsLine;
-        if (!timers[ch]->isActive())
-            timers[ch]->start();
+        timers[ch]->start();
     }
 }
 
-void LogManager::enableBuffering(bool on) {
-    QMutexLocker locker(&mutex);
-    useBuffering = on;
+void LogManager::writeAll(const QString& line) {
+    for (Channel ch : activeChannels) {
+        write(ch, line);
+    }
 }
-
 
 void LogManager::flush(Channel ch) {
     QString buf, path;
@@ -89,52 +98,64 @@ void LogManager::flush(Channel ch) {
 }
 
 void LogManager::flushAll() {
-    QMutexLocker locker(&mutex);
-    for (auto it = buffers.begin(); it != buffers.end(); ++it) {
-        Channel ch = it.key();
-        const auto& buf = it.value();
-        const auto& path = fileNames[ch];
-        if (buf.isEmpty() || path.isEmpty()) {
+    QMap<Channel, QString> toWrite;
+    QMap<Channel, QString> paths;
+    {
+        QMutexLocker locker(&mutex);
+        for (Channel ch : activeChannels) {
+            const auto& buf = buffers[ch];
+            const auto& path = fileNames[ch];
+            if (!buf.isEmpty() && !path.isEmpty()) {
+                toWrite.insert(ch, buf);
+                paths.insert(ch, path);
+            }
             buffers[ch].clear();
-            continue;
         }
-        QFile f(path);
+        for (auto tIt = timers.begin(); tIt != timers.end(); ++tIt) {
+            if (tIt.value()) tIt.value()->stop();
+        }
+    }
+    for (auto it = toWrite.begin(); it != toWrite.end(); ++it) {
+        QFile f(paths[it.key()]);
         if (f.open(QIODevice::Append | QIODevice::Text)) {
             QTextStream out(&f);
-            out << buf;
+            out << it.value();
         }
-        buffers[ch].clear();
-    }
-    // időzítők megállítása (opcionális)
-    for (auto tIt = timers.begin(); tIt != timers.end(); ++tIt) {
-        if (tIt.value()) tIt.value()->stop();
     }
 }
 
-void LogManager::moveFile(Channel ch, const QString& newPath) {
-    // először flush
-    flush(ch);
+QString LogManager::currentFile(Channel ch) const {
+    QMutexLocker locker(&mutex);
+    return fileNames.value(ch);
+}
 
-    QString oldPath;
-    {
-        QMutexLocker locker(&mutex);
-        oldPath = fileNames[ch];
-        fileNames[ch] = newPath;
-    }
-
-    if (!oldPath.isEmpty() && oldPath != newPath) {
-        QFile::rename(oldPath, newPath);
-    }
-
-    {
-        QMutexLocker locker(&mutex);
-        ensureTimer(ch);
-        timers[ch]->stop();
-    }
+void LogManager::ensureTimer(Channel ch) {
+    if (timers.contains(ch) && timers[ch]) return;
+    auto t = new QTimer(this);
+    t->setInterval(2000);
+    t->setSingleShot(true);
+    connect(t, &QTimer::timeout, this, [this, ch]() { flush(ch); });
+    timers.insert(ch, t);
 }
 
 QString LogManager::timestamped(const QString& msg) const {
     return QString("[%1] %2")
     .arg(QDateTime::currentDateTime().toString(Qt::ISODateWithMs))
         .arg(msg);
+}
+
+QString LogManager::generateFileName(Channel ch) const {
+    const auto prefix = channelPrefix(ch);
+    const auto ts = QDateTime::currentDateTime().toString("yyyyMMdd_hhmmss");
+    return QString("%1_%2.txt").arg(prefix, ts);
+}
+
+QString LogManager::channelPrefix(Channel ch) {
+    switch (ch) {
+    case Channel::Events:      return "events";
+    case Channel::Errors:      return "log";
+    case Channel::Audit:       return "audit";
+    case Channel::Performance: return "perf";
+    }
+    return "log"; // fallback
 }

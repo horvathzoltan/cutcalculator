@@ -17,13 +17,14 @@ int main(int argc, char *argv[])
 {
     // induláskor
     SignalHelper::setCleanupHandler([](int sig){
-        EventLogger::instance().zEvent_(EventLogger::Info,
-                                        QString("🛠️ Alkalmazás leállítása, jel: %1").arg(sig));
+        QString a = QString("🛠️ Alkalmazás leállítása, jel: %1").arg(sig);
+        EventLogger::instance().zEvent_(EventLogger::Info,a);
+        LogManager::instance().flushAll();
 
         if (sig == SignalHelper::SIGINT_) {
-            qDebug().noquote() << "Ctrl+C megszakítás → gyors mentés";
+            qDebug().noquote() << "Ctrl+C megszakítás";
         } else if (sig == SignalHelper::SIGTERM_) {
-            qDebug().noquote() << "Killall → teljes cleanup";
+            qDebug().noquote() << "Killall";
         }
         // registry flush, fájlmentés, stb.
     });
@@ -33,27 +34,13 @@ int main(int argc, char *argv[])
 
     // Induláskor ideiglenes fájlok a bináris mellé
     FileNameHelper::setBinaryPath(argv[0]);
-    auto logDir = FileNameHelper::instance().binaryPath();
+    const auto binDir = FileNameHelper::instance().binaryPath();
 
-    // itt most a binary kellene
-    // aztán pedig a datapath - a datapath most még üres
-
-    // teháét amíg be a datapath a FileNameHelper-ben üres, addig a binaryba fogunk loggolni
-    // aztán pedig a data könyvtárba, a fájlok áthelyezése mellett
-    auto file_events = FileNameHelper::instance().getLogFilePath("events");
-    auto file_log = FileNameHelper::instance().getLogFilePath("log");
-
-    QString ts = QDateTime::currentDateTime().toString("yyyyMMdd_hhmmss");
-    LogManager::instance().setFile(LogManager::Channel::Events, logDir + "/events_" + ts + ".txt");
-    LogManager::instance().setFile(LogManager::Channel::Errors, logDir + "/log_" + ts + ".txt");
-
-    // Csatornánkénti flush intervallum (pl. errors gyorsabban)
-    LogManager::instance().setFlushInterval(LogManager::Channel::Events, 2000);
-    LogManager::instance().setFlushInterval(LogManager::Channel::Errors, 2000);
-
-    // Írás
-    LogManager::instance().write(LogManager::Channel::Events, "🟢 START application");
-    LogManager::instance().write(LogManager::Channel::Errors, "INFO: RootPath beállítva");
+    // Induláskor: mappát adunk meg (pre‑Qt unbuffered ír)
+    // Csak Events és Errors csatornát indítjuk
+    LogManager::instance().initChannels(binDir, {LogManager::Channel::Events, LogManager::Channel::Errors});
+    // Írás minden aktív csatornába
+    LogManager::instance().writeAll("🟢 START application");
 
     QCoreApplication::setApplicationName(SysInfoHelper::instance().target());
     QCoreApplication::setApplicationVersion(Buildnumber::value);
@@ -76,9 +63,9 @@ int main(int argc, char *argv[])
     FileNameHelper::instance().setDataRootPath(SettingsManager::instance().dataRootPath());
 
     // Settings betöltése után mozgatás a data könyvtárba
-    auto dataDir = FileNameHelper::instance().getLogFolder();
-    LogManager::instance().moveFile(LogManager::Channel::Events, dataDir + "/events_" + ts + ".txt");
-    LogManager::instance().moveFile(LogManager::Channel::Errors, dataDir + "/log_" + ts + ".txt");
+    // Settings után data mappába mozgatás
+    const auto dataDir = FileNameHelper::instance().getLogFolder();
+    LogManager::instance().moveToFolder(dataDir);
 
     // --test eventlogger
     if (SettingsManager::instance().isTestMode()) {
@@ -93,7 +80,8 @@ int main(int argc, char *argv[])
     QApplication a(argc, argv);
 
     LogManager::instance().enableBuffering(true);
-
+    LogManager::instance().setFlushInterval(LogManager::Channel::Events, 2000);
+    LogManager::instance().setFlushInterval(LogManager::Channel::Errors, 1000);
 
     StartupManager manager;
     StartupStatus status = manager.runStartupSequence();
@@ -111,5 +99,10 @@ int main(int argc, char *argv[])
 
     MainWindow w;
     w.show();
-    return a.exec();
+    int exitCode = a.exec();
+
+    LogManager::instance().writeAll("🛑 STOP application. exit code: " + QString::number(exitCode));
+    LogManager::instance().flushAll();
+
+    return exitCode;
 }
