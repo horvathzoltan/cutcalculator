@@ -4,7 +4,7 @@
 #include <QStringList>
 #include <QColor>
 #include <QDebug>
-
+#include "common/logger/logger.h"
 // Teszt futtató függvény
 // --test eventlogger
 inline bool runEventLoggerTests() {
@@ -16,10 +16,10 @@ inline bool runEventLoggerTests() {
     // 1. parseLine teszt
     ParsedLine parsed = adapter.parseLine("[2025-11-16T20:23:38.145] ERROR: adatbázis hiba");
     if (parsed.timestamp.isEmpty() || parsed.prefix != "ERROR:" || parsed.message != "adatbázis hiba") {
-        qWarning() << "❌ parseLine FAILED:" << parsed.timestamp << parsed.prefix << parsed.message;
+        zWarning() << "❌ parseLine FAILED:" << parsed.timestamp << parsed.prefix << parsed.message;
         ok = false;
     } else {
-        qInfo() << "✅ parseLine PASSED";
+        zInfo() << "✅ parseLine PASSED";
     }
 
     // 2. colorForPrefix teszt
@@ -27,10 +27,10 @@ inline bool runEventLoggerTests() {
     QColor cWarn  = adapter.colorForPrefix("WARN:");
     QColor cInfo  = adapter.colorForPrefix("INFO:");
     if (cError != Qt::red || cWarn != QColor("#d98e00") || cInfo != Qt::darkGreen) {
-        qWarning() << "❌ colorForPrefix FAILED";
+        zWarning() << "❌ colorForPrefix FAILED";
         ok = false;
     } else {
-        qInfo() << "✅ colorForPrefix PASSED";
+        zInfo() << "✅ colorForPrefix PASSED";
     }
 
     return ok;

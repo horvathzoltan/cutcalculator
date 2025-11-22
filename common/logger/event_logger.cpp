@@ -45,7 +45,7 @@ void EventLogger::zEvent_(const QString& msg) {
         qInfo().noquote() << "EVENT:" << line;
     }
     emitEvent(line);
-    LogManager::instance().write(LogManager::Channel::Events, line);
+    LogManager::instance().write(LogManager::Channel::Events, msg);
 }
 
 void EventLogger::zEvent_(const QStringList& lines) {
@@ -71,49 +71,51 @@ void EventLogger::zEvent_(Level level, const QString& msg) {
 // }
 
 
-QStringList EventLogger::loadRecentEvents(int maxLines) {
-    QStringList lines;
+// QStringList EventLogger::loadRecentEvents(int maxLines) {
+//     QStringList lines;
 
-    QFile f(fileName); // új példány, mindig olvasásra
-    if (!f.open(QIODevice::ReadOnly | QIODevice::Text))
-        return lines;
+//     QFile f(fileName); // új példány, mindig olvasásra
+//     if (!f.open(QIODevice::ReadOnly | QIODevice::Text))
+//         return lines;
 
-    QTextStream in(&f);
-    while (!in.atEnd()) {
-        lines << in.readLine();
-    }
-    f.close();
+//     QTextStream in(&f);
+//     while (!in.atEnd()) {
+//         lines << in.readLine();
+//     }
+//     f.close();
 
-    std::reverse(lines.begin(), lines.end());
-    return lines.mid(0, maxLines);
-}
+//     std::reverse(lines.begin(), lines.end());
+//     return lines.mid(0, maxLines);
+// }
 
-QStringList EventLogger::loadRecentEventsFromLastStart(int maxLines) {
-    QStringList lines;
+QStringList EventLogger::readSinceLastStart(int maxLines) {
+    // QStringList lines;
 
-    QFile f(fileName);
-    if (!f.open(QIODevice::ReadOnly | QIODevice::Text))
-        return lines;
+    // QFile f(fileName);
+    // if (!f.open(QIODevice::ReadOnly | QIODevice::Text))
+    //     return lines;
 
-    QStringList all;
-    QTextStream in(&f);
-    while (!in.atEnd()) {
-        all << in.readLine();
-    }
-    f.close();
+    // QStringList all;
+    // QTextStream in(&f);
+    // while (!in.atEnd()) {
+    //     all << in.readLine();
+    // }
+    // f.close();
 
-    std::reverse(all.begin(), all.end());
+    // std::reverse(all.begin(), all.end());
 
-    for (const QString& line : all) {
-        if (line.contains("🟢 START")) {
-            break;
-        }
+    // for (const QString& line : all) {
+    //     if (line.contains("🟢 START")) {
+    //         break;
+    //     }
 
-        lines << line;
-        if (lines.size() >= maxLines)
-            break;
-    }
+    //     lines << line;
+    //     if (lines.size() >= maxLines)
+    //         break;
+    // }
 
-    std::reverse(lines.begin(), lines.end());
-    return lines;
+    // std::reverse(lines.begin(), lines.end());
+    // return lines;
+
+    return LogManager::instance().readChannelSinceLastStart(LogManager::Channel::Events, maxLines);
 }

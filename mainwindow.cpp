@@ -23,10 +23,12 @@ void MainWindow::initEventLogWidget() {
 
     _logAdapter = new LogViewAdapter(ui->eventLog);
 
+    // EventLogger élő sorokhoz maradhat, de a visszaolvasás a LogManagerből jön
     EventLogger::instance().emitEvent = [this](const QString& line) {
         _logAdapter->appendColoredLineWithTimestamp(line);
     };
 
-    QStringList recent = EventLogger::instance().loadRecentEventsFromLastStart();
+    // Utolsó START óta visszaolvasás
+    QStringList recent = EventLogger::instance().readSinceLastStart();
     _logAdapter->appendLines(recent);
 }

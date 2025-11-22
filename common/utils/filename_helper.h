@@ -57,7 +57,7 @@ private:
 
     RootPathContainer _tdp;
 
-    RootPathContainer _drc;
+    RootPathContainer _dataRoot;
 
     static RootPathContainer _brc;
     // static QString _binaryPath;
@@ -91,9 +91,9 @@ public:
     QString getMaterialCsvFile() const; // 📁 Anyag törzs CSV útvonal
 
     // 📓 Naplófájl név
-    QString getNew_LogFileName() const;
+    //QString getNew_LogFileName() const;
     QString getLogFolder() const;
-    QString getLogFilePath(const QString& fn) const;
+    //QString getLogFilePath(const QString& fn) const;
 
     //
     QString getRalClassicCsvFile() const;
@@ -102,4 +102,5 @@ public:
     QString getRalPlastic2CsvFile() const;
 
     QString getSettingsFilePath(bool forWrite);
+    void setBinaryPath(const QString &a);
 };

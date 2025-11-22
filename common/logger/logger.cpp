@@ -10,25 +10,25 @@
 
 Logger::ErrLevel Logger::_errlevel = Logger::ErrLevel::INFO;
 Logger::DbgLevel Logger::_dbglevel = Logger::DbgLevel::TRACE;
-bool Logger::_isBreakOnError = false;
-bool Logger::_isVerbose = false;
-bool Logger::_isInited = true; // 🔴 alapból működő;
+bool Logger::_isBreakOnError = true;
+bool Logger::_isVerbose = true;
+//bool Logger::_isInited = true; // 🔴 alapból működő;
 
 std::function<void(const QString& str)> Logger::_func = nullptr;
 
-void Logger::Init(ErrLevel errlevel,
-                  DbgLevel dbglevel,
-                  bool isBreakOnError, bool isVerbose)
-{
-    _isInited = false;
-    _errlevel = errlevel;
-    _dbglevel = dbglevel;
-    _isBreakOnError = isBreakOnError;
-    _isVerbose = isVerbose;
-    _isInited = true;
-    //_GUILogger = ez;
-    //_ui=uiptr;
-}
+// void Logger::Init(ErrLevel errlevel,
+//                   DbgLevel dbglevel,
+//                   bool isBreakOnError, bool isVerbose)
+// {
+//     //_isInited = false;
+//     _errlevel = errlevel;
+//     _dbglevel = dbglevel;
+//     _isBreakOnError = isBreakOnError;
+//     _isVerbose = isVerbose;
+//     //_isInited = true;
+//     //_GUILogger = ez;
+//     //_ui=uiptr;
+// }
 
 
 
@@ -121,7 +121,11 @@ void Logger::dbg_message(DbgLevel level, const QString& msg)
     }
 
 #ifdef Q_OS_LINUX
-    if((level ==DbgLevel::DEBUG) && _isBreakOnError) std::raise(SIGTRAP);
+    // 🔴 Végzetes hiba → kilépés
+    if((level ==DbgLevel::DEBUG) && _isBreakOnError){
+        std::exit(EXIT_FAILURE);
+        //std::raise(SIGTRAP);
+    }
 #endif
 #endif
 }
@@ -164,7 +168,11 @@ void Logger::err_message(ErrLevel level, const QString& msg)
         _func(msg);
     }
 #ifdef Q_OS_LINUX
-    if((level==ErrLevel::ERROR_) && _isBreakOnError) std::raise(SIGTRAP);
+    // 🔴 Végzetes hiba → kilépés
+    if((level==ErrLevel::ERROR_) && _isBreakOnError){
+        std::exit(EXIT_FAILURE);
+        //std::raise(SIGTRAP);
+    }
 #endif
 #endif
 }
@@ -278,10 +286,10 @@ QString Log::zStackTrace(){
 
 void Logger::info2(const QString& msg, const LocInfo& locinfo)
 {
-    if(!_isInited) {
-        Logger::message(DEFMSG+"\n" + msg);
-        return;
-    }
+    // if(!_isInited) {
+    //     Logger::message(DEFMSG+"\n" + msg);
+    //     return;
+    // }
     if(_errlevel>ErrLevel::INFO) return;
     QString li;
     if(_isVerbose)
@@ -295,10 +303,10 @@ void Logger::info2(const QString& msg, const LocInfo& locinfo)
 
 void Logger::info2(const QStringList& msgl, const LocInfo& locinfo)
 {
-    if(!_isInited) {
-        Logger::message(DEFMSG+ msgl.join('\n'));
-        return;
-    }
+    // if(!_isInited) {
+    //     Logger::message(DEFMSG+ msgl.join('\n'));
+    //     return;
+    // }
     if(_errlevel>ErrLevel::INFO) return;
     QString li;
     if(_isVerbose)
@@ -323,10 +331,10 @@ void Logger::message(const QString& msg)
 
 
 void Logger::error2(const QString& msg,  const LocInfo& locinfo){
-    if(!_isInited) {
-        Logger::message(DEFMSG+"\n" + msg);
-        return;
-    }
+    // if(!_isInited) {
+    //     Logger::message(DEFMSG+"\n" + msg);
+    //     return;
+    // }
     //if(_errlevel>ErrLevel::ERROR_) return;
 
     auto li = locinfo.ToString();
@@ -336,7 +344,7 @@ void Logger::error2(const QString& msg,  const LocInfo& locinfo){
     err_message(ErrLevel::ERROR_, msg2);
 
     // 🔴 Végzetes hiba → kilépés
-    std::exit(EXIT_FAILURE);
+    //std::exit(EXIT_FAILURE);
     //std::abort(); // azonnali kilépés, core dump
 }
 
@@ -353,10 +361,10 @@ LogStream Logger::error2(const LocInfo& l){
     }
 
 void Logger::warning2(const QString& msg, const LocInfo& locinfo){
-    if(!_isInited) {
-        Logger::message(DEFMSG+"\n" + msg);
-        return;
-    }
+    // if(!_isInited) {
+    //     Logger::message(DEFMSG+"\n" + msg);
+    //     return;
+    // }
     if(_errlevel>ErrLevel::WARNING) return;
     QString li;
     if(_isVerbose)
@@ -368,10 +376,10 @@ void Logger::warning2(const QString& msg, const LocInfo& locinfo){
 }
 
 void Logger::debug2(const LocInfo& locinfo){
-    if(!_isInited) {
-        Logger::message(DEFMSG+": DEBUG");
-        return;
-    }
+    // if(!_isInited) {
+    //     Logger::message(DEFMSG+": DEBUG");
+    //     return;
+    // }
     if(_dbglevel==DbgLevel::NONE || _dbglevel>DbgLevel::DEBUG) return;
     auto li = locinfo.ToString();
     auto st = Logger::zStackTrace();
@@ -381,10 +389,10 @@ void Logger::debug2(const LocInfo& locinfo){
 }
 
 void Logger::trace2(const LocInfo& locinfo){
-    if(!_isInited) {
-        Logger::message(DEFMSG+": TRACE");
-        return;
-    }
+    // if(!_isInited) {
+    //     Logger::message(DEFMSG+": TRACE");
+    //     return;
+    // }
 
     if(_dbglevel==DbgLevel::NONE || _dbglevel>DbgLevel::TRACE) return;
     auto li = locinfo.ToString();

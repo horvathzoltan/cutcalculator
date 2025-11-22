@@ -52,14 +52,17 @@ public:
         DEBUG,
     };
 
-    static void Init(ErrLevel level, DbgLevel dbglevel,
-                     bool isBreak, bool isVerbose);
+    // static void Init(ErrLevel level, DbgLevel dbglevel,
+    //                  bool isBreak, bool isVerbose);
+    static void setVerbose(bool v){ _isVerbose = v; }
+    static void setBreakOnError(bool b){ _isBreakOnError = b; }
+
 private:
     static ErrLevel _errlevel;
     static DbgLevel _dbglevel;
     static bool _isBreakOnError;
     static bool _isVerbose;
-    static bool _isInited;
+    //static bool _isInited;
     static std::function<void(const QString& str)> _func;
 
     static QString ToString(ErrLevel, const QString&, const QString&, const QString&);

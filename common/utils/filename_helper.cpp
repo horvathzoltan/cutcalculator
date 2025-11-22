@@ -14,7 +14,7 @@ bool FileNameHelper::init(const char* file) {
     return true;
 #else
     if (!file || !*file) {
-        qWarning() << "❌ init() hívás érvénytelen fájlparaméterrel.";
+        zWarning() << "❌ init() hívás érvénytelen fájlparaméterrel.";
         //_initialized_testDataPath = false;
         //_initSource_testdataPath = None;
         return false;
@@ -53,6 +53,11 @@ FileNameHelper& FileNameHelper::instance() {
     return helper;
 }
 
+void FileNameHelper::setBinaryPath(const QString& a) {
+ _brc.setRootPath(a, InitSource::Setter);
+}
+
+
 void FileNameHelper::setBinaryPath(const char* argv0) {
     Q_ASSERT(argv0 && *argv0);
     if (!argv0 || !*argv0) {
@@ -62,7 +67,7 @@ void FileNameHelper::setBinaryPath(const char* argv0) {
 }
 
 void FileNameHelper::setDataRootPath(const QString& path) {
-    _drc.setRootPath(path, InitSource::Setter);
+    _dataRoot.setRootPath(path, InitSource::Setter);
 }
 
 QString FileNameHelper::getSettingsFilePath(bool forWrite) {
@@ -87,30 +92,30 @@ QString FileNameHelper::generateTimestamp() const {
 
 /*log*/
 
-QString FileNameHelper::getNew_LogFileName() const {
-    QString fn0 = QStringLiteral("log_%1.txt").arg(generateTimestamp());
-    return fn0;
-}
+// QString FileNameHelper::getNew_LogFileName() const {
+//     QString fn0 = QStringLiteral("log_%1.txt").arg(generateTimestamp());
+//     return fn0;
+// }
 
 QString FileNameHelper::getLogFolder() const {
-    // bináris neve (pl. CutCalculator)
-    QString programName = "CutCalculator";//QFileInfo(QCoreApplication::applicationFilePath()).baseName();
-    return _drc.filePath(programName + "_logs");
+     // bináris neve (pl. CutCalculator)
+     QString programName = "CutCalculator";//QFileInfo(QCoreApplication::applicationFilePath()).baseName();
+     return _dataRoot.filePath(programName + "_logs");
 }
 
-QString FileNameHelper::getLogFilePath(const QString& fn) const {
-    return QDir(getLogFolder()).filePath(fn);
-}
+// QString FileNameHelper::getLogFilePath(const QString& fn) const {
+//     return QDir(getLogFolder()).filePath(fn);
+// }
 
 /* Material */
 QString FileNameHelper::getMaterialCsvFile() const {
-    return _drc.filePath("materials.csv");
+    return _dataRoot.filePath("materials.csv");
 }
 
 /* RAL Colors */
 
 QString FileNameHelper::getRalColorsFilePath(const QString& path) const {
-    return QDir(_drc.filePath("ral_colors")).filePath(path);
+    return QDir(_dataRoot.filePath("ral_colors")).filePath(path);
 }
 
 QString FileNameHelper::getRalClassicCsvFile() const {

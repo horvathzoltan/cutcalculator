@@ -38,6 +38,34 @@ public:
         cleanupHandler() = std::move(fn);
     }
 
+    static QString signalName(int sig) {
+        switch (sig) {
+        case SIGHUP:   return "SIGHUP";   // terminál bezárás / controlling tty megszűnése
+        case SIGINT:   return "SIGINT";   // Ctrl+C
+        case SIGQUIT:  return "SIGQUIT";  // Ctrl+\ (core dump)
+        case SIGILL:   return "SIGILL";   // illegális utasítás
+        case SIGTRAP:  return "SIGTRAP";  // debugger break
+        case SIGABRT:  return "SIGABRT";  // abort()
+        case SIGBUS:   return "SIGBUS";   // bus error
+        case SIGFPE:   return "SIGFPE";   // lebegőpontos hiba
+        case SIGKILL:  return "SIGKILL";  // nem elfogható, nem ignorálható kill
+        case SIGUSR1:  return "SIGUSR1";  // user-defined jel 1
+        case SIGSEGV:  return "SIGSEGV";  // szegmens hiba
+        case SIGUSR2:  return "SIGUSR2";  // user-defined jel 2
+        case SIGPIPE:  return "SIGPIPE";  // írás lezárt pipe-ba
+        case SIGALRM:  return "SIGALRM";  // alarm() timeout
+        case SIGTERM:  return "SIGTERM";  // killall, normál terminálás
+        case SIGCHLD:  return "SIGCHLD";  // child process kilépett
+        case SIGCONT:  return "SIGCONT";  // folytatás (fg/bg)
+        case SIGSTOP:  return "SIGSTOP";  // nem ignorálható stop
+        case SIGTSTP:  return "SIGTSTP";  // Ctrl+Z
+        case SIGTTIN:  return "SIGTTIN";  // háttérben futó process olvasna tty-ról
+        case SIGTTOU:  return "SIGTTOU";  // háttérben futó process írna tty-ra
+        default:       return QString("signal %1").arg(sig);
+        }
+    }
+
+
 private:
     static void handleShutDownSignal(int signalId)
     {

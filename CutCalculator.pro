@@ -19,6 +19,9 @@ SOURCES += \
     common/logger/logger.cpp \
     common/settings/settings_manager.cpp \
     common/startup/startup_manager.cpp \
+    common/startup/startup_status_manager.cpp \
+    common/system/lifecycle_manager.cpp \
+    common/system/window_observer.cpp \
     common/utils/filehelper.cpp \
     common/utils/filename_helper.cpp \
     common/utils/project_root_locator.cpp \
@@ -45,9 +48,13 @@ HEADERS += \
     common/model/identifiable_entity.h \
     common/settings/settings_manager.h \
     common/startup/startup_manager.h \
+    common/startup/startup_status.h \
+    common/startup/startup_status_manager.h \
     common/system/buildnumber.h \
+    common/system/lifecycle_manager.h \
     common/system/signal_helper.h \
     common/system/sysinfo_helper.h \
+    common/system/window_observer.h \
     common/utils/filehelper.h \
     common/utils/filename_helper.h \
     common/utils/project_root_locator.h \

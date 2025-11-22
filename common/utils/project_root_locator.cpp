@@ -1,5 +1,5 @@
 #include "project_root_locator.h"
-#include <QDebug>
+#include "common/logger/logger.h"
 
 bool ProjectRootLocator::_verbose = false;
 
@@ -37,12 +37,12 @@ ProjectRootLocator::Outcome ProjectRootLocator::locateFrom(const QString& source
             if (QFileInfo::exists(outcome.testdataPath)) {
                 outcome.result = FoundWithTestdata;
                 if(_verbose){
-                    qDebug() << "✅ Projektgyökér megtalálva[locateFrom]:" << root << "→ testdata is megvan.";
+                    zInfo() << "✅ Projektgyökér megtalálva[locateFrom]:" << root << "→ testdata is megvan.";
                 }
             } else {
                 outcome.result = FoundWithoutTestdata;
                 if(_verbose){
-                qWarning() << "⚠️ Projektgyökér megtalálva[locateFrom]:" << root << "→ de nincs testdata.";
+                zWarning() << "⚠️ Projektgyökér megtalálva[locateFrom]:" << root << "→ de nincs testdata.";
                 }
             }
             return outcome;
@@ -51,7 +51,7 @@ ProjectRootLocator::Outcome ProjectRootLocator::locateFrom(const QString& source
 
     outcome.result = NotFound;
     if(_verbose){
-        qWarning() << "❌ Nem találtunk projektgyökeret marker alapján.";
+        zWarning() << "❌ Nem találtunk projektgyökeret marker alapján.";
     }
     return outcome;
 }

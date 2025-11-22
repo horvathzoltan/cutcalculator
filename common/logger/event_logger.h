@@ -25,10 +25,10 @@ public:
     // UI callback: pl. QListWidget vagy QPlainTextEdit frissítéséhez
     std::function<void(const QString&)> emitEvent = [](const QString&) {};
 
-    QStringList loadRecentEvents(int maxLines = 50);
+    //QStringList loadRecentEvents(int maxLines = 50);
 
 
-    QStringList loadRecentEventsFromLastStart(int maxLines = 50);
+    QStringList readSinceLastStart(int maxLines = 50);
 private:
     EventLogger() = default;
     //QFile file;

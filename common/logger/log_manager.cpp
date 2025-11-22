@@ -1,4 +1,5 @@
 #include "log_manager.h"
+#include "common/logger/logger.h"
 
 LogManager& LogManager::instance() {
     static LogManager inst;
@@ -158,4 +159,45 @@ QString LogManager::channelPrefix(Channel ch) {
     case Channel::Performance: return "perf";
     }
     return "log"; // fallback
+}
+
+#include <QTextStream>
+
+QStringList LogManager::readChannel(Channel ch, int maxLines) {
+    flush(ch);
+
+    QString path = currentFile(ch);
+    QStringList lines;
+    if (path.isEmpty()) return lines;
+
+    QFile f(path);
+    if (!f.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        zWarning() << "Nem sikerült megnyitni a log fájlt:" << path;
+        return lines;
+    }
+
+    QTextStream in(&f);
+    while (!in.atEnd()) {
+        lines << in.readLine();
+    }
+    f.close();
+
+    if (maxLines > 0 && lines.size() > maxLines) {
+        return lines.mid(lines.size() - maxLines);
+    }
+    return lines;
+}
+
+QStringList LogManager::readChannelSinceLastStart(Channel ch, int maxLines) {
+    QStringList all = readChannel(ch, 0);
+    std::reverse(all.begin(), all.end());
+
+    QStringList recent;
+    for (const QString& line : all) {
+        if (line.contains("🟢 START")) break;
+        recent << line;
+        if (maxLines > 0 && recent.size() >= maxLines) break;
+    }
+    std::reverse(recent.begin(), recent.end());
+    return recent;
 }

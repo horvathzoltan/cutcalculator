@@ -98,6 +98,20 @@ public:
     /// Aktuális fájl elérési útja.
     QString currentFile(Channel ch) const;
 
+    /**
+ * @brief Csatorna flush és teljes beolvasás.
+ * @param ch Csatorna.
+ * @param maxLines Visszaadott sorok maximuma (0 = korlátlan).
+ */
+    QStringList readChannel(Channel ch, int maxLines = 0);
+
+    /**
+ * @brief Csatorna flush és beolvasás csak az utolsó START óta.
+ * @param ch Csatorna.
+ * @param maxLines Visszaadott sorok maximuma (0 = korlátlan).
+ */
+    QStringList readChannelSinceLastStart(Channel ch, int maxLines = 0);
+
 private:
     explicit LogManager(QObject* parent = nullptr);
 

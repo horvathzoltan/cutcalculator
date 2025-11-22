@@ -1,7 +1,7 @@
 #include "namedcolor.h"
 #include <QMap>
 #include <QColor>
-#include <QDebug>
+#include "common/logger/logger.h"
 #include <QRegularExpression>
 
 QMap<RalSystem, QMap<QString, NamedColor>> NamedColor::_ralColors;
@@ -86,14 +86,14 @@ NamedColor NamedColor::fromRal(const QString& ralCode) {
         if (systemMap.contains(key))
             return systemMap.value(key);
     }
-    qWarning() << "Ismeretlen RAL kód (globális keresés):" << ralCode;
+    zWarning() << "Ismeretlen RAL kód (globális keresés):" << ralCode;
     return NamedColor(Qt::black, "Ismeretlen RAL", key, RalSystem::Unknown);
 }
 
 NamedColor NamedColor::fromHex(const QString& hexCode) {
     QColor c(hexCode.trimmed());
     if (!c.isValid()) {
-        qWarning() << "Érvénytelen HEX kód:" << hexCode;
+        zWarning() << "Érvénytelen HEX kód:" << hexCode;
         return NamedColor();
     }
     QString name = QColor::colorNames().contains(hexCode.toLower())
