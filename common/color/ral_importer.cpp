@@ -1,6 +1,6 @@
 #include "ral_importer.h"
 #include "namedcolor.h"
-#include "common/logger/logger.h"
+//#include "common/logger/logger.h"
 #include "common/csv/csvimporter.h"   // CsvReader namespace
 
 bool RalImporter::loadRalColors(const QList<RalSource>& sources) {
@@ -8,7 +8,9 @@ bool RalImporter::loadRalColors(const QList<RalSource>& sources) {
     bool ok = true;
 
     for (const RalSource& src : sources) {
-        CsvImporter::FileContext ctx(src.filePath);
+        QString ral_systemName = RalSystemUtils::toString(src.system);
+
+        CsvImporter::FileContext ctx("RAL "+ral_systemName+" import", src.filePath);
 
         const auto items = CsvImporter::readAndConvert<std::pair<QString, NamedColor>>(
             ctx,
@@ -17,10 +19,14 @@ bool RalImporter::loadRalColors(const QList<RalSource>& sources) {
             }
             );
 
+        if (items.isEmpty()) {
+            ctx.setFileError("❌ Sikertelen beolvasás: a fájl nem tartalmazott feldolgozható adatot.");
+        }
+
         if (ctx.hasErrors()) {
-            QString msg = QString("⚠️ RAL import hiba [színrendszer: %1]").arg(RalSystemUtils::toString(src.system));
-            zWarning(msg);
-            zWarning(ctx.toString());
+            // QString msg = QString("⚠️ RAL import hiba [színrendszer: %1]").arg(ral_systemName);
+            // zWarning(msg);
+            // zWarning(ctx.toString());
             ok = false;
         }
 

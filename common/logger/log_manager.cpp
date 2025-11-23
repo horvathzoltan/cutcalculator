@@ -194,7 +194,7 @@ QStringList LogManager::readChannelSinceLastStart(Channel ch, int maxLines) {
 
     QStringList recent;
     for (const QString& line : all) {
-        if (line.contains("🟢 START")) break;
+        //if (line.contains("🟢 START")) break;
         recent << line;
         if (maxLines > 0 && recent.size() >= maxLines) break;
     }

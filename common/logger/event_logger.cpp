@@ -40,10 +40,10 @@ QString EventLogger::toString(Level level) {
 
 void EventLogger::zEvent_(const QString& msg) {
     QString line = timestamped(msg);
-    if(_isVerbose)
-    {
-        qInfo().noquote() << "EVENT:" << line;
-    }
+    // if(_isVerbose)
+    // {
+    //     zInfo().noquote() << "EVENT:" << line;
+    // }
     emitEvent(line);
     LogManager::instance().write(LogManager::Channel::Events, msg);
 }

@@ -9,3 +9,6 @@ a project állapotát ebben a formátumban kérem:
 az sos és a tűzoltást jelölt tűz ikonnal, ezek a blokkok kellenek:
 a táblázat, a 🚀 Sprint fókusz (🔥 SOS pontokkal), a 📌 Mai eredmények és az 👉 Holnap fókusz.
 
+ThinkDeep: kérem a FileContextCollector éles implementációját, kommentelve, dockommentelve,
+javaslatot a fájl nevére, helyére, és integrációjára a jelenlegi programban.
+milyen fájlokra van ehhez szüséged?

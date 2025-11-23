@@ -14,6 +14,7 @@ DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs depr
 SOURCES += \
     common/color/namedcolor.cpp \
     common/color/ral_importer.cpp \
+    common/csv/filecontext_collector.cpp \
     common/logger/event_logger.cpp \
     common/logger/log_manager.cpp \
     common/logger/logger.cpp \
@@ -41,6 +42,7 @@ HEADERS += \
     common/color/ralsystem.h \
     common/csv/csvhelper.h \
     common/csv/csvimporter.h \
+    common/csv/filecontext_collector.h \
     common/logger/event_logger.h \
     common/logger/log_manager.h \
     common/logger/logger.h \

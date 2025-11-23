@@ -14,16 +14,16 @@ SettingsManager::SettingsManager() {
     if (!QFile::exists(_writePath)){
         if( QFile::exists(_readPath)) {
             if (!QFile::copy(_readPath, _writePath)) {
-                qFatal("❌ Nem sikerült átmásolni a settings.ini fájlt a testdata-ból a bináris mellé.");
+                zError("❌ Nem sikerült átmásolni a settings.ini fájlt a testdata-ból a bináris mellé.");
             }
             else {
-                qInfo() << "✅ settings.ini átmásolva a testdata-ból a bináris mellé.";
+                zInfo() << "✅ settings.ini átmásolva a testdata-ból a bináris mellé.";
             }
         }
         else
         {
             // egyik sem létezik → de másolás előtt  a forrás a releváns
-            qFatal("❌ Nem található a default settings.ini: %s", qPrintable(_readPath));
+            zError() << "❌ Nem található a default settings.ini: " << qPrintable(_readPath);
         }
     }
 
@@ -32,7 +32,7 @@ SettingsManager::SettingsManager() {
 
     bool storeInitialized = _store.isInitialized();
     if(!storeInitialized){
-        qFatal("❌ Nem sikerült settingset inicializálni.");
+        zError("❌ Nem sikerült settingset inicializálni.");
     }
 }
 

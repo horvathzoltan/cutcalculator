@@ -32,7 +32,7 @@ public:
     }
 
     QString sysInfo() const {
-        QString msg = QStringLiteral("started ") + _target;
+        QString msg = QStringLiteral("🟢 Started ") + _target;
         if (!_buildNumber.isEmpty() && _buildNumber != "-1")
             msg += "(" + _buildNumber + ")";
         if (!_user.isEmpty())

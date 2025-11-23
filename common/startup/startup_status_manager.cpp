@@ -5,6 +5,8 @@
 #include <QMessageBox>
 #include <QtGlobal>
 
+#include "common/csv/filecontext_collector.h"
+
 // Alapértelmezett konfigurációk.
 int StartupStatusManager::s_previewLimit = 2;
 bool StartupStatusManager::s_showLogHint = true;
@@ -12,6 +14,8 @@ QString StartupStatusManager::s_humanLogPath = {};
 
 bool StartupStatusManager::handle(const StartupStatus& status)
 {
+    FileContextCollector::instance().flushSummary();
+
     // Kritikus hiba: log + GUI + leállás.
     if (!status.isSuccess()) {
         zError(status.errorMessage());

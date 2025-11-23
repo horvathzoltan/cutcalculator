@@ -9,6 +9,7 @@
 #include <QTextStream>
 #include "common/utils/filehelper.h"
 #include "common/logger/logger.h"
+#include "filecontext_collector.h"
 
 namespace CsvImporter{
 
@@ -22,8 +23,8 @@ public:
 
     QString toString() const {
         if (_errorMessage.isEmpty())
-            return QString("⚠️ Ismeretlen hiba (Sor: %1)\n").arg(_lineIndex);
-        return QString("%1 (Sor: %2)\n").arg(_errorMessage, QString::number(_lineIndex));
+            return QString("⚠️ Ismeretlen hiba (Sor: %1)").arg(_lineIndex);
+        return QString("%1 (Sor: %2)").arg(_errorMessage, QString::number(_lineIndex));
     }
 
 };
@@ -31,21 +32,81 @@ public:
 struct FileContext {
 private:
     QString _filepath;
+    QString _operationName;
     QVector<RowError> _errors;
+    QString _fileError;
     int _currentLineNumber = 0;
+    int _totalLines;
+    int _readlines = 0;
 public:
 
-    FileContext(const QString& filepath)
-        : _filepath(filepath) {}
+    FileContext(const QString& operationName, const QString& filepath)
+        : _filepath(filepath), _operationName(operationName) {}
+
+    ~FileContext() {
+        // Observer értesítés: automatikus gyűjtés
+        FileContextCollector::instance().onContextDestroyed(*this);
+    }
+
+    QString fileError() const {
+        return _fileError;
+    }
+
+    void setFileError(const QString& err) {
+        _fileError = err;
+    }
+    // // Explicit copy ctor
+    // FileContext(const FileContext& other)
+    //     : _filepath(other._filepath),
+    //     _errors(other._errors),
+    //     _currentLineNumber(other._currentLineNumber),
+    //     _totalLines(other._totalLines),
+    //     _readlines(other._readlines) {}
+
+    // // Explicit assignment
+    // FileContext& operator=(const FileContext& other) {
+    //     if (this != &other) {
+    //         _filepath = other._filepath;
+    //         _errors = other._errors;
+    //         _currentLineNumber = other._currentLineNumber;
+    //         _readlines = other._readlines;
+    //         _totalLines = other._totalLines;
+    //     }
+    //     return *this;
+    // }
 
     QString filepath() const { return _filepath; }
 
     void setCurrentLineNumber(int lineNumber) {
-        _currentLineNumber = lineNumber;
+         _currentLineNumber = lineNumber;
+    }
+
+    void setTotalLines(int totalLines) {
+        _totalLines = totalLines;
+    }
+
+    void setReadlines(int readlines) {
+        _readlines = readlines;
     }
 
     int currentLineNumber() const {
-        return _currentLineNumber;
+         return _currentLineNumber;
+    }
+
+    QString operationName() const {
+        return _operationName;
+    }
+
+    int totalLines() const {
+        return _totalLines;
+    }
+
+    int readlines() const {
+        return _readlines;
+    }
+
+    QVector<RowError> errors() const {
+        return _errors;
     }
 
     void addError(int l, const QString& msg) {
@@ -53,28 +114,28 @@ public:
     }
 
     bool hasErrors() const {
-        return !_errors.isEmpty();
+        return !_errors.isEmpty() || !_fileError.isEmpty();;
     }
 
     int errorsSize() const {
         return _errors.size();
     }
 
-    QString toString() const {
-        QString result = QString("📄 Fájl: %1\n").arg(_filepath);
+    // QString toString() const {
+    //     QString result = QString("📄 Fájl: %1\n").arg(_filepath);
 
-        if (_errors.isEmpty()) {
-            result += "✅ Nincs hiba.\n";
-        } else {
-            result += "Hibalista:\n";
-            int idx = 1;
-            for (const auto& err : _errors) {
-                result += QString("  %1. %2").arg(idx++).arg(err.toString());
-            }
-        }
+    //     if (_errors.isEmpty()) {
+    //         result += "✅ Nincs hiba.\n";
+    //     } else {
+    //         result += "Hibalista:\n";
+    //         int idx = 1;
+    //         for (const auto& err : _errors) {
+    //             result += QString("  %1. %2").arg(idx++).arg(err.toString());
+    //         }
+    //     }
 
-        return result;
-    }
+    //     return result;
+    // }
 
 };
 
@@ -113,16 +174,21 @@ static QVector<T> readAndConvert(CsvImporter::FileContext& ctx,
     const auto rows = read(ctx.filepath());
     QVector<T> result;
 
+    int readlines =0;
+    ctx.setTotalLines(skipHeader?rows.size()-1:rows.size());
     for (int i = 0; i < rows.size(); ++i) {
         if (skipHeader && i == 0) continue;
 
         const auto& row = rows[i];
+
         ctx.setCurrentLineNumber(i + 1);
 
-        //RowContext ctx(linenumber, filepath);
         auto maybeObj = converter(row, ctx);
-        if (maybeObj.has_value())
+        if (maybeObj.has_value()){
             result.append(std::move(maybeObj.value()));
+            readlines++;
+            ctx.setReadlines(readlines);
+        }
     }
 
     return result;

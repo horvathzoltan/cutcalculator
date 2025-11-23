@@ -35,7 +35,7 @@ private:
     QString fileName;
     //bool writeToFile(const QString &line);
     QString timestamped(const QString &msg);
-    bool _isVerbose = false;
+    //bool _isVerbose = false;
 
     static QString toString(Level level);   // <-- új helper
 };

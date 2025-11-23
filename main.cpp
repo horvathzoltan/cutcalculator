@@ -19,6 +19,9 @@ int main(int argc, char *argv[])
 {
     Logger::setBreakOnError(false);
     Logger::setVerbose(false);
+    QString sysInfo = SysInfoHelper::instance().sysInfo();
+    zInfo() << sysInfo;
+    zEvent(sysInfo);
 
     // induláskor
     SignalHelper::setCleanupHandler([](int sig){
@@ -37,9 +40,7 @@ int main(int argc, char *argv[])
     QCoreApplication::setOrganizationName("horvathzoltan");
     QCoreApplication::setOrganizationDomain("https://github.com/horvathzoltan");
 
-    QString sysInfo = SysInfoHelper::instance().sysInfo();
-    zInfo() << sysInfo;
-    zEvent(sysInfo);
+
 
     SettingsManager::instance().detectTestMode(argc, argv);
     FileNameHelper::instance().setDataRootPath(SettingsManager::instance().dataRootPath());

@@ -22,7 +22,7 @@ bool FileNameHelper::init(const char* file) {
 
     const QString sourcePath = QDir::cleanPath(QString::fromUtf8(file));
     auto outcome = ProjectRootLocator::locateFrom(sourcePath);
-    qInfo().noquote() << outcome.diagnosticMessage();
+    zInfo().noquote() << outcome.diagnosticMessage();
 
     switch (outcome.result) {
     case ProjectRootLocator::FoundWithTestdata:
@@ -61,7 +61,7 @@ void FileNameHelper::setBinaryPath(const QString& a) {
 void FileNameHelper::setBinaryPath(const char* argv0) {
     Q_ASSERT(argv0 && *argv0);
     if (!argv0 || !*argv0) {
-        qFatal("FileNameHelper::setBinaryPath: invalid argv0");
+        zError("FileNameHelper::setBinaryPath: invalid argv0");
     }    
     _brc.setRootPath(QFileInfo(QString::fromUtf8(argv0)).absolutePath(), InitSource::Setter);
 }

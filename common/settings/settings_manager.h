@@ -3,7 +3,7 @@
 #include <QFile>
 #include <QSettings>
 
-
+#include "common/logger/logger.h"
 
 class SettingsStore {
 public:
@@ -12,27 +12,26 @@ public:
     void init(const QString&path){
         // már inicializálva?
         if (_settings) {
-            qFatal("❌ SettingsStore már inicializálva van, reinit nem engedélyezett!");
+            zError("❌ SettingsStore már inicializálva van, reinit nem engedélyezett!");
             return;
         }
 
         // üres string?
         if (path.isEmpty()) {
-            qFatal("❌ SettingsStore init: üres path nem engedélyezett!");
+            zError("❌ SettingsStore init: üres path nem engedélyezett!");
             return;
         }
 
         // fájl létezik?
         if (!QFile::exists(path)) {
-            qFatal("❌ SettingsStore init: a fájl nem létezik: %s",
-                   qPrintable(path));
+            zError() << "❌ SettingsStore init: a fájl nem létezik: " << qPrintable(path);
             return;
         }
 
         // minden rendben → inicializálás
 
         _settings = std::make_unique<QSettings>(path, QSettings::IniFormat);
-        qInfo("✅ Settings inicializálva: %s", qPrintable(path));
+        zInfo() << "✅ Settings inicializálva: " << qPrintable(path);
     }
 
     QVariant value(const QString& key, const QVariant& defaultValue = QVariant()) const {

@@ -25,27 +25,15 @@ bool MaterialRepository::loadFromCSV(MaterialRegistry& registry) {
     }
 
     const QString fn = helper.getMaterialCsvFile();
-    if (fn.isEmpty()) {
-        zWarning("❌ Nem található a tesztadatok CSV fájlja.");
-        return false;
-    }
-
-    CsvImporter::FileContext ctx(fn);
+    CsvImporter::FileContext ctx(L("Material import"), fn);
     const QVector<MaterialMaster> loaded = loadFromCSV_private(ctx);
 
-    // 🔍 Hibák loggolása, ha vannak
-    if (ctx.hasErrors()) {
-        zWarning(QString("⚠️ Hibák az importálás során (%1 sor):").arg(ctx.errorsSize()));
-        zWarning(ctx.toString());
-    }
-
     if (loaded.isEmpty()) {
-        zWarning("❌ A materials.csv fájl üres vagy hibás formátumú.");
+        ctx.setFileError("❌ Sikertelen beolvasás: a fájl nem tartalmazott feldolgozható adatot.");
         return false;
     }
 
     registry.setData(loaded); // 🔧 Anyagregisztráció
-    zInfo(QString("✅ %1 anyag sikeresen importálva a fájlból: %2").arg(loaded.size()).arg(fn));
     return true;
 }
 
@@ -110,23 +98,31 @@ MaterialRepository::buildMaterialFromRow(const MaterialRow& row, CsvImporter::Fi
     m.paintingMode = PaintingModeUtils::parse(row.paintingMode);
 
     if (m.shape == CrossSectionShape(CrossSectionShape::Shape::Rectangular)) {
-        bool okW = false, okH = false;
-        double w = row.dim1.toDouble(&okW);
-        double h = row.dim2.toDouble(&okH);
-        if (!okW || !okH || w <= 0 || h <= 0) {
-            QString msg = L("⚠️ Érvénytelen szélesség/magasság");
-            ctx.addError(ctx.currentLineNumber(), msg);
+        if (row.dim1.isEmpty() || row.dim2.isEmpty()) {
+            ctx.addError(ctx.currentLineNumber(), L("⚠️ Hiányzó szélesség/magasság adat"));
+        } else {
+            bool okW = false, okH = false;
+            double w = row.dim1.toDouble(&okW);
+            double h = row.dim2.toDouble(&okH);
+            if (!okW || !okH || w <= 0 || h <= 0) {
+                QString msg = L("⚠️ Érvénytelen szélesség/magasság");
+                ctx.addError(ctx.currentLineNumber(), msg);
+            }
+            m.size_mm = QSizeF(w, h);
         }
-        m.size_mm = QSizeF(w, h);
     }
     else if (m.shape == CrossSectionShape(CrossSectionShape::Shape::Round)) {
-        bool okD = false;
-        double d = row.dim1.toDouble(&okD);
-        if (!okD || d <= 0) {
-            QString msg = L("⚠️ Érvénytelen átmérő");
-            ctx.addError(ctx.currentLineNumber(), msg);
+        if (row.dim1.isEmpty()) {
+            ctx.addError(ctx.currentLineNumber(), L("⚠️ Hiányzó átmérő adat"));
+        } else {
+            bool okD = false;
+            double d = row.dim1.toDouble(&okD);
+            if (!okD || d <= 0) {
+                QString msg = L("⚠️ Érvénytelen átmérő");
+                ctx.addError(ctx.currentLineNumber(), msg);
+            }
+            m.diameter_mm = d;
         }
-        m.diameter_mm = d;
     }
 
     // 🎨 Szín hozzárendelés – RAL, HEX vagy üres

@@ -11,7 +11,7 @@ TestManager& TestManager::instance() {
 bool TestManager::runBusinessLogicTests(const QString& profile) {
     _lastResults.clear();
 
-    qInfo() << "▶️ Running business logic tests with profile:" << profile;
+    zInfo() << "▶️ Running business logic tests with profile:" << profile;
 
     // Példa: itt futtathatod a modulokhoz tartozó teszteket
     // Ezeket később bővítheted modulonként
@@ -29,7 +29,7 @@ bool TestManager::runBusinessLogicTests(const QString& profile) {
         ok = false;
     }
 
-    qInfo() << "✅ Test results:" << _lastResults;
+    zInfo() << "✅ Test results:" << _lastResults;
     return ok;
 }
 
