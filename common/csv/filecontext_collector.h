@@ -20,8 +20,9 @@
 #include <QVector>
 #include <QMutex>
 #include <QString>
+#include "common/csv/filecontext.h"
 
-namespace CsvImporter { struct FileContext; struct RowError; }
+//namespace CsvImporter { struct FileContext; struct RowError; }
 
 // struct RowErr2{
 //     int _lineIndex;
@@ -32,12 +33,27 @@ struct FileContextSnapshot {
     QString _filepath;
     QString _operationName;
     QString _fileError;
-    /*QVector<CsvImporter::RowError>*/
-    QStringList _errors;
+    QVector<CsvImporter::RowError> _errors;
+    //QStringList _errors;
     int _totalLines;
     int _readlines = 0;
 
-    explicit FileContextSnapshot(const CsvImporter::FileContext& c);
+    //explicit FileContextSnapshot(const CsvImporter::FileContext& c);
+
+    explicit FileContextSnapshot(const CsvImporter::FileContext &c)
+        : _filepath(c.filepath()),
+        _operationName(c.operationName()),
+        _fileError(c.fileError()),
+        _errors(c.errors()),
+        _totalLines(c.totalLines()),
+        _readlines(c.readlines())
+    {
+
+        // for(const auto&a:c.errors()){
+        //     _errors.append(a);
+        // }
+    }
+
 
     bool hasError() const{
         if(!_fileError.isEmpty()) return true;
@@ -45,10 +61,17 @@ struct FileContextSnapshot {
         if(_totalLines!=_readlines) return true;
         return false;
     }
+
+
 };
 
 class FileContextCollector {
 public:
+    struct ErrorAggregate {
+        int count = 0;
+        QVector<int> lines;
+    };
+
     // Singleton elérés
     static FileContextCollector& instance();
 
@@ -71,6 +94,7 @@ public:
     // Opcionális: pillanatkép a begyűjtött kontextusokról
     //QVector<CsvImporter::FileContext> snapshot() const;
 
+    void logSummary_simple() const;
 private:
     FileContextCollector() = default;
     ~FileContextCollector() = default;
