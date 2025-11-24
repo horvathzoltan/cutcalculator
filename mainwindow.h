@@ -22,5 +22,8 @@ private:
     Ui::MainWindow *ui;
     LogViewAdapter* _logAdapter = nullptr;   // pointer
     void initEventLogWidget();
+    void closeEvent(QCloseEvent *event) override;
+
+    bool event(QEvent *e) override;
 };
 #endif // MAINWINDOW_H

@@ -64,6 +64,7 @@ HEADERS += \
     common/utils/filehelper.h \
     common/utils/filename_helper.h \
     common/utils/project_root_locator.h \
+    common/utils/qt_event_util.h \
     mainwindow.h \
     materials/model/crosssectionshape.h \
     materials/model/cutting_mode.h \

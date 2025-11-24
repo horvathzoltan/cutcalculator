@@ -5,6 +5,26 @@
 
 #include "common/logger/logger.h"
 
+/**
+ * @class SettingsStore
+ * @brief Vékony wrapper a QSettings köré, késleltetett inicializálással.
+ *
+ * Felelősség:
+ * - A nyers QSettings példány kezelését végzi (init, value, setValue, sync).
+ * - Késleltetett inicializálás: csak akkor hozza létre a QSettings objektumot,
+ *   ha ténylegesen létező és érvényes settings.ini fájl elérhető.
+ * - Auditbarát hibakezelést biztosít: ha a fájl hiányzik vagy újrainicializálás
+ *   történne, explicit logbejegyzést ír.
+ *
+ * Használat:
+ * - A SettingsManager hívja meg az init(path) metódust a megfelelő settings.ini fájlra.
+ * - A felsőbb rétegek nem közvetlenül a QSettings-et használják, hanem ezen a rétegen keresztül.
+ *
+ * Előnyök:
+ * - Tesztelhetőség: könnyen mockolható/stubolható.
+ * - Jövőbeli bővíthetőség: ha más storage backendre váltanánk (JSON, DB, titkosított fájl),
+ *   csak ezt az osztályt kell átírni.
+ */
 class SettingsStore {
 public:
     explicit SettingsStore(){}
@@ -49,22 +69,53 @@ public:
         return _settings != nullptr;
     }
 
+    void setValue_persistent(const QString& key, const QString& value);
+    void setValue_persistent(const QString &key, const QByteArray &value);
+
 private:
     std::unique_ptr<QSettings> _settings = nullptr;;
 };
 
+
+/**
+ * @class SettingsManager
+ * @brief Magasabb szintű API a beállításokhoz, konkrét kulcsokkal és logikával.
+ *
+ * Felelősség:
+ * - A SettingsStore rétegen keresztül kezeli a QSettings-et.
+ * - Magas szintű getter/setter metódusokat ad a konkrét kulcsokhoz:
+ *   pl. windowGeometry(), setCuttingPlanFileName(), currentTabIndex().
+ * - Késleltetett inicializálás: a konstruktorban ellenőrzi és előkészíti a settings.ini fájlt
+ *   (másolás testdata-ból, audit log, hibakezelés).
+ * - Teszt mód detektálása: parancssori argumentumok vagy ini kulcs alapján.
+ *
+ * Használat:
+ * - Singletonként érhető el: SettingsManager::instance().
+ * - A GUI komponensek (MainWindow, táblák) ezen keresztül mentik és állítják vissza
+ *   az állapotukat.
+ *
+ * Előnyök:
+ * - Egységes API: a felsőbb rétegek nem kulcsokat és QSettings-et használnak,
+ *   hanem típusbiztos metódusokat.
+ * - Auditbarát: minden inicializálási és hibakezelési lépés explicit logolva van.
+ * - Későbbi bővíthetőség: új kulcsokhoz csak új getter/setter metódust kell adni.
+ */
 
 class SettingsManager {
     struct Keys {
         static inline const auto DataPath            = "datapath";
         static inline const auto CuttingPlanFileName = "cutting_plan_file_name";
         static inline const auto WindowGeometry      = "window_geometry";
+        static inline const auto MainSplitterState      = "main_splitter_state";
+        static inline const auto CurrentTabIndex      = "current_tab_index";
     };
 
 public:
     static SettingsManager& instance();
 
     void detectTestMode(int argc, char* argv[]);
+
+    void save(){_store.sync();}
 
     QString testProfile() const { return _testProfile; }
 
@@ -79,7 +130,7 @@ public:
     }
 
     void setDataPath(const QString& path) {
-        persist(Keys::DataPath, path);
+        _store.setValue_persistent(Keys::DataPath, path);
     }
 
     //CuttingPlanFileName
@@ -89,7 +140,7 @@ public:
 
     void setCuttingPlanFileName(const QString& fn) {
         //_cuttingPlan_FileName = fn;
-        persist(Keys::CuttingPlanFileName, fn);
+        _store.setValue_persistent(Keys::CuttingPlanFileName, fn);
     }
 
     // ablakméret
@@ -101,13 +152,28 @@ public:
         return _store.value(Keys::WindowGeometry).toByteArray();
     }
 
+    // Splitter state
+    void setMainSplitterState(const QByteArray& state) {
+        _store.setValue(Keys::MainSplitterState, state);
+    }
+
+    QByteArray mainSplitterState() const {
+        return _store.value(Keys::MainSplitterState).toByteArray();
+    }
+
+    // Current tab
+    void setCurrentTabIndex(int i) {
+        _store.setValue(Keys::CurrentTabIndex, i);
+    }
+
+    int currentTabIndex() const {
+        return _store.value(Keys::CurrentTabIndex).toInt();
+    }
+
 private:
     SettingsManager();
 
     SettingsStore _store;
     QString _testProfile = "none";
-
-    void persist(const QString& key, const QString& value);
-    void persist(const QString &key, const QByteArray &value);
 };
 

@@ -59,14 +59,14 @@ void  SettingsManager::detectTestMode(int argc, char* argv[]) {
     return;
 }
 
-/*persist*/
+/*setValue_persistent*/
 
-void SettingsManager::persist(const QString &key, const QString &value) {
-    _store.setValue(key, value);
-    _store.sync();
+void SettingsStore::setValue_persistent(const QString &key, const QString &value) {
+    setValue(key, value);
+    sync();
 }
 
-void SettingsManager::persist(const QString& key, const QByteArray& value) {
-    _store.setValue(key, value);
-    _store.sync();
+void SettingsStore::setValue_persistent(const QString& key, const QByteArray& value) {
+    setValue(key, value);
+    sync();
 }
