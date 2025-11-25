@@ -29,10 +29,12 @@ SOURCES += \
     common/utils/project_root_locator.cpp \
     main.cpp \
     mainwindow.cpp \
+    materials/view/material_table_widget.cpp \
     materials/model/crosssectionshape.cpp \
     materials/model/material_type.cpp \
     materials/registry/material_registry.cpp \
     materials/repository/material_repository.cpp \
+    materials/view/material_table_manager.cpp \
     test/test_manager.cpp \
     ui/adapters/log_view_adapter.cpp
 
@@ -66,6 +68,7 @@ HEADERS += \
     common/utils/project_root_locator.h \
     common/utils/qt_event_util.h \
     mainwindow.h \
+    materials/view/material_table_widget.h \
     materials/model/crosssectionshape.h \
     materials/model/cutting_mode.h \
     materials/model/material_master.h \
@@ -73,6 +76,7 @@ HEADERS += \
     materials/model/painting_mode.h \
     materials/registry/material_registry.h \
     materials/repository/material_repository.h \
+    materials/view/material_table_manager.h \
     test/eventlogger_tests.h \
     test/test_manager.h \
     ui/adapters/log_view_adapter.h
@@ -87,6 +91,7 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 
 DISTFILES += \
     README.md \
+    run.txt \
     run_2.txt \
     run_3.txt \
     testdata/settings.ini

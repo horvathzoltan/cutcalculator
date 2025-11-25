@@ -1,0 +1,84 @@
+mi ✅ elkészült,
+
+mi 🚧 folyamatban,
+
+mi ⚠️ függőség / részben kész,
+
+és mi ➕ új ötletként került be.
+
+📊 Állapottábla – frissített jelölésekkel
+Modul / Feladat	Állapot	Megjegyzés
+MaterialMaster törzs	✅ Kész	Alapmodell megvan, CSV‑ből beolvasás is implementálva (MaterialRepository).
+CrossSectionShape	✅ Kész	Átvéve, működik (materials/model alatt).
+NamedColor (core)	✅ Kész	Átvéve, importer külön modulba szétválasztás folyamatban.
+CsvReader utility	⚠️ Függőség	Szétválasztás után csak az importernek kell.
+FileNameHelper	⚠️ Részben kész	_binaryPath bootstrap, settings/testdata fallback tisztázás kell.
+Settings.ini kezelés	🚧 Tervezés alatt	Bináris mellől olvasás + testdata fallback.
+Testdata mappa	✅ Kész	(/home/zoli/CutData), integráció a FileNameHelper‑be.
+OrderManager (megrendelések)	🚧 Specifikáció kész	Implementáció még nincs.
+CutCalculator (szükséglet)	🚧 Specifikáció kész	need_calculator modul indulás előtt.
+UI réteg (Qt)	🚧 Tervezés	Material list viewer már készül, további: Product tree, Order entry, Needs preview.
+Audit funkció	🚧 Tervezés	Audit trail + log view, DataStateReporter ötlet ➕.
+🛠️ Implementációs terv – kiegészítve
+FileNameHelper tisztázása
+Kötelező setBinaryPath(argv0) a main‑ben.
+
+getSettingsFilePath(bool forWrite) → bináris mellől olvasás, testdata fallback.
+
+Dokumentálni a keresési sorrendet. Állapot: ⚠️ részben kész.
+
+NamedColor szétválasztás
+Core osztály marad tisztán.
+
+Új RalImporter modul, ami CSV‑ből tölti a mapet.
+
+Így a core nem függ a CsvReader‑től. Állapot: 🚧 folyamatban.
+
+MaterialMaster beolvasás
+MaterialImporter osztály → materials.csv betöltése.
+
+Auditálható hibakezelés (RowError, FileContext). Állapot: ✅ kész (MaterialRepository implementálva).
+
+ProductDefinition globális táblázat
+Hierarchikus struktúra (Roletta → Rugós → Tetőtéri).
+
+Levonási szabályok + szerelékek táblázatos formában.
+
+Verziózás: új szabályok új rendelésekhez. Állapot: 🚧 tervezés alatt. Új ötlet: ➕ globális táblázat, nem per‑termék fájl.
+
+OrderManager implementáció
+OrderHeader + OrderLine modellek.
+
+Autocomplete ügyfél + szín.
+
+Export CSV/JSON a CutCalculator számára. Állapot: 🚧 specifikáció kész.
+
+CutCalculator (need_calculator)
+Számítási logika: méret − levonás, darabszám × fix mennyiség.
+
+Aggregálás: azonos ügyfél + termék + szín.
+
+Audit jelzés, ha hiányzik szabály. Állapot: 🚧 specifikáció kész. Új ötlet: ➕ real‑time preview a UI‑ban.
+
+UI réteg (Qt)
+Material list view → ✅ készül.
+
+Product tree + need table → 🚧 tervezés.
+
+Order entry dialog (autocomplete, auto‑increment tételszám) → 🚧 tervezés.
+
+Needs preview (real‑time számítás) → 🚧 tervezés.
+
+Audit funkció
+AuditEntry modell.
+
+AuditService naplózza szabályváltozásokat.
+
+AuditLogView jelzi hibákat. Állapot: 🚧 tervezés. Új ötlet: ➕ DataStateReporter (pillanatnyi registry állapot logolása).
+
+🎯 Röviden
+Kész: MaterialMaster, CrossSectionShape, NamedColor (core), MaterialRepository, Testdata mappa.
+
+Folyamatban: FileNameHelper, NamedColor szétválasztás, OrderManager, CutCalculator, UI réteg, Audit funkció.
+
+Új ötletek: globális ProductDefinition táblázat, real‑time preview, DataStateReporter.

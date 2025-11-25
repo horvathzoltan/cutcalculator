@@ -12,3 +12,9 @@ a táblázat, a 🚀 Sprint fókusz (🔥 SOS pontokkal), a 📌 Mai eredmények
 ThinkDeep: kérem a FileContextCollector éles implementációját, kommentelve, dockommentelve,
 javaslatot a fájl nevére, helyére, és integrációjára a jelenlegi programban.
 milyen fájlokra van ehhez szüséged?
+
+
+amit át kellene nézni, és ami elkészült, meg kéne jelölni, ami még nem, de belefogtunk, azt is,
+és amit pluszban kiagyaltunk, azt meg főleg hogy! de most ezúttal ne kitörölj pontokat, hanem csak jelöljük készre!
+
+de! van kétféle tervünk ha jól emlékszek! azt is csak kiegészítve dolgozd át, légyszíves!
