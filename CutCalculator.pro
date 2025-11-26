@@ -35,6 +35,9 @@ SOURCES += \
     materials/registry/material_registry.cpp \
     materials/repository/material_repository.cpp \
     materials/view/material_table_manager.cpp \
+    products/registry/product_registry.cpp \
+    products/repository/product_repository.cpp \
+    products/view/product_tree_manager.cpp \
     test/test_manager.cpp \
     ui/adapters/log_view_adapter.cpp
 
@@ -77,6 +80,10 @@ HEADERS += \
     materials/registry/material_registry.h \
     materials/repository/material_repository.h \
     materials/view/material_table_manager.h \
+    products/model/product_definition.h \
+    products/registry/product_registry.h \
+    products/repository/product_repository.h \
+    products/view/product_tree_manager.h \
     test/eventlogger_tests.h \
     test/test_manager.h \
     ui/adapters/log_view_adapter.h
@@ -94,4 +101,5 @@ DISTFILES += \
     run.txt \
     run_2.txt \
     run_3.txt \
+    testdata/products.csv \
     testdata/settings.ini

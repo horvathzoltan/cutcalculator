@@ -11,6 +11,10 @@
 #include "materials/repository/material_repository.h"
 #include "materials/registry/material_registry.h"
 
+#include "products/repository/product_repository.h"
+#include "products/registry/product_registry.h"
+#include "products/view/product_tree_manager.h"
+
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
@@ -37,11 +41,11 @@ MainWindow::MainWindow(QWidget *parent)
         ui->tabWidget->setCurrentIndex(savedTab);
     }
 
-    // 1) Anyagok betöltése registry-be (CSV)
-    loadMaterials();
+    loadMaterials(); // 1) Anyagok betöltése registry-be (CSV)
+    initMaterialsTab(); // 2) Viewer fül inicializálása és feltöltése
 
-    // 2) Viewer fül inicializálása és feltöltése
-    initMaterialsTab();
+    loadProductDefinitions();     // 1) Betöltés a registry-be
+    initProductTypesTab();     // 2) Tab + fa felépítése
 
     zEvent("✅ MainWindow inited");
 }
@@ -124,4 +128,36 @@ void MainWindow::initMaterialsTab() {
 
     // Töltés (registry → table)
     _materialsManager->populateAll();
+}
+
+/*products*/
+
+void MainWindow::loadProductDefinitions() {
+    const QString csvPath = "testdata/products.csv"; // FileNameHelper-be később integrálható
+    auto defs = ProductRepository::loadFromCSV(csvPath);
+    ProductRegistry::instance().setData(defs);
+    zInfo(QString("📊 ProductRegistry: %1 terméktípus tárolva").arg(defs.size()));
+}
+
+void MainWindow::initProductTypesTab() {
+    // Új tab programból
+    QWidget* productTab = new QWidget(ui->tabWidget);
+    productTab->setObjectName("productTypesTab");
+    ui->tabWidget->addTab(productTab, tr("Product Types"));
+
+    auto* layout = new QVBoxLayout(productTab);
+    auto* splitter = new QSplitter(Qt::Horizontal, productTab);
+    layout->addWidget(splitter);
+
+    // Bal oldal: fa
+    _productTreeView = new QTreeView(splitter);
+    splitter->addWidget(_productTreeView);
+
+    // Jobb oldal: placeholder (később CalculationRule table)
+    auto* rightPlaceholder = new QWidget(splitter);
+    splitter->addWidget(rightPlaceholder);
+
+    // Manager: feltölti a fát
+    _productTreeManager = new ProductTreeManager(_productTreeView, this);
+    _productTreeManager->populate();
 }
