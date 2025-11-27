@@ -1,0 +1,52 @@
+# 🛠️ Implementációs terv – Anyagszükséglet számítás
+
+1. **Adatmodellek**
+   - `materials/model/material_master.h/.cpp`
+   - `products/model/product_definition.h/.cpp`
+   - `orders/model/order_header.h/.cpp`, `order_line.h/.cpp`
+   - `calculation/model/need_result.h/.cpp`
+
+2. **Repository réteg**
+   - `materials/repository/material_repository.h/.cpp` → háromfázisú import (Convert → Build → Assemble).
+   - `products/repository/product_repository.h/.cpp` → háromfázisú import, globális ProductDefinition táblázat.
+   - `orders/repository/order_repository.h/.cpp` → rendelés import/export CSV/JSON.
+
+3. **Service réteg**
+   - `calculation/service/need_calculator.h/.cpp`
+     - Input: OrderLine + ProductDefinition.
+     - Output: NeedResult (anyaglista).
+     - Logika: levonások, fix darabok, aggregálás.
+     - Audit: jelzés hiányzó szabály esetén.
+   - `orders/service/order_service.h/.cpp`
+     - Státuszkezelés (New, InProgress, Cut, Assembled, Delivered).
+     - Export funkció CSV/JSON.
+
+4. **Presenter réteg**
+   - `materials/presenter/material_presenter.h/.cpp`
+   - `products/presenter/product_presenter.h/.cpp`
+   - `orders/presenter/order_presenter.h/.cpp`
+   - `calculation/presenter/needs_presenter.h/.cpp`
+
+5. **View réteg (Qt UI)**
+   - `materials/view/material_list_view.h/.cpp`
+   - `products/view/product_tree_view.h/.cpp` + `product_need_table.h/.cpp`
+   - `orders/view/order_dialog.h/.cpp` (autocomplete ügyfél + szín, auto‑increment tételszám).
+   - `calculation/view/needs_view.h/.cpp` (real‑time preview).
+   - `audit/view/audit_log_view.h/.cpp`.
+
+6. **Audit funkció**
+   - `audit/model/audit_entry.h/.cpp`
+   - `audit/service/audit_service.h/.cpp`
+   - `audit/view/audit_log_view.h/.cpp`
+   - Új ötlet: DataStateReporter → pillanatnyi registry állapot logolása.
+
+7. **Tesztadatok**
+   - `testdata/materials.csv`
+   - `testdata/products.csv`
+   - `testdata/orders.csv`
+
+8. **Integráció**
+   - `main.cpp`
+   - `FileNameHelper::setBinaryPath(argv[0])`.
+   - Registryk inicializálása (Material, Product, Order).
+   - UI tabok létrehozása: Anyagtörzs, Terméktípusok, Megrendelések, Szükséglet preview, Audit log.

@@ -59,3 +59,31 @@ Tervezés alatt / jövőbeli: OrderManager, CustomerMaster, CutCalculator, Needs
 ## ➕ Új ötlet
 - Real‑time preview (anyagszükséglet azonnali számítása a UI‑ban)
 - DataStateReporter (pillanatnyi registry állapot logolása)
+
+***
+
+Prioritási sorrend – fókuszpont lista
+
+1. FileNameHelper + Settings fallback tisztázása
+   - Kötelező setBinaryPath(argv0) a main-ben
+   - Keresési sorrend dokumentálása (bináris mellől → settings.ini → testdata)
+
+2. OrderManager implementáció
+   - OrderHeader + OrderLine modellek
+   - Ügyfél autocomplete, tételszám auto-increment
+   - Export CSV/JSON → alapadat a számításhoz
+
+3. CutCalculator (need_calculator) + Needs preview
+   - Számítási logika: levonások, fix darabok
+   - Aggregálás: azonos ügyfél + termék + szín
+   - Real-time preview a UI-ban
+
+4. Audit funkció bevezetése
+   - AuditEntry modell, AuditService, AuditLogView
+   - DataStateReporter → pillanatnyi registry állapot logolása
+
+5. Kényelmi funkciók és finomhangolás
+   - CustomerMaster (ügyféltörzs)
+   - Szűrés/keresés a rendelések között
+   - Export bővítések (Excel, PDF)
+   - UI polishing (színkocka, handlerSide toggle)
