@@ -101,5 +101,6 @@ DISTFILES += \
     run.txt \
     run_2.txt \
     run_3.txt \
+    run_4.txt \
     testdata/products.csv \
     testdata/settings.ini

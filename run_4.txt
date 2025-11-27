@@ -1,0 +1,84 @@
+📘 Fejlesztői dokumentáció – Three Phase Import minta
+🎯 Cél
+A CSV‑ből történő adatbetöltést három jól elkülönített fázisban végezzük, hogy az átalakítási folyamat átlátható, auditálható és modulárisan tesztelhető legyen.
+
+🔁 Fázisok
+Convert Phase
+
+Nyers CSV sor → típusos Row struktúra.
+
+Feladata: a sor mezőinek feldarabolása, alap validáció (mezők száma, üres mezők).
+
+Példa: ProductRow, MaterialRow.
+
+Build Phase
+
+Row → domain objektum.
+
+Feladata: a típusos sorból a tényleges domain modell összeállítása, mélyebb validáció (pl. UUID érvényesség, számok konverziója).
+
+Példa: ProductDefinition, MaterialMaster.
+
+Assemble Phase
+
+Domain objektumok → registry vagy összetett struktúra.
+
+Feladata: az objektumok összefésülése, kapcsolatok létrehozása, regisztráció.
+
+Példa: ProductRegistry::setData(), MaterialGroupRegistry::registerGroup().
+
+📦 Előnyök
+Modularitás: minden fázis külön tesztelhető.
+
+Hibatűrés: soronkénti validáció és logolás.
+
+Olvashatóság: világos adatátalakítási lépések.
+
+Skálázhatóság: könnyen alkalmazható más CSV struktúrákra.
+
+🛠️ Implementációs terv
+Row struktúra definiálása
+
+Minden CSV sorhoz külön Row struct.
+
+Csak nyers string mezők, minimális validáció.
+
+Convert függvények
+
+convertRowToXxxRow(const QVector<QString>& parts, FileContext& ctx)
+
+Ellenőrzik a mezők számát, üres mezőket.
+
+Visszaadják a Row structot vagy std::nullopt.
+
+Build függvények
+
+buildXxxFromRow(const XxxRow& row, FileContext& ctx)
+
+Mélyebb validáció (UUID, számok, enum konverzió).
+
+Visszaadják a domain objektumot vagy std::nullopt.
+
+Load függvények
+
+loadXxxRows(FileContext& ctx) → CsvReader::readAndConvert<Row>().
+
+Soronként meghívják a convert függvényt.
+
+Visszaadják a Row listát.
+
+Assemble logika
+
+A Row listákból domain objektumokat építünk.
+
+Kapcsolatokat hozunk létre (pl. parent‑child, group‑member).
+
+Regisztráljuk a registrybe.
+
+Entry point
+
+Repository::loadFromCsv(Registry&)
+
+Összefűzi a fázisokat: load → build → assemble → registry.
+
+Auditálja a hibákat.

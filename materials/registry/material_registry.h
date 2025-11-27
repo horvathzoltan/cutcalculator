@@ -29,4 +29,5 @@ public:
 
     bool isEmpty() const { return _data.isEmpty(); }
 
+    int size() const { return _data.size(); }
 };

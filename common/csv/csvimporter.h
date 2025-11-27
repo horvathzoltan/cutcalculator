@@ -9,7 +9,6 @@
 #include <QTextStream>
 #include "common/utils/filehelper.h"
 #include "common/logger/logger.h"
-//#include "filecontext_collector.h"
 #include "common/csv/filecontext.h"
 
 namespace CsvImporter{
@@ -67,5 +66,26 @@ static QVector<T> readAndConvert(CsvImporter::FileContext& ctx,
     }
 
     return result;
+}
+
+/**
+ * Általános helper: Row → Domain objektum lista
+ * - rows: a konvertált sorok
+ * - buildFn: sorból domain objektumot építő függvény
+ * - ctx: audit context
+ */
+template<typename Row, typename Domain>
+QVector<Domain> buildAll(const QVector<Row>& rows,
+                         std::function<std::optional<Domain>(const Row&, FileContext&)> buildFn,
+                         FileContext& ctx) {
+    QVector<Domain> out;
+    for (int i = 0; i < rows.size(); ++i) {
+        ctx.setCurrentLineNumber(i + 1);
+        auto objOpt = buildFn(rows[i], ctx);
+        if (objOpt.has_value()) {
+            out.append(objOpt.value());
+        }
+    }
+    return out;
 }
 }

@@ -27,4 +27,6 @@ public:
      * Gyökér elemek (parentId == null).
      */
     QVector<ProductDefinition> roots() const;
+
+    int size () const { return _data.size(); }
 };

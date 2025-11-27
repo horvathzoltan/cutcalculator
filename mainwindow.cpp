@@ -133,10 +133,13 @@ void MainWindow::initMaterialsTab() {
 /*products*/
 
 void MainWindow::loadProductDefinitions() {
-    const QString csvPath = "testdata/products.csv"; // FileNameHelper-be később integrálható
-    auto defs = ProductRepository::loadFromCSV(csvPath);
-    ProductRegistry::instance().setData(defs);
-    zInfo(QString("📊 ProductRegistry: %1 terméktípus tárolva").arg(defs.size()));
+    bool loaded = ProductRepository::loadFromCSV(ProductRegistry::instance());
+    if(loaded){
+        zInfo(QString("📊 ProductRegistry: %1 terméktípus tárolva").arg(ProductRegistry::instance().size()));
+    }
+    else{
+        zInfo("⚠️ ProductRegistry: terméktípusok betöltése sikertelen");
+    }
 }
 
 void MainWindow::initProductTypesTab() {

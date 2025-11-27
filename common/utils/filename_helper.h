@@ -55,7 +55,7 @@ private:
             bool isEmpty() const { return _rootPath.isEmpty(); }
     };
 
-    RootPathContainer _tdp;
+    RootPathContainer _dataRoot_TEST;
 
     RootPathContainer _dataRoot;
 
@@ -80,7 +80,7 @@ public:
     //QString dataRootPath() const;
 
     bool isTestMode() const { return _isTest; }
-    bool isInitialized() const { return _tdp.isInitialized(); }
+    bool isInitialized() const { return _dataRoot_TEST.isInitialized(); }
 
     // ⚙️ Beállítások
     //void setTestMode(bool v) { _isTest = v; }
@@ -103,4 +103,5 @@ public:
 
     QString getSettingsFilePath(bool forWrite);
     void setBinaryPath(const QString &a);
+    QString getProductCsvFile() const;
 };

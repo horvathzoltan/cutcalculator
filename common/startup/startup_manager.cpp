@@ -23,25 +23,26 @@ StartupStatus StartupManager::runStartupSequence() {
 
 StartupStatus StartupManager::initMaterialRegistry() {
     bool loaded = MaterialRepository::loadFromCSV(MaterialRegistry::instance());
-    if (!loaded){
-        return StartupStatus::failure("❌ Nem sikerült betölteni az anyagtörzset a CSV fájlból.");
+    if (loaded){
+        zInfo(QString("📊 MaterialRegistry: %1 anyag tárolva").arg(MaterialRegistry::instance().size()));
+    } else{
+        return StartupStatus::failure("⚠️ MaterialRegistry: anyagok betöltése sikertelen.");
     }
 
-    const auto& all = MaterialRegistry::instance().readAll();
-
-    if (!hasMinimumMaterials(2)){
-        return StartupStatus::failure(
-            QString("⚠️ Túl kevés anyag található a törzsben (%1 db). Legalább 2 szükséges.")
-                .arg(all.size()));
-    }
+    //const auto& all = MaterialRegistry::instance().readAll();
+    // if (!hasMinimumMaterials(2)){
+    //     return StartupStatus::failure(
+    //         QString("⚠️ Túl kevés anyag található a törzsben (%1 db). Legalább 2 szükséges.")
+    //             .arg(all.size()));
+    // }
 
     return StartupStatus::success();
 }
 
 
-bool StartupManager::hasMinimumMaterials(int minCount) {
-    return MaterialRegistry::instance().readAll().size() >= minCount;
-}
+// bool StartupManager::hasMinimumMaterials(int minCount) {
+//     return MaterialRegistry::instance().readAll().size() >= minCount;
+// }
 
 StartupStatus StartupManager::initRalColors()
 {

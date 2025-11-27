@@ -26,11 +26,11 @@ bool FileNameHelper::init(const char* file) {
 
     switch (outcome.result) {
     case ProjectRootLocator::FoundWithTestdata:
-        _tdp.setRootPath(outcome.testdataPath, SourceFileHeuristic);
+        _dataRoot_TEST.setRootPath(outcome.testdataPath, SourceFileHeuristic);
         return true;
 
     case ProjectRootLocator::FoundWithoutTestdata:
-        _tdp.setRootPath("", SourceFileHeuristic);
+        _dataRoot_TEST.setRootPath("", SourceFileHeuristic);
         return false;
 
     case ProjectRootLocator::NotFound:
@@ -81,8 +81,8 @@ QString FileNameHelper::getSettingsFilePath(bool forWrite) {
 
     if (QFileInfo::exists(binIni)) return binIni;
 
-    if(_tdp.isEmpty()) return "";
-    const QString testIni = _tdp.filePath("settings.ini");
+    if(_dataRoot_TEST.isEmpty()) return "";
+    const QString testIni = _dataRoot_TEST.filePath("settings.ini");
     return testIni;
 }
 
@@ -110,6 +110,17 @@ QString FileNameHelper::getLogFolder() const {
 /* Material */
 QString FileNameHelper::getMaterialCsvFile() const {
     return _dataRoot.filePath("materials.csv");
+}
+
+/* Product */
+QString FileNameHelper::getProductCsvFile() const {
+    QString path = _dataRoot.filePath("products.csv");
+
+    if (!QFile::exists(path)) {
+        // fallback fejlesztéshez
+        path = _dataRoot_TEST.filePath("products.csv");
+    }
+        return path;
 }
 
 /* RAL Colors */
