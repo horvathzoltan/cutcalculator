@@ -23,3 +23,39 @@ Folyamatban / részben kész: Settings, FileNameHelper, CsvReader, RalImporter.
 Tervezés alatt / jövőbeli: OrderManager, CustomerMaster, CutCalculator, NeedsPresenter, UI bővítések, Audit funkció.
 
 Új ötletek: Real‑time preview, DataStateReporter.
+
+
+***
+
+# 📊 Idővonalas roadmap az állapottáblához
+
+## ✅ Elkészült
+- Material pipeline (modell + repo + registry + view)
+- Product pipeline (modell + repo + registry + view)
+- Logger subsystem
+- Startup subsystem
+- Test framework
+
+---
+
+## 🚧 Folyamatban
+- RalImporter modul
+- OrderManager (megrendelések)
+- CustomerMaster (ügyféltörzs)
+- CutCalculator (need_calculator)
+- NeedsPresenter + NeedsView
+- UI réteg (Qt) – Order entry dialog, Needs preview
+- Audit funkció – AuditEntry, AuditService, AuditLogView
+
+---
+
+## ⚠️ Függőség / Részben kész
+- Settings subsystem (SettingsManager, fallback logika)
+- FileNameHelper (binaryPath bootstrap, testdata fallback)
+- CsvReader utility (szétválasztás után csak importernek kell)
+
+---
+
+## ➕ Új ötlet
+- Real‑time preview (anyagszükséglet azonnali számítása a UI‑ban)
+- DataStateReporter (pillanatnyi registry állapot logolása)

@@ -1,0 +1,68 @@
+📘 Követelményspecifikáció – Anyagszükséglet számítás
+🎯 Cél
+A rendszer feladata, hogy a megrendelésekből kiszámolja a gyártáshoz szükséges anyagokat (vágási méretek és szerelési darabok), a ProductDefinition szabályok alapján. Az eredmény egy auditálható, aggregált gyártási lista.
+
+🧩 Követelmények
+Adatmodellek
+MaterialMaster (globális törzs)
+
+Minden alapanyag (tengely, pálca, szövet, rugó, szerelék).
+
+Mezők: méret, szín, típus, súly, gép, RAL/HEX színkód.
+
+ProductDefinition (globális táblázat)
+
+Minden terméktípushoz levonási szabályok és szerelékek.
+
+Példa: Tetőtéri rugós roletta → tengely -15 mm, pálca -10 mm, 2 db rugó.
+
+Verziózás: új szabályok új rendelésekhez, régiek auditban megmaradnak.
+
+Order (megrendelés)
+
+OrderHeader: tételszám, megrendelő neve, dátum, státusz.
+
+OrderLine: termék kód, méret, darabszám, szín, handlerSide.
+
+Számítási logika
+Méretre vágott elemek: szélesség − levonás.
+
+Fix darabos elemek: darabszám × fix mennyiség.
+
+Aggregálás: azonos ügyfél + azonos termék + azonos szín → összevonás.
+
+Audit: jelzés, ha hiányzik szabály vagy anyag.
+
+UI követelmények
+Order entry UI
+
+Megrendelő neve → autocomplete.
+
+Tételszám → automatikusan növekvő.
+
+Termék kód → dropdown a ProductDefinition táblából.
+
+Méret + darabszám → kötelező mezők, validációval.
+
+Szín → autocomplete + színkocka.
+
+HandlerSide → bal/jobb választó.
+
+Dátum → automatikusan kitöltődik, módosítható.
+
+Anyagszükséglet lista (preview)
+
+Real‑time számítás: azonnal látszik, milyen anyag kell.
+
+Aggregálás: összevonás azonos ügyfél + termék + szín esetén.
+
+Audit jelzés: ha hiányzik szabály, figyelmeztet.
+
+Export: CSV/Excel gyártási lista.
+
+Extra kényelmi funkciók
+Megrendelő emlékezet: több termék esetén automatikusan kitölti a nevet és színt.
+
+Szűrés és keresés: gyors keresés a felvitt tételek között.
+
+Export: teljes anyagszükséglet lista kimenthető.

@@ -100,7 +100,8 @@ DISTFILES += \
     README.md \
     run.txt \
     run_2.txt \
-    run_3.txt \
+    run_3_1.txt \
+    run_3_2.txt \
     run_4.txt \
     testdata/products.csv \
     testdata/settings.ini
