@@ -1,222 +1,25 @@
-mi ✅ elkészült,
-
-mi 🚧 folyamatban,
-
-mi ⚠️ függőség / részben kész,
-
-és mi ➕ új ötletként került be.
-
-📊 Állapottábla – frissített jelölésekkel
+📊 Összevont állapottábla – aktuális + jövőbeli
 Modul / Feladat	Állapot	Megjegyzés
-MaterialMaster törzs	✅ Kész	Alapmodell megvan, CSV‑ből beolvasás is implementálva (MaterialRepository).
-CrossSectionShape	✅ Kész	Átvéve, működik (materials/model alatt).
-NamedColor (core)	✅ Kész	Átvéve, importer külön modulba szétválasztás folyamatban.
-CsvReader utility	⚠️ Függőség	Szétválasztás után csak az importernek kell.
+Material pipeline (modell + repo + registry + view)	✅ Kész	MaterialMaster, CrossSectionShape, MaterialType, CuttingMode, PaintingMode, MaterialRepository háromfázisú, MaterialRegistry, MaterialTableView.
+Product pipeline (modell + repo + registry + view)	✅ Kész	ProductDefinition, ProductRepository háromfázisú, ProductRegistry, ProductTreeManager – fa megjelenítés tesztadatokkal.
+Logger subsystem	✅ Kész	EventLogger, LogManager, LogViewAdapter – auditálható logolás.
+Startup subsystem	✅ Kész	StartupManager, StartupStatusManager, LifecycleManager, WindowObserver – inicializáció és életciklus kezelés.
+Settings subsystem	⚠️ Részben kész	SettingsManager implementálva, de fallback logika (bináris mellől + testdata) hiányzik.
 FileNameHelper	⚠️ Részben kész	_binaryPath bootstrap, settings/testdata fallback tisztázás kell.
-Settings.ini kezelés	🚧 Tervezés alatt	Bináris mellől olvasás + testdata fallback.
-Testdata mappa	✅ Kész	(/home/zoli/CutData), integráció a FileNameHelper‑be.
-OrderManager (megrendelések)	🚧 Specifikáció kész	Implementáció még nincs.
-CutCalculator (szükséglet)	🚧 Specifikáció kész	need_calculator modul indulás előtt.
-UI réteg (Qt)	🚧 Tervezés	Material list viewer már készül, további: Product tree, Order entry, Needs preview.
-Audit funkció	🚧 Tervezés	Audit trail + log view, DataStateReporter ötlet ➕.
-🛠️ Implementációs terv – kiegészítve
-FileNameHelper tisztázása
-Kötelező setBinaryPath(argv0) a main‑ben.
-
-getSettingsFilePath(bool forWrite) → bináris mellől olvasás, testdata fallback.
-
-Dokumentálni a keresési sorrendet. Állapot: ⚠️ részben kész.
-
-NamedColor szétválasztás
-Core osztály marad tisztán.
-
-Új RalImporter modul, ami CSV‑ből tölti a mapet.
-
-Így a core nem függ a CsvReader‑től. Állapot: 🚧 folyamatban.
-
-MaterialMaster beolvasás
-MaterialImporter osztály → materials.csv betöltése.
-
-Auditálható hibakezelés (RowError, FileContext). Állapot: ✅ kész (MaterialRepository implementálva).
-
-ProductDefinition globális táblázat
-Hierarchikus struktúra (Roletta → Rugós → Tetőtéri).
-
-Levonási szabályok + szerelékek táblázatos formában.
-
-Verziózás: új szabályok új rendelésekhez. Állapot: 🚧 tervezés alatt. Új ötlet: ➕ globális táblázat, nem per‑termék fájl.
-
-OrderManager implementáció
-OrderHeader + OrderLine modellek.
-
-Autocomplete ügyfél + szín.
-
-Export CSV/JSON a CutCalculator számára. Állapot: 🚧 specifikáció kész.
-
-CutCalculator (need_calculator)
-Számítási logika: méret − levonás, darabszám × fix mennyiség.
-
-Aggregálás: azonos ügyfél + termék + szín.
-
-Audit jelzés, ha hiányzik szabály. Állapot: 🚧 specifikáció kész. Új ötlet: ➕ real‑time preview a UI‑ban.
-
-UI réteg (Qt)
-Material list view → ✅ készül.
-
-Product tree + need table → 🚧 tervezés.
-
-Order entry dialog (autocomplete, auto‑increment tételszám) → 🚧 tervezés.
-
-Needs preview (real‑time számítás) → 🚧 tervezés.
-
-Audit funkció
-AuditEntry modell.
-
-AuditService naplózza szabályváltozásokat.
-
-AuditLogView jelzi hibákat. Állapot: 🚧 tervezés. Új ötlet: ➕ DataStateReporter (pillanatnyi registry állapot logolása).
-
+CsvReader utility	⚠️ Függőség	Szétválasztás után csak az importernek kell.
+RalImporter modul	🚧 Folyamatban	Új modul, ami CSV‑ből tölti a színmapet.
+OrderManager (megrendelések)	🚧 Specifikáció	OrderHeader + OrderLine modellek, státuszkezelés, export CSV/JSON.
+CustomerMaster	🚧 Tervezés	Ügyféltörzs, autocomplete ügyfélnév.
+CutCalculator (need_calculator)	🚧 Specifikáció	Számítási logika (levonások, fix darabok), aggregálás, audit jelzés. ➕ Real‑time preview ötlet.
+NeedsPresenter + NeedsView	🚧 Tervezés	Real‑time anyagszükséglet preview a UI‑ban.
+UI réteg (Qt)	🚧 Tervezés	MainWindow + Material/Product tabok ✅, Order entry dialog 🚧, Needs preview 🚧.
+Audit funkció	🚧 Tervezés	AuditEntry modell, AuditService, AuditLogView. ➕ DataStateReporter ötlet.
+Test framework	✅ Kész	TestManager, EventLogger tests.
 🎯 Röviden
-Kész: MaterialMaster, CrossSectionShape, NamedColor (core), MaterialRepository, Testdata mappa.
+Kész modulcsomagok: Material pipeline, Product pipeline, Logger, Startup, Test framework.
 
-Folyamatban: FileNameHelper, NamedColor szétválasztás, OrderManager, CutCalculator, UI réteg, Audit funkció.
+Folyamatban / részben kész: Settings, FileNameHelper, CsvReader, RalImporter.
 
-Új ötletek: globális ProductDefinition táblázat, real‑time preview, DataStateReporter.
-***
+Tervezés alatt / jövőbeli: OrderManager, CustomerMaster, CutCalculator, NeedsPresenter, UI bővítések, Audit funkció.
 
-📐 Implementációs terv – Terméktípus fa
-1. UI alapok – splitter és tab
-Feladat: A fő UI‑ban (MainWindow) hozz létre egy új tabot: „Terméktípusok”.
-
-Megoldás:
-
-A tab tartalmát oszd meg egy QSplitter‑rel (bal/jobb).
-
-Bal oldal: QTreeView a terméktípus hierarchiának.
-
-Jobb oldal: később jön a számítási módok táblázata.
-
-Állapot: induláskor csak a fa kell, a jobb oldal lehet üres placeholder.
-
-2. Modell – ProductDefinition
-Feladat: Definiálni a terméktípus entitást.
-
-Megoldás:
-
-ProductDefinition osztály, ami örököl a HierarchicalEntity‑ből.
-
-Tartalmazza a rules listát (CalculationRule), de első körben elég csak a hierarchia (név, parentId).
-
-Állapot: első menetben csak fa struktúra, számítási módok később.
-
-3. Repository – ProductRepository
-Feladat: Betölteni a terméktípusokat CSV‑ből.
-
-Megoldás:
-
-ProductRepository::loadFromCSV() → QVector<ProductDefinition>.
-
-CSV mezők: id, parentId, name, barcode.
-
-Auditálható hibakezelés (FileContext, RowError).
-
-Állapot: nagy menet, de a MaterialRepository mintájára megírható.
-
-4. Registry – ProductRegistry
-Feladat: Singleton, ami tárolja a betöltött terméktípusokat.
-
-Megoldás:
-
-ProductRegistry osztály, belső QVector<ProductDefinition>.
-
-Metódusok: setData(), readAll(), findById(), findChildren(parentId).
-
-Állapot: a fa megjelenítéshez kell, hogy a modellekből lehessen hierarchiát építeni.
-
-5. Model → UI adapter
-Feladat: A QTreeView‑hoz kell egy QStandardItemModel vagy saját QAbstractItemModel.
-
-Megoldás:
-
-Első körben QStandardItemModel elég.
-
-A registryből beolvasott ProductDefinition elemekből építjük fel a fát.
-
-Gyökér: isRoot() == true, gyerekek: parentId alapján.
-
-Állapot: így a fa bal oldalon megjelenik.
-
-6. Tesztadatok
-Feladat: Készíteni egy products.csv fájlt a testdata mappába.
-
-Formátum példa:
-
-Kód
-id,parentId,name,barcode
-1,,Roletta,ROL
-2,1,Rugós,RUG
-3,2,Tetőtéri,TET
-4,2,Normál,NOR
-5,1,Motoros,MOT
-6,,Sávroló,SAV
-7,6,Rugós,SAVRUG
-8,6,Motoros,SAVMOT
-Állapot: ezzel lehet tesztelni a fa megjelenítést.
-
-7. UI szerkesztés (második nagy menet)
-Feladat: A jobb oldali panelen szerkesztőfelület a számítási módokhoz.
-
-Megoldás:
-
-QTableView a CalculationRule listához.
-
-Dialógus új szabály felvitelére (mérési alap, levonások, fix darabok).
-
-Állapot: később, ha a fa már stabilan működik.
-
-8. Audit és log
-Feladat: Logolni, hogy hány terméktípus töltődött be.
-
-Megoldás:
-
-zInfo(QString("📊 %1 terméktípus betöltve a products.csv-ből").arg(loaded.size()));
-
-Állapot: így átlátható, mennyi adat van a fában.
-
-🚀 Röviden
-Tab + splitter → bal oldali fa.
-
-ProductDefinition modell.
-
-ProductRepository CSV beolvasó.
-
-ProductRegistry singleton.
-
-QTreeView adapter.
-
-Tesztadatok (products.csv).
-
-Jobb oldali szerkesztő UI (második menet).
-
-Audit log.
-
-👉 Első fókusz: 1–6 lépés → legyen egy működő fa a bal oldalon tesztadatokkal. Utána jöhet a szerkesztő UI.
-
-***
-
-Fájlok és elhelyezés
-products/model/product_definition.h
-
-products/repository/product_repository.h
-
-products/repository/product_repository.cpp
-
-products/registry/product_registry.h
-
-products/registry/product_registry.cpp
-
-products/view/product_tree_manager.h
-
-products/view/product_tree_manager.cpp
-
-testdata/products.csv
+Új ötletek: Real‑time preview, DataStateReporter.
