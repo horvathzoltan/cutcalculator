@@ -1,89 +1,103 @@
 📊 Összevont állapottábla – aktuális + jövőbeli
 Modul / Feladat	Állapot	Megjegyzés
-Material pipeline (modell + repo + registry + view)	✅ Kész	MaterialMaster, CrossSectionShape, MaterialType, CuttingMode, PaintingMode, MaterialRepository háromfázisú, MaterialRegistry, MaterialTableView.
-Product pipeline (modell + repo + registry + view)	✅ Kész	ProductDefinition, ProductRepository háromfázisú, ProductRegistry, ProductTreeManager – fa megjelenítés tesztadatokkal.
-Logger subsystem	✅ Kész	EventLogger, LogManager, LogViewAdapter – auditálható logolás.
-Startup subsystem	✅ Kész	StartupManager, StartupStatusManager, LifecycleManager, WindowObserver – inicializáció és életciklus kezelés.
-Settings subsystem	⚠️ Részben kész	SettingsManager implementálva, de fallback logika (bináris mellől + testdata) hiányzik.
-FileNameHelper	⚠️ Részben kész	_binaryPath bootstrap, settings/testdata fallback tisztázás kell.
-CsvReader utility	⚠️ Függőség	Szétválasztás után csak az importernek kell.
-RalImporter modul	🚧 Folyamatban	Új modul, ami CSV‑ből tölti a színmapet.
-OrderManager (megrendelések)	🚧 Specifikáció	OrderHeader + OrderLine modellek, státuszkezelés, export CSV/JSON.
-CustomerMaster	🚧 Tervezés	Ügyféltörzs, autocomplete ügyfélnév.
-CutCalculator (need_calculator)	🚧 Specifikáció	Számítási logika (levonások, fix darabok), aggregálás, audit jelzés. ➕ Real‑time preview ötlet.
-NeedsPresenter + NeedsView	🚧 Tervezés	Real‑time anyagszükséglet preview a UI‑ban.
-UI réteg (Qt)	🚧 Tervezés	MainWindow + Material/Product tabok ✅, Order entry dialog 🚧, Needs preview 🚧.
-Audit funkció	🚧 Tervezés	AuditEntry modell, AuditService, AuditLogView. ➕ DataStateReporter ötlet.
-Test framework	✅ Kész	TestManager, EventLogger tests.
+Material pipeline (modell + repo + registry + view)	✅ Kész	MaterialMaster, CrossSectionShape, MaterialType, CuttingMode, PaintingMode, MaterialRepository háromfázisú, MaterialRegistry, MaterialTableView
+Product pipeline (modell + repo + registry + view)	✅ Kész	ProductDefinition, ProductRepository háromfázisú, ProductRegistry, ProductTreeManager – fa megjelenítés tesztadatokkal
+Logger subsystem	✅ Kész	EventLogger, LogManager, LogViewAdapter – auditálható logolás
+Startup subsystem	✅ Kész	StartupManager, StartupStatusManager, LifecycleManager, WindowObserver – inicializáció és életciklus kezelés
+Settings subsystem	✅ Kész	SettingsManager implementálva, fallback logika (bináris mellől + testdata) működik
+FileNameHelper	✅ Kész	_binaryPath bootstrap, settings/testdata fallback tisztázva, teljesen auditálható
+CsvReader utility	⚠️ Függőség	Szétválasztás után csak az importernek kell
+RalImporter modul	🚧 Folyamatban	Új modul, ami CSV‑ből tölti a színmapet; validátorral lesz teljessé
+OrderManager (megrendelések)	🚧 Specifikáció	OrderHeader + OrderLine modellek, státuszkezelés, export CSV/JSON
+CustomerMaster	🚧 Tervezés	Ügyféltörzs, autocomplete ügyfélnév
+CutCalculator (need_calculator)	🚧 Specifikáció	Számítási logika (levonások, fix darabok), aggregálás, audit jelzés. ➕ Real‑time preview ötlet
+NeedsPresenter + NeedsView	🚧 Tervezés	Real‑time anyagszükséglet preview a UI‑ban
+UI réteg (Qt)	🚧 Tervezés	MainWindow + Material/Product tabok ✅, Order entry dialog 🚧, Needs preview 🚧
+Audit funkció	🚧 Tervezés	AuditEntry modell, AuditService, AuditLogView. ➕ DataStateReporter ötlet
+Test framework	✅ Kész	TestManager, EventLogger tests
 🎯 Röviden
-Kész modulcsomagok: Material pipeline, Product pipeline, Logger, Startup, Test framework.
+Kész modulcsomagok: Material pipeline, Product pipeline, Logger, Startup, Settings, FileNameHelper, Test framework.
 
-Folyamatban / részben kész: Settings, FileNameHelper, CsvReader, RalImporter.
+Folyamatban / részben kész: CsvReader, RalImporter.
 
 Tervezés alatt / jövőbeli: OrderManager, CustomerMaster, CutCalculator, NeedsPresenter, UI bővítések, Audit funkció.
 
-Új ötletek: Real‑time preview, DataStateReporter.
+Új ötletek: Real‑time preview, DataStateReporter, RegistryBase + RegistryManager audit összefoglaló.
 
+📊 Idővonalas roadmap az állapottáblához
+✅ Elkészült
+Material pipeline (modell + repo + registry + view)
 
-***
+Product pipeline (modell + repo + registry + view)
 
-# 📊 Idővonalas roadmap az állapottáblához
+Logger subsystem
 
-## ✅ Elkészült
-- Material pipeline (modell + repo + registry + view)
-- Product pipeline (modell + repo + registry + view)
-- Logger subsystem
-- Startup subsystem
-- Test framework
+Startup subsystem
 
----
+Settings subsystem
 
-## 🚧 Folyamatban
-- RalImporter modul
-- OrderManager (megrendelések)
-- CustomerMaster (ügyféltörzs)
-- CutCalculator (need_calculator)
-- NeedsPresenter + NeedsView
-- UI réteg (Qt) – Order entry dialog, Needs preview
-- Audit funkció – AuditEntry, AuditService, AuditLogView
+FileNameHelper
 
----
+Test framework
 
-## ⚠️ Függőség / Részben kész
-- Settings subsystem (SettingsManager, fallback logika)
-- FileNameHelper (binaryPath bootstrap, testdata fallback)
-- CsvReader utility (szétválasztás után csak importernek kell)
+🚧 Folyamatban
+RalImporter modul
 
----
+OrderManager (megrendelések)
 
-## ➕ Új ötlet
-- Real‑time preview (anyagszükséglet azonnali számítása a UI‑ban)
-- DataStateReporter (pillanatnyi registry állapot logolása)
+CustomerMaster (ügyféltörzs)
 
-***
+CutCalculator (need_calculator)
 
-Prioritási sorrend – fókuszpont lista
+NeedsPresenter + NeedsView
 
-1. FileNameHelper + Settings fallback tisztázása
-   - Kötelező setBinaryPath(argv0) a main-ben
-   - Keresési sorrend dokumentálása (bináris mellől → settings.ini → testdata)
+UI réteg (Qt) – Order entry dialog, Needs preview
 
-2. OrderManager implementáció
-   - OrderHeader + OrderLine modellek
-   - Ügyfél autocomplete, tételszám auto-increment
-   - Export CSV/JSON → alapadat a számításhoz
+Audit funkció – AuditEntry, AuditService, AuditLogView
 
-3. CutCalculator (need_calculator) + Needs preview
-   - Számítási logika: levonások, fix darabok
-   - Aggregálás: azonos ügyfél + termék + szín
-   - Real-time preview a UI-ban
+⚠️ Függőség / Részben kész
+CsvReader utility (szétválasztás után csak importernek kell)
 
-4. Audit funkció bevezetése
-   - AuditEntry modell, AuditService, AuditLogView
-   - DataStateReporter → pillanatnyi registry állapot logolása
+➕ Új ötlet
+Real‑time preview (anyagszükséglet azonnali számítása a UI‑ban)
 
-5. Kényelmi funkciók és finomhangolás
-   - CustomerMaster (ügyféltörzs)
-   - Szűrés/keresés a rendelések között
-   - Export bővítések (Excel, PDF)
-   - UI polishing (színkocka, handlerSide toggle)
+DataStateReporter (pillanatnyi registry állapot logolása)
+
+RegistryBase + RegistryManager audit összefoglaló (automatikus regisztráció, size() alapú riport)
+
+🎯 Prioritási sorrend – fókuszpont lista
+OrderManager implementáció
+
+OrderHeader + OrderLine modellek
+
+Ügyfél autocomplete, tételszám auto-increment
+
+Export CSV/JSON → alapadat a számításhoz
+
+CutCalculator (need_calculator) + Needs preview
+
+Számítási logika: levonások, fix darabok
+
+Aggregálás: azonos ügyfél + termék + szín
+
+Real-time preview a UI-ban
+
+Audit funkció bevezetése
+
+AuditEntry modell, AuditService, AuditLogView
+
+DataStateReporter → pillanatnyi registry állapot logolása
+
+RegistryBase + RegistryManager → automatikus audit összefoglaló
+
+Kényelmi funkciók és finomhangolás
+
+CustomerMaster (ügyféltörzs)
+
+Szűrés/keresés a rendelések között
+
+Export bővítések (Excel, PDF)
+
+UI polishing (színkocka, handlerSide toggle)
+
+👉 Így az új ötletünk – a RegistryBase + RegistryManager audit összefoglaló – bekerült a roadmapbe, és az Audit funkcióhoz kapcsolódva adja meg a központi, automatikus állapotriport lehetőségét.

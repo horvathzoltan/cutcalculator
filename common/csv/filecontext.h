@@ -74,5 +74,27 @@ public:
     int errorsSize() const {
         return _errors.size();
     }
+
+    void merge(const FileContext& other) {
+        // Sorhibák átvétele
+        for (const auto& err : other.errors()) {
+            _errors.append(err);
+        }
+
+        // File szintű hiba, ha van
+        if (!other.fileError().isEmpty()) {
+            if (_fileError.isEmpty()) {
+                _fileError = other.fileError();
+            } else {
+                _fileError += "\n" + other.fileError();
+            }
+        }
+
+        // Metaadatok összevonása
+        if (other.totalLines() > 0) {
+            _totalLines = std::max(_totalLines, other.totalLines());
+        }
+        _readlines += other.readlines();
+    }
 };
 } //end namespace CsvImporter

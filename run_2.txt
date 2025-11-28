@@ -18,3 +18,11 @@ amit át kellene nézni, és ami elkészült, meg kéne jelölni, ami még nem, 
 és amit pluszban kiagyaltunk, azt meg főleg hogy! de most ezúttal ne kitörölj pontokat, hanem csak jelöljük készre!
 
 de! van kétféle tervünk ha jól emlékszek! azt is csak kiegészítve dolgozd át, légyszíves!
+
+
+Példa prompt:
+Adj egy teljes C++ implementációt a RegistryManagerhez.
+   Legyen benne BaseRegistry, Registry<T>, és RegistryManager singleton.
+   A registryk a konstruktorban automatikusan regisztráljanak.
+   Legyen size() metódus, és egy printSummary() függvény, ami logban kiírja a registryk nevét és méretét.
+   Txt-barát formátumban add meg, kommentekkel, táblázatok nélkül.

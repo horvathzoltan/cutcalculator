@@ -1,0 +1,82 @@
+FUNKCIONÁLIS SPECIFIKÁCIÓ – RegistryManager
+
+Cél:
+- Központi nyilvántartás minden registryről (MaterialRegistry, ProductRegistry, RalRegistry, stb.)
+- Automatikus regisztráció a konstruktorban
+- Egységes interfész az audithoz: név, méret, típus
+- Összefoglaló riport készítése logban vagy UI-ban
+
+Funkciók:
+1. Registry regisztráció
+   - Minden registry a konstruktorában regisztrálja magát
+   - RegistryManager tárolja a registry pointerét és metaadatait
+
+2. Lekérdezés
+   - allRegistries() → visszaadja az összes regisztrált registryt
+   - findRegistry(name) → visszaadja a registry pointerét név alapján
+
+3. Audit riport
+   - printSummary() → logban kiírja az összes registry nevét és méretét
+
+4. Metaadat kezelés
+   - name() → registry neve
+   - size() → registry mérete
+   - opcionálisan: típusnév, leírás
+
+
+IMPLEMENTÁCIÓS TERV – RegistryManager
+
+1. Base osztály
+   class BaseRegistry {
+   public:
+       BaseRegistry(const QString& name);
+       virtual ~BaseRegistry() = default;
+       virtual int size() const = 0;
+       QString name() const;
+   private:
+       QString _name;
+   };
+
+2. Templated Registry
+   template<typename T>
+   class Registry : public BaseRegistry {
+   public:
+       Registry(const QString& name);
+       void setData(const QVector<T>& data);
+       const QVector<T>& data() const;
+       int size() const override;
+   private:
+       QVector<T> _data;
+   };
+
+3. RegistryManager
+   class RegistryManager {
+   public:
+       static RegistryManager& instance();
+       void registerRegistry(BaseRegistry* reg);
+       QVector<BaseRegistry*> allRegistries() const;
+       void printSummary() const;
+   private:
+       QVector<BaseRegistry*> _registries;
+   };
+
+4. Példa használat
+   class MaterialRegistry : public Registry<MaterialMaster> {
+   public:
+       MaterialRegistry() : Registry("MaterialRegistry") {}
+   };
+
+   class ProductRegistry : public Registry<ProductDefinition> {
+   public:
+       ProductRegistry() : Registry("ProductRegistry") {}
+   };
+
+5. Audit riport
+   void RegistryManager::printSummary() const {
+       zInfo("📊 Registry összefoglaló");
+       zInfo("Méret | Registry");
+       zInfo("---------------------------");
+       for (auto* reg : _registries) {
+           zInfo(QString("%1 | %2").arg(reg->size(), 5).arg(reg->name()));
+       }
+   }

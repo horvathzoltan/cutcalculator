@@ -1,14 +1,14 @@
 # 🛠️ Implementációs terv – Anyagszükséglet számítás
 
 1. **Adatmodellek**
-   - `materials/model/material_master.h/.cpp`
-   - `products/model/product_definition.h/.cpp`
+   - ✅ `materials/model/material_master.h/.cpp`
+   - ✅ `products/model/product_definition.h/.cpp`
    - `orders/model/order_header.h/.cpp`, `order_line.h/.cpp`
    - `calculation/model/need_result.h/.cpp`
 
 2. **Repository réteg**
-   - `materials/repository/material_repository.h/.cpp` → háromfázisú import (Convert → Build → Assemble).
-   - `products/repository/product_repository.h/.cpp` → háromfázisú import, globális ProductDefinition táblázat.
+   - ✅ `materials/repository/material_repository.h/.cpp` → háromfázisú import (Convert → Build → Assemble).
+   - ✅ `products/repository/product_repository.h/.cpp` → háromfázisú import, globális ProductDefinition táblázat.
    - `orders/repository/order_repository.h/.cpp` → rendelés import/export CSV/JSON.
 
 3. **Service réteg**
@@ -28,8 +28,8 @@
    - `calculation/presenter/needs_presenter.h/.cpp`
 
 5. **View réteg (Qt UI)**
-   - `materials/view/material_list_view.h/.cpp`
-   - `products/view/product_tree_view.h/.cpp` + `product_need_table.h/.cpp`
+   - ✅ `materials/view/material_list_view.h/.cpp`
+   - ✅ `products/view/product_tree_view.h/.cpp` + `product_need_table.h/.cpp`
    - `orders/view/order_dialog.h/.cpp` (autocomplete ügyfél + szín, auto‑increment tételszám).
    - `calculation/view/needs_view.h/.cpp` (real‑time preview).
    - `audit/view/audit_log_view.h/.cpp`.
@@ -41,12 +41,12 @@
    - Új ötlet: DataStateReporter → pillanatnyi registry állapot logolása.
 
 7. **Tesztadatok**
-   - `testdata/materials.csv`
-   - `testdata/products.csv`
+   - ✅ `testdata/materials.csv`
+   - ✅ `testdata/products.csv`
    - `testdata/orders.csv`
 
 8. **Integráció**
-   - `main.cpp`
+   - ✅ `main.cpp`
    - `FileNameHelper::setBinaryPath(argv[0])`.
-   - Registryk inicializálása (Material, Product, Order).
+   - ✅ Registryk inicializálása (Material, Product, Order).
    - UI tabok létrehozása: Anyagtörzs, Terméktípusok, Megrendelések, Szükséglet preview, Audit log.

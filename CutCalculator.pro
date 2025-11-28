@@ -102,6 +102,7 @@ DISTFILES += \
     run_2.txt \
     run_3_1.txt \
     run_3_2.txt \
-    run_4.txt \
+    run_4_RegistryManager.txt \
+    run_4_ThreePhaseImport.txt \
     testdata/products.csv \
     testdata/settings.ini
