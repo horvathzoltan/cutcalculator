@@ -104,5 +104,7 @@ DISTFILES += \
     run_3_2.txt \
     run_4_RegistryManager.txt \
     run_4_ThreePhaseImport.txt \
+    run_4_ValidationRules.txt \
+    run_4_WordcodeTranslation.txt \
     testdata/products.csv \
     testdata/settings.ini

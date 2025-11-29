@@ -39,18 +39,45 @@ MaterialRepository::convertRowToMaterialRow(const QVector<QString>& parts,
     row.cuttingMode = parts[9].trimmed();
     row.paintingMode= parts[10].trimmed();
 
-    if (row.barcode.isEmpty() || row.stockLength <= 0) {
-        ctx.addError(ctx.currentLineNumber(), "⚠️ Érvénytelen barcode vagy hossz");
-        return std::nullopt;
+    return row;
+}
+
+// --- Stage 2.5: Validate ---
+QVector<CsvImporter::RowError>
+MaterialRepository::validateMaterialRow(const MaterialRow& row, int lineNumber) {
+    QVector<CsvImporter::RowError> errors;
+
+    if (row.barcode.isEmpty())
+        errors.append({lineNumber, "⚠️ Hiányzó barcode"});
+    if (row.stockLength <= 0)
+        errors.append({lineNumber, "⚠️ Érvénytelen hossz"});
+
+    if (row.shapeStr.compare("Rectangular", Qt::CaseInsensitive) == 0) {
+        if (row.dim1.isEmpty() || row.dim2.isEmpty())
+            errors.append({lineNumber, "⚠️ Hiányzó szélesség/magasság"});
+    } else if (row.shapeStr.compare("Round", Qt::CaseInsensitive) == 0) {
+        if (row.dim1.isEmpty())
+            errors.append({lineNumber, "⚠️ Hiányzó átmérő"});
     }
 
-    return row;
+    if (!row.colorStr.isEmpty()) {
+        NamedColor nc(row.colorStr);
+        if (!nc.isValid())
+            errors.append({lineNumber, QString("⚠️ Ismeretlen színformátum: %1").arg(row.colorStr)});
+    }
+
+    return errors;
 }
 
 // --- Stage 2: Build ---
 std::optional<MaterialMaster>
 MaterialRepository::buildMaterialFromRow(const MaterialRow& row,
                                          CsvImporter::FileContext& ctx) {
+
+    // Tartalmi validáció hibák gyűjtése
+    auto rowErrors = validateMaterialRow(row, ctx.currentLineNumber());
+    ctx.addErrors(rowErrors);
+
     MaterialMaster m;
     m.id = QUuid::createUuid();
     m.name = row.name;
@@ -62,11 +89,11 @@ MaterialRepository::buildMaterialFromRow(const MaterialRow& row,
     m.cuttingMode = CuttingModeUtils::parse(row.cuttingMode);
     m.paintingMode = PaintingModeUtils::parse(row.paintingMode);
 
-    // Méret validáció
+    // Runtime validáció: dimenziók
     if (m.shape == CrossSectionShape(CrossSectionShape::Shape::Rectangular)) {
-        if (row.dim1.isEmpty() || row.dim2.isEmpty()) {
-             ctx.addError(ctx.currentLineNumber(), L("⚠️ Hiányzó szélesség/magasság adat"));
-         } else {
+        if (!row.dim1.isEmpty() && !row.dim2.isEmpty()) {
+        //      ctx.addError(ctx.currentLineNumber(), L("⚠️ Hiányzó szélesség/magasság adat"));
+        //  } else {
             bool okW = false, okH = false;
             double w = row.dim1.toDouble(&okW);
             double h = row.dim2.toDouble(&okH);
@@ -76,16 +103,16 @@ MaterialRepository::buildMaterialFromRow(const MaterialRow& row,
             m.size_mm = QSizeF(w, h);
         }
     } else if (m.shape == CrossSectionShape(CrossSectionShape::Shape::Round)) {
-         if (row.dim1.isEmpty()) {
-             ctx.addError(ctx.currentLineNumber(), L("⚠️ Hiányzó átmérő adat"));
-         } else {
+         if (!row.dim1.isEmpty()) {
+         //     ctx.addError(ctx.currentLineNumber(), L("⚠️ Hiányzó átmérő adat"));
+         // } else {
             bool okD = false;
             double d = row.dim1.toDouble(&okD);
             if (!okD || d <= 0) {
                 ctx.addError(ctx.currentLineNumber(), "⚠️ Érvénytelen átmérő");
             }
             m.diameter_mm = d;
-        }
+      }
     }
 
     // Szín
@@ -128,7 +155,10 @@ bool MaterialRepository::loadFromCSV(MaterialRegistry& registry) {
     // }
     const QVector<MaterialMaster> defs =
         CsvImporter::buildAll<MaterialRow, MaterialMaster>(
-        rows, buildMaterialFromRow, ctx);
+            rows,
+            buildMaterialFromRow,
+            ctx
+        );
 
     if (ctx.hasErrors()) {
         zWarning(QString("⚠️ Hibák az anyag import során (%1)").arg(ctx.errorsSize()));

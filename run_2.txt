@@ -20,9 +20,12 @@ amit át kellene nézni, és ami elkészült, meg kéne jelölni, ami még nem, 
 de! van kétféle tervünk ha jól emlékszek! azt is csak kiegészítve dolgozd át, légyszíves!
 
 
+frissítsük, egészítsük ki a mai nap eredményeivel, vezessük a státuszbeli változásokat, de ne töröljünk és ne vonjunk össze semmit!
+
 Példa prompt:
-Adj egy teljes C++ implementációt a RegistryManagerhez.
-   Legyen benne BaseRegistry, Registry<T>, és RegistryManager singleton.
-   A registryk a konstruktorban automatikusan regisztráljanak.
-   Legyen size() metódus, és egy printSummary() függvény, ami logban kiírja a registryk nevét és méretét.
-   Txt-barát formátumban add meg, kommentekkel, táblázatok nélkül.
+Adj egy teljes C++ implementációt kommentekkel, dockommentekkel
+
+Adj egy teljes követelményspecifikációt, funkcionális specifikációt és implementációs tervet 
+txt formátummal kompatibilis módon - de használj emojikat
+  a 3 szintű CSV import közben történő - és ehez igazodó validációhoz általánosságban,
+  majd egye másikat is specifikusan a rendszer RAL import funkciójának vonatkozásában is !

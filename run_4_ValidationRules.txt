@@ -1,0 +1,136 @@
+========================================
+📑 KÖVETELMÉNYSPECIFIKÁCIÓ – Általános CSV Import + Validáció
+========================================
+
+🎯 Cél:
+Biztosítani, hogy a CSV fájlokból történő adatbetöltés auditálható, hibabiztos
+és modulárisan tesztelhető legyen.
+
+📝 Igények:
+- 📂 A rendszer képes legyen bármilyen CSV struktúrát feldolgozni.
+- ✅ Minden sorhoz külön validációs lépések tartozzanak.
+- 🛠️ Hibák és figyelmeztetések auditálható formában kerüljenek rögzítésre.
+- 🔁 A feldolgozás három fázisban történjen: Convert, Build, Assemble.
+- 🔍 Validáció minden fázisban fusson, a fázis kontextusának megfelelően.
+
+========================================
+⚙️ FUNKCIONÁLIS SPECIFIKÁCIÓ – Általános CSV Import + Validáció
+========================================
+
+🔁 Fázisok és validációk:
+
+1️⃣ Convert Phase
+   - Nyers CSV sor → típusos Row struktúra.
+   - Validáció: mezők száma, üres mezők, alap formátum.
+   - Hibás sor → nem épül Row.
+
+2️⃣ Build Phase
+   - Row → domain objektum.
+   - Validáció: tartalmi ellenőrzések (formátum, típuskonverzió, kötelező mezők).
+   - Hibás Row → nem épül domain objektum.
+
+3️⃣ Assemble Phase
+   - Domain objektumok → registry vagy összetett struktúra.
+   - Validáció: duplikátumok, kapcsolatok, konzisztencia.
+   - Hibás objektum → nem kerül be a registrybe.
+
+📊 Auditálás:
+- Minden fázis saját hibákat és figyelmeztetéseket logol.
+- A végén audit summary készül: összes sor, hibás sorok, figyelmeztetések.
+
+========================================
+🛠️ IMPLEMENTÁCIÓS TERV – Általános CSV Import + Validáció
+========================================
+
+1. 🏗️ Row struktúra definiálása
+   - Nyers string mezők, minimális validáció.
+
+2. 🔧 Convert függvények
+   - Ellenőrzik a mezők számát, üres mezőket.
+   - Hibás sor → ctx.addError + std::nullopt.
+
+3. 🔍 Build függvények
+   - Mélyebb validáció: regex, típuskonverzió, kötelező mezők.
+   - Hibás Row → ctx.addError + std::nullopt.
+
+4. 📦 Assemble logika
+   - Kapcsolatok létrehozása, duplikátum ellenőrzés.
+   - Hibás objektum → ctx.addError.
+
+5. 📊 Audit summary
+   - Lefedettség %, hibák listája, figyelmeztetések.
+
+
+--- PÉLDA ---
+
+========================================
+  📑 KÖVETELMÉNYSPECIFIKÁCIÓ – RAL Import Funkció
+  ========================================
+
+  🎯 Cél:
+  RAL színrendszer CSV fájlokból történő importálása auditálható, hibabiztos
+  és felhasználóbarát módon.
+
+  📝 Igények:
+  - 📂 A rendszer képes legyen több RAL rendszer fájljait importálni.
+  - ✅ Minden sorhoz tartozzon validáció: HEX kód, RAL kód, név, rendszer.
+  - 🛠️ Hibák auditálható formában kerüljenek rögzítésre.
+  - 🔁 A feldolgozás három fázisban történjen: Convert, Build, Assemble.
+
+  ========================================
+  ⚙️ FUNKCIONÁLIS SPECIFIKÁCIÓ – RAL Import Funkció
+  ========================================
+
+  🔁 Fázisok és validációk:
+
+  1️⃣ Convert Phase
+     - CSV sor → RalRow.
+     - Validáció: mezők száma (3), üres mezők.
+     - Hibás sor → nem épül RalRow.
+
+  2️⃣ Build Phase
+     - RalRow → NamedColor.
+     - Validáció:
+       * 🎨 HEX kód regex: ^#[0-9A-Fa-f]{6}$
+       * 🏷️ RAL kód regex: ^RAL [0-9]{4}$
+       * 📛 Név megléte
+       * ⚙️ Rendszer ismertsége
+     - Hibás Row → nem épül NamedColor.
+
+  3️⃣ Assemble Phase
+     - NamedColor → registry.
+     - Validáció: duplikált RAL kódok.
+     - Hibás objektum → nem kerül be a registrybe.
+
+  📊 Auditálás:
+  - Minden fázis hibákat és figyelmeztetéseket logol.
+  - A végén audit summary készül: érvényes sorok, hibás sorok, figyelmeztetések.
+
+  ========================================
+  🛠️ IMPLEMENTÁCIÓS TERV – RAL Import Funkció
+  ========================================
+
+  1. 🏗️ RalRow struktúra
+     - code, name, hex, lineNumber.
+
+  2. 🔧 Convert függvény (convertRowToRalRow)
+     - Ellenőrzi a mezők számát (3).
+     - Hibás sor → ctx.addError + std::nullopt.
+
+  3. 🔍 Validációs függvény (validateRalRow)
+     - HEX regex ellenőrzés.
+     - RAL kód regex ellenőrzés.
+     - Név megléte.
+     - Rendszer ismertsége.
+     - Hibák audit context-be kerülnek.
+
+  4. 🎨 Build függvény (buildNamedColorFromRow)
+     - QColor érvényesség ellenőrzés.
+     - Hibás HEX → ctx.addError + std::nullopt.
+
+  5. 📦 Assemble logika (loadRalColors)
+     - NamedColor::insertRalColor előtt duplikátum ellenőrzés.
+     - Hibás objektum → ctx.addError.
+
+  6. 📊 Audit summary
+     - Lefedettség %, hibák listája, figyelmeztetések.

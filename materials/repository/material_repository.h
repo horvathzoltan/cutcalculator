@@ -9,11 +9,11 @@
 /**
  * MaterialRepository
  *
- * Three Phase Import minta alapján tölti be az anyagokat CSV-ből.
- * Fázisok:
- *  - Convert: CSV sor → MaterialRow
- *  - Build: MaterialRow → MaterialMaster
- *  - Assemble: MaterialMaster → MaterialRegistry
+ * Háromfázisú CSV import minta:
+ *  - Stage 1: Convert → CSV sor → MaterialRow
+ *  - Stage 2.5: Validate → MaterialRow → hibák
+ *  - Stage 2: Build → MaterialRow → MaterialMaster
+ *  - Stage 3: Assemble → MaterialMaster → MaterialRegistry
  */
 class MaterialRepository {
 public:
@@ -36,13 +36,13 @@ private:
         QString paintingMode;
     };
 
-    // static std::optional<MaterialMaster> convertRowToMaterial(const QVector<QString>& parts, CsvImporter::FileContext& ctx);
-    // static std::optional<MaterialRow>convertRowToMaterialRow(const QVector<QString>& parts, CsvImporter::FileContext& ctx);
-    // static std::optional<MaterialMaster> buildMaterialFromRow(const MaterialRow &row, CsvImporter::FileContext& ctx);
-
     // --- Stage 1: Convert ---
     static std::optional<MaterialRow> convertRowToMaterialRow(const QVector<QString>& parts,
                                                               CsvImporter::FileContext& ctx);
+
+    // Stage 2.5: Validate
+    static QVector<CsvImporter::RowError> validateMaterialRow(const MaterialRow& row,
+                                                              int lineNumber);
 
     // --- Stage 2: Build ---
     static std::optional<MaterialMaster> buildMaterialFromRow(const MaterialRow& row,

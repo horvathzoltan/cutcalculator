@@ -3,22 +3,27 @@
 #include "common/color/ralsystem.h"
 #include <QColor>
 #include <QMap>
+#include <QString>
 
-// 🌐 NamedColor modell
+/**
+ * @brief Domain modell: névvel ellátott szín (HEX/RAL), RAL rendszerrel.
+ *
+ * Statikus registry-ben tároljuk a betöltött RAL színkészletet.
+ */
 class NamedColor {
 public:
     NamedColor() = default;
     NamedColor(const QColor& color, const QString& name);
-    NamedColor(const QString& code); // HEX vagy RAL
+    NamedColor(const QString& code); // HEX vagy RAL (heurisztika)
     NamedColor(const QColor& color, const QString& name, const QString& code, RalSystem system);
 
-    // 🔍 Lekérdezések
+    // Lekérdezések
     QColor color() const;
     QString name() const;
     QString code() const;
     RalSystem system() const;
 
-    // 🧩 Statikus segédfüggvények
+    // Statikus segédfüggvények (RAL/HEX gyárak)
     static NamedColor fromRal(RalSystem system, const QString& ralCode);
     static NamedColor fromRal(const QString& ralCode);
     static NamedColor fromHex(const QString& hexCode);
@@ -26,12 +31,10 @@ public:
     QString toString() const;
     bool isValid() const;
 
-    static void insertRalColor(RalSystem system, const QString& key, const NamedColor& value) {
-        _ralColors[system].insert(key, value);
-    }
-    static void clearRalColors() {
-        _ralColors.clear();
-    }
+    // Registry API (Assemble fázishoz)
+    static bool containsRalColor(RalSystem system, const QString& key);
+    static void insertRalColor(RalSystem system, const QString& key, const NamedColor& value);
+    static void clearRalColors();
 
 private:
     QColor m_color;
@@ -39,7 +42,6 @@ private:
     QString m_code;
     RalSystem m_system = RalSystem::Unknown;
 
-    // Globális RAL adatbázis (feltöltést külön modul intézi)
     static QMap<RalSystem, QMap<QString, NamedColor>> _ralColors;
 
     static QString normalizeRalExtended(const QString& raw);

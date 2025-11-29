@@ -13,7 +13,7 @@ private:
     QVector<CsvImporter::RowError> _errors;
     QString _fileError;
     int _currentLineNumber = 0;
-    int _totalLines;
+    int _totalLines = 0;
     int _readlines = 0;
 public:
 
@@ -30,6 +30,10 @@ public:
     }
 
     QString filepath() const { return _filepath; }
+
+    void setFilePath(const QString& path) {
+        _filepath = path;
+    }
 
     void setCurrentLineNumber(int lineNumber) {
         _currentLineNumber = lineNumber;
@@ -67,6 +71,10 @@ public:
         _errors.append({l, msg});
     }
 
+    void addErrors(const QVector<RowError>& errs) {
+        _errors += errs;
+    }
+
     bool hasErrors() const {
         return !_errors.isEmpty() || !_fileError.isEmpty();;
     }
@@ -77,9 +85,10 @@ public:
 
     void merge(const FileContext& other) {
         // Sorhibák átvétele
-        for (const auto& err : other.errors()) {
-            _errors.append(err);
-        }
+        // for (const auto& err : other.errors()) {
+        //     _errors.append(err);
+        // }
+        _errors += other.errors();
 
         // File szintű hiba, ha van
         if (!other.fileError().isEmpty()) {
@@ -92,7 +101,7 @@ public:
 
         // Metaadatok összevonása
         if (other.totalLines() > 0) {
-            _totalLines = std::max(_totalLines, other.totalLines());
+            _totalLines += other.totalLines();
         }
         _readlines += other.readlines();
     }

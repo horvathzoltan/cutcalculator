@@ -1,0 +1,67 @@
+========================================
+FUNKCIONÁLIS SPECIFIKÁCIÓ – Wordcode Translator
+========================================
+
+Cél:
+A rendszer minden megszólalási pontját (UI szöveg, hibaüzenet, audit riport)
+kódokkal azonosítja. A fordításokat nyelvfüggetlenül CSV fájlban tároljuk
+és töltjük be.
+
+Követelmények:
+1. Wordcode definíciók
+   - Hierarchikus osztálystruktúrában (WCodes) minden megszólalási pontnak van egy fix kulcsa.
+   - Kulcs formátum: ClassName.MemberName (pl. SoldItem.partnerName, Validation.CannotConvert).
+
+2. Kulcs generálás
+   - GetWCode() makróval minden kulcs stringgé alakítható.
+   - A kulcs azonosítja a fordítási bejegyzést.
+
+3. Fordítási tárolás
+   - Translator osztály tartja a fordításokat: translations[nyelvkód][kulcs] = szöveg.
+   - Nyelv beállítható (SetLanguageCode).
+
+4. CSV export/import
+   - Program képes generálni egy CSV listát az összes wordcode kulcsról.
+   - CSV formátum: key;translation
+   - Fordító kitölti a translation oszlopot.
+   - Program beolvassa a CSV-t, és feltölti a fordítási táblát.
+
+5. Validáció
+   - Lefedettség ellenőrzése: minden kulcshoz van-e fordítás az adott nyelven.
+   - Audit riport: hiányzó kulcsok listája, lefedettségi százalék.
+
+6. Paraméterezés
+   - Fordítási szövegek támogassák a placeholder-eket ({0}, {1}).
+   - Translate(key, params...) → behelyettesíti a paramétereket.
+
+========================================
+IMPLEMENTÁCIÓS TERV – Wordcode Translator
+========================================
+
+1. Wordcode struktúra
+   - WCodes osztályban hierarchikus definíciók (SoldItem, Validation, Address, stb.).
+   - Minden mező void* vagy constexpr const char* → kulcs generálásra.
+
+2. Kulcs generálás
+   - GetWCode(b) makró → TypeHelper::GetTypeName_ + nameof.
+   - Kulcs formátum: ClassName.MemberName.
+
+3. CSV export
+   - std::vector<QString> allWordCodes → tartalmazza az összes kulcsot.
+   - Program futtatáskor kiírja CSV-be: key;translation.
+
+4. CSV import
+   - Translator::LoadFromCsv(filePath) → beolvassa a CSV-t.
+   - Feltölti translations táblát.
+
+5. Validáció
+   - Translator::ValidateCoverage(allWordCodes):
+     * Végigmegy a listán.
+     * Ellenőrzi, hogy minden kulcshoz van fordítás.
+     * Riport: lefedettség %, hiányzó kulcsok.
+
+6. Paraméterezett fordítás
+   - Translate(const QString& key, const QList<QString>& params):
+     * Szövegben {0}, {1} placeholder-eket cserél paraméterekre.
+     * Példa: _tr(WCodes::Validation::CannotConvert, rr.hex)
+       → "Az érték nem konvertálható: #12ABZZ".

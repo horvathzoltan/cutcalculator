@@ -1,13 +1,13 @@
 📊 Összevont állapottábla – aktuális + jövőbeli
 Modul / Feladat	Állapot	Megjegyzés
-Material pipeline (modell + repo + registry + view)	✅ Kész	MaterialMaster, CrossSectionShape, MaterialType, CuttingMode, PaintingMode, MaterialRepository háromfázisú, MaterialRegistry, MaterialTableView
+Material pipeline (modell + repo + registry + view)	✅ Kész	MaterialMaster, CrossSectionShape, MaterialType, CuttingMode, PaintingMode, MaterialRepository háromfázisú, MaterialRegistry, MaterialTableView. ➕ Új: Stage2.5 validátor bevezetve, hiányzó vs. érvénytelen adat szétválasztva.
 Product pipeline (modell + repo + registry + view)	✅ Kész	ProductDefinition, ProductRepository háromfázisú, ProductRegistry, ProductTreeManager – fa megjelenítés tesztadatokkal
 Logger subsystem	✅ Kész	EventLogger, LogManager, LogViewAdapter – auditálható logolás
 Startup subsystem	✅ Kész	StartupManager, StartupStatusManager, LifecycleManager, WindowObserver – inicializáció és életciklus kezelés
 Settings subsystem	✅ Kész	SettingsManager implementálva, fallback logika (bináris mellől + testdata) működik
 FileNameHelper	✅ Kész	_binaryPath bootstrap, settings/testdata fallback tisztázva, teljesen auditálható
 CsvReader utility	⚠️ Függőség	Szétválasztás után csak az importernek kell
-RalImporter modul	🚧 Folyamatban	Új modul, ami CSV‑ből tölti a színmapet; validátorral lesz teljessé
+RalImporter modul	🚧 Folyamatban	Új modul, ami CSV‑ből tölti a színmapet; validátorral teljessé vált. ➕ Regex finomhangolva (Classic + Design + Plastic kódok elfogadása).
 OrderManager (megrendelések)	🚧 Specifikáció	OrderHeader + OrderLine modellek, státuszkezelés, export CSV/JSON
 CustomerMaster	🚧 Tervezés	Ügyféltörzs, autocomplete ügyfélnév
 CutCalculator (need_calculator)	🚧 Specifikáció	Számítási logika (levonások, fix darabok), aggregálás, audit jelzés. ➕ Real‑time preview ötlet
@@ -16,9 +16,9 @@ UI réteg (Qt)	🚧 Tervezés	MainWindow + Material/Product tabok ✅, Order ent
 Audit funkció	🚧 Tervezés	AuditEntry modell, AuditService, AuditLogView. ➕ DataStateReporter ötlet
 Test framework	✅ Kész	TestManager, EventLogger tests
 🎯 Röviden
-Kész modulcsomagok: Material pipeline, Product pipeline, Logger, Startup, Settings, FileNameHelper, Test framework.
+Kész modulcsomagok: Material pipeline (validátorral bővítve), Product pipeline, Logger, Startup, Settings, FileNameHelper, Test framework.
 
-Folyamatban / részben kész: CsvReader, RalImporter.
+Folyamatban / részben kész: CsvReader, RalImporter (regex validációval kiegészítve).
 
 Tervezés alatt / jövőbeli: OrderManager, CustomerMaster, CutCalculator, NeedsPresenter, UI bővítések, Audit funkció.
 
@@ -26,7 +26,7 @@ Tervezés alatt / jövőbeli: OrderManager, CustomerMaster, CutCalculator, Needs
 
 📊 Idővonalas roadmap az állapottáblához
 ✅ Elkészült
-Material pipeline (modell + repo + registry + view)
+Material pipeline (modell + repo + registry + view) ➕ Stage2.5 validátor bevezetve, hiányzó vs. érvénytelen adat szétválasztva.
 
 Product pipeline (modell + repo + registry + view)
 
@@ -41,7 +41,7 @@ FileNameHelper
 Test framework
 
 🚧 Folyamatban
-RalImporter modul
+RalImporter modul ➕ Regex validáció finomhangolva (Classic, Design, Plastic kódok).
 
 OrderManager (megrendelések)
 
@@ -99,5 +99,3 @@ Szűrés/keresés a rendelések között
 Export bővítések (Excel, PDF)
 
 UI polishing (színkocka, handlerSide toggle)
-
-👉 Így az új ötletünk – a RegistryBase + RegistryManager audit összefoglaló – bekerült a roadmapbe, és az Audit funkcióhoz kapcsolódva adja meg a központi, automatikus állapotriport lehetőségét.

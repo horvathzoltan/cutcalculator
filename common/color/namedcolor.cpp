@@ -1,7 +1,7 @@
 #include "namedcolor.h"
+#include "common/logger/logger.h"
 #include <QMap>
 #include <QColor>
-#include "common/logger/logger.h"
 #include <QRegularExpression>
 
 QMap<RalSystem, QMap<QString, NamedColor>> NamedColor::_ralColors;
@@ -39,7 +39,7 @@ NamedColor::NamedColor(const QString& code) {
     }
 }
 
-// Segédfüggvények
+// Segédfüggvények: extended RAL kód normalizálása
 QString NamedColor::normalizeRalExtended(const QString& raw) {
     QString code = raw.trimmed().toUpper();
 
@@ -102,9 +102,24 @@ NamedColor NamedColor::fromHex(const QString& hexCode) {
     return NamedColor(c, name);
 }
 
+// Registry API
+bool NamedColor::containsRalColor(RalSystem system, const QString& key) {
+    const auto sysMapIt = _ralColors.constFind(system);
+    if (sysMapIt == _ralColors.constEnd()) return false;
+    return sysMapIt->contains(key);
+}
+
+void NamedColor::insertRalColor(RalSystem system, const QString& key, const NamedColor& value) {
+    _ralColors[system].insert(key, value);
+}
+
+void NamedColor::clearRalColors() {
+    _ralColors.clear();
+}
+
 // Egyéb
 QString NamedColor::toString() const {
-    QString systemStr = RalSystemUtils::toString(m_system);
+    const QString systemStr = RalSystemUtils::toString(m_system);
     return QString("%1 (%2) - %3").arg(m_code, systemStr, m_name);
 }
 
