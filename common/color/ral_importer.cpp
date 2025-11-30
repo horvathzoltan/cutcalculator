@@ -20,7 +20,7 @@ RalImporter::convertRowToRalRow(const QVector<QString>& row,
     }
 
     RalRow rr;
-    rr.code = "RAL " + row[0].trimmed();  // Classic formátum preferenciája
+    rr.code = row[0].trimmed(); //"RAL " + row[0].trimmed();  // Classic formátum preferenciája
     rr.name = row[1].trimmed();
     rr.hex  = row[2].trimmed();
     rr.lineNumber = line;
@@ -43,16 +43,20 @@ bool RalImporter::isValidHexFormat(const QString& hex) {
     return re.match(hex.trimmed()).hasMatch();
 }
 
+// bool RalImporter::isValidRalCode(const QString& code) {
+//     static const QRegularExpression re(
+//         // Opcionális RAL + opcionális P1/P2, majd vagy classic (4 számjegy),
+//         // vagy 3/4 + 2 + 2/3 számjegyes blokkok, szóköz/kötőjel elválasztással.
+//         R"(^(?:RAL[-\s]*)?(?:(P[12])\s*)?(?:(\d{4})|(\d{3})[\s-]*(\d{2})[\s-]*(\d{2,3}))$)",
+//         QRegularExpression::UseUnicodePropertiesOption
+//         );
+//     return re.match(code.trimmed().toUpper()).hasMatch();
+// }
 bool RalImporter::isValidRalCode(const QString& code) {
-    static const QRegularExpression re(
-        // Opcionális RAL + opcionális P1/P2, majd vagy classic (4 számjegy),
-        // vagy 3/4 + 2 + 2/3 számjegyes blokkok, szóköz/kötőjel elválasztással.
-        R"(^(?:RAL\s*)?(?:(P[12])\s*)?(?:(\d{4})|(\d{3,4})[\s-]+(\d{2})[\s-]+(\d{2,3}))$)",
-        QRegularExpression::UseUnicodePropertiesOption
-        );
-    return re.match(code.trimmed().toUpper()).hasMatch();
-}
+    auto n = NamedColor::normalizeRalExtended(code);
 
+    return n.isValid();
+}
 
 /* =========================================================
  * Stage 2: Build (+ Validate)
@@ -69,13 +73,20 @@ RalImporter::buildNamedColorFromRow(const RalRow& rr,
 
     // Runtime validáció: QColor elfogadja-e a HEX-et
     const QColor color(rr.hex);
-    if (!color.isValid()) {
+    if (isValidHexFormat(rr.hex) && !color.isValid()) {
         ctx.addError(rr.lineNumber, QString("❌ Érvénytelen HEX kód (QColor): %1").arg(rr.hex));
         return std::nullopt;
     }
 
+    auto n = NamedColor::normalizeRalExtended(rr.code);
+    if(n.system != system){
+        ctx.addError(rr.lineNumber,
+                     QString("❌ RAL kód és rendszer nem egyezik: kód=%1, rendszer=%2")
+                         .arg(rr.code, RalSystemUtils::toString(system)));
+        return std::nullopt;
+    };
     // Építés: domain objektum
-    NamedColor nc(color, rr.name, rr.code.toUpper(), system);
+    NamedColor nc(color, rr.name, n.key, system);
     return nc;
 }
 
@@ -88,16 +99,13 @@ RalImporter::validateRalRow(const RalRow& rr, RalSystem system) {
     QVector<CsvImporter::RowError> errors;
 
     if (rr.name.isEmpty())
-        errors.append({rr.lineNumber, QString("⚠️ Hiányzó név: %1").arg(rr.code)});
-
+        errors.append({rr.lineNumber, "⚠️ Hiányzó név"});
     if (system == RalSystem::Unknown)
-        errors.append({rr.lineNumber, QString("⚠️ Ismeretlen RAL rendszer: %1").arg(rr.code)});
-
+        errors.append({rr.lineNumber, "⚠️ Ismeretlen RAL rendszer"});
     if (!isValidRalCode(rr.code))
-        errors.append({rr.lineNumber, QString("⚠️ Hibás RAL kód formátum: %1").arg(rr.code)});
-
+        errors.append({rr.lineNumber, "❌ Hibás RAL kód formátum"});
     if (!isValidHexFormat(rr.hex))
-        errors.append({rr.lineNumber, QString("⚠️ Hibás HEX formátum: %1").arg(rr.hex)});
+        errors.append({rr.lineNumber, "❌ Hibás HEX formátum"});
 
     return errors;
 }
@@ -118,26 +126,42 @@ bool RalImporter::loadRalColors(const QList<RalSource>& sources) {
         const auto rows = CsvImporter::readAndConvert<RalRow>(ctx, convertRowToRalRow);
 
         // 2) Build (+ Validate)
-        const auto colors = CsvImporter::buildAll<RalRow, NamedColor>(
+        const QVector<NamedColor> namedColors =
+            CsvImporter::buildAll<RalRow, NamedColor>(
             rows,
-            [&](const RalRow& rr, CsvImporter::FileContext& buildCtx) {
+            [&](const RalRow &rr, CsvImporter::FileContext &buildCtx) {
                 return buildNamedColorFromRow(rr, buildCtx, src.system);
             },
-            ctx
-            );
+            ctx);
 
         // 3) Assemble (duplikátum ellenőrzés + beszúrás)
-        for (const auto& nc : colors) {
-            const QString key = nc.code().trimmed().toUpper();
+        QHash<QString, QVector<int>> occurrenceMap;
 
-            if (NamedColor::containsRalColor(src.system, key)) {
-                ctx.addError(/*line*/ 0, QString("❌ Duplikált RAL kód: %1 (%2)").arg(key, systemName));
+        for (int i = 0; i < namedColors.size(); ++i) {
+            const auto& nc = namedColors[i];
+            if (!nc.isValid()) continue; // hibás sor, már validációban jelzett
+
+            const QString key = nc.code();//.trimmed().toUpper();
+
+            if (NamedColor::containsRalColor(key)) {
+                occurrenceMap[key].append(rows[i].lineNumber);
+
+                QString allLines;
+                for (int ln : occurrenceMap[key]) {
+                    allLines += QString::number(ln) + " ";
+                }
+
+                ctx.addError(rows[i].lineNumber,
+                             QString("❌ Többszörös RAL kód: %1 (%2), előfordulások sorai: %3")
+                                 .arg(key, systemName, allLines.trimmed()));
                 ok = false;
                 continue;
             }
 
-            NamedColor::insertRalColor(src.system, key, nc);
+            NamedColor::insertRalColor(nc);
+            occurrenceMap[key] = { rows[i].lineNumber };
         }
+
 
         if (ctx.hasErrors()) {
             ok = false;

@@ -20,7 +20,7 @@ amit át kellene nézni, és ami elkészült, meg kéne jelölni, ami még nem, 
 de! van kétféle tervünk ha jól emlékszek! azt is csak kiegészítve dolgozd át, légyszíves!
 
 
-frissítsük, egészítsük ki a mai nap eredményeivel, vezessük a státuszbeli változásokat, de ne töröljünk és ne vonjunk össze semmit!
+frissítsük, egészítsük ki a mai nap eredményeivel és ötleteivel, vezessük a státuszbeli változásokat, de ne töröljünk és ne vonjunk össze semmit!
 
 Példa prompt:
 Adj egy teljes C++ implementációt kommentekkel, dockommentekkel

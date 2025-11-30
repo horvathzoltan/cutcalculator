@@ -24,7 +24,7 @@ public:
     RalSystem system() const;
 
     // Statikus segédfüggvények (RAL/HEX gyárak)
-    static NamedColor fromRal(RalSystem system, const QString& ralCode);
+   // static NamedColor fromRal(RalSystem system, const QString& ralCode);
     static NamedColor fromRal(const QString& ralCode);
     static NamedColor fromHex(const QString& hexCode);
 
@@ -32,10 +32,23 @@ public:
     bool isValid() const;
 
     // Registry API (Assemble fázishoz)
-    static bool containsRalColor(RalSystem system, const QString& key);
-    static void insertRalColor(RalSystem system, const QString& key, const NamedColor& value);
+    static bool containsRalColor(const QString& key);
+    static void insertRalColor(const NamedColor& value);
     static void clearRalColors();
 
+    struct NormalizedRal {
+        QString key;       // pl. "RAL 7016"
+        RalSystem system;  // pl. RalSystem::Classic
+
+    public:
+        bool isValid(){
+            if(key.isEmpty()) return false;
+            if(system == RalSystem::Unknown) return false;
+            return true;
+        }
+    };
+
+    static NormalizedRal normalizeRalExtended(const QString& raw);
 private:
     QColor m_color;
     QString m_name;
@@ -44,5 +57,5 @@ private:
 
     static QMap<RalSystem, QMap<QString, NamedColor>> _ralColors;
 
-    static QString normalizeRalExtended(const QString& raw);
+
 };
