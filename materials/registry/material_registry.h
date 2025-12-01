@@ -5,17 +5,28 @@
 #include <QString>
 //#include <optional>
 #include "materials/model/material_master.h"
+#include "common/registry/registry_base.h"
 
-class MaterialRegistry {
+/**
+ * @brief MaterialRegistry – a betöltött anyagok törzsadata.
+ *
+ * A RegistryBase-ből öröklődik, így automatikusan regisztrálja magát
+ * a RegistryManager-be. Auditbarát elemszám riportot ad.
+ */
+
+class MaterialRegistry: public RegistryBase {
 private:
-    MaterialRegistry() = default;  // 🔐 Privát konstruktor a singletonhoz
-    MaterialRegistry(const MaterialMaster&) = delete;
+    MaterialRegistry() : RegistryBase("MaterialRegistry") {}//    MaterialRegistry() = default;  // 🔐 Privát konstruktor a singletonhoz
+    MaterialRegistry(const MaterialRegistry&) = delete;
 
     QVector<MaterialMaster> _data;  // 📦 Betöltött anyagtörzs lista
 public:
 
     // 🔁 Singleton elérés
     static MaterialRegistry& instance();
+
+    QString typeName() const override { return "MaterialMaster"; }
+    int count() const override { return _data.size(); }
 
     void setData(const QVector<MaterialMaster>& v) { _data = v;}
     // ➕ Új anyag hozzáadása, csak ha code egyedi

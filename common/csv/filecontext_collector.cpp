@@ -104,10 +104,12 @@ void FileContextCollector::logSummary() const {
                   .arg(fileCol, -40)
                   .arg(r.op));
     }
+    zInfo(L("------------------------------------------------------------------------------------------------"));
 
     // Hibakategóriák sorlistával
     if (!errorBuckets.isEmpty()) {
         zInfo("— Hibakategóriák —");
+        //zInfo(L("------------------------------------------------------------------------------------------------"));
         for (auto it = errorBuckets.constBegin(); it != errorBuckets.constEnd(); ++it) {
             QStringList nums;
             for (int ln : it.value().lines) nums << QString::number(ln);

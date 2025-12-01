@@ -19,6 +19,8 @@ SOURCES += \
     common/logger/event_logger.cpp \
     common/logger/log_manager.cpp \
     common/logger/logger.cpp \
+    common/registry/registry_base.cpp \
+    common/registry/registry_manager.cpp \
     common/settings/settings_manager.cpp \
     common/startup/startup_manager.cpp \
     common/startup/startup_status_manager.cpp \
@@ -57,6 +59,8 @@ HEADERS += \
     common/csv/rowerror.h \
     common/model/hierarchical_entity.h \
     common/model/identifiable_entity.h \
+    common/registry/registry_base.h \
+    common/registry/registry_manager.h \
     common/settings/settings_manager.h \
     common/startup/startup_manager.h \
     common/startup/startup_status.h \
@@ -102,6 +106,7 @@ DISTFILES += \
     run_2.txt \
     run_3_1.txt \
     run_3_2.txt \
+    run_4_AnyagszuksegletSzamitas.txt \
     run_4_RegistryManager.txt \
     run_4_ThreePhaseImport.txt \
     run_4_ValidationRules.txt \

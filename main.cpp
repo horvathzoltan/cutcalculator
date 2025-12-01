@@ -10,10 +10,9 @@
 #include "test/test_manager.h"
 #include "common/utils/filename_helper.h"
 #include "common/startup/startup_manager.h"
-
 #include "common/system/lifecycle_manager.h"
-
 #include "common/startup/startup_status_manager.h"
+#include "common/registry/registry_manager.h"
 
 int main(int argc, char *argv[])
 {
@@ -63,6 +62,8 @@ int main(int argc, char *argv[])
     StartupManager manager;
     StartupStatus status = manager.runStartupSequence();
 
+    RegistryManager::instance().auditReport();
+
     // Opcionális finomhangolás a dialógusokra:
     StartupStatusManager::setPreviewLimit(2);           // hány warning jelenjen meg előnézetben
     StartupStatusManager::setShowLogHint(true);         // mutassuk-e a "részletek a logban" sort
@@ -71,6 +72,8 @@ int main(int argc, char *argv[])
     if (!StartupStatusManager::handle(status)) {
         return -1; // kritikus hiba → leállás
     }
+
+    RegistryManager::instance().auditReport();
 
     MainWindow w;
     // MainWindow megnyílás/bezárás automatikus követése

@@ -1,0 +1,189 @@
+📘 Követelményspecifikáció – Anyagszükséglet számítás
+🎯 Cél
+A rendszer feladata, hogy a megrendelésekből kiszámolja a gyártáshoz szükséges anyagokat. Az eredmény egy auditálható, aggregált gyártási lista (vágási igény + kitting lista).
+
+🧩 Követelmények
+Adatmodellek
+ProductDefinition
+
+Globális terméktípus táblázat.
+
+Csak metaadatokat tárol (id, parentId, name, barcode).
+
+MaterialMaster
+
+Globális anyagtörzs.
+
+Mezők: id, name, type, size, color, weight.
+
+NeedRule (kapcsolótábla)
+
+Kapcsolat ProductDefinition ↔ MaterialMaster között.
+
+Minden sor egy kapcsolatot ír le.
+
+Mezők: id, productId, materialId.
+
+NeedCalculation
+
+Számítási mód egy NeedRule‑hoz.
+
+Mezők: needRuleId, mode (string, pl. "glass", "rebate"), formula (pl. "w-2.4", "fixed:2").
+
+OrderHeader / OrderLine
+
+Megrendelések.
+
+OrderLine mezők: productId, width, height, quantity, color, handlerSide.
+
+NeedResult (runtime)
+
+Számítás eredménye.
+
+Mezők: materialId, lengthMm, pieces, mode.
+
+⚙️ Funkcionális specifikáció
+📊 Fő funkciók
+Kapcsolótábla kezelés
+
+ProductDefinition ↔ MaterialMaster kapcsolatok tárolása (NeedRule).
+
+Minden kapcsolatnak van saját ID‑je.
+
+Számítási módok kezelése
+
+Minden NeedRule‑hoz több számítási mód (NeedCalculation) rendelhető.
+
+Például: üvegméret vs. falcméret.
+
+Megrendelés feldolgozás
+
+OrderLine alapján kiválasztja a megfelelő számítási módot.
+
+Lefuttatja a formulákat.
+
+Eredmény előállítása
+
+Vágási lista: méretből számolt darabok.
+
+Kitting lista: fix darabok.
+
+Aggregálás: azonos ügyfél + termék + szín összevonása.
+
+Audit funkció
+
+Jelzés, ha hiányzik számítási mód egy NeedRule‑hoz.
+
+Jelzés, ha formula hibás.
+
+UI funkciók
+
+OrderDialog: megrendelés felvétel.
+
+NeedsView: real‑time preview táblázat.
+
+Export: CSV/Excel gyártási lista.
+
+🛠️ Implementációs terv
+1. Adatmodellek
+products/model/product_definition.h/.cpp ✅
+
+materials/model/material_master.h/.cpp ✅
+
+needs/model/need_rule.h/.cpp 🚧
+
+needs/model/need_calculation.h/.cpp 🚧
+
+orders/model/order_header.h/.cpp, order_line.h/.cpp 🚧
+
+calculation/model/need_result.h/.cpp 🚧
+
+2. Repository réteg
+products/repository/product_repository.h/.cpp ✅
+
+materials/repository/material_repository.h/.cpp ✅
+
+needs/repository/need_rule_repository.h/.cpp 🚧
+
+needs/repository/need_calculation_repository.h/.cpp 🚧
+
+orders/repository/order_repository.h/.cpp 🚧
+
+3. Service réteg
+calculation/service/need_calculator.h/.cpp 🚧
+
+Input: OrderLine + NeedRule + NeedCalculation.
+
+Output: NeedResult lista.
+
+Logika: formulák kiértékelése, audit jelzés.
+
+4. Presenter réteg
+orders/presenter/order_presenter.h/.cpp 🚧
+
+calculation/presenter/needs_presenter.h/.cpp 🚧
+
+5. View réteg (Qt UI)
+orders/view/order_dialog.h/.cpp 🚧
+
+Megrendelő neve, termék kiválasztás, méret, darabszám, szín.
+
+calculation/view/needs_view.h/.cpp 🚧
+
+Táblázat preview: Material | Méret | Darabszám | Mode.
+
+audit/view/audit_log_view.h/.cpp 🚧
+
+6. Audit funkció
+audit/model/audit_entry.h/.cpp 🚧
+
+audit/service/audit_service.h/.cpp 🚧
+
+audit/view/audit_log_view.h/.cpp 🚧
+
+➕ Új: DataStateReporter → pillanatnyi registry állapot logolása.
+
+7. Tesztadatok
+testdata/materials.csv ✅
+
+testdata/products.csv ✅
+
+testdata/need_rules.csv 🚧
+
+testdata/need_calculations.csv 🚧
+
+testdata/orders.csv 🚧
+
+📊 Példa folyamat
+OrderLine: Roletta, w=1000, h=500, qty=3.
+
+Lekérjük NeedRule sorokat → tengely, pálca, rugó, szövet.
+
+Lekérjük NeedCalculation sorokat "glass" módra.
+
+Kiértékeljük:
+
+Tengely: 1000-2.4 = 997.6 mm × 3
+
+Pálca: 500-12 = 488 mm × 3
+
+Rugó: fixed:2 × 3 = 6 db
+
+Szövet: (1000-2.4) × 500 = méret × qty
+
+Eredmény: Cut list + Kitting list.
+
+Audit: ha hiányzik formula → zEventWARN.
+
+🎯 Összefoglalás
+NeedRule → kapcsolótábla (terméktípus ↔ anyag).
+
+NeedCalculation → számítási mód + formula.
+
+NeedCalculator → megrendelésből előállítja a vágási és kitting listát.
+
+UI → OrderDialog + NeedsView preview.
+
+Audit → jelzi a hiányzó vagy hibás szabályokat.
+
+👉 Ez a txt‑kompatibilis specifikáció és terv lefedi a teljes funkciót. Szeretnéd, hogy készítsek hozzá egy mintatáblát CSV formátumban (NeedRule + NeedCalculation), amit rögtön be tudtok tölteni tesztadatként?

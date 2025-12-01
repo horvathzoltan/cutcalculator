@@ -23,9 +23,11 @@ de! van kétféle tervünk ha jól emlékszek! azt is csak kiegészítve dolgozd
 frissítsük, egészítsük ki a mai nap eredményeivel és ötleteivel, vezessük a státuszbeli változásokat, de ne töröljünk és ne vonjunk össze semmit!
 
 Példa prompt:
-Adj egy teljes C++ implementációt kommentekkel, dockommentekkel
+Adj egy teljes C++ implementációt a fent szóban forgó osztályokról kommentekkel, dockommentekkel,
+javaslatokkal az osztályok elnevezésére, elhelyezésére a projecten belül.
+A fájlnevek a projekt névkonvencióját kövessék (snake_case, pl. registry_base.h, registry_manager.h).
+Legelőször csak azoknak a fájloknak a listáját add meg, amik tartalmát meg kell mindehez ismerned.
 
 Adj egy teljes követelményspecifikációt, funkcionális specifikációt és implementációs tervet 
 txt formátummal kompatibilis módon - de használj emojikat
-  a 3 szintű CSV import közben történő - és ehez igazodó validációhoz általánosságban,
-  majd egye másikat is specifikusan a rendszer RAL import funkciójának vonatkozásában is !
+  a fent említett funkció kifejlesztéséhez!

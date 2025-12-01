@@ -1,28 +1,28 @@
 📊 Összevont állapottábla – aktuális + jövőbeli
 Modul / Feladat	Állapot	Megjegyzés
-Material pipeline (modell + repo + registry + view)	✅ Kész	MaterialMaster, CrossSectionShape, MaterialType, CuttingMode, PaintingMode, MaterialRepository háromfázisú, MaterialRegistry, MaterialTableView. ➕ Stage2.5 validátor bevezetve, hiányzó vs. érvénytelen adat szétválasztva.
-Product pipeline (modell + repo + registry + view)	✅ Kész	ProductDefinition, ProductRepository háromfázisú, ProductRegistry, ProductTreeManager – fa megjelenítés tesztadatokkal
-Logger subsystem	✅ Kész	EventLogger, LogManager, LogViewAdapter – auditálható logolás
-Startup subsystem	✅ Kész	StartupManager, StartupStatusManager, LifecycleManager, WindowObserver – inicializáció és életciklus kezelés
-Settings subsystem	✅ Kész	SettingsManager implementálva, fallback logika (bináris mellől + testdata) működik
-FileNameHelper	✅ Kész	_binaryPath bootstrap, settings/testdata fallback tisztázva, teljesen auditálható
+Material pipeline (modell + repo + registry + view)	✅ Kész	Stage2.5 validátor bevezetve, hiányzó vs. érvénytelen adat szétválasztva
+Product pipeline (modell + repo + registry + view)	✅ Kész	Fa megjelenítés tesztadatokkal
+Logger subsystem	✅ Kész	Auditálható logolás
+Startup subsystem	✅ Kész	Inicializáció és életciklus kezelés
+Settings subsystem	✅ Kész	Fallback logika működik
+FileNameHelper	✅ Kész	Teljesen auditálható
 CsvReader utility	⚠️ Függőség	Szétválasztás után csak az importernek kell
-RalImporter modul	✅ Kész	Háromfázisú import, regex validáció, auditbarát duplikátumkezelés. ➕ Új: NormalizedRal struct bevezetve, rendszerhez kötött normalizáció és egyszerűsített fromRal lookup.
-OrderManager (megrendelések)	🚧 Specifikáció	OrderHeader + OrderLine modellek, státuszkezelés, export CSV/JSON
+RalImporter modul	✅ Kész	Háromfázisú import, regex validáció, auditbarát duplikátumkezelés, ➕ NormalizedRal struct
+OrderManager (megrendelések)	🚧 Specifikáció	Modellek, státuszkezelés, export CSV/JSON
 CustomerMaster	🚧 Tervezés	Ügyféltörzs, autocomplete ügyfélnév
-CutCalculator (need_calculator)	🚧 Specifikáció	Számítási logika (levonások, fix darabok), aggregálás, audit jelzés. ➕ Real‑time preview ötlet
+CutCalculator (need_calculator)	🚧 Specifikáció	Számítási logika, aggregálás, audit jelzés, ➕ Real‑time preview ötlet
 NeedsPresenter + NeedsView	🚧 Tervezés	Real‑time anyagszükséglet preview a UI‑ban
 UI réteg (Qt)	🚧 Tervezés	MainWindow + Material/Product tabok ✅, Order entry dialog 🚧, Needs preview 🚧
-Audit funkció	🚧 Tervezés	AuditEntry modell, AuditService, AuditLogView. ➕ DataStateReporter ötlet
+Audit funkció	🚧 Tervezés	AuditEntry modell, AuditService, AuditLogView, ➕ DataStateReporter ötlet
 Test framework	✅ Kész	TestManager, EventLogger tests
-NamedColor / Color registry	🚧 Tervezés	Jelenleg statikus map (RalSystem → QString → NamedColor). ➕ Új ötlet: Repo pattern bevezetése, RegistryManager audit összefoglaló, Pantone és más színrendszerek integrálása.
-📊 Idővonalas roadmap az állapottáblához
+NamedColor / Color registry	🚧 Tervezés	Jelenleg statikus map. ➕ Új irány: Repo pattern, RegistryManager audit összefoglaló, Pantone és más színrendszerek integrálása
+📊 Idővonalas roadmap
 ✅ Elkészült
-Material pipeline (modell + repo + registry + view) ➕ Stage2.5 validátor bevezetve, hiányzó vs. érvénytelen adat szétválasztva.
+Material pipeline (Stage2.5 validátorral)
 
-RalImporter modul (háromfázisú import, regex validáció, auditbarát duplikátumkezelés) ➕ NormalizedRal struct, rendszerhez kötött normalizáció.
+RalImporter modul (NormalizedRal, auditbarát duplikátumkezelés)
 
-Product pipeline (modell + repo + registry + view)
+Product pipeline
 
 Logger subsystem
 
@@ -35,73 +35,52 @@ FileNameHelper
 Test framework
 
 🚧 Folyamatban
-OrderManager (megrendelések)
+OrderManager
 
-CustomerMaster (ügyféltörzs)
+CustomerMaster
 
-CutCalculator (need_calculator)
+CutCalculator
 
 NeedsPresenter + NeedsView
 
-UI réteg (Qt) – Order entry dialog, Needs preview
+UI réteg (Order entry dialog, Needs preview)
 
-Audit funkció – AuditEntry, AuditService, AuditLogView
+Audit funkció
 
-NamedColor / Color registry – repo pattern és RegistryManager koncepció kidolgozása
+NamedColor / Color registry – jövőbeli irányként felvéve, kidolgozás alatt
 
 ⚠️ Függőség / Részben kész
-CsvReader utility (szétválasztás után csak importernek kell)
+CsvReader utility
 
-➕ Új ötlet
-Real‑time preview (anyagszükséglet azonnali számítása a UI‑ban)
+➕ Új ötlet / Jövőbeli irány
+Real‑time preview
 
-DataStateReporter (pillanatnyi registry állapot logolása)
+DataStateReporter
 
-RegistryBase + RegistryManager audit összefoglaló (automatikus regisztráció, size() alapú riport)
+RegistryBase + RegistryManager audit összefoglaló
 
 ColorRepository pattern (RAL + Pantone + Custom paletták integrálása, auditbarát törzsadat kezelés)
 
 🎯 Prioritási sorrend – fókuszpont lista
 OrderManager implementáció
 
-OrderHeader + OrderLine modellek
-
-Ügyfél autocomplete, tételszám auto-increment
-
-Export CSV/JSON → alapadat a számításhoz
-
-CutCalculator (need_calculator) + Needs preview
-
-Számítási logika: levonások, fix darabok
-
-Aggregálás: azonos ügyfél + termék + szín
-
-Real-time preview a UI-ban
+CutCalculator + Needs preview
 
 Audit funkció bevezetése
 
-AuditEntry modell, AuditService, AuditLogView
-
-DataStateReporter → pillanatnyi registry állapot logolása
-
 RegistryBase + RegistryManager → automatikus audit összefoglaló
 
-NamedColor / Color registry refaktor
+NamedColor / Color registry refaktor → jövőbeli irány, repo pattern + Pantone integráció
 
-Repo pattern bevezetése
+Kényelmi funkciók és finomhangolás (CustomerMaster, keresés, export bővítések, UI polishing)
 
-Pantone és más színrendszerek integrálása
+✨ Röviden
+Elkészült: Material, Product, Logger, Startup, Settings, FileNameHelper, Test framework, RalImporter.
 
-RegistryManager audit összefoglaló
+Folyamatban: OrderManager, CutCalculator, Audit funkció, UI bővítések.
 
-Kényelmi funkciók és finomhangolás
+Új irány: Color registry → repo pattern + RegistryManager audit összefoglaló + Pantone integráció.
 
-CustomerMaster (ügyféltörzs)
+Nem töröltünk semmit, csak jelöltük a státuszokat.
 
-Szűrés/keresés a rendelések között
-
-Export bővítések (Excel, PDF)
-
-UI polishing (színkocka, handlerSide toggle)
-
-👉 Így a mai nap eredményei (NormalizedRal, repo pattern ötlet, auditbarát registry koncepció) már bevezetve a táblába, státuszváltozásokat vezettük, semmit nem töröltünk vagy vontunk össze.
+👉 Így a Color registry téma mostantól hivatalosan jövőbeli irányként szerepel a roadmapben, és később kidolgozzuk.
