@@ -21,5 +21,6 @@ private:
     bool hasMinimumMaterials(int minCount);
 
     StartupStatus initMaterialRegistry();
+    StartupStatus initProductRegistry();
     StartupStatus initRalColors();
 };

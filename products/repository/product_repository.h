@@ -1,6 +1,6 @@
 // products/repository/product_repository.h
 #pragma once
-#include "products/model/product_definition.h"
+#include "products/model/product_master.h"
 #include "common/csv/filecontext.h"
 #include "products/registry/product_registry.h"
 #include <QVector>
@@ -34,8 +34,10 @@ private:
                                                             CsvImporter::FileContext& ctx);
 
     // --- Stage 2: Build ---
-    static std::optional<ProductDefinition> buildProductFromRow(const ProductRow& row,
+    static std::optional<ProductMaster> buildProductFromRow(const ProductRow& row,
                                                                 CsvImporter::FileContext& ctx);
+    // --- Stage 2.5: Validate ---
+    static QVector<CsvImporter::RowError> validateProductRow(const ProductRow& row, int lineNumber);
 
     // --- Stage 3: Load & Assemble ---
     static QVector<ProductRow> loadProductRows(CsvImporter::FileContext& ctx);

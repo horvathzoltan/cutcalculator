@@ -1,0 +1,267 @@
+🎨 ColorRegistry refaktor – követelményspecifikáció, funkcionális specifikáció és implementációs terv
+
+1️⃣ Követelményspecifikáció
+
+-   Auditálhatóság:
+    -   A ColorRegistry regisztrálja magát a RegistryManager-be, és
+        megjelenik az audit összefoglalóban.
+    -   Képes riportolni darabszámot és forrás-összesítést (pl. RAL
+        Classic vs. Design).
+-   Kereshetőség:
+    -   Keresés kód alapján (RAL/Pantone/HEX).
+    -   Keresés rendszer szerint (RAL Classic/Design/Plastic, stb.).
+    -   Opcionális: keresés név szerint (ha van).
+-   Bővíthetőség:
+    -   Források: RAL, később Pantone és Custom (saját paletták).
+    -   Új színrendszerek egyszerűen hozzáadhatók.
+-   Felelősségszétválasztás:
+    -   ColorRepository végzi a betöltést (CSV parsing, validáció,
+        duplikátum-check).
+    -   ColorRegistry tárol, lekérdez és auditál.
+-   Kódkompatibilitás:
+    -   NamedColor domain objektum megmarad, normalizálás logikája
+        újrahasznosítva.
+    -   RalImporter logikája nagy részben átmozgatva ColorRepository-ba.
+-   Egységesség a rendszerrel:
+    -   RegistryBase öröklés: typeName(), size(), auto-regisztráció.
+    -   StartupManager betölti a színeket a korábbi RAL importhoz
+        hasonlóan.
+
+------------------------------------------------------------------------
+
+2️⃣ Funkcionális specifikáció
+
+🧱 Osztályok és szerepek
+
+ColorRegistry : RegistryBase
+
+-   Szerep: auditálható gyűjtőtábla NamedColor objektumokhoz.
+-   Adatok: QVector _data; opcionális indexek (QHash) gyors kereséshez.
+-   Fő metódusok:
+    -   setData(const QVector&)
+    -   readAll() const
+    -   insert(const NamedColor&)
+    -   clear()
+    -   findByCode(const QString&) const
+    -   findBySystem(RalSystem) const
+    -   typeName() const → “NamedColor”
+    -   size() const
+
+ColorRepository
+
+-   Szerep: háromfázisú import forrásokból (RAL → majd Pantone, Custom).
+-   Fázisok:
+    -   Stage 1: Convert → CSV sor → ColorRow/RalRow
+    -   Stage 2.5: Validate → formátum, rendszer egyezés, HEX, kód
+    -   Stage 2: Build → NamedColor
+    -   Stage 3: Assemble → duplikátum-ellenőrzés, beszúrás
+        ColorRegistry-be
+-   Metódusok:
+    -   bool loadRalColors(const QList&, ColorRegistry&)
+    -   (később) bool loadPantoneColors(const QString& path,
+        ColorRegistry&)
+    -   (később) bool loadCustomColors(const QString& path,
+        ColorRegistry&)
+
+NamedColor (refaktorált)
+
+-   Szerep: domain objektum és normalizációs segédfüggvények.
+-   Megmarad: normalizeRalExtended(), fromRal(), fromHex(), isValid(),
+    toString()
+-   Eltávolítandó/tisztítandó:
+    -   Statikus registry (_ralColors), insertRalColor(),
+        containsRalColor(), clearRalColors()
+-   Új használat: ColorRegistry végzi a tárolást és keresést.
+
+RalImporter (átmozgatva vagy vékonyított)
+
+-   Szerep: logika átmozgatása ColorRepository-ba.
+-   Maradhat helperként: RalRow konverzió és validációs segédfüggvények,
+    ha szeretnél modulárisan tartani.
+
+🔄 Adatfolyam
+
+1.  StartupManager → initColorRegistry()
+2.  ColorRepository.loadRalColors(sources, ColorRegistry::instance())
+    -   Convert: CSV → RalRow
+    -   Validate: RalRow → hibák ctx-be
+    -   Build: RalRow → NamedColor
+    -   Assemble: duplikátumok kiszűrése, beszúrás ColorRegistry-be
+3.  RegistryManager audit → ColorRegistry megjelenik a riportban.
+
+------------------------------------------------------------------------
+
+3️⃣ Implementációs terv
+
+🧭 Lépések
+
+1.  ColorRegistry létrehozása
+    -   Fájlok: common/color/color_registry.h/.cpp
+    -   Öröklés: RegistryBase
+    -   Singleton: ColorRegistry::instance()
+    -   Metódusok: setData, insert, readAll, findByCode, findBySystem,
+        clear, typeName, size
+2.  ColorRepository létrehozása
+    -   Fájlok: common/color/color_repository.h/.cpp
+    -   Átmozgatás: RalImporter Stage 1–3 kódja ide (kis igazításokkal)
+    -   Assembler: duplikátum ellenőrzés ColorRegistry szintjén (kód +
+        rendszer alapján)
+3.  NamedColor tisztítása
+    -   Eltávolítás: _ralColors, insertRalColor(), containsRalColor(),
+        clearRalColors()
+    -   Meghagyás: normalizeRalExtended(), fromRal(), fromHex()
+    -   fromRal() most ColorRegistry-t kérdez meg; ha nincs találat,
+        visszatér „Ismeretlen RAL” domain objektummal (nem tárol).
+4.  StartupManager integráció
+    -   initColorRegistry() → loadRalColors() meghívása
+        ColorRepository-ból
+    -   Audit összefoglalóban megjelenik a ColorRegistry
+5.  RegistryManager integráció
+    -   ColorRegistry automatikus regisztráció a RegistryBase
+        konstruktorán keresztül
+    -   typeName() → “NamedColor”, size() → darabszám
+6.  Tesztelés és validálás
+    -   CSV import összefoglaló: RAL Classic/Design/Plastic fájlok
+        státuszai
+    -   Audit riport: ColorRegistry sor megjelenik (Count összeggel)
+    -   Keresés teszt: findByCode(“RAL 7016”),
+        findBySystem(RalSystem::Classic)
+
+📁 Érintett fájlok és áthelyezések
+
+-   Új:
+    -   common/color/color_registry.h/.cpp
+    -   common/color/color_repository.h/.cpp
+-   Refaktor:
+    -   common/color/namedcolor.h/.cpp (statikus map eltávolítása)
+    -   common/color/ral_importer.h/.cpp (logika nagy része a
+        repositoryba)
+-   Integráció:
+    -   common/registry/registry_manager.* (nem feltétlen kell
+        módosítanod, ha RegistryBase auto-regisztrál)
+    -   startup_manager.* → initColorRegistry()
+
+🔧 Példa vázlatok
+
+ColorRegistry vázlat
+
+    // common/color/color_registry.h
+    #pragma once
+    #include "common/registry/registry_base.h"
+    #include "common/color/namedcolor.h"
+    #include <QVector>
+    #include <QHash>
+
+    class ColorRegistry : public RegistryBase {
+    private:
+        ColorRegistry() : RegistryBase("ColorRegistry") {}
+        QVector<NamedColor> _data;
+        QHash<QString, int> _byCode; // code → index
+    public:
+        static ColorRegistry& instance();
+
+        QString typeName() const override { return "NamedColor"; }
+        int size() const override { return _data.size(); }
+
+        void clear();
+        void setData(const QVector<NamedColor>& v);
+        void insert(const NamedColor& nc);
+
+        const QVector<NamedColor>& readAll() const { return _data; }
+        const NamedColor* findByCode(const QString& code) const;
+        QVector<NamedColor> findBySystem(RalSystem sys) const;
+    };
+
+ColorRepository vázlat
+
+    // common/color/color_repository.h
+    #pragma once
+    #include "common/color/ralsystem.h"
+    #include "common/color/namedcolor.h"
+    #include "common/csv/csvimporter.h"
+    #include "common/color/color_registry.h"
+
+    struct RalSource { RalSystem system; QString filePath; };
+    struct RalRow { QString code; QString name; QString hex; int lineNumber; };
+
+    class ColorRepository {
+    public:
+        static bool loadRalColors(const QList<RalSource>& sources, ColorRegistry& registry);
+    private:
+        static std::optional<RalRow> convertRow(const QVector<QString>& row, CsvImporter::FileContext& ctx);
+        static QVector<CsvImporter::RowError> validateRow(const RalRow& rr, RalSystem system);
+        static std::optional<NamedColor> buildColor(const RalRow& rr, CsvImporter::FileContext& ctx, RalSystem system);
+    };
+
+NamedColor módosítás (kivonat)
+
+-   Töröld a statikus registryt és a hozzá kapcsolódó metódusokat.
+-   fromRal() és fromHex() maradhat utilnak, de ne írjon a registrybe.
+
+------------------------------------------------------------------------
+
+✅ Eredmény és átmeneti kompatibilitás
+
+-   A jelenlegi kód nagy arányban újrahasznosítható: a RalImporter
+    validációs és build logikája minimális átalakítással átvehető.
+-   Az új rendszer auditálható: ColorRegistry regisztrálódik, darabszám
+    riport készül.
+-   A NamedColor továbbra is domain objektum, a keresés és tárolás a
+    Registry feladata.
+-   A StartupManager és az audit réteg egységesen látja a
+    ColorRegistry-t.
+
+------------------------------------------------------------------------
+
+ColorRegistry refaktor – lépésekre bontott terv
+
+1. Előkészítés
+   - Nyisd meg a common/color mappát.
+   - Azonosítsd a jelenlegi NamedColor és RalImporter fájlokat.
+   - Készíts biztonsági mentést (git branch vagy diff).
+
+2. ColorRegistry létrehozása
+   - Hozz létre új fájlokat: color_registry.h/.cpp.
+   - Örököld a RegistryBase osztályt.
+   - Implementáld: typeName(), size(), setData(), insert(), clear(), readAll(), findByCode(), findBySystem().
+   - Alakítsd singletonná: ColorRegistry::instance().
+
+3. ColorRepository létrehozása
+   - Hozz létre új fájlokat: color_repository.h/.cpp.
+   - Mozgasd át a RalImporter Stage 1–3 logikáját ide.
+   - Implementáld: convertRow(), validateRow(), buildColor(), loadRalColors().
+   - Az Assemble fázisban a ColorRegistry::insert() hívódjon.
+
+4. NamedColor tisztítása
+   - Töröld a statikus mapot (_ralColors).
+   - Töröld a metódusokat: insertRalColor(), containsRalColor(), clearRalColors().
+   - Hagyd meg: normalizeRalExtended(), fromRal(), fromHex(), isValid(), toString().
+   - Módosítsd a fromRal() metódust úgy, hogy ColorRegistry::findByCode()-ot hívjon.
+
+5. RalImporter vékonyítása
+   - Hagyd meg helperként a RalRow konverziót és validációt.
+   - A fő loadRalColors() logikát töröld vagy irányítsd át a ColorRepository-ra.
+
+6. StartupManager integráció
+   - Adj hozzá initColorRegistry() metódust.
+   - Hívd meg a ColorRepository::loadRalColors()-t a megfelelő forrásokkal.
+   - Ellenőrizd, hogy a RegistryManager audit riportban megjelenik a ColorRegistry.
+
+7. RegistryManager integráció
+   - Biztosítsd, hogy a ColorRegistry automatikusan regisztrálódjon.
+   - Ellenőrizd, hogy typeName() → "NamedColor", size() → darabszám.
+
+8. Tesztelés
+   - Futtasd a CSV importot RAL Classic/Design/Plastic fájlokkal.
+   - Ellenőrizd az audit riportot: ColorRegistry sor megjelenik.
+   - Teszteld a keresést: findByCode("RAL 7016"), findBySystem(RalSystem::Classic).
+   - Ellenőrizd, hogy hibás HEX vagy RAL kódok audit hibaként jelennek meg.
+
+9. Dokumentáció
+   - Frissítsd a fejlesztői dokumentációt: ColorRegistry és ColorRepository szerepe.
+   - Írd le, hogy NamedColor már nem tartalmaz statikus mapot.
+
+10. Véglegesítés
+   - Merge-eld a refaktor branch-et.
+   - Tisztítsd meg a régi RalImporter hivatkozásokat.
+   - Ellenőrizd, hogy minden registry auditbarát módon működik.

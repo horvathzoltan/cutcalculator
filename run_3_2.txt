@@ -2,7 +2,7 @@
 
 1. **Adatmodellek**
    - ✅ `materials/model/material_master.h/.cpp`
-   - ✅ `products/model/product_definition.h/.cpp`
+   - ✅ `products/model/product_master.h/.cpp`
    - `orders/model/order_header.h/.cpp`, `order_line.h/.cpp`
    - `calculation/model/need_result.h/.cpp`
 

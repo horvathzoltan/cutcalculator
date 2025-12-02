@@ -84,7 +84,7 @@ HEADERS += \
     materials/registry/material_registry.h \
     materials/repository/material_repository.h \
     materials/view/material_table_manager.h \
-    products/model/product_definition.h \
+    products/model/product_master.h \
     products/registry/product_registry.h \
     products/repository/product_repository.h \
     products/view/product_tree_manager.h \
@@ -107,6 +107,7 @@ DISTFILES += \
     run_3_1.txt \
     run_3_2.txt \
     run_4_AnyagszuksegletSzamitas.txt \
+    run_4_ColorRegistry.txt \
     run_4_RegistryManager.txt \
     run_4_ThreePhaseImport.txt \
     run_4_ValidationRules.txt \

@@ -62,18 +62,17 @@ int main(int argc, char *argv[])
     StartupManager manager;
     StartupStatus status = manager.runStartupSequence();
 
-    RegistryManager::instance().auditReport();
-
     // Opcionális finomhangolás a dialógusokra:
     StartupStatusManager::setPreviewLimit(2);           // hány warning jelenjen meg előnézetben
     StartupStatusManager::setShowLogHint(true);         // mutassuk-e a "részletek a logban" sort
     StartupStatusManager::setHumanLogPath("errors.txt");// emberbarát fájlnév (ha van)
-
-    if (!StartupStatusManager::handle(status)) {
-        return -1; // kritikus hiba → leállás
-    }
+    bool startupOk = StartupStatusManager::handle(status);
 
     RegistryManager::instance().auditReport();
+
+    if (!startupOk) {
+        return -1; // kritikus hiba → leállás
+    }
 
     MainWindow w;
     // MainWindow megnyílás/bezárás automatikus követése

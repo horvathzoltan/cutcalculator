@@ -14,7 +14,7 @@ public:
 
     virtual QString name() const { return m_name; }
     virtual QString typeName() const = 0;
-    virtual int count() const = 0;
+    virtual int size() const = 0;
 
 protected:
     QString m_name;

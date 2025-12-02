@@ -39,7 +39,7 @@ public:
             zInfo().noquote() << QString("%1 | %2 | %3")
             .arg(repo->name(), -18)
                 .arg(repo->typeName(), -18)
-                .arg(repo->count(), 5);
+                .arg(repo->size(), 5);
         }
 
         zInfo().noquote() << QString("-----------------------------------------------");
@@ -52,7 +52,7 @@ public:
 
     int totalCount() const {
         int sum = 0;
-        for (auto* repo : repos) sum += repo->count();
+        for (auto* repo : repos) sum += repo->size();
         return sum;
     }
 

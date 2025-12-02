@@ -26,15 +26,18 @@ ProductRepository::convertRowToProductRow(const QVector<QString>& parts,
 }
 
 // --- Stage 2: Build ---
-std::optional<ProductDefinition>
+std::optional<ProductMaster>
 ProductRepository::buildProductFromRow(const ProductRow& row,
                                        CsvImporter::FileContext& ctx) {
-    if (row.idStr.isEmpty() || row.name.isEmpty()) {
-        ctx.addError(ctx.currentLineNumber(), "⚠️ Hiányzó id vagy name");
+    auto rowErrors = validateProductRow(row, ctx.currentLineNumber());
+    ctx.addErrors(rowErrors);
+
+    if (!rowErrors.isEmpty()) {
+        // Ha kritikus hiba van, ne építsük meg az objektumot
         return std::nullopt;
     }
 
-    ProductDefinition def;
+    ProductMaster def;
     def.id = QUuid(row.idStr);
     def.parentId = row.parentIdStr.isEmpty() ? QUuid() : QUuid(row.parentIdStr);
     def.name = row.name;
@@ -42,6 +45,36 @@ ProductRepository::buildProductFromRow(const ProductRow& row,
 
     return def;
 }
+
+
+// --- Stage 2.5: Validate ---
+QVector<CsvImporter::RowError>
+ProductRepository::validateProductRow(const ProductRow& row, int lineNumber) {
+    QVector<CsvImporter::RowError> errors;
+
+    if (row.idStr.isEmpty())
+        errors.append({lineNumber, "⚠️ Hiányzó id"});
+    else {
+        QUuid id(row.idStr);
+        if (id.isNull())
+            errors.append({lineNumber, "⚠️ Érvénytelen UUID"});
+    }
+
+    if (row.name.isEmpty())
+        errors.append({lineNumber, "⚠️ Hiányzó name"});
+
+    if (row.barcode.isEmpty())
+        errors.append({lineNumber, "⚠️ Hiányzó barcode"});
+
+    if (!row.parentIdStr.isEmpty()) {
+        QUuid pid(row.parentIdStr);
+        if (pid.isNull())
+            errors.append({lineNumber, "⚠️ Érvénytelen parentId UUID"});
+    }
+
+    return errors;
+}
+
 
 // --- Stage 3: Load & Assemble ---
 QVector<ProductRepository::ProductRow>
@@ -62,8 +95,8 @@ bool ProductRepository::loadFromCSV(ProductRegistry& registry) {
 
     const QVector<ProductRepository::ProductRow> rows = loadProductRows(ctx);
 
-    const QVector<ProductDefinition> defs =
-        CsvImporter::buildAll<ProductRow, ProductDefinition>(
+    const QVector<ProductMaster> defs =
+        CsvImporter::buildAll<ProductRow, ProductMaster>(
         rows, buildProductFromRow, ctx);
 
     if (ctx.hasErrors()) {

@@ -6,31 +6,31 @@ ProductRegistry& ProductRegistry::instance() {
     return inst;
 }
 
-void ProductRegistry::setData(const QVector<ProductDefinition>& v) {
+void ProductRegistry::setData(const QVector<ProductMaster>& v) {
     _data = v;
 }
 
-const QVector<ProductDefinition>& ProductRegistry::readAll() const {
+const QVector<ProductMaster>& ProductRegistry::readAll() const {
     return _data;
 }
 
-ProductDefinition* ProductRegistry::findById(const QUuid& id) {
+ProductMaster* ProductRegistry::findById(const QUuid& id) {
     for (auto& def : _data) {
         if (def.id == id) return &def;
     }
     return nullptr;
 }
 
-QVector<ProductDefinition> ProductRegistry::findChildren(const QUuid& parentId) const {
-    QVector<ProductDefinition> children;
+QVector<ProductMaster> ProductRegistry::findChildren(const QUuid& parentId) const {
+    QVector<ProductMaster> children;
     for (const auto& def : _data) {
         if (def.parentId == parentId) children.append(def);
     }
     return children;
 }
 
-QVector<ProductDefinition> ProductRegistry::roots() const {
-    QVector<ProductDefinition> roots;
+QVector<ProductMaster> ProductRegistry::roots() const {
+    QVector<ProductMaster> roots;
     for (const auto& def : _data) {
         if (def.isRoot()) roots.append(def);
     }

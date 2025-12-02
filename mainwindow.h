@@ -37,12 +37,12 @@ private:
     MaterialTableManager* _materialsManager = nullptr;
 
     void initMaterialsTab();   // viewer init
-    void loadMaterials();      // repository → registry
+    //void loadMaterials();      // repository → registry
 /*product*/
     QTreeView* _productTreeView = nullptr;
     ProductTreeManager* _productTreeManager = nullptr;
 
     void initProductTypesTab();   // új tab létrehozása + fa
-    void loadProductDefinitions(); // CSV → registry
+    //void loadProductDefinitions(); // CSV → registry
 };
 #endif // MAINWINDOW_H

@@ -41,10 +41,10 @@ MainWindow::MainWindow(QWidget *parent)
         ui->tabWidget->setCurrentIndex(savedTab);
     }
 
-    loadMaterials(); // 1) Anyagok betöltése registry-be (CSV)
+    //loadMaterials(); // 1) Anyagok betöltése registry-be (CSV)
     initMaterialsTab(); // 2) Viewer fül inicializálása és feltöltése
 
-    loadProductDefinitions();     // 1) Betöltés a registry-be
+    //loadProductDefinitions();     // 1) Betöltés a registry-be
     initProductTypesTab();     // 2) Tab + fa felépítése
 
     zEvent("✅ MainWindow inited");
@@ -102,11 +102,11 @@ void MainWindow::closeEvent(QCloseEvent* event)
 
 /**/
 
-void MainWindow::loadMaterials() {
-    // Betölti a materials.csv-t → registry.setData(...)
-    // Ha a FileNameHelper nincs inicializálva, a repo false-szal tér vissza.
-    MaterialRepository::loadFromCSV(MaterialRegistry::instance());
-}
+// void MainWindow::loadMaterials() {
+//     // Betölti a materials.csv-t → registry.setData(...)
+//     // Ha a FileNameHelper nincs inicializálva, a repo false-szal tér vissza.
+//     MaterialRepository::loadFromCSV(MaterialRegistry::instance());
+// }
 
 void MainWindow::initMaterialsTab() {
     // Keressünk egy tabot, vagy hozzunk létre egyet programból
@@ -132,15 +132,15 @@ void MainWindow::initMaterialsTab() {
 
 /*products*/
 
-void MainWindow::loadProductDefinitions() {
-    bool loaded = ProductRepository::loadFromCSV(ProductRegistry::instance());
-    if(loaded){
-        zInfo(QString("📊 ProductRegistry: %1 terméktípus tárolva").arg(ProductRegistry::instance().size()));
-    }
-    else{
-        zInfo("⚠️ ProductRegistry: terméktípusok betöltése sikertelen");
-    }
-}
+// void MainWindow::loadProductDefinitions() {
+//     bool loaded = ProductRepository::loadFromCSV(ProductRegistry::instance());
+//     if(loaded){
+//         zInfo(QString("📊 ProductRegistry: %1 terméktípus tárolva").arg(ProductRegistry::instance().size()));
+//     }
+//     else{
+//         zInfo("⚠️ ProductRegistry: terméktípusok betöltése sikertelen");
+//     }
+// }
 
 void MainWindow::initProductTypesTab() {
     // Új tab programból

@@ -26,7 +26,7 @@ public:
     static MaterialRegistry& instance();
 
     QString typeName() const override { return "MaterialMaster"; }
-    int count() const override { return _data.size(); }
+    int size() const override { return _data.size(); }
 
     void setData(const QVector<MaterialMaster>& v) { _data = v;}
     // ➕ Új anyag hozzáadása, csak ha code egyedi
@@ -40,5 +40,5 @@ public:
 
     bool isEmpty() const { return _data.isEmpty(); }
 
-    int size() const { return _data.size(); }
+    //int size() const { return _data.size(); }
 };
