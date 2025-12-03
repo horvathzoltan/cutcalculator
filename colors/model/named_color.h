@@ -1,15 +1,17 @@
 #pragma once
 
-#include "common/color/ralsystem.h"
+#include "ralsystem.h"
 #include <QColor>
 #include <QMap>
 #include <QString>
 
 /**
- * @brief Domain modell: névvel ellátott szín (HEX/RAL), RAL rendszerrel.
+ * @brief NamedColor – domain modell, tárolás nélkül.
  *
- * Statikus registry-ben tároljuk a betöltött RAL színkészletet.
+ * A színek tárolását és auditálását a ColorRegistry végzi.
+ * A NamedColor csak reprezentációs logikát tartalmaz (HEX/RAL normalizálás, toString).
  */
+
 class NamedColor {
 public:
     NamedColor() = default;
@@ -24,17 +26,11 @@ public:
     RalSystem system() const;
 
     // Statikus segédfüggvények (RAL/HEX gyárak)
-   // static NamedColor fromRal(RalSystem system, const QString& ralCode);
     static NamedColor fromRal(const QString& ralCode);
     static NamedColor fromHex(const QString& hexCode);
 
     QString toString() const;
     bool isValid() const;
-
-    // Registry API (Assemble fázishoz)
-    static bool containsRalColor(const QString& key);
-    static void insertRalColor(const NamedColor& value);
-    static void clearRalColors();
 
     struct NormalizedRal {
         QString key;       // pl. "RAL 7016"
@@ -54,8 +50,4 @@ private:
     QString m_name;
     QString m_code;
     RalSystem m_system = RalSystem::Unknown;
-
-    static QMap<RalSystem, QMap<QString, NamedColor>> _ralColors;
-
-
 };

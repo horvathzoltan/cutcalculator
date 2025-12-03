@@ -1,104 +1,171 @@
-📊 Összevont állapottábla – aktuális + jövőbeli
-Modul / Feladat	Állapot	Megjegyzés
-Material pipeline (modell + repo + registry + view)	✅ Kész	Stage2.5 validátor bevezetve, hiányzó vs. érvénytelen adat szétválasztva
-Product pipeline (modell + repo + registry + view)	✅ Kész	Fa megjelenítés tesztadatokkal
-Logger subsystem	✅ Kész	Auditálható logolás
-Startup subsystem	✅ Kész	Inicializáció és életciklus kezelés
-Settings subsystem	✅ Kész	Fallback logika működik
-FileNameHelper	✅ Kész	Teljesen auditálható
-CsvReader utility	⚠️ Függőség	Szétválasztás után csak az importernek kell
-RalImporter modul	✅ Kész	Háromfázisú import, regex validáció, auditbarát duplikátumkezelés, ➕ NormalizedRal struct
-OrderManager (megrendelések)	🚧 Specifikáció	Modellek, státuszkezelés, export CSV/JSON
-CustomerMaster	🚧 Tervezés	Ügyféltörzs, autocomplete ügyfélnév
-CutCalculator (need_calculator)	🚧 Specifikáció	Számítási logika, aggregálás, audit jelzés, ➕ Real‑time preview ötlet
-NeedsPresenter + NeedsView	🚧 Tervezés	Real‑time anyagszükséglet preview a UI‑ban
-UI réteg (Qt)	🚧 Tervezés	MainWindow + Material/Product tabok ✅, Order entry dialog 🚧, Needs preview 🚧
-Audit funkció	🚧 Tervezés	AuditEntry modell, AuditService, AuditLogView, ➕ DataStateReporter ötlet
-Test framework	✅ Kész	TestManager, EventLogger tests
-NamedColor / Color registry	🚧 Tervezés	Jelenleg statikus map. ➕ Új irány: Repo pattern, RegistryManager audit összefoglaló, Pantone és más színrendszerek integrálása
-NeedRule / NeedCalculation kapcsolótábla	🚧 Tervezés	Új koncepció: ProductDefinition ↔ MaterialMaster kapcsolótábla, string alapú formula értelmezés
-Formula értelmezés	🚧 Tervezés	➕ Új irány: auditbarát parser integráció (cparse), regex alapú egyszerű értelmezés
+📊 Összevont állapottábla – aktuális + jövőbeli (2025.12.03. frissítés)
+
+  -----------------------------------------------------------------------
+  Modul / Feladat                 Állapot          Megjegyzés
+  ------------------------------- ---------------- ----------------------
+  Material pipeline (modell +     ✅ Kész          Stage2.5 validátor
+  repo + registry + view)                          bevezetve, hiányzó
+                                                   vs. érvénytelen adat
+                                                   szétválasztva
+
+  Product pipeline (modell +      ✅ Kész          Fa megjelenítés
+  repo + registry + view)                          tesztadatokkal
+
+  Logger subsystem                ✅ Kész          Auditálható logolás
+
+  Startup subsystem               ✅ Kész          Inicializáció és
+                                                   életciklus kezelés
+
+  Settings subsystem              ✅ Kész          Fallback logika
+                                                   működik
+
+  FileNameHelper                  ✅ Kész          Teljesen auditálható
+
+  CsvReader utility               ⚠️ Függőség      Szétválasztás után
+                                                   csak az importernek
+                                                   kell
+
+  RalImporter modul               ✅ Kész          Háromfázisú import,
+                                                   regex validáció,
+                                                   auditbarát
+                                                   duplikátumkezelés, ➕
+                                                   NormalizedRal struct
+
+  OrderManager (megrendelések)    🚧 Specifikáció  Modellek,
+                                                   státuszkezelés, export
+                                                   CSV/JSON
+
+  CustomerMaster                  🚧 Tervezés      Ügyféltörzs,
+                                                   autocomplete ügyfélnév
+
+  CutCalculator (need_calculator) 🚧 Specifikáció  Számítási logika,
+                                                   aggregálás, audit
+                                                   jelzés, ➕ Real‑time
+                                                   preview ötlet
+
+  NeedsPresenter + NeedsView      🚧 Tervezés      Real‑time
+                                                   anyagszükséglet
+                                                   preview a UI‑ban
+
+  UI réteg (Qt)                   🚧 Tervezés      MainWindow +
+                                                   Material/Product tabok
+                                                   ✅, Order entry dialog
+                                                   🚧, Needs preview 🚧
+
+  Audit funkció                   🚧 Tervezés      AuditEntry modell,
+                                                   AuditService,
+                                                   AuditLogView, ➕
+                                                   DataStateReporter
+                                                   ötlet
+
+  Test framework                  ✅ Kész          TestManager,
+                                                   EventLogger tests
+
+  NamedColor / Color registry     ✅ Kész          Refaktor lezárva: repo
+                                                   pattern,
+                                                   RegistryManager audit
+                                                   összefoglaló, Pantone
+                                                   integráció előkészítve
+
+  NeedRule / NeedCalculation      🚧 Tervezés      Új koncepció:
+  kapcsolótábla                                    ProductDefinition ↔
+                                                   MaterialMaster
+                                                   kapcsolótábla, string
+                                                   alapú formula
+                                                   értelmezés
+
+  Formula értelmezés              🚧 Tervezés      ➕ Új irány:
+                                                   auditbarát parser
+                                                   integráció (cparse),
+                                                   regex alapú egyszerű
+                                                   értelmezés
+
+  🔥 SOS / Tűzoltás               🚧               Material import hibák
+                                                   (hiányzó átmérő),
+                                                   rövid távú javítás
+                                                   szükséges
+  -----------------------------------------------------------------------
+
+------------------------------------------------------------------------
+
 📊 Idővonalas roadmap
-✅ Elkészült
-Material pipeline (Stage2.5 validátorral)
 
-RalImporter modul (NormalizedRal, auditbarát duplikátumkezelés)
+✅ Elkészült - Material pipeline (Stage2.5 validátorral)
+- RalImporter modul (NormalizedRal, auditbarát duplikátumkezelés)
+- Product pipeline
+- Logger subsystem
+- Startup subsystem
+- Settings subsystem
+- FileNameHelper
+- Test framework
+- NamedColor / Color registry refaktor → repo pattern, RegistryManager
+audit összefoglaló, Pantone integráció előkészítve
+- RegistryBase + RegistryManager → automatikus audit összefoglaló
 
-Product pipeline
+🚧 Folyamatban - OrderManager
+- CustomerMaster
+- CutCalculator
+- NeedsPresenter + NeedsView
+- UI réteg (Order entry dialog, Needs preview)
+- Audit funkció
+- NeedRule / NeedCalculation kapcsolótábla – új koncepció kidolgozás
+alatt
+- Formula értelmezés – cparse integráció előkészítése
 
-Logger subsystem
+⚠️ Függőség / Részben kész - CsvReader utility
 
-Startup subsystem
+➕ Új ötlet / Jövőbeli irány - Real‑time preview
+- DataStateReporter
+- ColorRepository pattern (RAL + Pantone + Custom paletták integrálása,
+auditbarát törzsadat kezelés)
+- cparse integráció – auditbarát formula parser
+- Kapcsolótábla modell – NeedRule + NeedCalculation szétválasztás,
+string alapú számítási módok
 
-Settings subsystem
+------------------------------------------------------------------------
 
-FileNameHelper
+🎯 Prioritási sorrend – fókuszpont lista 1. 🔥 Material import hibák →
+rövid távú tűzoltás
+2. OrderManager implementáció → modellek, státuszkezelés, export
+3. CutCalculator + Needs preview → számítási logika, real‑time UI
+4. Audit funkció bevezetése
+5. Formula értelmezés → cparse integráció, auditbarát parser
+6. NeedRule / NeedCalculation kapcsolótábla implementáció → új koncepció
+7. Kényelmi funkciók és finomhangolás (CustomerMaster, keresés, export
+bővítések, UI polishing)
 
-Test framework
-
-🚧 Folyamatban
-OrderManager
-
-CustomerMaster
-
-CutCalculator
-
-NeedsPresenter + NeedsView
-
-UI réteg (Order entry dialog, Needs preview)
-
-Audit funkció
-
-NamedColor / Color registry – jövőbeli irányként felvéve, kidolgozás alatt
-
-NeedRule / NeedCalculation kapcsolótábla – új koncepció kidolgozás alatt
-
-Formula értelmezés – cparse integráció előkészítése
-
-⚠️ Függőség / Részben kész
-CsvReader utility
-
-➕ Új ötlet / Jövőbeli irány
-Real‑time preview
-
-DataStateReporter
-
-RegistryBase + RegistryManager audit összefoglaló
-
-ColorRepository pattern (RAL + Pantone + Custom paletták integrálása, auditbarát törzsadat kezelés)
-
-cparse integráció – auditbarát formula parser
-
-Kapcsolótábla modell – NeedRule + NeedCalculation szétválasztás, string alapú számítási módok
-
-🎯 Prioritási sorrend – fókuszpont lista
-OrderManager implementáció
-
-CutCalculator + Needs preview
-
-Audit funkció bevezetése
-
-RegistryBase + RegistryManager → automatikus audit összefoglaló
-
-NamedColor / Color registry refaktor → jövőbeli irány, repo pattern + Pantone integráció
-
-NeedRule / NeedCalculation kapcsolótábla implementáció → új koncepció
-
-Formula értelmezés → cparse integráció, auditbarát parser
-
-Kényelmi funkciók és finomhangolás (CustomerMaster, keresés, export bővítések, UI polishing)
+------------------------------------------------------------------------
 
 ✨ Röviden
-Elkészült: Material, Product, Logger, Startup, Settings, FileNameHelper, Test framework, RalImporter.
+A mai nap eredményeivel két nagy refaktor lezárult:
+- ✅ NamedColor / Color registry → repo pattern, RegistryManager audit
+összefoglaló, Pantone integráció előkészítve
+- ✅ RegistryBase + RegistryManager → automatikus audit összefoglaló
+működik
 
-Folyamatban: OrderManager, CutCalculator, Audit funkció, UI bővítések.
+A roadmap frissült, új ötletek felvezetve (NeedRule / NeedCalculation
+kapcsolótábla, string alapú számítási mód, cparse integráció). A holnapi
+fókuszban a 🔥 Material import hibák tűzoltása mellett az OrderManager,
+CutCalculator és Audit funkció kerül előtérbe.
 
-Új irányok:
+------------------------------------------------------------------------
 
-NeedRule / NeedCalculation kapcsolótábla → tiszta kötőtábla modell.
+🚀 Sprint fókusz (🔥 SOS pontokkal)
+- 🔥 Material import hibák → rövid távú tűzoltás, hiányzó átmérő
+kezelése
+- OrderManager implementáció → modellek, státuszkezelés, export
+- CutCalculator + Needs preview → számítási logika + real‑time UI
+- Audit funkció → AuditEntry modell, AuditService, AuditLogView
 
-Formula értelmezés → auditbarát parser (cparse) integráció.
+📌 Mai eredmények
+- ✅ NamedColor / Color registry refaktor lezárva
+- ✅ RegistryBase + RegistryManager audit összefoglaló működik
+- ➕ Roadmapbe felvezetve: kapcsolótábla koncepció, string alapú
+számítási mód, cparse integráció ötlete
 
-Nem töröltünk semmit, csak jelöltük a státuszokat és kiegészítettük a mai nap eredményeivel.
-
-👉 Így a mai nap eredményei (kapcsolótábla koncepció, string alapú számítási mód, cparse integráció ötlete) hivatalosan felvezetve a roadmapbe, státuszváltozásokkal.
+👉 Holnap fókusz
+- 🔥 Material import hibák gyors javítása (hiányzó átmérő)
+- OrderManager specifikáció pontosítása és implementáció elkezdése
+- CutCalculator számítási logika és Needs preview UI prototípus
+- Audit funkció alapmodell és szolgáltatás bevezetése
+- Formula értelmezés → cparse integráció előkészítése

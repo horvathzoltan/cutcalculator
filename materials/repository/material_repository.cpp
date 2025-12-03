@@ -13,7 +13,7 @@
 #include <QUuid>
 #include "common/utils/filename_helper.h"
 #include "common/csv/csvimporter.h"
-#include "common/color/namedcolor.h"
+#include "colors/model/named_color.h"
 #include "materials/model/cutting_mode.h"
 #include "materials/model/painting_mode.h"
 

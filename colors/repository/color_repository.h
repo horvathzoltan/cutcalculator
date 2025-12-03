@@ -1,8 +1,8 @@
 #pragma once
 
-#include "common/color/ralsystem.h"
+#include "colors/model/ralsystem.h"
 #include "common/csv/csvimporter.h"
-#include "namedcolor.h"
+#include "colors/model/named_color.h"
 #include <QString>
 #include <QList>
 #include <optional>
@@ -37,7 +37,7 @@ struct RalRow {
  * 2) Build (+ Validate): RalRow → NamedColor (tartalmi és runtime ellenőrzések)
  * 3) Assemble: NamedColor → registry (konzisztencia, duplikátumok)
  */
-class RalImporter {
+class ColorRepository {
 public:
     /**
      * @brief Betölti a megadott forrásokból a RAL színeket.

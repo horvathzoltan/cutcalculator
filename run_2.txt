@@ -2,32 +2,30 @@
 adj snippetet régi és új kóddal, +/‑ jelek nélkül, külön blokkban
 
 
-a project állapotát ebben a formátumban kérem:
-🧩 Állapottábla – 2025.10.xx. (frissítve, esti,reggeli,déli stb... állapot)
-# Tevékenység Terv Kész Új Köv Megjegyzés
-
-az sos és a tűzoltást jelölt tűz ikonnal, ezek a blokkok kellenek:
-a táblázat, a 🚀 Sprint fókusz (🔥 SOS pontokkal), a 📌 Mai eredmények és az 👉 Holnap fókusz.
-
-ThinkDeep: kérem a FileContextCollector éles implementációját, kommentelve, dockommentelve,
-javaslatot a fájl nevére, helyére, és integrációjára a jelenlegi programban.
-milyen fájlokra van ehhez szüséged?
 
 
-amit át kellene nézni, és ami elkészült, meg kéne jelölni, ami még nem, de belefogtunk, azt is,
-és amit pluszban kiagyaltunk, azt meg főleg hogy! de most ezúttal ne kitörölj pontokat, hanem csak jelöljük készre!
-
-de! van kétféle tervünk ha jól emlékszek! azt is csak kiegészítve dolgozd át, légyszíves!
-
-
-frissítsük, egészítsük ki a mai nap eredményeivel és ötleteivel, vezessük a státuszbeli változásokat, de ne töröljünk és ne vonjunk össze semmit!
+állapottáblánkat frissítsük, egészítsük ki a mai nap eredményeivel és ötleteivel,
+vezessük a státuszbeli változásokat, de ne töröljünk és ne vonjunk össze semmit!
+az sos és a tűzoltást jelölt tűz ikonnal! ezek a blokkok kellenek: 
+a táblázat,
+az 📊 Idővonalas roadmap
+🎯 Prioritási sorrend – fókuszpont lista
+✨ Röviden
+majd az alábbi bontásban:
+a 🚀 Sprint fókusz (🔥 SOS pontokkal), a 📌 Mai eredmények és az 👉 Holnap fókusz.
 
 Példa prompt:
 Adj egy teljes C++ implementációt a fent szóban forgó osztályokról kommentekkel, dockommentekkel,
 javaslatokkal az osztályok elnevezésére, elhelyezésére a projecten belül.
 A fájlnevek a projekt névkonvencióját kövessék (snake_case, pl. registry_base.h, registry_manager.h).
+és integrációjára a jelenlegi programban.
 Legelőször csak azoknak a fájloknak a listáját add meg, amik tartalmát meg kell mindehez ismerned.
 
 Adj egy teljes követelményspecifikációt, funkcionális specifikációt és implementációs tervet 
 txt formátummal kompatibilis módon - de használj emojikat
   a fent említett funkció kifejlesztéséhez!
+
+
+./sourcetotxt.sh ~/source/repos/CutCalculator/colors/ > masi2.txt
+
+pandoc -s -f markdown -t plain -o masi2.txt masi2.txt

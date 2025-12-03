@@ -1,7 +1,7 @@
 #include <QSet>
 
 #include "startup_manager.h"
-#include "common/color/ral_importer.h"
+#include "colors/repository/color_repository.h"
 #include "common/utils/filename_helper.h"
 
 #include "materials/repository/material_repository.h"
@@ -69,7 +69,7 @@ StartupStatus StartupManager::initRalColors()
         { RalSystem::Plastic2, fnh.getRalPlastic2CsvFile() }
     };
 
-    bool loaded = RalImporter::loadRalColors({ralSources});
+    bool loaded = ColorRepository::loadRalColors({ralSources});
     if (!loaded){
         return StartupStatus::failure("❌ Nem sikerült betölteni a RAL színeket a CSV fájlból.");
     }

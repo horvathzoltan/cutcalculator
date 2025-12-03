@@ -12,8 +12,9 @@ message( "TARGET = "$$TARGI )
 DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += \
-    common/color/namedcolor.cpp \
-    common/color/ral_importer.cpp \
+    colors/model/named_color.cpp \
+    colors/registry/color_registry.cpp \
+    colors/repository/color_repository.cpp \
     common/csv/filecontext.cpp \
     common/csv/filecontext_collector.cpp \
     common/logger/event_logger.cpp \
@@ -44,10 +45,11 @@ SOURCES += \
     ui/adapters/log_view_adapter.cpp
 
 HEADERS += \
-    common/color/colorconstants.h \
-    common/color/namedcolor.h \
-    common/color/ral_importer.h \
-    common/color/ralsystem.h \
+    colors/model/named_color.h \
+    colors/registry/color_registry.h \
+    colors/model/colorconstants.h \
+    colors/model/ralsystem.h \
+    colors/repository/color_repository.h \
     common/csv/csvhelper.h \
     common/csv/csvimporter.h \
     common/csv/filecontext_collector.h \

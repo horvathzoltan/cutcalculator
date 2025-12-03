@@ -1,10 +1,9 @@
-#include "namedcolor.h"
+#include "named_color.h"
 #include "common/logger/logger.h"
 #include <QMap>
 #include <QColor>
 #include <QRegularExpression>
-
-QMap<RalSystem, QMap<QString, NamedColor>> NamedColor::_ralColors;
+#include "colors/registry/color_registry.h"
 
 // Konstruktorok
 NamedColor::NamedColor(const QColor& color, const QString& name)
@@ -76,26 +75,21 @@ QString NamedColor::name() const { return m_name; }
 QString NamedColor::code() const { return m_code; }
 RalSystem NamedColor::system() const { return m_system; }
 
-// Statikus factoryk
-// NamedColor NamedColor::fromRal(RalSystem system, const QString& ralCode) {
-//     auto a  = normalizeRalExtended(ralCode);
-//     const QString normKey = a.key;
-
-//     //const QString key = ralCode.trimmed().toUpper();
-//     return _ralColors.value(system).value(normKey, NamedColor(Qt::black, "Ismeretlen RAL", normKey, system));
-// }
-
 NamedColor NamedColor::fromRal(const QString& ralCode) {
     auto norm = normalizeRalExtended(ralCode);
     if(!norm.isValid()){
-        zWarning() << "Érvénytelen RAL kód:" << ralCode << "(normalizált:" << norm.key << ")";
+        zWarning() << "Érvénytelen RAL kód:" << ralCode
+                   << "(normalizált:" << norm.key << ")";
         return NamedColor(Qt::black, "Érvénytelen RAL", ralCode, RalSystem::Unknown);;
     }
 
-    if (_ralColors[norm.system].contains(norm.key))
-        return _ralColors[norm.system][norm.key];
+    const NamedColor* found = ColorRegistry::instance().findByCode(norm.key);
+    if (found != nullptr && found->system() == norm.system) {
+        return *found;
+    }
 
-    zWarning() << "Ismeretlen RAL kód:" << ralCode << "(normalizált:" << norm.key << ")";
+    zWarning() << "Ismeretlen RAL kód:" << ralCode
+               << "(normalizált:" << norm.key << ")";
     return NamedColor(Qt::black, "Ismeretlen RAL", norm.key, RalSystem::Unknown);
 }
 
@@ -109,28 +103,6 @@ NamedColor NamedColor::fromHex(const QString& hexCode) {
                        ? hexCode.toLower()
                        : QString();
     return NamedColor(c, name);
-}
-
-// Registry API
-bool NamedColor::containsRalColor(const QString& key) {
-    auto norm = normalizeRalExtended(key);
-    if(!norm.isValid()) return false;
-
-    const auto sysMapIt = _ralColors.constFind(norm.system);
-    if (sysMapIt == _ralColors.constEnd()) return false;
-    return sysMapIt->contains(norm.key);
-}
-
-void NamedColor::insertRalColor(const NamedColor& value) {
-    //auto norm = normalizeRalExtended(key);
-    //if(!norm.isValid()) return;
-
-    //_ralColors[norm.system].insert(norm.key, value);
-    _ralColors[value.system()].insert(value.code(), value);
-}
-
-void NamedColor::clearRalColors() {
-    _ralColors.clear();
 }
 
 // Egyéb

@@ -3,7 +3,7 @@
 #include <QString>
 #include <QSizeF>
 #include "common/model/identifiable_entity.h"
-#include "common/color/namedcolor.h"
+#include "colors/model/named_color.h"
 #include "materials/model/material_type.h"
 #include "materials/model/crosssectionshape.h"
 #include "materials/model/cutting_mode.h"
