@@ -22,8 +22,7 @@ A fájlnevek a projekt névkonvencióját kövessék (snake_case, pl. registry_b
 Legelőször csak azoknak a fájloknak a listáját add meg, amik tartalmát meg kell mindehez ismerned.
 
 Adj egy teljes követelményspecifikációt, funkcionális specifikációt és implementációs tervet 
-txt formátummal kompatibilis módon - de használj emojikat
-  a fent említett funkció kifejlesztéséhez!
+- használj emojikat - a fent említett funkció kifejlesztéséhez!
 
 
 ./sourcetotxt.sh ~/source/repos/CutCalculator/colors/ > masi2.txt

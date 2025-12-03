@@ -1,239 +1,149 @@
-📘 Követelményspecifikáció – Anyagszükséglet számítás
+📘 Követelményspecifikáció – Anyagszükséglet számítás (napháló, sávroló,
+roletta)
+
+------------------------------------------------------------------------
+
 🎯 Cél
-A rendszer feladata, hogy a megrendelésekből kiszámolja a gyártáshoz szükséges anyagokat. Az eredmény egy auditálható, aggregált gyártási lista (vágási igény + kitting lista).
+
+A rendszer feladata, hogy a megrendelésekből kiszámolja a gyártáshoz
+szükséges anyagokat (tok, tengely, vászon, hajtómű/rugó, alsó
+pálca/záróléc, opcionálisan csőmotor).
+Az eredmény egy auditálható, aggregált gyártási lista, amely figyelembe
+veszi a különböző mérési módokat (falc, üveg, vászonméret, gyártási
+méret).
+
+------------------------------------------------------------------------
 
 🧩 Követelmények
+
 Adatmodellek
-ProductDefinition
 
-Globális terméktípus táblázat.
+-   MaterialMaster (globális törzs)
+    -   Minden alapanyag (tok, tengely, vászon, rugó, hajtómű, csőmotor,
+        pálca, záróléc).
+    -   Mezők: id, name, type, size, color, weight, ralCode/hexCode.
+-   ProductDefinition (globális táblázat)
+    -   Terméktípusok: napháló, sávroló, roletta.
+    -   Csak metaadatokat tárol: id, parentId, name, barcode.
+-   NeedRule (kapcsolótábla)
+    -   Kapcsolat ProductDefinition ↔ MaterialMaster között.
+    -   Mezők: id, productId, materialId.
+-   NeedCalculation (számítási mód)
+    -   Számítási mód egy NeedRule‑hoz.
+    -   Mezők: needRuleId, mode (string: “falc”, “glass”, “fabric”,
+        “manufacturing”), formula (pl. “w-15”, “fixed:2”).
+-   OrderHeader / OrderLine (megrendelések)
+    -   OrderHeader: tételszám, megrendelő neve, dátum, státusz.
+    -   OrderLine: productId, width, height, quantity, color,
+        handlerSide.
+-   NeedResult (runtime)
+    -   Számítás eredménye.
+    -   Mezők: materialId, lengthMm, pieces, mode, (opcionálisan areaMm2
+        szövethez).
 
-Csak metaadatokat tárol (id, parentId, name, barcode).
-
-MaterialMaster
-
-Globális anyagtörzs.
-
-Mezők: id, name, type, size, color, weight.
-
-NeedRule (kapcsolótábla)
-
-Kapcsolat ProductDefinition ↔ MaterialMaster között.
-
-Minden sor egy kapcsolatot ír le.
-
-Mezők: id, productId, materialId.
-
-NeedCalculation
-
-Számítási mód egy NeedRule‑hoz.
-
-Mezők: needRuleId, mode (string, pl. "glass", "rebate"), formula (pl. "w-2.4", "fixed:2").
-
-OrderHeader / OrderLine
-
-Megrendelések.
-
-OrderLine mezők: productId, width, height, quantity, color, handlerSide.
-
-NeedResult (runtime)
-
-Számítás eredménye.
-
-Mezők: materialId, lengthMm, pieces, mode.
+------------------------------------------------------------------------
 
 ⚙️ Funkcionális specifikáció
+
 📊 Fő funkciók
-Kapcsolótábla kezelés
 
-ProductDefinition ↔ MaterialMaster kapcsolatok tárolása (NeedRule).
+-   Kapcsolótábla kezelés
+    -   ProductDefinition ↔ MaterialMaster kapcsolatok tárolása
+        (NeedRule).
+    -   Minden kapcsolatnak van saját ID‑je.
+-   Számítási módok kezelése
+    -   Minden NeedRule‑hoz több számítási mód (NeedCalculation)
+        rendelhető.
+    -   Példák:
+        -   falcméret → w-15
+        -   üvegméret → w-10
+        -   vászonméret → w-0
+        -   gyártási méret → w+fülek
+-   Megrendelés feldolgozás
+    -   OrderLine alapján kiválasztja a megfelelő számítási módot.
+    -   Lefuttatja a formulákat.
+-   Eredmény előállítása
+    -   Vágási lista: méretből számolt darabok.
+    -   Kitting lista: fix darabok (rugó, stopper, golyó).
+    -   Aggregálás: azonos ügyfél + termék + szín összevonása.
+-   Audit funkció
+    -   Jelzés, ha hiányzik számítási mód egy NeedRule‑hoz.
+    -   Jelzés, ha formula hibás.
+    -   Jelzés, ha anyag hiányzik a MaterialMasterből.
+-   UI funkciók
+    -   OrderDialog: megrendelés felvétel (autocomplete ügyfél,
+        színkocka, handlerSide választó).
+    -   NeedsView: real‑time preview táblázat (Material | Méret |
+        Darabszám | Mode).
+    -   AuditLogView: hibák listázása.
+    -   Export: CSV/Excel gyártási lista.
 
-Minden kapcsolatnak van saját ID‑je.
-
-Számítási módok kezelése
-
-Minden NeedRule‑hoz több számítási mód (NeedCalculation) rendelhető.
-
-Például: üvegméret vs. falcméret.
-
-Megrendelés feldolgozás
-
-OrderLine alapján kiválasztja a megfelelő számítási módot.
-
-Lefuttatja a formulákat.
-
-Eredmény előállítása
-
-Vágási lista: méretből számolt darabok.
-
-Kitting lista: fix darabok.
-
-Aggregálás: azonos ügyfél + termék + szín összevonása.
-
-Audit funkció
-
-Jelzés, ha hiányzik számítási mód egy NeedRule‑hoz.
-
-Jelzés, ha formula hibás.
-
-UI funkciók
-
-OrderDialog: megrendelés felvétel.
-
-NeedsView: real‑time preview táblázat.
-
-Export: CSV/Excel gyártási lista.
+------------------------------------------------------------------------
 
 🛠️ Implementációs terv
-1. Adatmodellek
-products/model/product_master.h/.cpp ✅
 
-materials/model/material_master.h/.cpp ✅
+1.  Adatmodellek
+    -   ✅ materials/model/material_master.h/.cpp
+    -   ✅ products/model/product_master.h/.cpp
+    -   🚧 needs/model/need_rule.h/.cpp
+    -   🚧 needs/model/need_calculation.h/.cpp
+    -   🚧 orders/model/order_header.h/.cpp, order_line.h/.cpp
+    -   🚧 calculation/model/need_result.h/.cpp
+2.  Repository réteg
+    -   ✅ materials/repository/material_repository.h/.cpp
+    -   ✅ products/repository/product_repository.h/.cpp
+    -   🚧 needs/repository/need_rule_repository.h/.cpp
+    -   🚧 needs/repository/need_calculation_repository.h/.cpp
+    -   🚧 orders/repository/order_repository.h/.cpp
+3.  Service réteg
+    -   🚧 calculation/service/need_calculator.h/.cpp
+        -   Input: OrderLine + NeedRule + NeedCalculation.
+        -   Output: NeedResult lista.
+        -   Logika: formulák kiértékelése, audit jelzés.
+4.  Presenter réteg
+    -   🚧 orders/presenter/order_presenter.h/.cpp
+    -   🚧 calculation/presenter/needs_presenter.h/.cpp
+5.  View réteg (Qt UI)
+    -   🚧 orders/view/order_dialog.h/.cpp
+    -   🚧 calculation/view/needs_view.h/.cpp
+    -   🚧 audit/view/audit_log_view.h/.cpp
+6.  Audit funkció
+    -   🚧 audit/model/audit_entry.h/.cpp
+    -   🚧 audit/service/audit_service.h/.cpp
+    -   🚧 audit/view/audit_log_view.h/.cpp
+    -   ➕ Új: DataStateReporter → pillanatnyi registry állapot
+        logolása.
+7.  Tesztadatok
+    -   ✅ testdata/materials.csv
+    -   ✅ testdata/products.csv
+    -   🚧 testdata/need_rules.csv
+    -   🚧 testdata/need_calculations.csv
+    -   🚧 testdata/orders.csv
 
-needs/model/need_rule.h/.cpp 🚧
-
-needs/model/need_calculation.h/.cpp 🚧
-
-orders/model/order_header.h/.cpp, order_line.h/.cpp 🚧
-
-calculation/model/need_result.h/.cpp 🚧
-
-2. Repository réteg
-products/repository/product_repository.h/.cpp ✅
-
-materials/repository/material_repository.h/.cpp ✅
-
-needs/repository/need_rule_repository.h/.cpp 🚧
-
-needs/repository/need_calculation_repository.h/.cpp 🚧
-
-orders/repository/order_repository.h/.cpp 🚧
-
-3. Service réteg
-calculation/service/need_calculator.h/.cpp 🚧
-
-Input: OrderLine + NeedRule + NeedCalculation.
-
-Output: NeedResult lista.
-
-Logika: formulák kiértékelése, audit jelzés.
-
-4. Presenter réteg
-orders/presenter/order_presenter.h/.cpp 🚧
-
-calculation/presenter/needs_presenter.h/.cpp 🚧
-
-5. View réteg (Qt UI)
-orders/view/order_dialog.h/.cpp 🚧
-
-Megrendelő neve, termék kiválasztás, méret, darabszám, szín.
-
-calculation/view/needs_view.h/.cpp 🚧
-
-Táblázat preview: Material | Méret | Darabszám | Mode.
-
-audit/view/audit_log_view.h/.cpp 🚧
-
-6. Audit funkció
-audit/model/audit_entry.h/.cpp 🚧
-
-audit/service/audit_service.h/.cpp 🚧
-
-audit/view/audit_log_view.h/.cpp 🚧
-
-➕ Új: DataStateReporter → pillanatnyi registry állapot logolása.
-
-7. Tesztadatok
-testdata/materials.csv ✅
-
-testdata/products.csv ✅
-
-testdata/need_rules.csv 🚧
-
-testdata/need_calculations.csv 🚧
-
-testdata/orders.csv 🚧
+------------------------------------------------------------------------
 
 📊 Példa folyamat
-OrderLine: Roletta, w=1000, h=500, qty=3.
 
-Lekérjük NeedRule sorokat → tengely, pálca, rugó, szövet.
+-   OrderLine: Roletta, w=1000, h=500, qty=3.
+-   Lekérjük NeedRule sorokat → tok, tengely, vászon, rugó, pálca.
+-   Lekérjük NeedCalculation sorokat (pl. “falc” mód).
+-   Kiértékeljük:
+    -   Tengely: 1000-15 = 985 mm × 3
+    -   Vászon: 1000-0 = 1000 mm × 3
+    -   Rugó: fixed:2 × 3 = 6 db
+    -   Pálca: 500-10 = 490 mm × 3
+-   Eredmény: Cut list + Kitting list.
+-   Audit: ha hiányzik formula → ⚠ figyelmeztetés.
 
-Lekérjük NeedCalculation sorokat "glass" módra.
+------------------------------------------------------------------------
 
-Kiértékeljük:
+✨ Összefoglalás
+- NeedRule → kapcsolótábla (terméktípus ↔ anyag).
+- NeedCalculation → számítási mód + formula.
+- NeedCalculator → megrendelésből előállítja a vágási és kitting listát.
+- UI → OrderDialog + NeedsView preview.
+- Audit → jelzi a hiányzó vagy hibás szabályokat.
 
-Tengely: 1000-2.4 = 997.6 mm × 3
-
-Pálca: 500-12 = 488 mm × 3
-
-Rugó: fixed:2 × 3 = 6 db
-
-Szövet: (1000-2.4) × 500 = méret × qty
-
-Eredmény: Cut list + Kitting list.
-
-Audit: ha hiányzik formula → zEventWARN.
-
-🎯 Összefoglalás
-NeedRule → kapcsolótábla (terméktípus ↔ anyag).
-
-NeedCalculation → számítási mód + formula.
-
-NeedCalculator → megrendelésből előállítja a vágási és kitting listát.
-
-UI → OrderDialog + NeedsView preview.
-
-Audit → jelzi a hiányzó vagy hibás szabályokat.
-
-+-----------------------------------------------------------------------------------+
-| Product UI – új struktúra                                                         |
-+----------------------+------------------------------------------------------------+
-| Bal panel: Fa nézet  | Középső panel: Anyagszükséglet + Számítási módok           |
-|----------------------|------------------------------------------------------------|
-| - Kategória A        | Ha TERMÉK van kiválasztva (levél):                        |
-|   - Termék 1         | --------------------------------------------------------- |
-|   - Termék 2         | | Anyag   | NeedRule ID | Számítási módok                | |
-| - Kategória B        | --------------------------------------------------------- |
-|   - Termék 3         | | Üveg    | 12          | glass, rebate                  | |
-|                      | | Tengely | 13          | glass                          | |
-|                      | | Rugó    | 14          | fixed                          | |
-|                      | --------------------------------------------------------- |
-|                      |                                                            |
-|                      | Alpanel: Számítási módok szerkesztése                      |
-|                      | --------------------------------------------------------- |
-|                      | | Mode   | Formula   | Audit státusz                    | |
-|                      | --------------------------------------------------------- |
-|                      | | glass  | w-2.4     | OK                               | |
-|                      | | rebate | h-12      | OK                               | |
-|                      | | fixed  | fixed:2   | ⚠ hiányzó formula                | |
-|                      | --------------------------------------------------------- |
-|                      |                                                            |
-|                      | Alsó panel: Levonások táblázat                             |
-|                      | --------------------------------------------------------- |
-|                      | | Anyag   | Levonás típusa | Érték | Megjegyzés           | |
-|                      | --------------------------------------------------------- |
-|                      | | Üveg    | Hulladék       | 5%    | szabvány szerint    | |
-|                      | | Tengely | Selejt         | 2 db  | gyártási hiba       | |
-|                      | --------------------------------------------------------- |
-+----------------------+------------------------------------------------------------+
-
-💡 Ötletek a kezelhetőséghez
-Fa bal oldalon → kategóriák és termékek hierarchiája.
-
-Középső panel → ha levélelemen állsz (termék), akkor az anyagszükséglet listája jelenik meg.
-
-Alatta listbox → számítási módok, választható és bővíthető.
-
-Levonások táblázat → minden számítási módhoz külön anyagonkénti levonások.
-
-Alternatíva a „nyilak” helyett
-A klasszikus bal‑jobb panel nyilakkal (dual listbox) helyett lehet:
-
-Drag & drop: anyagokat húzol a termékhez.
-
-Inline szerkesztés: középső listában közvetlenül hozzáadod az anyagot.
-
-Context menu: jobb klikk → „Hozzáadás anyagszükséglethez”.
-
-👉 Így a UI nem lesz túlzsúfolt, és minden logikai szint (Product → Need → Calculation → Deduction) szépen egymás alatt jelenik meg.
+👉 Így a rendszer lefedi a napháló, sávroló és roletta gyártási logikát,
+mérettartománytól és számítási módtól függően, auditálható és
+aggregálható formában.

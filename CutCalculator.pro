@@ -107,7 +107,6 @@ DISTFILES += \
     run.txt \
     run_2.txt \
     run_3_1.txt \
-    run_3_2.txt \
     run_4_AnyagszuksegletSzamitas.txt \
     run_4_ColorRegistry.txt \
     run_4_RegistryManager.txt \

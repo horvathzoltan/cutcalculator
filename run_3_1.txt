@@ -1,51 +1,164 @@
-# 📘 Követelményspecifikáció – Anyagszükséglet számítás
+Nagyon jó, Zoltán 🤓 – így már teljes képet adunk a rendszer egészéről,
+és az Order rész sem marad ki. Összefésültem a korábbi specifikációt a
+most bemásolt orderes résszel, hogy minden blokk meglegyen, még ha egyes
+pontok üresen is maradnak a későbbi kitöltéshez.
 
-## 🎯 Cél
-A rendszer feladata, hogy a megrendelésekből kiszámolja a gyártáshoz szükséges anyagokat (vágási méretek és szerelési darabok), a ProductDefinition szabályok alapján.
-Az eredmény egy auditálható, aggregált gyártási lista.
+------------------------------------------------------------------------
 
-## 🧩 Követelmények
+📘 Követelményspecifikáció – CutCalculator rendszer (Anyagszükséglet számítás + Order kezelés)
 
-### Adatmodellek
-- **MaterialMaster (globális törzs)**
-  - Minden alapanyag (tengely, pálca, szövet, rugó, szerelék).
-  - Mezők: méret, szín, típus, súly, gép, RAL/HEX színkód.
+🎯 Cél
 
-- **ProductDefinition (globális táblázat)**
-  - Minden terméktípushoz levonási szabályok és szerelékek.
-  - Példa: Tetőtéri rugós roletta → tengely -15 mm, pálca -10 mm, 2 db rugó.
-  - Verziózás: új szabályok új rendelésekhez, régiek auditban megmaradnak.
+A rendszer feladata, hogy a megrendelésekből kiszámolja a gyártáshoz
+szükséges anyagokat (vágási méretek és szerelési darabok), a
+ProductDefinition szabályok alapján.
+Az eredmény egy auditálható, aggregált gyártási lista, amely lefedi a
+teljes folyamatot: megrendelés → számítás → aggregálás → audit → preview
+→ export → gyártás.
 
-- **Order (megrendelés)**
-  - OrderHeader: tételszám, megrendelő neve, dátum, státusz.
-  - OrderLine: termék kód, méret, darabszám, szín, handlerSide.
+------------------------------------------------------------------------
 
-### Számítási logika
-- Méretre vágott elemek: szélesség − levonás.
-- Fix darabos elemek: darabszám × fix mennyiség.
-- Aggregálás: azonos ügyfél + azonos termék + azonos szín → összevonás.
-- Audit: jelzés, ha hiányzik szabály vagy anyag.
+🧩 Követelmények
 
-### UI követelmények
-- **Order entry UI**
-  - Megrendelő neve → autocomplete.
-  - Tételszám → automatikusan növekvő.
-  - Termék kód → dropdown a ProductDefinition táblából.
-  - Méret + darabszám → kötelező mezők, validációval.
-  - Szín → autocomplete + színkocka.
-  - HandlerSide → bal/jobb választó.
-  - Dátum → automatikusan kitöltődik, módosítható.
+Adatmodellek
 
-- **Anyagszükséglet lista (preview)**
-  - Real‑time számítás: azonnal látszik, milyen anyag kell.
-  - Aggregálás: összevonás azonos ügyfél + termék + szín esetén.
-  - Audit jelzés: ha hiányzik szabály, figyelmeztet.
-  - Export: CSV/Excel gyártási lista.
+-   MaterialMaster (globális törzs) 🧱
+    -   Minden alapanyag (tok, tengely, pálca, szövet, rugó, szerelék,
+        csőmotor).
+    -   Mezők: id, name, type, size, color, weight, gép, RAL/HEX
+        színkód.
+-   ProductDefinition (globális táblázat) 📦
+    -   Terméktípusokhoz levonási szabályok és szerelékek.
+    -   Példa: Tetőtéri rugós roletta → tengely -15 mm, pálca -10 mm, 2
+        db rugó.
+    -   Verziózás: új szabályok új rendelésekhez, régiek auditban
+        megmaradnak.
+-   NeedRule (kapcsolótábla) 🔗
+    -   Kapcsolat ProductDefinition ↔ MaterialMaster között.
+    -   Mezők: id, productId, materialId.
+-   NeedCalculation (számítási mód) 🧮
+    -   Számítási mód egy NeedRule‑hoz.
+    -   Mezők: needRuleId, mode (pl. “falc”, “glass”, “fabric”,
+        “manufacturing”), formula (pl. “w-15”, “fixed:2”).
+-   Order (megrendelés) 📑
+    -   OrderHeader: tételszám, megrendelő neve, dátum, státusz.
+    -   OrderLine: productId, width, height, quantity, color,
+        handlerSide.
+-   NeedResult (runtime) 📊
+    -   Számítás eredménye.
+    -   Mezők: materialId, lengthMm, pieces, mode, (opcionálisan areaMm2
+        szövethez).
+-   AuditEntry 🕵️
+    -   Audit log: hiányzó szabály, hibás formula, hiányzó anyag.
 
-### Extra kényelmi funkciók
-- Megrendelő emlékezet: több termék esetén automatikusan kitölti a nevet és színt.
-- Szűrés és keresés: gyors keresés a felvitt tételek között.
-- Export: teljes anyagszükséglet lista kimenthető.
+------------------------------------------------------------------------
 
----
+Számítási logika
 
+-   Méretre vágott elemek: szélesség − levonás.
+-   Fix darabos elemek: darabszám × fix mennyiség.
+-   Aggregálás: azonos ügyfél + azonos termék + azonos szín →
+    összevonás.
+-   Audit: jelzés, ha hiányzik szabály, anyag vagy formula.
+
+------------------------------------------------------------------------
+
+UI követelmények
+
+-   Order entry UI 🖊️
+    -   Megrendelő neve → autocomplete.
+    -   Tételszám → automatikusan növekvő.
+    -   Termék kód → dropdown a ProductDefinition táblából.
+    -   Méret + darabszám → kötelező mezők, validációval.
+    -   Szín → autocomplete + színkocka.
+    -   HandlerSide → bal/jobb választó.
+    -   Dátum → automatikusan kitöltődik, módosítható.
+-   Anyagszükséglet lista (preview) 👀
+    -   Real‑time számítás: azonnal látszik, milyen anyag kell.
+    -   Aggregálás: összevonás azonos ügyfél + termék + szín esetén.
+    -   Audit jelzés: ha hiányzik szabály, figyelmeztet.
+    -   Export: CSV/Excel gyártási lista.
+
+------------------------------------------------------------------------
+
+Extra kényelmi funkciók
+
+-   Megrendelő emlékezet: több termék esetén automatikusan kitölti a
+    nevet és színt.
+-   Szűrés és keresés: gyors keresés a felvitt tételek között.
+-   Export: teljes anyagszükséglet lista kimenthető.
+
+------------------------------------------------------------------------
+
+🛠️ Implementációs terv – Anyagszükséglet számítás + Order kezelés
+
+1.  Adatmodellek
+    -   ✅ materials/model/material_master.h/.cpp
+    -   ✅ products/model/product_master.h/.cpp
+    -   🚧 orders/model/order_header.h/.cpp, order_line.h/.cpp
+    -   🚧 calculation/model/need_result.h/.cpp
+    -   🚧 needs/model/need_rule.h/.cpp
+    -   🚧 needs/model/need_calculation.h/.cpp
+    -   🚧 audit/model/audit_entry.h/.cpp
+2.  Repository réteg
+    -   ✅ materials/repository/material_repository.h/.cpp → háromfázisú
+        import (Convert → Build → Assemble).
+    -   ✅ products/repository/product_repository.h/.cpp → háromfázisú
+        import, globális ProductDefinition táblázat.
+    -   🚧 orders/repository/order_repository.h/.cpp → rendelés
+        import/export CSV/JSON.
+    -   🚧 needs/repository/need_rule_repository.h/.cpp
+    -   🚧 needs/repository/need_calculation_repository.h/.cpp
+    -   🚧 audit/repository/audit_repository.h/.cpp
+3.  Service réteg
+    -   🚧 calculation/service/need_calculator.h/.cpp
+        -   Input: OrderLine + NeedRule + NeedCalculation.
+        -   Output: NeedResult lista.
+        -   Logika: formulák kiértékelése, audit jelzés.
+    -   🚧 orders/service/order_service.h/.cpp
+        -   Státuszkezelés (New, InProgress, Cut, Assembled, Delivered).
+        -   Export funkció CSV/JSON.
+    -   🚧 audit/service/audit_service.h/.cpp
+        -   AuditEntry gyűjtése, hibák riportálása.
+4.  Presenter réteg
+    -   🚧 materials/presenter/material_presenter.h/.cpp
+    -   🚧 products/presenter/product_presenter.h/.cpp
+    -   🚧 orders/presenter/order_presenter.h/.cpp
+    -   🚧 calculation/presenter/needs_presenter.h/.cpp
+    -   🚧 audit/presenter/audit_presenter.h/.cpp
+5.  View réteg (Qt UI)
+    -   ✅ materials/view/material_list_view.h/.cpp
+    -   ✅ products/view/product_tree_view.h/.cpp +
+        product_need_table.h/.cpp
+    -   🚧 orders/view/order_dialog.h/.cpp (autocomplete ügyfél + szín,
+        auto‑increment tételszám).
+    -   🚧 calculation/view/needs_view.h/.cpp (real‑time preview).
+    -   🚧 audit/view/audit_log_view.h/.cpp.
+6.  Audit funkció
+    -   🚧 audit/model/audit_entry.h/.cpp
+    -   🚧 audit/service/audit_service.h/.cpp
+    -   🚧 audit/view/audit_log_view.h/.cpp
+    -   ➕ Új ötlet: DataStateReporter → pillanatnyi registry állapot
+        logolása.
+7.  Tesztadatok
+    -   ✅ testdata/materials.csv
+    -   ✅ testdata/products.csv
+    -   🚧 testdata/orders.csv
+    -   🚧 testdata/need_rules.csv
+    -   🚧 testdata/need_calculations.csv
+8.  Integráció
+    -   ✅ main.cpp
+    -   FileNameHelper::setBinaryPath(argv[0]).
+    -   ✅ Registryk inicializálása (Material, Product, Order).
+    -   UI tabok létrehozása: Anyagtörzs, Terméktípusok, Megrendelések,
+        Szükséglet preview, Audit log.
+
+------------------------------------------------------------------------
+
+👉 Így most már minden blokk megvan: az OrderHeader/OrderLine, az
+OrderRepository és OrderService is szerepel, még ha üresen vagy 🚧
+státuszban is. Ez biztosítja, hogy a specifikáció teljes, és később
+pontosan kitölthető.
+
+Szeretnéd, hogy készítsek egy összefoglaló táblázatot a modulok
+státuszáról (✅ / 🚧 / ➕),
