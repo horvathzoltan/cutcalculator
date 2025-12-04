@@ -8,12 +8,14 @@
 
 #include "materials/view/material_table_widget.h"
 #include "materials/view/material_table_manager.h"
-#include "materials/repository/material_repository.h"
-#include "materials/registry/material_registry.h"
+//#include "materials/repository/material_repository.h"
+//#include "materials/registry/material_registry.h"
 
-#include "products/repository/product_repository.h"
-#include "products/registry/product_registry.h"
+//#include "products/repository/product_repository.h"
+//#include "products/registry/product_registry.h"
 #include "products/view/product_tree_manager.h"
+
+#include <QToolBar>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -154,6 +156,8 @@ void MainWindow::initProductTypesTab() {
 
     // Bal oldal: fa
     _productTreeView = new QTreeView(splitter);
+
+
     splitter->addWidget(_productTreeView);
 
     // Jobb oldal: placeholder (később CalculationRule table)
@@ -163,4 +167,30 @@ void MainWindow::initProductTypesTab() {
     // Manager: feltölti a fát
     _productTreeManager = new ProductTreeManager(_productTreeView, this);
     _productTreeManager->populate();
+
+
+    // MainWindow – toolbar / menü létrehozása
+
+
+    // Toolbar a productTab fölé
+    QToolBar* productToolbar = new QToolBar("Product Actions", productTab);
+    layout->insertWidget(0, productToolbar);
+
+    QAction* addRootAction  = productToolbar->addAction("➕ Új gyökér");
+    QAction* addChildAction = productToolbar->addAction("➕ Új gyermek");
+    QAction* renameAction   = productToolbar->addAction("✏️ Átnevezés");
+    QAction* removeAction   = productToolbar->addAction("🗑️ Törlés");
+
+    // Összekötés a manager slotjaival
+    connect(addRootAction,  &QAction::triggered, _productTreeManager, &ProductTreeManager::addRootProduct);
+    connect(addChildAction, &QAction::triggered, _productTreeManager, &ProductTreeManager::addChildProduct);
+    connect(renameAction,   &QAction::triggered, _productTreeManager, &ProductTreeManager::renameProduct);
+    connect(removeAction,   &QAction::triggered, _productTreeManager, &ProductTreeManager::removeProduct);
+
+    // Kontextmenü a QTreeView-hoz
+    _productTreeView->setContextMenuPolicy(Qt::ActionsContextMenu);
+    _productTreeView->addAction(addChildAction);
+    _productTreeView->addAction(renameAction);
+    _productTreeView->addAction(removeAction);
+
 }

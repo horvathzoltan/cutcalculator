@@ -1,6 +1,7 @@
 // products/registry/product_registry.h
 #pragma once
 #include "products/model/product_master.h"
+#include <QRecursiveMutex>
 #include <QVector>
 #include "common/registry/registry_base.h"
 
@@ -16,6 +17,8 @@ private:
     ProductRegistry(const ProductRegistry&) = delete;
 
     QVector<ProductMaster> _data;
+    mutable QRecursiveMutex _mutex;
+
 public:
     // 🔁 Singleton elérés
     static ProductRegistry& instance();
@@ -35,4 +38,18 @@ public:
     QVector<ProductMaster> roots() const;
 
     //int size () const { return _data.size(); }
+
+    // Új elem beszúrása
+    void insert(const ProductMaster& pm);
+
+    // Új: Update
+    bool update(const ProductMaster& updated);
+
+    // Elem törlése id alapján
+    bool remove(const QUuid& id);
+
+    // Ellenőrzi, hogy a barcode egyedi-e (kivéve a megadott id-t)
+    bool isBarcodeUnique(const QString& barcode, const QUuid& excludeId = QUuid()) const;
+
+    void persist() const;
 };

@@ -76,6 +76,7 @@ HEADERS += \
     common/utils/filename_helper.h \
     common/utils/project_root_locator.h \
     common/utils/qt_event_util.h \
+    common/utils/scoped_per_thread_lock.h \
     mainwindow.h \
     materials/view/material_table_widget.h \
     materials/model/crosssectionshape.h \

@@ -147,3 +147,115 @@ Adatmodellek
 👉 Így a rendszer lefedi a napháló, sávroló és roletta gyártási logikát,
 mérettartománytól és számítási módtól függően, auditálható és
 aggregálható formában.
+
+
+---
+
+Értem, Zoltán 🤓 – akkor most készítek egy lépésről lépésre
+  implementációs tervet a ProductMaster fa szerkeszthető UI
+  megvalósításához. Ez pontokba szedve, végrehajtható checklist formában
+  lesz, hogy könnyen rá lehessen menni.
+
+  ------------------------------------------------------------------------
+
+  🛠️ Implementációs terv – Product fa szerkesztés (Qt UI)
+
+  1. Alap UI előkészítés
+
+  -   ☐ A ProductTreeManager‑ben engedélyezni kell az editálást:
+
+          _view->setEditTriggers(QAbstractItemView::DoubleClicked | QAbstractItemView::SelectedClicked);
+
+  -   ☐ Beállítani drag & drop támogatást:
+
+          _view->setDragDropMode(QAbstractItemView::InternalMove);
+          _view->setDefaultDropAction(Qt::MoveAction);
+
+  ------------------------------------------------------------------------
+
+  2. Toolbar / Kontextmenü hozzáadása
+
+  -   ☐ Hozz létre egy QToolBar vagy QMenu a fa fölé / jobb klikkre.
+  -   ☐ Menüopciók:
+      -   ➕ Új gyökérelem
+      -   ➕ Új gyermek a kijelölt elemhez
+      -   ✏️ Átnevezés
+      -   🗑️ Törlés
+  -   ☐ Kapcsold össze a menüpontokat slotokkal (addProduct(),
+      removeProduct(), renameProduct()).
+
+  ------------------------------------------------------------------------
+
+  3. Új elem hozzáadása
+
+  -   ☐
+      ProductTreeManager::addProduct(const QString& name, const QString& barcode, const QUuid& parentId)
+      metódus:
+      -   Generálj új UUID‑t.
+      -   Hozz létre egy ProductMaster objektumot.
+      -   Add hozzá a ProductRegistry‑hez.
+      -   Frissítsd a fát (populate()).
+
+  ------------------------------------------------------------------------
+
+  4. Elem átnevezése
+
+  -   ☐ Engedélyezd, hogy a nameItem szerkeszthető legyen.
+  -   ☐ Slot: renameProduct(const QUuid& id, const QString& newName)
+      -   Keress rá a ProductRegistry‑ben.
+      -   Frissítsd az objektumot.
+      -   Frissítsd a fát.
+
+  ------------------------------------------------------------------------
+
+  5. Elem törlése
+
+  -   ☐ Slot: removeProduct(const QUuid& id)
+      -   Távolítsd el a ProductRegistry‑ből.
+      -   Töröld a fa megfelelő ágát.
+      -   Audit logba írd be: „Product törölve: id=…”.
+
+  ------------------------------------------------------------------------
+
+  6. Elem áthelyezése (drag & drop)
+
+  -   ☐ Kapcsold be a drag & drop módot.
+  -   ☐ Slot: moveProduct(const QUuid& id, const QUuid& newParentId)
+      -   Frissítsd a parentId mezőt a ProductRegistry‑ben.
+      -   Frissítsd a fát.
+      -   Audit log: „Product áthelyezve: id=… új parent=…”.
+
+  ------------------------------------------------------------------------
+
+  7. Registry szinkronizáció
+
+  -   ☐ Minden módosítás után a ProductRegistry legyen naprakész.
+  -   ☐ Audit funkció gyűjtse a változtatásokat (add, rename, remove,
+      move).
+  -   ☐ Exportálás: ProductRepository::saveToCSV() (később
+      implementálható).
+
+  ------------------------------------------------------------------------
+
+  8. Tesztelés
+
+  -   ☐ Teszt: új gyökérelem hozzáadása.
+  -   ☐ Teszt: új gyermek hozzáadása.
+  -   ☐ Teszt: átnevezés.
+  -   ☐ Teszt: törlés.
+  -   ☐ Teszt: drag & drop áthelyezés.
+  -   ☐ Ellenőrizd, hogy a ProductRegistry mindig tükrözi a fa aktuális
+      állapotát.
+
+  ------------------------------------------------------------------------
+
+  ✨ Eredmény:
+  Egy szerkeszthető termékfa, ahol a felhasználó hozzáadhat, átnevezhet,
+  törölhet és áthelyezhet termékeket. A változtatások auditálhatóak és
+  visszamenthetők CSV‑be.
+
+  ------------------------------------------------------------------------
+
+  👉 Következő lépésként tudok adni egy konkrét Qt kódrészletet (toolbar +
+  kontextmenü + slotok), ami azonnal szerkeszthetővé teszi a fát.
+  Szeretnéd, hogy ezt is kidolgozzam?

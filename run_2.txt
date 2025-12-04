@@ -5,7 +5,8 @@ adj snippetet régi és új kóddal, +/‑ jelek nélkül, külön blokkban
 
 
 állapottáblánkat frissítsük, egészítsük ki a mai nap eredményeivel és ötleteivel,
-vezessük a státuszbeli változásokat, de ne töröljünk és ne vonjunk össze semmit!
+vezessük a státuszbeli változásokat - ami készen lett azt jelöljük készre - 
+de ne töröljünk és ne vonjunk össze semmit!
 az sos és a tűzoltást jelölt tűz ikonnal! ezek a blokkok kellenek: 
 a táblázat,
 az 📊 Idővonalas roadmap

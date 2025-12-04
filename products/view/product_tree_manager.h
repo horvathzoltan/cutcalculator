@@ -3,7 +3,6 @@
 #include <QObject>
 #include <QTreeView>
 #include <QStandardItemModel>
-#include "products/registry/product_registry.h"
 
 /**
  * ProductTreeManager
@@ -32,4 +31,12 @@ private:
     QStandardItemModel* _model = nullptr;
 
     void buildSubtree(QStandardItem* parentItem, const QUuid& parentId);
+    void onItemChanged(QStandardItem* item);
+
+public slots:
+    void addRootProduct();
+    void addChildProduct();
+    void renameProduct();
+    void removeProduct();
+
 };
