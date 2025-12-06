@@ -1,5 +1,6 @@
 // products/view/product_tree_manager.cpp
 #include "products/view/product_tree_manager.h"
+#include "ui/style/color_helper.h"
 #include "common/logger/event_logger.h"
 #include <QStandardItem>
 #include "products/registry/product_registry.h"
@@ -23,7 +24,29 @@ ProductTreeManager::ProductTreeManager(QTreeView* view, QObject* parent)
 }
 
 /**
+ * Stílus beállítása Termékcsoport (ág) és Terméktípus (levél) szerint.
+ * - Termékcsoport: félkövér + ciánkék
+ * - Terméktípus: dőlt + fehér
+ */
+void ProductTreeManager::styleItem(QStandardItem* item, bool isLeaf) {
+    QFont font = item->font();
+    if (isLeaf) {
+        font.setItalic(true);
+        font.setBold(false);
+        item->setFont(font);
+        item->setForeground(QBrush(ColorHelper::textColor(_view)));        //item->setText("📦 " + item->text()); // terméktípus → doboz emoji
+    } else {
+        font.setBold(true);
+        font.setItalic(false);
+        item->setFont(font);
+        item->setForeground(QBrush(ColorHelper::categoryColor(_view)));
+        item->setText("📂 " + item->text()); // termékcsoport → mappa emoji
+    }
+}
+
+/**
  * Teljes fa felépítése: gyökerek → rekurzívan gyerekek.
+ * A gyökér elemeket Termékcsoportként jelenítjük meg.
  */
 void ProductTreeManager::populate() {
     _model->removeRows(0, _model->rowCount());
@@ -37,6 +60,9 @@ void ProductTreeManager::populate() {
         nameItem->setEditable(true);
         codeItem->setEditable(true);
         idItem->setEditable(false);
+
+        // Stílus: gyökér mindig Termékcsoport (nem levél)
+        styleItem(nameItem, /*isLeaf=*/false);
 
         _model->appendRow({ nameItem, codeItem, idItem });
 
@@ -59,6 +85,10 @@ void ProductTreeManager::buildSubtree(QStandardItem* parentItem, const QUuid& pa
         nameItem->setEditable(true);
         codeItem->setEditable(true);
         idItem->setEditable(false);
+
+        // Eldöntjük, hogy levél-e (nincsenek gyerekei)
+        bool isLeaf = ProductRegistry::instance().findChildren(child.id).isEmpty();
+        styleItem(nameItem, isLeaf);
 
         parentItem->appendRow({ nameItem, codeItem, idItem });
 

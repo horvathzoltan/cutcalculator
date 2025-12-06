@@ -8,6 +8,11 @@ EventLogger& EventLogger::instance() {
     return inst;
 }
 
+EventStream EventLogger::zEvent_()
+{
+    return EventStream();
+}
+
 // void EventLogger::setLogFile(const QString& path) {
 //     fileName = path;
 

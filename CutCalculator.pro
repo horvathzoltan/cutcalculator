@@ -41,6 +41,7 @@ SOURCES += \
     products/registry/product_registry.cpp \
     products/repository/product_repository.cpp \
     products/view/product_tree_manager.cpp \
+    products/view/product_tree_view.cpp \
     test/test_manager.cpp \
     ui/adapters/log_view_adapter.cpp
 
@@ -91,9 +92,11 @@ HEADERS += \
     products/registry/product_registry.h \
     products/repository/product_repository.h \
     products/view/product_tree_manager.h \
+    products/view/product_tree_view.h \
     test/eventlogger_tests.h \
     test/test_manager.h \
-    ui/adapters/log_view_adapter.h
+    ui/adapters/log_view_adapter.h \
+    ui/style/color_helper.h
 
 FORMS += \
     mainwindow.ui
@@ -109,6 +112,7 @@ DISTFILES += \
     run_2.txt \
     run_3_1.txt \
     run_4_AnyagszuksegletSzamitas.txt \
+    run_4_BOMWorkbench.txt \
     run_4_ColorRegistry.txt \
     run_4_RegistryManager.txt \
     run_4_ThreePhaseImport.txt \

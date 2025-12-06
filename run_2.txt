@@ -16,10 +16,12 @@ majd az alábbi bontásban:
 a 🚀 Sprint fókusz (🔥 SOS pontokkal), a 📌 Mai eredmények és az 👉 Holnap fókusz.
 
 Példa prompt:
-Adj egy teljes C++ implementációt a fent szóban forgó osztályokról kommentekkel, dockommentekkel,
-javaslatokkal az osztályok elnevezésére, elhelyezésére a projecten belül.
+Adj egy teljes C++ implementációt a fent szóban forgó függvényekről
+kommentekkel, dockommentekkel, javaslatokkal az elnevezésére, elhelyezésére a projecten belül és
+integrációjára a jelenlegi programban.
+
 A fájlnevek a projekt névkonvencióját kövessék (snake_case, pl. registry_base.h, registry_manager.h).
-és integrációjára a jelenlegi programban.
+
 Legelőször csak azoknak a fájloknak a listáját add meg, amik tartalmát meg kell mindehez ismerned.
 
 Adj egy teljes követelményspecifikációt, funkcionális specifikációt és implementációs tervet 
@@ -27,5 +29,7 @@ Adj egy teljes követelményspecifikációt, funkcionális specifikációt és i
 
 
 ./sourcetotxt.sh ~/source/repos/CutCalculator/colors/ > masi2.txt
+
+./sourcetotxt.sh ~/source/repos/CutCalculator/products/ > masi2.txt
 
 pandoc -s -f markdown -t plain -o masi2.txt masi2.txt

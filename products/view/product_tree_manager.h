@@ -10,6 +10,8 @@
  * Feladata: a ProductRegistry-ből QStandardItemModel-t építeni,
  * és azt egy QTreeView-ba betölteni.
  * A fa hierarchiát parentId alapján szervezi, gyökér elemekkel kezdve.
+ *
+ * Újdonság: vizuális különbségtétel Termékcsoport (ág) és Terméktípus (levél) között.
  */
 class ProductTreeManager : public QObject {
     Q_OBJECT
@@ -18,6 +20,9 @@ public:
 
     /**
      * Újraépíti a modellt a registry aktuális adatai alapján.
+     * - Gyökerek beillesztése
+     * - Gyerekek rekurzív felépítése
+     * - Stílus beállítása (félkövér kategória, dőlt fehér levél)
      */
     void populate();
 
@@ -31,6 +36,8 @@ private:
     QStandardItemModel* _model = nullptr;
 
     void buildSubtree(QStandardItem* parentItem, const QUuid& parentId);
+    void styleItem(QStandardItem* item, bool isLeaf);
+
     void onItemChanged(QStandardItem* item);
 
 public slots:
@@ -38,5 +45,4 @@ public slots:
     void addChildProduct();
     void renameProduct();
     void removeProduct();
-
 };

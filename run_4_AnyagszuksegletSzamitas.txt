@@ -259,3 +259,36 @@ aggregálható formában.
   👉 Következő lépésként tudok adni egy konkrét Qt kódrészletet (toolbar +
   kontextmenü + slotok), ami azonnal szerkeszthetővé teszi a fát.
   Szeretnéd, hogy ezt is kidolgozzam?
+
+────────────────────────────────────────────
+  Roletta típusok és anyagszükségletek
+
+  1. Rugós típusok
+     - Rugós
+       anyagszükséglet: Ø23 ragacsos tengely + alsópálca + rugós rugó
+
+     - Tetőtéri
+       anyagszükséglet: Ø23 ragacsos tengely + alsópálca + tetőtéri rugó
+
+     - Tetőtéri (nagy konzolos)
+       anyagszükséglet: Ø23 ragacsos tengely + alsópálca + tetőtéri rugó
+
+  2. 18 (Mini)
+     anyagszükséglet: Ø18 sima tengely + alsó pálca
+
+  3. Gyöngyös típusok
+     - 23 (Alap)
+       anyagszükséglet: Ø23 ragacsos tengely + alsópálca
+
+     - 32 (Új)
+       anyagszükséglet: Ø32 hornyos tengely + széles záró
+
+     - Tokozott, sines
+       anyagszükséglet: Ø18 hornyos tengely + minitiok + minitokos záróléc + minitokos láb
+
+     - 36 (Erősített)
+       anyagszükséglet: Ø36 hornyos tengely + széles záró
+
+     - 47 (Maxi)
+       anyagszükséglet: Ø47 bordás tengely + széles záró
+  ────────────────────────────────────────────

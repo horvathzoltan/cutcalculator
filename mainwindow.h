@@ -4,6 +4,7 @@
 #include "products/view/product_tree_manager.h"
 #include "ui/adapters/log_view_adapter.h"
 #include <QMainWindow>
+#include <QSplitter>
 #include <QTreeView>
 
 class MaterialTableWidget;
@@ -26,6 +27,7 @@ public:
 private:
     Ui::MainWindow *ui;
     LogViewAdapter* _logAdapter = nullptr;   // pointer
+    QSplitter* _productTypesSplitter = nullptr;
 
     void initEventLogWidget();
     void closeEvent(QCloseEvent *event) override;

@@ -1,0 +1,36 @@
+📌 BOMWorkbench implementációs terv
+
+1.  Könyvtárstruktúra előkészítése
+    -   Hozz létre egy workbench/view/ könyvtárat.
+    -   Ide kerül a bom_workbench.h/.cpp.
+2.  Alap osztály létrehozása
+    -   class BOMWorkbench : public QWidget.
+    -   Tagok: QSplitter, ProductTreeView, ProductTreeManager, QToolBar,
+        QWidget* rightPanel.
+3.  UI skeleton felépítése
+    -   QVBoxLayout → toolbar + splitter.
+    -   Splitter bal oldal: ProductTreeView.
+    -   Splitter jobb oldal: placeholder panel (később anyagszükséglet +
+        számítási mód).
+4.  Állapotkezelés
+    -   restoreState() → splitter + header állapot visszaállítása
+        SettingsManager‑ből.
+    -   saveState() → állapot mentése bezáráskor.
+5.  Toolbar műveletek
+    -   CRUD akciók: új kategória, új típus, átnevezés, törlés.
+    -   Összekötés a ProductTreeManager slotjaival.
+6.  Jobb panel kibővítése
+    -   QTabWidget két füllel:
+        -   Anyagszükséglet lista (MaterialRequirementsView).
+        -   Számítási módok lista (CalculationModesView).
+    -   Ezek később külön widgetek lesznek, saját állapotkezeléssel.
+7.  Integráció a MainWindow‑ba
+    -   ui->tabWidget->addTab(new BOMWorkbench(ui->tabWidget), tr("BOM Workbench"));
+    -   closeEvent → saveState() meghívása.
+8.  Audit log integráció
+    -   Minden CRUD és állapotváltozás zEvent‑tel naplózva.
+    -   Például: „💾 BOMWorkbench splitter state saved”.
+9.  Következő bővítések
+    -   Anyagszükséglet és számítási módok adatmodellje
+        (MaterialRegistry, CalculationRuleRegistry).
+    -   Jobb panel dinamikus frissítése a fa kiválasztott eleméhez.

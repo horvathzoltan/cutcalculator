@@ -108,6 +108,9 @@ class SettingsManager {
         static inline const auto WindowGeometry      = "window_geometry";
         static inline const auto MainSplitterState      = "main_splitter_state";
         static inline const auto CurrentTabIndex      = "current_tab_index";
+        static inline const auto ProductTreeHeaderState      = "product_tree_header_state";
+        static inline const auto ProductTypesSplitterState      = "product_types_splitter_state";
+
     };
 
 public:
@@ -170,6 +173,21 @@ public:
         return _store.value(Keys::CurrentTabIndex).toInt();
     }
 
+    QByteArray productTreeHeaderState() const {
+        return _store.value(Keys::ProductTreeHeaderState).toByteArray();
+    }
+
+    void setProductTreeHeaderState(const QByteArray& state) {
+        _store.setValue(Keys::ProductTreeHeaderState, state);
+    }
+
+    QByteArray productTypesSplitterState() const {
+        return _store.value(Keys::ProductTypesSplitterState).toByteArray();
+    }
+
+    void setProductTypesSplitterState(const QByteArray& state) {
+        _store.setValue(Keys::ProductTypesSplitterState, state);
+    }
 private:
     SettingsManager();
 

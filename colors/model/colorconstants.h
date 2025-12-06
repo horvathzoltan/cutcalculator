@@ -15,4 +15,6 @@ inline const QColor ColorOrange{OrangeR, OrangeG, OrangeB};
 inline const QColor ColorRed{Qt::red}; // Qt saját példánya
 inline const QColor TextBlack{Qt::black};
 
+constexpr int CyanR = 0, CyanG = 180, CyanB = 180;
+inline const QColor ColorCyan{CyanR, CyanG, CyanB};
 }

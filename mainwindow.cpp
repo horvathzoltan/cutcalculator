@@ -1,4 +1,5 @@
 #include "mainwindow.h"
+#include "products/view/product_tree_view.h"
 #include "ui_mainwindow.h"
 
 #include "common/logger/event_logger.h"
@@ -15,6 +16,7 @@
 //#include "products/registry/product_registry.h"
 #include "products/view/product_tree_manager.h"
 
+#include <QHeaderView>
 #include <QToolBar>
 
 MainWindow::MainWindow(QWidget *parent)
@@ -28,7 +30,6 @@ MainWindow::MainWindow(QWidget *parent)
     // ablakméret - az esemény időzítve (Qt event queue-ban)
     QtEventUtil::post(this, [this]() {
         restoreGeometry(SettingsManager::instance().windowGeometry());
-        ui->splitter->restoreState(SettingsManager::instance().mainSplitterState());
 
         // — Splitter állapot visszaállítása —
         ui->splitter->restoreState(SettingsManager::instance().mainSplitterState());
@@ -85,8 +86,6 @@ bool MainWindow::event(QEvent* e)
     return QMainWindow::event(e); // minden más esemény átadva az alapnak
 }
 
-
-
 void MainWindow::closeEvent(QCloseEvent* event)
 {
     // — Ablak geometria mentése —
@@ -94,6 +93,19 @@ void MainWindow::closeEvent(QCloseEvent* event)
 
     // — Splitter állapot mentése —
     SettingsManager::instance().setMainSplitterState(ui->splitter->saveState());
+
+    // — ProductTreeView oszlopszélességek mentése —
+    if (_productTreeView && _productTreeView->header()) {
+        SettingsManager::instance().setProductTreeHeaderState(
+            _productTreeView->header()->saveState()
+            );
+    }
+
+    if (_productTypesSplitter) {
+        SettingsManager::instance().setProductTypesSplitterState(
+            _productTypesSplitter->saveState()
+            );
+    }
 
     // — Aktív tab mentése (opcionális) —
     SettingsManager::instance().setCurrentTabIndex(ui->tabWidget->currentIndex());
@@ -151,45 +163,67 @@ void MainWindow::initProductTypesTab() {
     ui->tabWidget->addTab(productTab, tr("Product Types"));
 
     auto* layout = new QVBoxLayout(productTab);
-    auto* splitter = new QSplitter(Qt::Horizontal, productTab);
-    layout->addWidget(splitter);
+    _productTypesSplitter = new QSplitter(Qt::Horizontal, productTab);
+
+    layout->addWidget(_productTypesSplitter);
 
     // Bal oldal: fa
-    _productTreeView = new QTreeView(splitter);
+    _productTreeView = new ProductTreeView(_productTypesSplitter);
 
+    // Oszlopszélességek visszaállítása
+    QByteArray headerState = SettingsManager::instance().productTreeHeaderState();
+    if (!headerState.isEmpty()) {
+        _productTreeView->header()->restoreState(headerState);
+    }
 
-    splitter->addWidget(_productTreeView);
+    _productTypesSplitter->addWidget(_productTreeView);
 
     // Jobb oldal: placeholder (később CalculationRule table)
-    auto* rightPlaceholder = new QWidget(splitter);
-    splitter->addWidget(rightPlaceholder);
+    auto* rightPlaceholder = new QWidget(_productTypesSplitter);
+    _productTypesSplitter->addWidget(rightPlaceholder);
+
+
+    QByteArray splitterState = SettingsManager::instance().productTypesSplitterState();
+    if (!splitterState.isEmpty()) {
+        _productTypesSplitter->restoreState(splitterState);
+    }
+
 
     // Manager: feltölti a fát
     _productTreeManager = new ProductTreeManager(_productTreeView, this);
     _productTreeManager->populate();
 
 
-    // MainWindow – toolbar / menü létrehozása
-
+/**
+ * Product Types tab inicializálása.
+ *
+ * - Bal oldal: fa nézet (Termékcsoportok és Terméktípusok hierarchiája).
+ * - Jobb oldal: placeholder (később CalculationRule táblázat).
+ * - Toolbar: új kategória (Termékcsoport), új terméktípus, átnevezés, törlés.
+ *
+ * Terminológia:
+ * - Termékcsoport = kategória (ág, félkövér ciánkék).
+ * - Terméktípus   = levél (dőlt fehér).
+ */
 
     // Toolbar a productTab fölé
     QToolBar* productToolbar = new QToolBar("Product Actions", productTab);
     layout->insertWidget(0, productToolbar);
 
-    QAction* addRootAction  = productToolbar->addAction("➕ Új gyökér");
-    QAction* addChildAction = productToolbar->addAction("➕ Új gyermek");
+    QAction* addCategoryAction   = productToolbar->addAction("➕ Új kategória");
+    QAction* addTypeAction       = productToolbar->addAction("➕ Új terméktípus");
     QAction* renameAction   = productToolbar->addAction("✏️ Átnevezés");
     QAction* removeAction   = productToolbar->addAction("🗑️ Törlés");
 
     // Összekötés a manager slotjaival
-    connect(addRootAction,  &QAction::triggered, _productTreeManager, &ProductTreeManager::addRootProduct);
-    connect(addChildAction, &QAction::triggered, _productTreeManager, &ProductTreeManager::addChildProduct);
+    connect(addCategoryAction,  &QAction::triggered, _productTreeManager, &ProductTreeManager::addRootProduct);
+    connect(addTypeAction, &QAction::triggered, _productTreeManager, &ProductTreeManager::addChildProduct);
     connect(renameAction,   &QAction::triggered, _productTreeManager, &ProductTreeManager::renameProduct);
     connect(removeAction,   &QAction::triggered, _productTreeManager, &ProductTreeManager::removeProduct);
 
     // Kontextmenü a QTreeView-hoz
     _productTreeView->setContextMenuPolicy(Qt::ActionsContextMenu);
-    _productTreeView->addAction(addChildAction);
+    _productTreeView->addAction(addTypeAction);
     _productTreeView->addAction(renameAction);
     _productTreeView->addAction(removeAction);
 
