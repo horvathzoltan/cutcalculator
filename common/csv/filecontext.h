@@ -67,8 +67,9 @@ public:
         return _errors;
     }
 
-    void addError(int l, const QString& msg) {
-        _errors.append({l, msg});
+    void addError(int l, const QString& msg,
+    const QString& msgBarcode = QString(), const QString& msgName = QString()) {
+        _errors.append({l, msg, msgBarcode, msgName});
     }
 
     void addErrors(const QVector<RowError>& errs) {

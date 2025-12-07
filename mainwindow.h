@@ -44,7 +44,7 @@ private:
     QTreeView* _productTreeView = nullptr;
     ProductTreeManager* _productTreeManager = nullptr;
 
-    void initProductTypesTab();   // új tab létrehozása + fa
+    //void initProductTypesTab();   // új tab létrehozása + fa
     //void loadProductDefinitions(); // CSV → registry
 };
 #endif // MAINWINDOW_H

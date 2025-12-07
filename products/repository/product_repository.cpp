@@ -10,7 +10,7 @@
 #include "common/utils/filename_helper.h"
 
 // --- Stage 1: Convert ---
-std::optional<ProductRepository::ProductRow>
+std::optional<CsvImporter::AuditedRow<ProductRepository::ProductRow>>
 ProductRepository::convertRowToProductRow(const QVector<QString>& parts,
                                           CsvImporter::FileContext& ctx) {
     if (parts.size() < 4) {
@@ -25,7 +25,10 @@ ProductRepository::convertRowToProductRow(const QVector<QString>& parts,
         .barcode     = parts[3].trimmed()
     };
 
-    return row;
+    return CsvImporter::AuditedRow<ProductRow>{
+        ctx.currentLineNumber(),
+        row
+    };
 }
 
 // --- Stage 2: Build ---
@@ -94,9 +97,9 @@ ProductRepository::validateProductRow(const ProductRow& row, int lineNumber) {
 
 
 // --- Stage 3: Load & Assemble ---
-QVector<ProductRepository::ProductRow>
+QVector<CsvImporter::AuditedRow<ProductRepository::ProductRow>>
 ProductRepository::loadProductRows(CsvImporter::FileContext& ctx) {
-    return CsvImporter::readAndConvert<ProductRow>(ctx, convertRowToProductRow);
+    return CsvImporter::readAndConvert<CsvImporter::AuditedRow<ProductRepository::ProductRow>>(ctx, convertRowToProductRow);
 }
 
 // --- Entry Point ---
@@ -110,11 +113,14 @@ bool ProductRepository::loadFromCSV(ProductRegistry& registry) {
     const QString path = helper.getProductCsvFile(); // products.csv
     CsvImporter::FileContext ctx("Product import", path);
 
-    const QVector<ProductRepository::ProductRow> rows = loadProductRows(ctx);
+    const auto rows = loadProductRows(ctx);
 
     const QVector<ProductMaster> defs =
         CsvImporter::buildAll<ProductRow, ProductMaster>(
-        rows, buildProductFromRow, ctx);
+            rows,
+            buildProductFromRow,
+            ctx
+        );
 
     if (ctx.hasErrors()) {
         zWarning(QString("⚠️ Hibák a Product import során (%1)").arg(ctx.errorsSize()));

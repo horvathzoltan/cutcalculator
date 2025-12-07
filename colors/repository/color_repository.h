@@ -26,7 +26,7 @@ struct RalRow {
     QString code;       ///< RAL kód (pl. "RAL 1001")
     QString name;       ///< Színnév
     QString hex;        ///< HEX színkód (pl. "#AABBCC")
-    int lineNumber;     ///< Eredeti CSV sor sorszáma
+    //int lineNumber;     ///< Eredeti CSV sor sorszáma
 };
 
 /**
@@ -57,7 +57,7 @@ private:
      * @param ctx Audit context (hibák ide kerülnek)
      * @return RalRow, ha sikerült; std::nullopt, ha formai hiba volt
      */
-    static std::optional<RalRow>
+    static std::optional<CsvImporter::AuditedRow<RalRow>>
     convertRowToRalRow(const QVector<QString>& row,
                        CsvImporter::FileContext& ctx);
 
@@ -84,8 +84,7 @@ private:
      * @return Külön FileContext csak a validációs hibákkal
      */
     static QVector<CsvImporter::RowError>
-    validateRalRow(const RalRow& rr, RalSystem system);
-
+    validateRalRow(const RalRow& rr, RalSystem system, int lineNumber);
     // =========================
     // Stage 2.5: Validation helpers
     // =========================

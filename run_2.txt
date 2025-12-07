@@ -16,20 +16,43 @@ majd az alábbi bontásban:
 a 🚀 Sprint fókusz (🔥 SOS pontokkal), a 📌 Mai eredmények és az 👉 Holnap fókusz.
 
 Példa prompt:
-Adj egy teljes C++ implementációt a fent szóban forgó függvényekről
-kommentekkel, dockommentekkel, javaslatokkal az elnevezésére, elhelyezésére a projecten belül és
-integrációjára a jelenlegi programban.
+Adj egy teljes implementációt (C++20, Qt6.10) a fent szóban forgó komponensekről (osztály, függvények, stb.)
+kommentekkel, dockommentekkel, javaslatokkal az elnevezésére, elhelyezésére a projecten belül és integrációjára a jelenlegi programban.
 
 A fájlnevek a projekt névkonvencióját kövessék (snake_case, pl. registry_base.h, registry_manager.h).
 
-Legelőször csak azoknak a fájloknak a listáját add meg, amik tartalmát meg kell mindehez ismerned.
+Legelőször csak azoknak a fájloknak a listáját add meg (files.txt‑be másolható, soronként egy fájl), amik tartalmát meg kell mindehez ismerned.
 
 Adj egy teljes követelményspecifikációt, funkcionális specifikációt és implementációs tervet 
 - használj emojikat - a fent említett funkció kifejlesztéséhez!
 
 
+✨ Hogyan működik - sourcetotxt.sh
+Gyökérrel:
+----------
+./sourcetotxt.sh -d ~/source/repos/CutCalculator files.txt
+
+→ minden sorhoz hozzáfűzi a ~/source/repos/CutCalculator előtagot.
+
+Gyökér nélkül:
+--------------
+./sourcetotxt.sh files.txt
+
+→ a fájllistában lévő útvonalakat közvetlenül kezeli.
+
+Könyvtár dumpolás:
+------------------
+./sourcetotxt.sh -d ~/source/repos/CutCalculator products
+
+→ rekurzívan kiírja a products könyvtár tartalmát.
+
+---
+
 ./sourcetotxt.sh ~/source/repos/CutCalculator/colors/ > masi2.txt
 
-./sourcetotxt.sh ~/source/repos/CutCalculator/products/ > masi2.txt
+./sourcetotxt.sh -d ~/source/repos/CutCalculator files.txt > masi2.txt
+
 
 pandoc -s -f markdown -t plain -o masi2.txt masi2.txt
+
+

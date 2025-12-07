@@ -36,7 +36,7 @@ private:
     QStandardItemModel* _model = nullptr;
 
     void buildSubtree(QStandardItem* parentItem, const QUuid& parentId);
-    void styleItem(QStandardItem* item, bool isLeaf);
+    void styleItem(QStandardItem* item, bool isLeaf, bool isRoot = false);
 
     void onItemChanged(QStandardItem* item);
 
@@ -45,4 +45,7 @@ public slots:
     void addChildProduct();
     void renameProduct();
     void removeProduct();
+
+private slots:
+    void onProductMoved(const QUuid& id, const QUuid& newParentId);
 };

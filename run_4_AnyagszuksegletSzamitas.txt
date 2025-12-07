@@ -291,4 +291,59 @@ aggregálható formában.
 
      - 47 (Maxi)
        anyagszükséglet: Ø47 bordás tengely + széles záró
+
+sávroló  típusok és anyagszükségletek:
+  1. Tokozott
+  anyagszükséglet: sávroló tok, sávroló záró, csillagtengely,  Ø32 hornyos tengely
+  2. Toknélküli
+  anyagszükséglet: felső sín, sávroló záró, csillagtengely,  Ø32 hornyos tengely
+  3. Minitokozott
+  anyagszükséglet: Ø18 hornyos tengely + minitiok + minitokos záróléc + minitokos alsópálca + minitokos láb
+
+napháló  típusok és anyagszükségletek:
+  1. Cipzáros
+  - Motoros
+  anyagszükséglet: napháló tengely, vastag súly, napháló tok, napháló tokfedél, cipzáros záró, cipzáros láb, cipzáros lábtakaró, lábbetét, motor
+  - Kurblis
+  anyagszükséglet: napháló tengely, vastag súly, napháló tok, napháló tokfedél, cipzáros záró, cipzáros láb, cipzáros lábtakaró, lábbetét, csuklós hajtókar
+  2. Bowdenes
+  - Motoros
+  anyagszükséglet: napháló tengely, vékony súly, napháló tok, napháló tokfedél, sines záró, bowden, motor
+  - Kurblis
+  anyagszükséglet: napháló tengely, vékony súly, napháló tok, napháló tokfedél, sines záró, bowden, csuklós hajtókar
+  3. Sínes
+  - Motoros
+  anyagszükséglet: napháló tengely, vékony súly, napháló tok, napháló tokfedél, sines záró, sines láb, motor
+  - Kurblis
+  anyagszükséglet: napháló tengely, vékony súly, napháló tok, napháló tokfedél, sines záró, sines láb, csuklós hajtókar
+
   ────────────────────────────────────────────
+  id,parentId,name,barcode
+  {11111111-1111-1111-1111-111111111111},,Roletta,ROL
+  {22222222-2222-2222-2222-222222222222},{11111111-1111-1111-1111-111111111111},Rugós,ROL-R
+  {33333333-3333-3333-3333-333333333333},{22222222-2222-2222-2222-222222222222},Tetőtéri,ROL-RT
+  {44444444-4444-4444-4444-444444444444},{22222222-2222-2222-2222-222222222222},Rugós,ROL-RR
+  {55555555-5555-5555-5555-555555555555},{11111111-1111-1111-1111-111111111111},18(Mini),MIN-18
+  {66666666-6666-6666-6666-666666666666},,Sávroló,SAV
+  {77777777-7777-7777-7777-777777777777},{66666666-6666-6666-6666-666666666666},Tokozott,SR-TOK
+  {88888888-8888-8888-8888-888888888888},{66666666-6666-6666-6666-666666666666},Toknélküli,SR-FS
+  {42766135-73bb-4153-a42f-f0a169651235},{11111111-1111-1111-1111-111111111111},Gyöngyös,GY
+  {80a99ad2-1e9c-47a7-af5b-3e0bb2776947},{42766135-73bb-4153-a42f-f0a169651235},23(Alap),GY-A23
+  {47569d54-e022-4fc8-ad5f-f0cf38015845},{42766135-73bb-4153-a42f-f0a169651235},32(Új),GY-U32
+  {25b74319-bd3c-49e4-bb0f-1be9348e376f},{42766135-73bb-4153-a42f-f0a169651235},Tokozott,sines
+  {a5076798-ed05-4679-92c7-447720d8fab9},{42766135-73bb-4153-a42f-f0a169651235},36(Erősített),GY-E36
+  {ee19f8f7-55d6-40e2-b5fc-6970e1d95fe4},{42766135-73bb-4153-a42f-f0a169651235},47(Maxi),GY-M47
+  {9ba81b5c-f74d-4dce-a0cb-67c60082a5bf},{66666666-6666-6666-6666-666666666666},Minitokozott,SR-MINI
+  {72cfbf1c-ffc2-42cc-b71c-7eabfaf71f62},,Napháló,NP
+  {1efced07-faae-4f40-8f5a-9d5f57b665ce},{72cfbf1c-ffc2-42cc-b71c-7eabfaf71f62},Sínes,NP-S
+  {ede5b0df-8811-4e5c-a6b3-15c1fadc0992},{1efced07-faae-4f40-8f5a-9d5f57b665ce},Motoros,NP-SM
+  {9cceab4d-4b9a-49d4-b5a3-1b4362ab85ea},{1efced07-faae-4f40-8f5a-9d5f57b665ce},Kurblis,NP-SK
+  {75aea478-4ba8-468f-b491-8858ea6cffe7},{72cfbf1c-ffc2-42cc-b71c-7eabfaf71f62},Bowdenes,NP-B
+  {3d300a7d-f66d-495f-afa5-5bffb20ae51b},{75aea478-4ba8-468f-b491-8858ea6cffe7},Motoros,NP-BM
+  {95dd2b7a-8d60-456e-8eca-1f9c9476b136},{75aea478-4ba8-468f-b491-8858ea6cffe7},Kurblis,NP-BK
+  {cae9ecff-1f99-4f74-8c57-73d86a379a91},{72cfbf1c-ffc2-42cc-b71c-7eabfaf71f62},Cipzáros,NP-C
+  {a1569a04-3d56-4819-bf2a-af7e232f1f7e},{cae9ecff-1f99-4f74-8c57-73d86a379a91},Motoros,NP-CM
+  {85b6c718-75f8-4c0a-a7ba-8f6b64856605},{cae9ecff-1f99-4f74-8c57-73d86a379a91},Kurblis,NP-CK
+────────────────────────────────────────────
+INFO:• 1× ⚠️ Hiányzó szélesség/magasság (Sorok: 42) MinitokosLáb
+INFO:• 3× ⚠️ Hiányzó átmérő (Sorok: 37, 41, 44) Csillagtengely,MinitokosPálca,AlsóPálca

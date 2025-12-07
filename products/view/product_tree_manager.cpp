@@ -4,6 +4,7 @@
 #include "common/logger/event_logger.h"
 #include <QStandardItem>
 #include "products/registry/product_registry.h"
+#include "products/view/product_tree_view.h"
 
 /**
  * Konstruktor: létrehozza a modellt és beállítja a QTreeView-hoz.
@@ -21,6 +22,12 @@ ProductTreeManager::ProductTreeManager(QTreeView* view, QObject* parent)
 
     connect(_model, &QStandardItemModel::itemChanged,
             this, &ProductTreeManager::onItemChanged);
+
+    if (auto* ptv = qobject_cast<ProductTreeView*>(_view)) {
+        connect(ptv, &ProductTreeView::productMoved,
+                this, &ProductTreeManager::onProductMoved);
+    }
+
 }
 
 /**
@@ -28,21 +35,36 @@ ProductTreeManager::ProductTreeManager(QTreeView* view, QObject* parent)
  * - Termékcsoport: félkövér + ciánkék
  * - Terméktípus: dőlt + fehér
  */
-void ProductTreeManager::styleItem(QStandardItem* item, bool isLeaf) {
+void ProductTreeManager::styleItem(QStandardItem* item, bool isLeaf, bool isRoot) {
     QFont font = item->font();
-    if (isLeaf) {
+    if (isRoot) {
+        font.setBold(true);
+        item->setFont(font);
+        item->setForeground(QBrush(Qt::darkGreen)); // barátságosabb szín
+        if (!item->text().startsWith("🌳 ")) {
+            item->setText("🌳 " + item->text()); // gyökér → házikó ikon
+        }
+    }
+    else if (isLeaf) {
         font.setItalic(true);
         font.setBold(false);
         item->setFont(font);
-        item->setForeground(QBrush(ColorHelper::textColor(_view)));        //item->setText("📦 " + item->text()); // terméktípus → doboz emoji
-    } else {
+        item->setForeground(QBrush(ColorHelper::textColor(_view)));
+        if (item->text().startsWith("📂 ")) {
+            item->setText(item->text().mid(3)); // levágja a 📂‑t
+        }
+    }
+    else {
         font.setBold(true);
         font.setItalic(false);
         item->setFont(font);
         item->setForeground(QBrush(ColorHelper::categoryColor(_view)));
-        item->setText("📂 " + item->text()); // termékcsoport → mappa emoji
+        if (!item->text().startsWith("📂 ")) {
+            item->setText("📂 " + item->text());
+        }
     }
 }
+
 
 /**
  * Teljes fa felépítése: gyökerek → rekurzívan gyerekek.
@@ -61,8 +83,8 @@ void ProductTreeManager::populate() {
         codeItem->setEditable(true);
         idItem->setEditable(false);
 
-        // Stílus: gyökér mindig Termékcsoport (nem levél)
-        styleItem(nameItem, /*isLeaf=*/false);
+        // Gyökér mindig root
+        styleItem(nameItem, /*isLeaf=*/false, /*isRoot=*/true);
 
         _model->appendRow({ nameItem, codeItem, idItem });
 
@@ -88,7 +110,8 @@ void ProductTreeManager::buildSubtree(QStandardItem* parentItem, const QUuid& pa
 
         // Eldöntjük, hogy levél-e (nincsenek gyerekei)
         bool isLeaf = ProductRegistry::instance().findChildren(child.id).isEmpty();
-        styleItem(nameItem, isLeaf);
+        styleItem(nameItem, isLeaf, /*isRoot=*/false);
+
 
         parentItem->appendRow({ nameItem, codeItem, idItem });
 
@@ -102,7 +125,7 @@ void ProductTreeManager::addRootProduct() {
     ProductMaster pm;
     pm.id = QUuid::createUuid();
     pm.parentId = QUuid(); // gyökér
-    pm.name = "Új termék";
+    pm.name = "Új gyökérelem";
     pm.barcode = "NEW";
     ProductRegistry::instance().insert(pm);
     populate();
@@ -177,4 +200,10 @@ void ProductTreeManager::onItemChanged(QStandardItem* item) {
 
         ProductRegistry::instance().update(*pm);
     }
+}
+
+void ProductTreeManager::onProductMoved(const QUuid& id, const QUuid& newParentId) {
+    Q_UNUSED(id)
+    Q_UNUSED(newParentId)
+    populate(); // újraépíti a fát, stílusok helyreállnak
 }

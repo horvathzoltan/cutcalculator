@@ -79,6 +79,10 @@ void FileContextCollector::logSummary() const {
                 auto& agg = errorBuckets[err.errorMessage()];
                 agg.count++;
                 agg.lines.push_back(err.lineIndex());
+
+                // opcionálisan: azonosítók gyűjtése
+                agg.barcodes.push_back(err.barcode());
+                agg.names.push_back(err.name());
             }
 
 
@@ -113,7 +117,30 @@ void FileContextCollector::logSummary() const {
         for (auto it = errorBuckets.constBegin(); it != errorBuckets.constEnd(); ++it) {
             QStringList nums;
             for (int ln : it.value().lines) nums << QString::number(ln);
-            QString lineList = nums.isEmpty() ? "" : L(" (Sorok: %1)").arg(nums.join(", "));
+
+            QStringList ids;
+            for (int i = 0; i < it.value().lines.size(); ++i) {
+                const QString& bc = it.value().barcodes[i];
+                const QString& nm = it.value().names[i];
+
+                QString idPart;
+                if (!bc.isEmpty() && !nm.isEmpty()) {
+                    idPart = QString("[%1:%2]").arg(bc).arg(nm);
+                } else if (!bc.isEmpty()) {
+                    idPart = QString("[%1]").arg(bc);
+                } else if (!nm.isEmpty()) {
+                    idPart = QString("[%1]").arg(nm);
+                }
+
+                if (!idPart.isEmpty()) {
+                    ids << QString("%1 %2").arg(it.value().lines[i]).arg(idPart);
+                } else {
+                    ids << QString::number(it.value().lines[i]);
+                }
+            }
+
+
+            QString lineList = ids.isEmpty() ? "" : L(" (Sorok: %1)").arg(ids.join(", "));
             zInfo(L("• %1× %2%3")
                       .arg(it.value().count)
                       .arg(it.key())

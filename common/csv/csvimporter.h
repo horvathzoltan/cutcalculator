@@ -13,7 +13,7 @@
 
 namespace CsvImporter{
 
-inline QList<QVector<QString>> read(const QString& filepath, QChar separator = QChar()) {
+inline QList<CsvRawLine> read(const QString& filepath, QChar separator = QChar()) {
     QFile file(filepath);
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
         QString msg = L("❌ Nem sikerült megnyitni a csv fájlt: %1").arg(filepath);
@@ -40,6 +40,12 @@ inline QList<QVector<QString>> read(const QString& filepath, QChar separator = Q
     return rows;
 }
 
+template<typename Row>
+struct AuditedRow {
+    int rawLineNumber;
+    Row row;
+};
+
 template<typename T>
 static QVector<T> readAndConvert(CsvImporter::FileContext& ctx,
                                  std::function<std::optional<T>(const QVector<QString>&, FileContext&)> converter,
@@ -55,9 +61,9 @@ static QVector<T> readAndConvert(CsvImporter::FileContext& ctx,
 
         const auto& row = rows[i];
 
-        ctx.setCurrentLineNumber(i + 1);
+        ctx.setCurrentLineNumber(row.rawLineNumber);
+        auto maybeObj = converter(row.fields, ctx);
 
-        auto maybeObj = converter(row, ctx);
         if (maybeObj.has_value()){
             result.append(std::move(maybeObj.value()));
             readlines++;
@@ -75,13 +81,13 @@ static QVector<T> readAndConvert(CsvImporter::FileContext& ctx,
  * - ctx: audit context
  */
 template<typename Row, typename Domain>
-QVector<Domain> buildAll(const QVector<Row>& rows,
+QVector<Domain> buildAll(const QVector<AuditedRow<Row>>& rows,
                          std::function<std::optional<Domain>(const Row&, FileContext&)> buildFn,
                          FileContext& ctx) {
     QVector<Domain> out;
-    for (int i = 0; i < rows.size(); ++i) {
-        ctx.setCurrentLineNumber(i + 1);
-        auto objOpt = buildFn(rows[i], ctx);
+    for (const auto& audited : rows) {
+        ctx.setCurrentLineNumber(audited.rawLineNumber); // 🦎 fájlbeli sor
+        auto objOpt = buildFn(audited.row, ctx);
         if (objOpt.has_value()) {
             out.append(objOpt.value());
         }

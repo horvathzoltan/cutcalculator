@@ -9,7 +9,7 @@
  * Stage 1: Convert
  * ========================================================= */
 
-std::optional<RalRow>
+std::optional<CsvImporter::AuditedRow<RalRow>>
 ColorRepository::convertRowToRalRow(const QVector<QString>& row,
                                 CsvImporter::FileContext& ctx) {
     const int line = ctx.currentLineNumber();
@@ -24,7 +24,7 @@ ColorRepository::convertRowToRalRow(const QVector<QString>& row,
     rr.code = row[0].trimmed(); //"RAL " + row[0].trimmed();  // Classic formátum preferenciája
     rr.name = row[1].trimmed();
     rr.hex  = row[2].trimmed();
-    rr.lineNumber = line;
+    //rr.lineNumber = line;
 
     // Alap üresség check (konverter szinten még minimál)
     if (rr.code.isEmpty() || rr.name.isEmpty() || rr.hex.isEmpty()) {
@@ -32,7 +32,7 @@ ColorRepository::convertRowToRalRow(const QVector<QString>& row,
         return std::nullopt;
     }
 
-    return rr;
+    return CsvImporter::AuditedRow<RalRow>{ line, rr };
 }
 
 /* =========================================================
@@ -69,19 +69,19 @@ ColorRepository::buildNamedColorFromRow(const RalRow& rr,
                                     RalSystem system) {
     // Tartalmi validáció (külön context, majd merge)
 
-    auto rowErrors = validateRalRow(rr, system);
+    auto rowErrors = validateRalRow(rr, system, ctx.currentLineNumber());
     ctx.addErrors(rowErrors);
 
     // Runtime validáció: QColor elfogadja-e a HEX-et
     const QColor color(rr.hex);
     if (isValidHexFormat(rr.hex) && !color.isValid()) {
-        ctx.addError(rr.lineNumber, QString("❌ Érvénytelen HEX kód (QColor): %1").arg(rr.hex));
+        ctx.addError(ctx.currentLineNumber(), QString("❌ Érvénytelen HEX kód (QColor): %1").arg(rr.hex));
         return std::nullopt;
     }
 
     auto n = NamedColor::normalizeRalExtended(rr.code);
     if(n.system != system){
-        ctx.addError(rr.lineNumber,
+        ctx.addError(ctx.currentLineNumber(),
                      QString("❌ RAL kód és rendszer nem egyezik: kód=%1, rendszer=%2")
                          .arg(rr.code, RalSystemUtils::toString(system)));
         return std::nullopt;
@@ -96,17 +96,17 @@ ColorRepository::buildNamedColorFromRow(const RalRow& rr,
  * ========================================================= */
 
 QVector<CsvImporter::RowError>
-ColorRepository::validateRalRow(const RalRow& rr, RalSystem system) {
+ColorRepository::validateRalRow(const RalRow& rr, RalSystem system, int lineNumber) {
     QVector<CsvImporter::RowError> errors;
 
     if (rr.name.isEmpty())
-        errors.append({rr.lineNumber, "⚠️ Hiányzó név"});
+        errors.append({lineNumber, "⚠️ Hiányzó név"});
     if (system == RalSystem::Unknown)
-        errors.append({rr.lineNumber, "⚠️ Ismeretlen RAL rendszer"});
+        errors.append({lineNumber, "⚠️ Ismeretlen RAL rendszer"});
     if (!isValidRalCode(rr.code))
-        errors.append({rr.lineNumber, "❌ Hibás RAL kód formátum"});
+        errors.append({lineNumber, "❌ Hibás RAL kód formátum"});
     if (!isValidHexFormat(rr.hex))
-        errors.append({rr.lineNumber, "❌ Hibás HEX formátum"});
+        errors.append({lineNumber, "❌ Hibás HEX formátum"});
 
     return errors;
 }
@@ -126,7 +126,7 @@ bool ColorRepository::loadRalColors(const QList<RalSource>& sources) {
         CsvImporter::FileContext ctx("RAL " + systemName + " import", src.filePath);
 
         // 1) Convert
-        const auto rows = CsvImporter::readAndConvert<RalRow>(ctx, convertRowToRalRow);
+        const auto rows = CsvImporter::readAndConvert<CsvImporter::AuditedRow<RalRow>>(ctx, convertRowToRalRow);
 
         // 2) Build (+ Validate)
         const QVector<NamedColor> namedColors =
@@ -148,14 +148,14 @@ bool ColorRepository::loadRalColors(const QList<RalSource>& sources) {
 
             //if (NamedColor::containsRalColor(key)) {
             if (ColorRegistry::instance().findByCode(key) != nullptr) {
-                occurrenceMap[key].append(rows[i].lineNumber);
+                occurrenceMap[key].append(rows[i].rawLineNumber);
 
                 QString allLines;
                 for (int ln : occurrenceMap[key]) {
                     allLines += QString::number(ln) + " ";
                 }
 
-                ctx.addError(rows[i].lineNumber,
+                ctx.addError(rows[i].rawLineNumber,
                              QString("❌ Többszörös RAL kód: %1 (%2), előfordulások sorai: %3")
                                  .arg(key, systemName, allLines.trimmed()));
                 ok = false;
@@ -164,7 +164,7 @@ bool ColorRepository::loadRalColors(const QList<RalSource>& sources) {
 
             //NamedColor::insertRalColor(nc);
             ColorRegistry::instance().insert(nc);
-            occurrenceMap[key] = { rows[i].lineNumber };
+            occurrenceMap[key] = { rows[i].rawLineNumber };
         }
 
 

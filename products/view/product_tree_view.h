@@ -17,4 +17,7 @@ public:
 
 protected:
     void dropEvent(QDropEvent* event) override;
+
+signals:
+    void productMoved(const QUuid& id, const QUuid& newParentId);
 };

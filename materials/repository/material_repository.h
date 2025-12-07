@@ -37,7 +37,7 @@ private:
     };
 
     // --- Stage 1: Convert ---
-    static std::optional<MaterialRow> convertRowToMaterialRow(const QVector<QString>& parts,
+    static std::optional<CsvImporter::AuditedRow<MaterialRow>> convertRowToMaterialRow(const QVector<QString>& parts,
                                                               CsvImporter::FileContext& ctx);
 
     // Stage 2.5: Validate
@@ -49,5 +49,6 @@ private:
                                                               CsvImporter::FileContext& ctx);
 
     // --- Stage 3: Load & Assemble ---
-    static QVector<MaterialRow> loadMaterialRows(CsvImporter::FileContext& ctx);
+    static QVector<CsvImporter::AuditedRow<MaterialRow>> loadMaterialRows(CsvImporter::FileContext& ctx);
+    static CsvImporter::RowError makeError(int lineNumber, const QString &message, const MaterialRepository::MaterialRow &row);
 };

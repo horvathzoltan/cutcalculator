@@ -70,6 +70,9 @@ public:
     struct ErrorAggregate {
         int count = 0;
         QVector<int> lines;
+
+        QVector<QString> barcodes;
+        QVector<QString> names;
     };
 
     // Singleton elérés

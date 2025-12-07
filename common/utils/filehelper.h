@@ -6,10 +6,16 @@
 #include <QVector>
 #include <QString>
 
+
+struct CsvRawLine {
+    int rawLineNumber;          // fájlbeli sorindex (1-től)
+    QVector<QString> fields;    // feldolgozott cellák
+};
+
 class FileHelper {
-public:
+public:    
     // Fő CSV parser metódus: escape karakterekkel, többsoros cellákkal
-    static QList<QVector<QString>> parseCSV(QTextStream *st, const QChar& separator = ';');
+    static QList<CsvRawLine> parseCSV(QTextStream *st, const QChar& separator = ';');
 
     static bool isCsvWithOnlyHeader(const QString &filePath);
     static QChar detectSeparatorSmart(QTextStream *st);
