@@ -11,9 +11,11 @@
  * Drop után frissíti a parentId-t a ProductRegistry-ben.
  */
 class ProductTreeView : public QTreeView {
-    Q_OBJECT
+    Q_OBJECT    
 public:
-    using QTreeView::QTreeView;
+    explicit ProductTreeView(QWidget* parent = nullptr);
+
+    //using QTreeView::QTreeView;
 
 protected:
     void dropEvent(QDropEvent* event) override;

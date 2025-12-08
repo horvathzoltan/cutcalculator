@@ -3,7 +3,14 @@
 #include <QStandardItemModel>
 #include <QDebug>
 #include "common/logger/event_logger.h"
+#include "common/utils/font_utils.h"
 #include "products/registry/product_registry.h"
+
+ProductTreeView::ProductTreeView(QWidget* parent)
+    : QTreeView(parent)
+{
+    FontUtils::applySafeMonospaceFont(this);
+}
 
 void ProductTreeView::dropEvent(QDropEvent* event) {
     auto* sim = qobject_cast<QStandardItemModel*>(model());

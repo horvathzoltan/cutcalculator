@@ -1,7 +1,11 @@
 #include "log_view_adapter.h"
+#include "common/utils/font_utils.h"
 
 LogViewAdapter::LogViewAdapter(QPlainTextEdit* target)
-    : _target(target) {}
+    : _target(target)
+{
+    FontUtils::applySafeMonospaceFont(target);
+}
 
 QString LogViewAdapter::ensureNewline(const QString& s) const {
     return s.endsWith('\n') ? s : s + '\n';

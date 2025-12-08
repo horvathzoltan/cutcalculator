@@ -59,6 +59,8 @@ private:
     QWidget* _materialsTab = nullptr;    // "Anyagszükséglet"
     QWidget* _calcModesTab = nullptr;    // "Számítási módok"
 
+    QAction* _addMaterialAction = nullptr;
+
     // Belső segédek
     void buildToolbar();
     void buildLeftPanel();

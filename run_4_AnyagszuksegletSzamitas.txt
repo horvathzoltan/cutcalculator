@@ -1,266 +1,163 @@
-📘 Követelményspecifikáció – Anyagszükséglet számítás (napháló, sávroló,
-roletta)
+📘 Követelményspecifikáció – Anyagszükséglet szerkesztő és számítás 🎯
+Cél A rendszer célja, hogy a terméktípusokhoz tartozó
+anyagszükségleteket és az ezekhez kapcsolódó számítási módokat
+auditálható, szerkeszthető formában kezelje.
 
-------------------------------------------------------------------------
+Első lépés: definiáljuk, hogy egy terméktípushoz mely anyagok tartoznak
+(NeedRule).
 
-🎯 Cél
+Második lépés: definiáljuk, hogy az adott terméktípushoz milyen
+számítási módok érhetők el (NeedCalculation).
 
-A rendszer feladata, hogy a megrendelésekből kiszámolja a gyártáshoz
-szükséges anyagokat (tok, tengely, vászon, hajtómű/rugó, alsó
-pálca/záróléc, opcionálisan csőmotor).
-Az eredmény egy auditálható, aggregált gyártási lista, amely figyelembe
-veszi a különböző mérési módokat (falc, üveg, vászonméret, gyártási
-méret).
+Harmadik lépés: egy számítási módon belül megadjuk, hogy az egyes
+anyagokból hogyan számoljuk ki a mennyiséget (formula).
 
-------------------------------------------------------------------------
+🧩 Adatmodellek MaterialMaster (globális törzs)
 
-🧩 Követelmények
+Minden alapanyag (tok, tengely, vászon, rugó, hajtómű, motor, pálca,
+záróléc).
 
-Adatmodellek
+Mezők: id, name, type, size, color, weight, ralCode/hexCode.
 
--   MaterialMaster (globális törzs)
-    -   Minden alapanyag (tok, tengely, vászon, rugó, hajtómű, csőmotor,
-        pálca, záróléc).
-    -   Mezők: id, name, type, size, color, weight, ralCode/hexCode.
--   ProductDefinition (globális táblázat)
-    -   Terméktípusok: napháló, sávroló, roletta.
-    -   Csak metaadatokat tárol: id, parentId, name, barcode.
--   NeedRule (kapcsolótábla)
-    -   Kapcsolat ProductDefinition ↔ MaterialMaster között.
-    -   Mezők: id, productId, materialId.
--   NeedCalculation (számítási mód)
-    -   Számítási mód egy NeedRule‑hoz.
-    -   Mezők: needRuleId, mode (string: “falc”, “glass”, “fabric”,
-        “manufacturing”), formula (pl. “w-15”, “fixed:2”).
--   OrderHeader / OrderLine (megrendelések)
-    -   OrderHeader: tételszám, megrendelő neve, dátum, státusz.
-    -   OrderLine: productId, width, height, quantity, color,
-        handlerSide.
--   NeedResult (runtime)
-    -   Számítás eredménye.
-    -   Mezők: materialId, lengthMm, pieces, mode, (opcionálisan areaMm2
-        szövethez).
+ProductDefinition (globális táblázat)
 
-------------------------------------------------------------------------
+Terméktípusok: napháló, sávroló, roletta.
 
-⚙️ Funkcionális specifikáció
+Mezők: id, parentId, name, barcode.
 
-📊 Fő funkciók
+NeedRule (kapcsolótábla)
 
--   Kapcsolótábla kezelés
-    -   ProductDefinition ↔ MaterialMaster kapcsolatok tárolása
-        (NeedRule).
-    -   Minden kapcsolatnak van saját ID‑je.
--   Számítási módok kezelése
-    -   Minden NeedRule‑hoz több számítási mód (NeedCalculation)
-        rendelhető.
-    -   Példák:
-        -   falcméret → w-15
-        -   üvegméret → w-10
-        -   vászonméret → w-0
-        -   gyártási méret → w+fülek
--   Megrendelés feldolgozás
-    -   OrderLine alapján kiválasztja a megfelelő számítási módot.
-    -   Lefuttatja a formulákat.
--   Eredmény előállítása
-    -   Vágási lista: méretből számolt darabok.
-    -   Kitting lista: fix darabok (rugó, stopper, golyó).
-    -   Aggregálás: azonos ügyfél + termék + szín összevonása.
--   Audit funkció
-    -   Jelzés, ha hiányzik számítási mód egy NeedRule‑hoz.
-    -   Jelzés, ha formula hibás.
-    -   Jelzés, ha anyag hiányzik a MaterialMasterből.
--   UI funkciók
-    -   OrderDialog: megrendelés felvétel (autocomplete ügyfél,
-        színkocka, handlerSide választó).
-    -   NeedsView: real‑time preview táblázat (Material | Méret |
-        Darabszám | Mode).
-    -   AuditLogView: hibák listázása.
-    -   Export: CSV/Excel gyártási lista.
+Kapcsolat: ProductDefinition ↔ MaterialMaster.
 
-------------------------------------------------------------------------
+Mezők: id, productId, materialId.
 
-🛠️ Implementációs terv
+Ez adja meg, hogy egy termékhez mely anyagok szükségesek.
 
-1.  Adatmodellek
-    -   ✅ materials/model/material_master.h/.cpp
-    -   ✅ products/model/product_master.h/.cpp
-    -   🚧 needs/model/need_rule.h/.cpp
-    -   🚧 needs/model/need_calculation.h/.cpp
-    -   🚧 orders/model/order_header.h/.cpp, order_line.h/.cpp
-    -   🚧 calculation/model/need_result.h/.cpp
-2.  Repository réteg
-    -   ✅ materials/repository/material_repository.h/.cpp
-    -   ✅ products/repository/product_repository.h/.cpp
-    -   🚧 needs/repository/need_rule_repository.h/.cpp
-    -   🚧 needs/repository/need_calculation_repository.h/.cpp
-    -   🚧 orders/repository/order_repository.h/.cpp
-3.  Service réteg
-    -   🚧 calculation/service/need_calculator.h/.cpp
-        -   Input: OrderLine + NeedRule + NeedCalculation.
-        -   Output: NeedResult lista.
-        -   Logika: formulák kiértékelése, audit jelzés.
-4.  Presenter réteg
-    -   🚧 orders/presenter/order_presenter.h/.cpp
-    -   🚧 calculation/presenter/needs_presenter.h/.cpp
-5.  View réteg (Qt UI)
-    -   🚧 orders/view/order_dialog.h/.cpp
-    -   🚧 calculation/view/needs_view.h/.cpp
-    -   🚧 audit/view/audit_log_view.h/.cpp
-6.  Audit funkció
-    -   🚧 audit/model/audit_entry.h/.cpp
-    -   🚧 audit/service/audit_service.h/.cpp
-    -   🚧 audit/view/audit_log_view.h/.cpp
-    -   ➕ Új: DataStateReporter → pillanatnyi registry állapot
-        logolása.
-7.  Tesztadatok
-    -   ✅ testdata/materials.csv
-    -   ✅ testdata/products.csv
-    -   🚧 testdata/need_rules.csv
-    -   🚧 testdata/need_calculations.csv
-    -   🚧 testdata/orders.csv
+NeedCalculation (számítási mód)
 
-------------------------------------------------------------------------
+Egy adott ProductDefinitionhez tartozó számítási mód.
 
-📊 Példa folyamat
+Mezők: id, productId, modeName (pl. falc, glass, fabric, manufacturing).
 
--   OrderLine: Roletta, w=1000, h=500, qty=3.
--   Lekérjük NeedRule sorokat → tok, tengely, vászon, rugó, pálca.
--   Lekérjük NeedCalculation sorokat (pl. “falc” mód).
--   Kiértékeljük:
-    -   Tengely: 1000-15 = 985 mm × 3
-    -   Vászon: 1000-0 = 1000 mm × 3
-    -   Rugó: fixed:2 × 3 = 6 db
-    -   Pálca: 500-10 = 490 mm × 3
--   Eredmény: Cut list + Kitting list.
--   Audit: ha hiányzik formula → ⚠ figyelmeztetés.
+Ez csak a módokat sorolja fel, formula nélkül.
 
-------------------------------------------------------------------------
+NeedCalculationDetail (kapcsolótábla)
 
-✨ Összefoglalás
-- NeedRule → kapcsolótábla (terméktípus ↔ anyag).
-- NeedCalculation → számítási mód + formula.
-- NeedCalculator → megrendelésből előállítja a vágási és kitting listát.
-- UI → OrderDialog + NeedsView preview.
-- Audit → jelzi a hiányzó vagy hibás szabályokat.
+Kapcsolat: NeedCalculation ↔ MaterialMaster.
 
-👉 Így a rendszer lefedi a napháló, sávroló és roletta gyártási logikát,
-mérettartománytól és számítási módtól függően, auditálható és
-aggregálható formában.
+Mezők: id, needCalculationId, materialId, formula.
 
+Ez mondja meg, hogy az adott számítási módon belül az adott anyagból
+hogyan számoljuk ki a mennyiséget.
 
----
+Példák:
 
-Értem, Zoltán 🤓 – akkor most készítek egy lépésről lépésre
-  implementációs tervet a ProductMaster fa szerkeszthető UI
-  megvalósításához. Ez pontokba szedve, végrehajtható checklist formában
-  lesz, hogy könnyen rá lehessen menni.
+Tengely: w-15
 
-  ------------------------------------------------------------------------
+Vászon: w-0
 
-  🛠️ Implementációs terv – Product fa szerkesztés (Qt UI)
+Rugó: fixed:2
 
-  1. Alap UI előkészítés
+⚙️ Funkcionális specifikáció Anyagszükséglet kezelés (NeedRule)
 
-  -   ☐ A ProductTreeManager‑ben engedélyezni kell az editálást:
+Terméktípushoz anyagok hozzárendelése.
 
-          _view->setEditTriggers(QAbstractItemView::DoubleClicked | QAbstractItemView::SelectedClicked);
+Lista: Product ↔ Material.
 
-  -   ☐ Beállítani drag & drop támogatást:
+Audit: jelzés, ha anyag hiányzik a MaterialMasterből.
 
-          _view->setDragDropMode(QAbstractItemView::InternalMove);
-          _view->setDefaultDropAction(Qt::MoveAction);
+Számítási módok kezelés (NeedCalculation)
 
-  ------------------------------------------------------------------------
+Terméktípushoz számítási módok hozzárendelése.
 
-  2. Toolbar / Kontextmenü hozzáadása
+Lista: Product ↔ Mode.
 
-  -   ☐ Hozz létre egy QToolBar vagy QMenu a fa fölé / jobb klikkre.
-  -   ☐ Menüopciók:
-      -   ➕ Új gyökérelem
-      -   ➕ Új gyermek a kijelölt elemhez
-      -   ✏️ Átnevezés
-      -   🗑️ Törlés
-  -   ☐ Kapcsold össze a menüpontokat slotokkal (addProduct(),
-      removeProduct(), renameProduct()).
+Audit: jelzés, ha hiányzik számítási mód.
 
-  ------------------------------------------------------------------------
+Számítási mód részletek (NeedCalculationDetail)
 
-  3. Új elem hozzáadása
+Egy adott számítási módhoz anyagok + formulák hozzárendelése.
 
-  -   ☐
-      ProductTreeManager::addProduct(const QString& name, const QString& barcode, const QUuid& parentId)
-      metódus:
-      -   Generálj új UUID‑t.
-      -   Hozz létre egy ProductMaster objektumot.
-      -   Add hozzá a ProductRegistry‑hez.
-      -   Frissítsd a fát (populate()).
+Audit: jelzés, ha formula hibás vagy hiányzik.
 
-  ------------------------------------------------------------------------
+Megrendelés feldolgozás
 
-  4. Elem átnevezése
+OrderLine alapján kiválasztja a számítási módot.
 
-  -   ☐ Engedélyezd, hogy a nameItem szerkeszthető legyen.
-  -   ☐ Slot: renameProduct(const QUuid& id, const QString& newName)
-      -   Keress rá a ProductRegistry‑ben.
-      -   Frissítsd az objektumot.
-      -   Frissítsd a fát.
+Lefuttatja a formulákat → NeedResult.
 
-  ------------------------------------------------------------------------
+Aggregálás: azonos ügyfél + termék + szín összevonása.
 
-  5. Elem törlése
+🛠️ Implementációs terv View réteg (Qt UI)
 
-  -   ☐ Slot: removeProduct(const QUuid& id)
-      -   Távolítsd el a ProductRegistry‑ből.
-      -   Töröld a fa megfelelő ágát.
-      -   Audit logba írd be: „Product törölve: id=…”.
+MaterialRequirementsView: Product ↔ Material lista.
 
-  ------------------------------------------------------------------------
+CalculationModesView: Product ↔ Mode lista.
 
-  6. Elem áthelyezése (drag & drop)
+CalculationModeDetailView: Mode ↔ Material + formula lista.
 
-  -   ☐ Kapcsold be a drag & drop módot.
-  -   ☐ Slot: moveProduct(const QUuid& id, const QUuid& newParentId)
-      -   Frissítsd a parentId mezőt a ProductRegistry‑ben.
-      -   Frissítsd a fát.
-      -   Audit log: „Product áthelyezve: id=… új parent=…”.
+Repository réteg
 
-  ------------------------------------------------------------------------
+need_rule_repository.h/.cpp
 
-  7. Registry szinkronizáció
+need_calculation_repository.h/.cpp
 
-  -   ☐ Minden módosítás után a ProductRegistry legyen naprakész.
-  -   ☐ Audit funkció gyűjtse a változtatásokat (add, rename, remove,
-      move).
-  -   ☐ Exportálás: ProductRepository::saveToCSV() (később
-      implementálható).
+need_calculation_detail_repository.h/.cpp
 
-  ------------------------------------------------------------------------
+Service réteg
 
-  8. Tesztelés
+need_calculator.h/.cpp: OrderLine + NeedRule + NeedCalculationDetail →
+NeedResult.
 
-  -   ☐ Teszt: új gyökérelem hozzáadása.
-  -   ☐ Teszt: új gyermek hozzáadása.
-  -   ☐ Teszt: átnevezés.
-  -   ☐ Teszt: törlés.
-  -   ☐ Teszt: drag & drop áthelyezés.
-  -   ☐ Ellenőrizd, hogy a ProductRegistry mindig tükrözi a fa aktuális
-      állapotát.
+Audit funkció
 
-  ------------------------------------------------------------------------
+Jelzés, ha hiányzik anyag, számítási mód vagy formula.
 
-  ✨ Eredmény:
-  Egy szerkeszthető termékfa, ahol a felhasználó hozzáadhat, átnevezhet,
-  törölhet és áthelyezhet termékeket. A változtatások auditálhatóak és
-  visszamenthetők CSV‑be.
+AuditLogView: hibák listázása.
 
-  ------------------------------------------------------------------------
+📊 Példa folyamat OrderLine: Roletta, w=1000, h=500, qty=3.
 
-  👉 Következő lépésként tudok adni egy konkrét Qt kódrészletet (toolbar +
-  kontextmenü + slotok), ami azonnal szerkeszthetővé teszi a fát.
-  Szeretnéd, hogy ezt is kidolgozzam?
+Lekérjük NeedRule sorokat → tok, tengely, vászon, rugó, pálca.
+
+Lekérjük NeedCalculation sorokat → pl. „falc” mód.
+
+Lekérjük NeedCalculationDetail sorokat → formulák.
+
+Kiértékelés:
+
+Tengely: 1000-15 = 985 mm × 3
+
+Vászon: 1000-0 = 1000 mm × 3
+
+Rugó: fixed:2 × 3 = 6 db
+
+Pálca: 500-10 = 490 mm × 3
+
+Eredmény: Cut list + Kitting list.
+
+Audit: ha hiányzik formula → ⚠ figyelmeztetés.
+
+✨ Összefoglalás NeedRule → terméktípus ↔ anyag kapcsolatok.
+
+NeedCalculation → terméktípus ↔ számítási módok.
+
+NeedCalculationDetail → számítási mód ↔ anyag + formula.
+
+NeedCalculator → megrendelésből előállítja a vágási és kitting listát.
+
+UI → három szint: Anyagszükséglet, Számítási módok, Számítási mód
+részletek.
+
+Audit → jelzi a hiányzó vagy hibás szabályokat.
+
+🦎 Így a specifikációban már határozottan látszik a megbeszélésünk
+nyoma: külön lista az anyagokra, külön lista a számítási módokra, és
+külön kapcsolótábla a módon belüli formulákra.
 
 ────────────────────────────────────────────
+────────────────────────────────────────────
+────────────────────────────────────────────
+
   Roletta típusok és anyagszükségletek
 
   1. Rugós típusok
@@ -318,32 +215,60 @@ napháló  típusok és anyagszükségletek:
   anyagszükséglet: napháló tengely, vékony súly, napháló tok, napháló tokfedél, sines záró, sines láb, csuklós hajtókar
 
   ────────────────────────────────────────────
-  id,parentId,name,barcode
-  {11111111-1111-1111-1111-111111111111},,Roletta,ROL
-  {22222222-2222-2222-2222-222222222222},{11111111-1111-1111-1111-111111111111},Rugós,ROL-R
-  {33333333-3333-3333-3333-333333333333},{22222222-2222-2222-2222-222222222222},Tetőtéri,ROL-RT
-  {44444444-4444-4444-4444-444444444444},{22222222-2222-2222-2222-222222222222},Rugós,ROL-RR
-  {55555555-5555-5555-5555-555555555555},{11111111-1111-1111-1111-111111111111},18(Mini),MIN-18
-  {66666666-6666-6666-6666-666666666666},,Sávroló,SAV
-  {77777777-7777-7777-7777-777777777777},{66666666-6666-6666-6666-666666666666},Tokozott,SR-TOK
-  {88888888-8888-8888-8888-888888888888},{66666666-6666-6666-6666-666666666666},Toknélküli,SR-FS
-  {42766135-73bb-4153-a42f-f0a169651235},{11111111-1111-1111-1111-111111111111},Gyöngyös,GY
-  {80a99ad2-1e9c-47a7-af5b-3e0bb2776947},{42766135-73bb-4153-a42f-f0a169651235},23(Alap),GY-A23
-  {47569d54-e022-4fc8-ad5f-f0cf38015845},{42766135-73bb-4153-a42f-f0a169651235},32(Új),GY-U32
-  {25b74319-bd3c-49e4-bb0f-1be9348e376f},{42766135-73bb-4153-a42f-f0a169651235},Tokozott,sines
-  {a5076798-ed05-4679-92c7-447720d8fab9},{42766135-73bb-4153-a42f-f0a169651235},36(Erősített),GY-E36
-  {ee19f8f7-55d6-40e2-b5fc-6970e1d95fe4},{42766135-73bb-4153-a42f-f0a169651235},47(Maxi),GY-M47
-  {9ba81b5c-f74d-4dce-a0cb-67c60082a5bf},{66666666-6666-6666-6666-666666666666},Minitokozott,SR-MINI
-  {72cfbf1c-ffc2-42cc-b71c-7eabfaf71f62},,Napháló,NP
-  {1efced07-faae-4f40-8f5a-9d5f57b665ce},{72cfbf1c-ffc2-42cc-b71c-7eabfaf71f62},Sínes,NP-S
-  {ede5b0df-8811-4e5c-a6b3-15c1fadc0992},{1efced07-faae-4f40-8f5a-9d5f57b665ce},Motoros,NP-SM
-  {9cceab4d-4b9a-49d4-b5a3-1b4362ab85ea},{1efced07-faae-4f40-8f5a-9d5f57b665ce},Kurblis,NP-SK
-  {75aea478-4ba8-468f-b491-8858ea6cffe7},{72cfbf1c-ffc2-42cc-b71c-7eabfaf71f62},Bowdenes,NP-B
-  {3d300a7d-f66d-495f-afa5-5bffb20ae51b},{75aea478-4ba8-468f-b491-8858ea6cffe7},Motoros,NP-BM
-  {95dd2b7a-8d60-456e-8eca-1f9c9476b136},{75aea478-4ba8-468f-b491-8858ea6cffe7},Kurblis,NP-BK
-  {cae9ecff-1f99-4f74-8c57-73d86a379a91},{72cfbf1c-ffc2-42cc-b71c-7eabfaf71f62},Cipzáros,NP-C
-  {a1569a04-3d56-4819-bf2a-af7e232f1f7e},{cae9ecff-1f99-4f74-8c57-73d86a379a91},Motoros,NP-CM
-  {85b6c718-75f8-4c0a-a7ba-8f6b64856605},{cae9ecff-1f99-4f74-8c57-73d86a379a91},Kurblis,NP-CK
+  name;barcode;length;dim1;dim2;shape;machineBarcode;type;color;cuttingMode;paintingMode
+  #napháló tengelyek
+  Csőtengely Ø60x5000mm;NP-ROLL60-5000;5000;60;;Round;CM1;Steel;;Length;None
+  Csőtengely Ø60x6000mm;NP-ROLL60-6000;6000;60;;Round;CM1;Steel;;Length;None
+  Csőtengely Ø60x7000mm;NP-ROLL60-7000;7000;60;;Round;CM1;Steel;;Length;None
+  #napháló zárósúlyok
+  Zárósúly Ø12x3000mm;NP-BAR12-3000;3000;12;;Round;CM1;Steel;;Length;None
+  Zárósúly Ø12x4000mm;NP-BAR12-4000;4000;12;;Round;CM1;Steel;;Length;None
+  Zárósúly Ø22x3000mm;NP-BAR22-3000;3000;22;;Round;CM1;Steel;;Length;None
+  Zárósúly Ø22x4000mm;NP-BAR22-4000;4000;22;;Round;CM1;Steel;;Length;None
+  #napháló zárók
+  CipzárosZáró;NP-CZ;7000;;;;CM2;Aluminum;RAL9016;Length;Paintable
+  SinesZáró;NP-SZ;6000;;;;CM2;Aluminum;RAL9016;Length;Paintable
+  CipzárosZáró;NP-CZ;7000;;;;CM2;Aluminum;RAL7016;Length;Paintable
+  SinesZáró;NP-SZ;6000;;;;CM2;Aluminum;RAL7016;Length;Paintable
+  #napháló fedelek
+  NaphálóTok;NP-T;6000;;;;CM2;Aluminum;RAL9016;Length;Paintable
+  NaphálóTokFedél;NP-TF;6000;;;;CM2;Aluminum;RAL9016;Length;Paintable
+  NaphálóTok;NP-T;6000;;;;CM2;Aluminum;RAL7016;Length;Paintable
+  NaphálóTokFedél;NP-TF;6000;;;;CM2;Aluminum;RAL7016;Length;Paintable
+  #napháló lábak
+  CipzárosLáb;NP-CL;7000;;;;CM2;Aluminum;RAL9016;Length;Paintable
+  Lábtakaró;NP-CLT;7000;;;;CM2;Aluminum;RAL9016;Length;Paintable
+  CipzárosLáb;NP-CL;7000;;;;CM2;Aluminum;RAL7016;Length;Paintable
+  Lábtakaró;NP-CLT;7000;;;;CM2;Aluminum;RAL7016;Length;Paintable
+  Lábbetét;NP-CLB;6000;;;;CM2;Plastic;RAL9016;Length;Paintable
+  SinesLáb;NP-SL;6000;;;;CM2;Aluminum;RAL9016;Length;Paintable
+  SinesLáb;NP-SL;6000;;;;CM2;Aluminum;RAL7016;Length;Paintable
+  Bowden;NP-B-50m;50000;;;;CM2;Steel;;Length;None
+  #napháló meghajtás
+  NaphálóMotor-10Nm;NP-MOT-10;0;;Machine;CM3;Electric;;;Piece;None
+  NaphálóMotor-20Nm;NP-MOT-20;0;;Machine;CM3;Electric;;;Piece;None
+  CsuklósHajtókar;NP-HK;0;;Machine;CM3;Steel;;;Piece;None
+  #tengelyek
+  Ø18 sima;TE-S-18;6000;18;;Round;CM2;Aluminum;;Length;None
+  Ø18 hornyos;TE-H-18;6000;18;;Round;CM2;Aluminum;;Length;None
+  Ø23 ragacsos;TE-R-23;6000;23;;Round;CM2;Aluminum;;Length;None
+  Ø36 hornyos;TE-H-36;6000;36;;Round;CM2;Aluminum;;Length;None
+  Ø47 bordás;TE-H-47;6000;47;;Round;CM2;Aluminum;;Length;None
+  #sávroló
+  SávrolóTok;SR-T;6000;;;;CM2;Aluminum;RAL9016;Length;Paintable
+  FelsőSín;SR-FS;6000;;;;CM2;Aluminum;RAL9016;Length;Paintable
+  SávrolóZáró;SR-Z;6000;;;;CM2;Aluminum;RAL9016;Length;Paintable
+  Csillagtengely;SR-CT;6000;14;;Round;CM2;Aluminum;RAL9016;Length;Paintable
+  #mini
+  MiniTok;MT;6000;;;;CM2;Aluminum;RAL9016;Length;Paintable
+  MinitokosZáró;MT-Z;6000;;;;CM2;Aluminum;RAL9016;Length;Paintable
+  MinitokosPálca;MT-P;6000;8;;Round;CM2;Aluminum;RAL9016;Length;Paintable
+  MinitokosLáb;MT-L;6000;25.7;3.6;Rectangular;CM2;Aluminum;RAL9016;Length;Paintable
+  #roletta
+  AlsóPálca;ROL-P;6000;10;;Round;CM2;Aluminum;;Length;None
+  ÚjGyöngyösZáró;ROL-GYZ;6000;;;;CM2;Aluminum;RAL9016;Length;Paintable
+  ErősítettZáró;ROL-EZ;6000;;;;CM2;Aluminum;RAL9016;Length;Paintable
+  RugósRugó;ROL-RR;0;;Spring;CM3;Steel;;;Piece;None
+  TetőtériRugó;ROL-TR;0;;Spring;CM3;Steel;;;Piece;None
+
 ────────────────────────────────────────────
-INFO:• 1× ⚠️ Hiányzó szélesség/magasság (Sorok: 42) MinitokosLáb
-INFO:• 3× ⚠️ Hiányzó átmérő (Sorok: 37, 41, 44) Csillagtengely,MinitokosPálca,AlsóPálca

@@ -1,4 +1,6 @@
 #include "materials/view/material_table_manager.h"
+#include "common/utils/font_utils.h"
+#include "materials/view/color_badge.h"
 #include "materials/view/material_table_widget.h"
 
 #include "materials/registry/material_registry.h"
@@ -98,11 +100,50 @@ QString MaterialTableManager::materialTooltip(const MaterialMaster& m) const {
  * Anyag cella widget: balra név, utána kicsi színes badge, ha van érvényes szín.
  * Nem használ group-színezést; csak a saját szín bogyó jelenik meg.
  */
+// QWidget* MaterialTableManager::createMaterialCellWidget(const MaterialMaster& m, const QString& tooltip) const {
+//     QWidget* panel = new QWidget();
+//     auto* layout = new QHBoxLayout(panel);
+//     layout->setContentsMargins(2, 0, 0, 0);
+//     layout->setSpacing(2);
+//     layout->setAlignment(Qt::AlignLeft);
+
+//     auto* nameLabel = new QLabel(m.name);
+//     nameLabel->setToolTip(tooltip);
+//     layout->addWidget(nameLabel);
+
+//     if (m.color.isValid()) {
+//         const QColor color = m.color.color();
+//         const QColor fg = color.lightness() < 128 ? Qt::white : Qt::black;
+//         auto metrics = FontUtils::getCharMetrics(panel, 'W');
+//         int badgeSize = metrics.height;// * 0.8; // pl. 80%-a a betűmagasságnak
+
+//         auto* colorBox = new QFrame();
+//         colorBox->setToolTip(QString("Anyag színe: %1").arg(m.color.name()));
+//         colorBox->setFixedSize(badgeSize, badgeSize);
+//         // colorBox->setStyleSheet(QString(
+//         //                             "background-color: %1; color: %2;"
+//         //                             "border-radius: %3px;"
+//         //                             "border: 1px solid #888;"
+//         //                             "QToolTip { background-color: #ffffe0; color: black; border: 1px solid gray; }"
+//         //                             ).arg(color.name(), fg.name()).arg(badgeSize / 2));
+
+//         colorBox->setStyleSheet(QString(
+//                                     "background-color: %1;"
+//                                     "border-radius: %2px;"
+//                                     "border: 1px solid #888;"
+//                                     ).arg(color.name()).arg(badgeSize / 2));
+
+//         layout->addWidget(colorBox);
+//     }
+
+//     panel->setLayout(layout);
+//     return panel;
+// }
 QWidget* MaterialTableManager::createMaterialCellWidget(const MaterialMaster& m, const QString& tooltip) const {
     QWidget* panel = new QWidget();
     auto* layout = new QHBoxLayout(panel);
-    layout->setContentsMargins(4, 0, 0, 0);
-    layout->setSpacing(6);
+    layout->setContentsMargins(2, 0, 0, 0);
+    layout->setSpacing(2);
     layout->setAlignment(Qt::AlignLeft);
 
     auto* nameLabel = new QLabel(m.name);
@@ -111,24 +152,16 @@ QWidget* MaterialTableManager::createMaterialCellWidget(const MaterialMaster& m,
 
     if (m.color.isValid()) {
         const QColor color = m.color.color();
-        const QColor fg = color.lightness() < 128 ? Qt::white : Qt::black;
-
-        auto* colorBox = new QLabel();
-        colorBox->setToolTip(QString("Anyag színe: %1").arg(m.color.name()));
-        colorBox->setFixedSize(12, 12);
-        colorBox->setStyleSheet(QString(
-                                    "background-color: %1; color: %2;"
-                                    "border-radius: 5px;"
-                                    "border: 1px solid #888;"
-                                    ).arg(color.name(), fg.name()));
-
-        layout->addWidget(colorBox);
+        auto metrics = FontUtils::getCharMetrics(panel, 'W');
+        int badgeSize = metrics.height * 0.8;//75;
+        auto tooltiptxt = QString("Anyag színe: %1").arg(m.color.name());
+        auto* badge = new ColorBadge(color, tooltiptxt, badgeSize, panel);
+        layout->addWidget(badge);
     }
 
     panel->setLayout(layout);
     return panel;
 }
-
 /**
  * Forma megjelenítés: Round → Ød mm, Rectangular → w × h mm, egyéb → toString().
  */

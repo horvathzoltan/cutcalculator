@@ -28,6 +28,9 @@ ProductTreeManager::ProductTreeManager(QTreeView* view, QObject* parent)
                 this, &ProductTreeManager::onProductMoved);
     }
 
+    connect(_view->selectionModel(), &QItemSelectionModel::currentChanged,
+            this, &ProductTreeManager::onCurrentChanged);
+
 }
 
 /**
@@ -206,4 +209,41 @@ void ProductTreeManager::onProductMoved(const QUuid& id, const QUuid& newParentI
     Q_UNUSED(id)
     Q_UNUSED(newParentId)
     populate(); // újraépíti a fát, stílusok helyreállnak
+}
+
+
+void ProductTreeManager::onCurrentChanged(const QModelIndex& current,
+                                          const QModelIndex& /*previous*/)
+{
+    if (!current.isValid()) return;
+
+    QString idStr = _model->itemFromIndex(current.sibling(current.row(), 2))->text();
+    QUuid id(idStr);
+
+    QString name = _model->itemFromIndex(current.sibling(current.row(), 0))->text();
+    QString barcode = _model->itemFromIndex(current.sibling(current.row(), 1))->text();
+
+    emit currentProductChanged(id, name, barcode);
+}
+
+QUuid ProductTreeManager::currentProductId() const {
+    auto index = _view->currentIndex();
+    if (!index.isValid()) return QUuid();
+
+    QString idStr = _model->itemFromIndex(index.sibling(index.row(), 2))->text();
+    return QUuid(idStr);
+}
+
+QString ProductTreeManager::currentProductName() const {
+    auto index = _view->currentIndex();
+    if (!index.isValid()) return QString();
+
+    return _model->itemFromIndex(index.sibling(index.row(), 0))->text();
+}
+
+QString ProductTreeManager::currentProductBarcode() const {
+    auto index = _view->currentIndex();
+    if (!index.isValid()) return QString();
+
+    return _model->itemFromIndex(index.sibling(index.row(), 1))->text();
 }

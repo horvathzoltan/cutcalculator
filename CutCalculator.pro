@@ -12,6 +12,9 @@ message( "TARGET = "$$TARGI )
 DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += \
+    materials/view/color_badge.cpp \
+    needs/view/material_picker_dialog.cpp \
+    needs/view/material_requirements_view.cpp \
     workbench/view/bom_workbench.cpp \
     colors/model/named_color.cpp \
     colors/registry/color_registry.cpp \
@@ -47,6 +50,10 @@ SOURCES += \
     ui/adapters/log_view_adapter.cpp
 
 HEADERS += \
+    common/utils/font_utils.h \
+    materials/view/color_badge.h \
+    needs/view/material_picker_dialog.h \
+    needs/view/material_requirements_view.h \
     workbench/view/bom_workbench.h \
     colors/model/named_color.h \
     colors/registry/color_registry.h \

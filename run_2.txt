@@ -21,6 +21,8 @@ kommentekkel, dockommentekkel, javaslatokkal az elnevezésére, elhelyezésére 
 
 A fájlnevek a projekt névkonvencióját kövessék (snake_case, pl. registry_base.h, registry_manager.h).
 
+Légyszíves hunglish nyelvet használj, a kommentekben is!
+
 Legelőször csak azoknak a fájloknak a listáját add meg (files.txt‑be másolható, soronként egy fájl), amik tartalmát meg kell mindehez ismerned.
 
 Adj egy teljes követelményspecifikációt, funkcionális specifikációt és implementációs tervet 

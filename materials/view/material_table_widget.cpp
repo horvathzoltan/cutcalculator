@@ -1,9 +1,13 @@
 #include "materials/view/material_table_widget.h"
+#include "common/utils/font_utils.h"
 #include <QHeaderView>
 
 MaterialTableWidget::MaterialTableWidget(QWidget* parent)
     : QTableWidget(parent)
 {
+    FontUtils::applySafeMonospaceFont(this);
+    verticalHeader()->setDefaultSectionSize(fontMetrics().height() + 3);
+
     setColumnCount(ColumnCount);
     setupColumns();
 
