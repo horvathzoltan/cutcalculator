@@ -13,6 +13,9 @@ DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs depr
 
 SOURCES += \
     materials/view/color_badge.cpp \
+    needs/manager/material_requirements_manager.cpp \
+    needs/registry/need_rule_registry.cpp \
+    needs/repository/need_rule_repository.cpp \
     needs/view/material_picker_dialog.cpp \
     needs/view/material_requirements_view.cpp \
     workbench/view/bom_workbench.cpp \
@@ -52,6 +55,11 @@ SOURCES += \
 HEADERS += \
     common/utils/font_utils.h \
     materials/view/color_badge.h \
+    needs/manager/material_requirements_manager.h \
+    needs/model/connection_entity.h \
+    needs/model/need_rule.h \
+    needs/registry/need_rule_registry.h \
+    needs/repository/need_rule_repository.h \
     needs/view/material_picker_dialog.h \
     needs/view/material_requirements_view.h \
     workbench/view/bom_workbench.h \
@@ -128,4 +136,5 @@ DISTFILES += \
     run_4_ValidationRules.txt \
     run_4_WordcodeTranslation.txt \
     testdata/products.csv \
+    testdata/needrules.csv \
     testdata/settings.ini

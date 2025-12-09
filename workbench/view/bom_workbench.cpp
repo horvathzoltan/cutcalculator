@@ -7,10 +7,13 @@
 
 #include "common/settings/settings_manager.h"
 #include "common/logger/event_logger.h"
+#include "needs/manager/material_requirements_manager.h"
 #include "needs/view/material_picker_dialog.h"
 #include "needs/view/material_requirements_view.h"
 
 #include "products/view/product_tree_manager.h"
+
+#include <needs/repository/need_rule_repository.h>
 
 BOMWorkbench::BOMWorkbench(QWidget* parent)
     : QWidget(parent)
@@ -20,9 +23,10 @@ BOMWorkbench::BOMWorkbench(QWidget* parent)
     _layout->setContentsMargins(0, 0, 0, 0);
 
     // Toolbar
+    /*
     _toolbar = new QToolBar("BOM Actions", this);
     _layout->addWidget(_toolbar);
-
+*/
     // Splitter
     _splitter = new QSplitter(Qt::Horizontal, this);
     _layout->addWidget(_splitter);
@@ -38,7 +42,7 @@ BOMWorkbench::BOMWorkbench(QWidget* parent)
 
     zEventINFO("BOMWorkbench initialized");
 }
-
+/*
 void BOMWorkbench::buildToolbar() {
     // Azonnal a fa manager slotjaival dolgozunk (CRUD)
     QAction* addRootAction = _toolbar->addAction(QString::fromUtf8("➕ Új termékcsoport"));
@@ -56,7 +60,65 @@ void BOMWorkbench::buildToolbar() {
     Q_UNUSED(removeAction)
     //Q_UNUSED(addMaterialAction)
 }
+*/
 
+QToolBar* BOMWorkbench::buildTreeToolbar(QWidget* parent) {
+    QToolBar* treeToolbar = new QToolBar("Fa műveletek", parent);
+    QAction* addRootAction   = treeToolbar->addAction("➕ Új termékcsoport");
+    QAction* addChildAction  = treeToolbar->addAction("➕ Új terméktípus");
+    QAction* renameAction    = treeToolbar->addAction("✏️ Átnevezés");
+    QAction* removeAction    = treeToolbar->addAction("🗑️ Törlés");
+
+    connect(addRootAction,  &QAction::triggered, _treeManager, &ProductTreeManager::addRootProduct);
+    connect(addChildAction, &QAction::triggered, _treeManager, &ProductTreeManager::addChildProduct);
+    connect(renameAction,   &QAction::triggered, _treeManager, &ProductTreeManager::renameProduct);
+    connect(removeAction,   &QAction::triggered, _treeManager, &ProductTreeManager::removeProduct);
+
+    return treeToolbar;
+}
+
+QToolBar* BOMWorkbench::buildMaterialToolbar(QWidget* parent, MaterialRequirementsView* mat_view) {
+    QToolBar* matToolbar = new QToolBar("Anyagszükséglet műveletek", parent);
+    QAction* addMaterialAction    = matToolbar->addAction("➕ Anyag hozzárendelése");
+    QAction* removeMaterialAction = matToolbar->addAction("🗑️ Anyag törlése");
+
+    connect(addMaterialAction, &QAction::triggered, this, [this, mat_view]() {
+        MaterialPickerDialog dlg(this);
+        if (dlg.exec() == QDialog::Accepted) {
+            auto res = dlg.result();
+
+            // Registry-be is szúrjuk
+            NeedRule rule;
+            rule.leftId = _treeManager->currentProductId(); // productId
+            rule.rightId = res.material_id;                 // materialId
+            NeedRuleRegistry::instance().insert(rule);
+
+            // View frissítés
+            MaterialRequirementsView::RequirementRow row;
+            row.product_id = _treeManager->currentProductId();
+            row.product_name = _treeManager->currentProductName();
+            row.product_barcode = _treeManager->currentProductBarcode();
+            row.material_id = res.material_id;
+            row.material_name = res.material_name;
+            row.material_barcode = res.material_barcode;
+            row.material_exists = true;
+
+            mat_view->add_requirement(row);
+            zEventINFO(QString("➕ Anyag hozzárendelve: %1 → %2")
+                           .arg(row.product_name, row.material_name));
+        }
+    });
+
+
+    connect(removeMaterialAction, &QAction::triggered, mat_view, [mat_view]() {
+        mat_view->remove_selected();
+        // Registry törlés a view signal alapján (MaterialRequirementsManager kezeli)
+    });
+
+    return matToolbar;
+}
+
+/*
 void BOMWorkbench::buildLeftPanel() {
     // Fa nézet
     _treeView = new ProductTreeView(_splitter);
@@ -143,6 +205,43 @@ void BOMWorkbench::buildRightPanel() {
         });
     }
 }
+*/
+
+void BOMWorkbench::buildLeftPanel() {
+    auto* leftWidget = new QWidget(_splitter);
+    auto* leftLayout = new QVBoxLayout(leftWidget);
+
+    _treeView = new ProductTreeView(leftWidget);
+    _treeManager = new ProductTreeManager(_treeView, this);
+    _treeManager->populate();
+
+    leftLayout->addWidget(buildTreeToolbar(leftWidget));
+    leftLayout->addWidget(_treeView);
+    leftWidget->setLayout(leftLayout);
+    _splitter->addWidget(leftWidget);
+}
+
+void BOMWorkbench::buildRightPanel() {
+    auto* rightWidget = new QWidget(_splitter);
+    auto* rightLayout = new QVBoxLayout(rightWidget);
+
+    auto* mat_view = new MaterialRequirementsView(rightWidget);
+    auto* mat_manager = new MaterialRequirementsManager(mat_view, this); // új manager
+    _materialsTab = mat_view;
+
+    rightLayout->addWidget(buildMaterialToolbar(rightWidget, mat_view));
+    rightLayout->addWidget(mat_view);
+    rightWidget->setLayout(rightLayout);
+    _splitter->addWidget(rightWidget);
+
+    // Bal oldali fa kiválasztás → manager refresh
+    connect(_treeManager, &ProductTreeManager::currentProductChanged,
+            this, [mat_manager](const QUuid& id, const QString& name, const QString& barcode) {
+                mat_manager->refreshForProduct(id, name, barcode);
+            });
+
+}
+
 
 void BOMWorkbench::restoreState() {
     // Splitter állapot
@@ -150,6 +249,9 @@ void BOMWorkbench::restoreState() {
     if (!splitterState.isEmpty()) {
         _splitter->restoreState(splitterState);
     }
+
+    // NeedRule CSV betöltés
+    NeedRuleRepository::loadFromCSV(NeedRuleRegistry::instance());
 
     // Fa fejlécek
     QByteArray headerState = SettingsManager::instance().productTreeHeaderState();

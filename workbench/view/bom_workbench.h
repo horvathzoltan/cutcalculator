@@ -6,6 +6,7 @@
 #include <QTabWidget>
 #include <QVBoxLayout>
 
+#include "needs/view/material_requirements_view.h"
 #include "products/view/product_tree_view.h"
 #include "products/view/product_tree_manager.h"
 
@@ -47,7 +48,7 @@ public:
 private:
     // UI váz
     QVBoxLayout* _layout = nullptr;
-    QToolBar* _toolbar = nullptr;
+    //QToolBar* _toolbar = nullptr;
     QSplitter* _splitter = nullptr;
 
     // Bal oldal: terméktípus-fa
@@ -65,4 +66,6 @@ private:
     void buildToolbar();
     void buildLeftPanel();
     void buildRightPanel();
+    QToolBar *buildTreeToolbar(QWidget *parent);
+    QToolBar *buildMaterialToolbar(QWidget *parent, MaterialRequirementsView *mat_view);
 };

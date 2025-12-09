@@ -1,4 +1,7 @@
 
+
+adj egy tervet lépésenként - snippetet régi és új kóddal, +/‑ jelek nélkül, külön blokkban a kódok helyét is kérem fájlnév, függvénynév bontásban!
+
 adj snippetet régi és új kóddal, +/‑ jelek nélkül, külön blokkban
 
 

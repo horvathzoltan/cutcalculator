@@ -104,4 +104,7 @@ public:
     QString getSettingsFilePath(bool forWrite);
     void setBinaryPath(const QString &a);
     QString getProductCsvFile() const;
+    QString getNeedRuleCsvFile() const;
+    QString getNeedCalculationCsvFile() const;
+    QString getNeedCalculationDetailCsvFile() const;
 };

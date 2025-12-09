@@ -123,6 +123,28 @@ QString FileNameHelper::getProductCsvFile() const {
         return path;
 }
 
+
+/* Product */
+QString FileNameHelper::getNeedRuleCsvFile() const {
+    QString path = _dataRoot.filePath("needrules.csv");
+
+    if (!QFile::exists(path)) {
+        // fallback fejlesztéshez
+        path = _dataRoot_TEST.filePath("needrules.csv");
+    }
+    return path;
+}
+
+
+QString FileNameHelper::getNeedCalculationCsvFile() const {
+    return _dataRoot.filePath("needcalculations.csv");
+}
+
+QString FileNameHelper::getNeedCalculationDetailCsvFile() const {
+    return _dataRoot.filePath("needcalc_details.csv");
+}
+
+
 /* RAL Colors */
 
 QString FileNameHelper::getRalColorsFilePath(const QString& path) const {
