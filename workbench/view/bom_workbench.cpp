@@ -251,7 +251,7 @@ void BOMWorkbench::restoreState() {
     }
 
     // NeedRule CSV betöltés
-    NeedRuleRepository::loadFromCSV(NeedRuleRegistry::instance());
+    NeedRuleRepository::load();//loadFromCSV(NeedRuleRegistry::instance());
 
     // Fa fejlécek
     QByteArray headerState = SettingsManager::instance().productTreeHeaderState();

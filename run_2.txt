@@ -55,7 +55,7 @@ Könyvtár dumpolás:
 
 ./sourcetotxt.sh ~/source/repos/CutCalculator/colors/ > masi2.txt
 
-./sourcetotxt.sh -d ~/source/repos/CutCalculator files.txt > masi2.txt
+./sourcetotxt.sh -d ~/source/repos/CutCalculator needrule_required_files.txt > masi2.txt
 
 
 pandoc -s -f markdown -t plain -o masi2.txt masi2.txt

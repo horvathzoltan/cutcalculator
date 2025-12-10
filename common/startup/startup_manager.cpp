@@ -9,7 +9,8 @@
 #include "products/repository/product_repository.h"
 #include "products/registry/product_registry.h"
 
-
+#include "needs/repository/need_rule_repository.h"
+#include "needs/registry/need_rule_registry.h"
 
 StartupStatus StartupManager::runStartupSequence() {
     StartupStatus ralColorStatus = initRalColors();
@@ -24,10 +25,15 @@ StartupStatus StartupManager::runStartupSequence() {
     if (!productStatus.isSuccess())
         return productStatus;
 
+    StartupStatus needRuleStatus = initNeedRuleRegistry();
+    if (!needRuleStatus.isSuccess())
+        return needRuleStatus;
+
     StartupStatus finalStatus = StartupStatus::success();
     finalStatus.addWarnings(ralColorStatus.warnings());
     finalStatus.addWarnings(materialStatus.warnings());
     finalStatus.addWarnings(productStatus.warnings());
+    finalStatus.addWarnings(needRuleStatus.warnings());
 
     return finalStatus;
 }
@@ -78,3 +84,18 @@ StartupStatus StartupManager::initRalColors()
 }
 
 
+StartupStatus StartupManager::initNeedRuleRegistry() {
+    bool loaded = NeedRuleRepository::load();
+    if (!loaded) {
+        return StartupStatus::failure("⚠️ NeedRuleRegistry: kapcsolatok betöltése sikertelen.");
+    }
+
+    int count = NeedRuleRegistry::instance().size();
+    if (count == 0) {
+        zEventINFO("📊 NeedRuleRegistry: jelenleg nincs kapcsolat – tiszta indulás");
+    } else {
+        zEventINFO(QString("📊 NeedRuleRegistry: %1 kapcsolat tárolva").arg(count));
+    }
+
+    return StartupStatus::success();
+}

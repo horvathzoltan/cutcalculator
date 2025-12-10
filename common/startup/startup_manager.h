@@ -23,4 +23,5 @@ private:
     StartupStatus initMaterialRegistry();
     StartupStatus initProductRegistry();
     StartupStatus initRalColors();
+    StartupStatus initNeedRuleRegistry();
 };

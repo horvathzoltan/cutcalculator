@@ -56,6 +56,19 @@ public:
         return sum;
     }
 
+    RegistryBase* findByTypeName(const QString& typeName) const {
+        for (auto* repo : repos) {
+            if (repo->typeName() == typeName)
+                return repo;
+        }
+        return nullptr;
+    }
+
+    const QVector<RegistryBase*>& allRepos() const {
+        return repos;
+    }
+
+
 private:
     RegistryManager() = default;
     QVector<RegistryBase*> repos;

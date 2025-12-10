@@ -1,0 +1,123 @@
+🦎 Rendben, Zoltán – készítettem egy teljes követelményspecifikációt,
+funkcionális specifikációt és implementációs tervet a generikus
+kapcsolótábla convenience (templated registry/repo/presenter)
+funkcióhoz. Íme a struktúrált dokumentáció:
+
+------------------------------------------------------------------------
+
+📑 Követelményspecifikáció
+
+🎯 Cél
+
+-   Egységes, auditbarát kezelés minden kapcsolótáblára (pl. NeedRule,
+    NeedCalculationDetail, jövőbeli Customer↔Order).
+-   Minimalizálni a duplikált kódot: registry, repository, presenter
+    logika ne ismétlődjön.
+-   Templated megoldás: típuspáronként külön singleton példány,
+    típusbiztos lookup.
+
+📌 Követelmények
+
+-   Generikus modell: ConnectionEntity<Left,Right> GUID‑okkal.
+-   Registry: CRUD műveletek, audit összefoglaló.
+-   Repository: CSV import/export, fejléc és fájlnév paraméterezve.
+-   Presenter: View jelek kezelése, lookup a törzsadatokból (név,
+    barcode).
+-   Audit: minden művelet logolva, hibák külön kategóriázva.
+-   Konfiguráció: fájlnevek és fejléc oszlopok típusonként definiálva
+    (traits vagy init).
+
+------------------------------------------------------------------------
+
+⚙️ Funkcionális specifikáció
+
+🧩 Modell
+
+-   ConnectionEntity<Left,Right>:
+    -   leftId, rightId (GUID).
+    -   Convenience: left(), right() → registry lookup.
+
+📚 Registry
+
+-   ConnectionRegistry<T>:
+    -   insert(T), remove(leftId,rightId).
+    -   findByLeft(leftId), findByRight(rightId).
+    -   setData(QVector<T>), readAll().
+
+📂 Repository
+
+-   ConnectionRepository<T,Traits>:
+    -   load(ConnectionRegistry<T>&): CSV beolvasás, GUID parse.
+    -   save(QVector<T>): CSV mentés.
+    -   Traits osztály: filePath(), headers().
+
+🎤 Presenter
+
+-   ConnectionPresenter<View,LeftRegistry,RightRegistry>:
+    -   Fogadja a View jeleit (add, remove).
+    -   CRUD a registryben.
+    -   Lookupol a törzsadatokból → kitölti RequirementRow mezőket (név,
+        barcode).
+    -   Audit log minden műveletnél.
+
+------------------------------------------------------------------------
+
+🛠️ Implementációs terv
+
+1. Modell
+
+-   Létrehozni ConnectionEntity<Left,Right> sablont.
+-   Convenience függvények: left(), right().
+
+2. Registry
+
+-   Létrehozni ConnectionRegistry<T> sablont.
+-   Singleton pattern: static ConnectionRegistry& instance().
+
+3. Repository
+
+-   Létrehozni ConnectionRepository<T,Traits> sablont.
+-   Implementálni load() és save() CSV‑re.
+-   Definiálni traits osztályokat:
+    -   NeedRuleTraits → needrules.csv, fejléc: productId,materialId.
+    -   NeedCalculationDetailTraits → needcalc_details.csv, fejléc:
+        calcId,materialId.
+
+4. Presenter
+
+-   Létrehozni ConnectionPresenter<View,LeftRegistry,RightRegistry>
+    sablont.
+-   Implementálni:
+    -   onAdd() → registry.insert(), view.update().
+    -   onRemove() → registry.remove(), view.update().
+    -   refreshForProduct() → registry.findByLeft(), lookup material,
+        view.setRequirements().
+
+5. Integráció
+
+-   BOMWorkbench jobb panel → NeedRulePresenter példány.
+-   Induláskor: NeedRuleRepository::load(NeedRuleRegistry::instance()).
+-   Mentéskor:
+    NeedRuleRepository::save(NeedRuleRegistry::instance().readAll()).
+
+6. Audit
+
+-   Minden CRUD művelet → zEventINFO/WARN.
+-   Hibák → RowError audit összefoglaló.
+
+------------------------------------------------------------------------
+
+✨ Röviden
+
+-   Megterhelés: közepes – főleg sablonosítás és traits definiálás.
+-   Eredmény: minden kapcsolótábla auditbarát, típusbiztos, minimális
+    duplikáció.
+-   Holnap fókusz: NeedRule konkrét implementáció traits‑alapú
+    repo/registry/presenter sablonnal.
+
+------------------------------------------------------------------------
+
+🦎 Így van egy teljes követelmény + funkcionális specifikáció +
+implementációs terv.
+Szeretnéd, hogy holnapra készítsek egy konkrét NeedRule példát, ahol
+látszik a teljes traits + repo + registry + presenter lánc kódszinten?

@@ -1,5 +1,9 @@
 #include "needs/manager/material_requirements_manager.h"
-#include "materials/registry/material_registry.h" // feltételezve, hogy van
+//#include "materials/registry/material_registry.h"
+#include "needs/repository/need_rule_repository.h"
+//#include "needs/repository/need_rule_traits.h"
+#include "needs/model/need_rule.h"
+#include "needs/view/material_picker_dialog.h"
 #include "common/logger/event_logger.h"
 
 MaterialRequirementsManager::MaterialRequirementsManager(MaterialRequirementsView* view, QObject* parent)
@@ -14,13 +18,28 @@ void MaterialRequirementsManager::connectSignals() {
             this, [this](const QUuid& productId, const QString& productBarcode) {
                 Q_UNUSED(productBarcode);
 
-                // Hunglish: itt tipikusan MaterialPickerDialog-ot hívnánk,
-                // de mivel a managernek nincs UI felelőssége, csak példa:
-                // A tényleges anyagválasztás BOMWorkbench-ben történt (bal oldali fa + jobb oldali picker).
-                // Itt kezelhetnénk egy "deferred" add-ot is, ha van dependency.
+                // 🔍 MaterialPickerDialog – user választ anyagot
+                MaterialPickerDialog dlg(_view);
+                if (dlg.exec() == QDialog::Accepted) {
+                    auto result = dlg.result();
 
-                zEventINFO(QString("➕ Add requested for productId=%1").arg(productId.toString()));
-                // Nincs azonnali hozzáadás itt – BOMWorkbench connect végzi el a sor hozzáadását a view-ban.
+                    NeedRule rule;
+                    rule.leftId = productId;
+                    rule.rightId = result.material_id;
+
+                    // Registry insert
+                    NeedRuleRegistry::instance().insert(rule);
+
+                    // Audit log
+                    zEventINFO(QString("➕ NeedRule added: Product=%1 Material=%2")
+                                   .arg(productId.toString(), result.material_id.toString()));
+
+                    // CSV persist
+                    NeedRuleRepository::save();
+
+                    // Refresh view
+                    refreshForProduct(productId, QString(), productBarcode);
+                }
             });
 
     // Remove: a view jelzi a kiválasztott kapcsolat törlését
@@ -32,9 +51,20 @@ void MaterialRequirementsManager::connectSignals() {
                 Q_UNUSED(productBarcode);
                 Q_UNUSED(materialBarcode);
 
-                NeedRuleRegistry::instance().remove(productId, materialId);
-                // Refresh az aktuális productra (ha van)
-                refreshForProduct(productId, QString(), QString());
+                bool ok = NeedRuleRegistry::instance().remove(productId, materialId);
+                if (ok) {
+                    zEventINFO(QString("🗑 NeedRule removed: Product=%1 Material=%2")
+                                   .arg(productId.toString(), materialId.toString()));
+
+                    // CSV persist
+                    NeedRuleRepository::save();
+                } else {
+                    zEventWARN(QString("⚠️ NeedRule remove failed: Product=%1 Material=%2")
+                                   .arg(productId.toString(), materialId.toString()));
+                }
+
+                // Refresh az aktuális productra
+                refreshForProduct(productId, QString(), productBarcode);
             });
 }
 
@@ -52,11 +82,9 @@ MaterialRequirementsManager::makeRowsForProduct(const QUuid& productId,
                                                 const QString& productBarcode)
 {
     QVector<MaterialRequirementsView::RequirementRow> out;
-    const auto rules = NeedRuleRegistry::instance().findByProduct(productId);
+    const auto rulesByProduct = NeedRuleRegistry::instance().findByLeft(productId);
 
-    // Hunglish: Material adatok lookup-hoz feltételezzük, hogy van MaterialRegistry
-    // Ha nincs, akkor material_exists=false és a név/barcode üres.
-    for (const auto& rule : rules) {
+    for (const auto& rule : rulesByProduct) {
         MaterialRequirementsView::RequirementRow r;
         r.product_id = productId;
         r.product_name = productName;
@@ -64,20 +92,17 @@ MaterialRequirementsManager::makeRowsForProduct(const QUuid& productId,
 
         r.material_id = rule.rightId;
 
-        // Lookup: név + barcode kitöltése registryből, ha elérhető
-        // Ha nincs MaterialRegistry, ezt commentben hagyjuk – a warning megjelenik a view-ban.
-        // Example (pseudo):
-        // if (auto* mat = MaterialRegistry::instance().findById(rule.rightId)) {
-        //     r.material_name = mat->name;
-        //     r.material_barcode = mat->barcode;
-        //     r.material_exists = true;
-        // } else {
-        //     r.material_name = QString("UNKNOWN");
-        //     r.material_barcode = QString();
-        //     r.material_exists = false;
-        // }
-
-        r.material_exists = !r.material_name.isEmpty(); // ha üres, a view pirosít
+        // Lookup Material
+        if (auto matOpt = rule.right() ){
+            const auto& mat = *matOpt;
+            r.material_name = mat.name;
+            r.material_barcode = mat.barcode;
+            r.material_exists = true;
+        } else {
+            r.material_name = "UNKNOWN";
+            r.material_barcode = "";
+            r.material_exists = false;
+        }
 
         out.append(r);
     }
