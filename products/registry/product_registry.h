@@ -30,6 +30,8 @@ public:
     const QVector<ProductMaster>& readAll() const;
 
     ProductMaster* findById(const QUuid& id);
+    ProductMaster* findByBarcode(const QString& barcode);   // 🔧 Új függvény
+
     QVector<ProductMaster> findChildren(const QUuid& parentId) const;
 
     /**

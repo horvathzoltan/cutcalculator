@@ -25,10 +25,9 @@ public:
 private:
     /// Nyers CSV sor → típusos Row
     struct ProductRow {
-        QString idStr;
-        QString parentIdStr;
-        QString name;
         QString barcode;
+        QString parentBarcode;
+        QString name;
     };
 
     // --- Stage 1: Convert ---
@@ -43,4 +42,6 @@ private:
 
     // --- Stage 3: Load & Assemble ---
     static QVector<CsvImporter::AuditedRow<ProductRow>> loadProductRows(CsvImporter::FileContext& ctx);
+    static void resolveParents(QVector<ProductMaster> &defs, const QVector<CsvImporter::AuditedRow<ProductRepository::ProductRow> > &rows, CsvImporter::FileContext &ctx);
+    static void validateProductRows(const QVector<CsvImporter::AuditedRow<ProductRepository::ProductRow> > &rows, CsvImporter::FileContext &ctx);
 };

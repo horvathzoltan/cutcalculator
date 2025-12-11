@@ -10,6 +10,9 @@
  * Hunglish: explicit előírjuk, hova perzisztáljon a NeedRule repo, és milyen legyen a fejléc.
  */
 struct NeedRuleTraits {
+    using LeftEntity = ProductMaster;
+    using RightEntity = MaterialMaster;
+
     using RegistryType = NeedRuleRegistry;
 
     static QString filePath() {

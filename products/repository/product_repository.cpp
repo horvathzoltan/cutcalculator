@@ -13,16 +13,15 @@
 std::optional<CsvImporter::AuditedRow<ProductRepository::ProductRow>>
 ProductRepository::convertRowToProductRow(const QVector<QString>& parts,
                                           CsvImporter::FileContext& ctx) {
-    if (parts.size() < 4) {
-        ctx.addError(ctx.currentLineNumber(), "⚠️ Kevés mező (legalább 4)");
+    if (parts.size() < 3) {
+        ctx.addError(ctx.currentLineNumber(), "⚠️ Kevés mező (legalább 3)");
         return std::nullopt;
     }
 
     ProductRow row {
-        .idStr       = parts[0].trimmed(),
-        .parentIdStr = parts[1].trimmed(),
-        .name        = parts[2].trimmed(),
-        .barcode     = parts[3].trimmed()
+        .barcode       = parts[0].trimmed(),
+        .parentBarcode = parts[1].trimmed(),
+        .name          = parts[2].trimmed()
     };
 
     return CsvImporter::AuditedRow<ProductRow>{
@@ -39,29 +38,27 @@ ProductRepository::buildProductFromRow(const ProductRow& row,
     ctx.addErrors(rowErrors);
 
     if (!rowErrors.isEmpty()) {
-        // Ha kritikus hiba van, ne építsük meg az objektumot
         return std::nullopt;
     }
 
     ProductMaster def;
-    def.id = QUuid(row.idStr);
-
-    if (row.parentIdStr.isEmpty() || row.parentIdStr == "{}" ||
-        row.parentIdStr == "00000000-0000-0000-0000-000000000000") {
-        def.parentId = QUuid(); // gyökér
-    } else {
-        QUuid pid(row.parentIdStr);
-        if (!pid.isNull()) {
-            def.parentId = pid;
-        } else {
-            zWarning(QString("⚠️ Érvénytelen parentId → fallback root (sor %1)").arg(ctx.currentLineNumber()));
-            def.parentId = QUuid(); // fallback root
-        }
-    }
-
-
+    def.id = QUuid::createUuid();  // Hunglish: belső GUID generálás
     def.name = row.name;
     def.barcode = row.barcode;
+
+    // Parent barcode → lookup → parentId
+    if (row.parentBarcode.isEmpty()) {
+        def.parentId = QUuid(); // root
+    } else {
+        if (auto* parent = ProductRegistry::instance().findByBarcode(row.parentBarcode)) {
+            def.parentId = parent->id;
+        } else {
+            def.parentId = QUuid(); // fallback root
+            zWarning(QString("⚠️ Ismeretlen parentBarcode → fallback root (sor %1) [%2 → %3]")
+                         .arg(ctx.currentLineNumber())
+                         .arg(row.barcode, row.parentBarcode));
+        }
+    }
 
     return def;
 }
@@ -72,25 +69,11 @@ QVector<CsvImporter::RowError>
 ProductRepository::validateProductRow(const ProductRow& row, int lineNumber) {
     QVector<CsvImporter::RowError> errors;
 
-    if (row.idStr.isEmpty())
-        errors.append({lineNumber, "⚠️ Hiányzó id"});
-    else {
-        QUuid id(row.idStr);
-        if (id.isNull())
-            errors.append({lineNumber, "⚠️ Érvénytelen UUID"});
-    }
+    if (row.barcode.isEmpty())
+        errors.append({lineNumber, "⚠️ Hiányzó barcode", row.barcode, row.name});
 
     if (row.name.isEmpty())
-        errors.append({lineNumber, "⚠️ Hiányzó name"});
-
-    if (row.barcode.isEmpty())
-        errors.append({lineNumber, "⚠️ Hiányzó barcode"});
-
-    if (!row.parentIdStr.isEmpty()) {
-        QUuid pid(row.parentIdStr);
-        if (pid.isNull())
-            errors.append({lineNumber, "⚠️ Érvénytelen parentId UUID"});
-    }
+        errors.append({lineNumber, "⚠️ Hiányzó name", row.barcode, row.name});
 
     return errors;
 }
@@ -115,12 +98,21 @@ bool ProductRepository::loadFromCSV(ProductRegistry& registry) {
 
     const auto rows = loadProductRows(ctx);
 
-    const QVector<ProductMaster> defs =
+    // 🔍 Validáció a buildAll előtt
+    validateProductRows(rows, ctx);
+
+    // Első fázis: buildAll → minden ProductMaster id+barcode+name
+    // Domain objektumok építése
+    QVector<ProductMaster> defs =
         CsvImporter::buildAll<ProductRow, ProductMaster>(
             rows,
             buildProductFromRow,
             ctx
         );
+
+
+    // Második fázis: parentBarcode → parentId feloldás
+    resolveParents(defs, rows, ctx);
 
     if (ctx.hasErrors()) {
         zWarning(QString("⚠️ Hibák a Product import során (%1)").arg(ctx.errorsSize()));
@@ -131,17 +123,69 @@ bool ProductRepository::loadFromCSV(ProductRegistry& registry) {
     return !defs.isEmpty();
 }
 
-/*
-id,parentId,name,barcode
-{11111111-1111-1111-1111-111111111111},,Roletta,ROL
-{22222222-2222-2222-2222-222222222222},{11111111-1111-1111-1111-111111111111},Rugós,RUG
-{33333333-3333-3333-3333-333333333333},{22222222-2222-2222-2222-222222222222},Tetőtéri,TET
-{44444444-4444-4444-4444-444444444444},{22222222-2222-2222-2222-222222222222},Normál,NOR
-{55555555-5555-5555-5555-555555555555},{11111111-1111-1111-1111-111111111111},Motoros,MOT
-{66666666-6666-6666-6666-666666666666},,Sávroló,SAV
-{77777777-7777-7777-7777-777777777777},{66666666-6666-6666-6666-666666666666},Rugós,SAVRUG
-{88888888-8888-8888-8888-888888888888},{66666666-6666-6666-6666-666666666666},Motoros,SAVMOT
-*/
+// --- Új helper: validáció a buildAll előtt ---
+void ProductRepository::validateProductRows(const QVector<CsvImporter::AuditedRow<ProductRepository::ProductRow>>& rows,
+                                CsvImporter::FileContext& ctx) {
+    QSet<QString> seenBarcodes;
+
+    // Első kör: saját barcode validáció
+    for (const auto& audited : rows) {
+        const auto& row = audited.row;
+        int line = audited.rawLineNumber;
+
+        if (row.barcode.isEmpty()) {
+            ctx.addError(line, "⚠️ Hiányzó barcode", row.barcode, row.name);
+        } else {
+            if (seenBarcodes.contains(row.barcode)) {
+                ctx.addError(line, "⚠️ Duplikált barcode", row.barcode, row.name);
+            }
+            seenBarcodes.insert(row.barcode);
+        }
+
+        if (row.name.isEmpty()) {
+            ctx.addError(line, "⚠️ Hiányzó name", row.barcode, row.name);
+        }
+    }
+
+    // Második kör: parentBarcode validáció
+    for (const auto& audited : rows) {
+        const auto& row = audited.row;
+        int line = audited.rawLineNumber;
+
+        if (!row.parentBarcode.isEmpty() && !seenBarcodes.contains(row.parentBarcode)) {
+            ctx.addError(line,
+                         "⚠️ Parent barcode nem található",
+                         row.barcode,
+                         row.parentBarcode);
+        }
+    }
+}
+
+/// Kétfázisú parent feloldás – barcode → GUID
+void ProductRepository::resolveParents(QVector<ProductMaster>& defs,
+                           const QVector<CsvImporter::AuditedRow<ProductRepository::ProductRow>>& rows,
+                           CsvImporter::FileContext& ctx) {
+    // építs barcode→id mapet
+    QHash<QString, QUuid> barcodeToId;
+    for (const auto& pm : defs) {
+        barcodeToId.insert(pm.barcode, pm.id);
+    }
+
+    // végigmegyünk a sorokon, és beállítjuk a parentId-t
+    for (int i = 0; i < defs.size(); ++i) {
+        const auto& row = rows[i].row;
+        if (!row.parentBarcode.isEmpty()) {
+            if (barcodeToId.contains(row.parentBarcode)) {
+                defs[i].parentId = barcodeToId.value(row.parentBarcode);
+            } else {
+                defs[i].parentId = QUuid(); // fallback root
+                zWarning(QString("⚠️ Parent barcode not found → fallback root [%2 → %3]")
+                             .arg(defs[i].barcode, row.parentBarcode));
+            }
+        }
+    }
+}
+
 
 bool ProductRepository::saveToCSV(const QVector<ProductMaster>& data, const QString& path) {
     QFile file(path);
@@ -152,17 +196,21 @@ bool ProductRepository::saveToCSV(const QVector<ProductMaster>& data, const QStr
 
     QTextStream out(&file);
     // Fejléc
-    out << "id,parentId,name,barcode\n";
+    out << "barcode,parentBarcode,name\n";
 
     for (const auto& pm : data) {
-        out << pm.id.toString(QUuid::WithBraces) << ",";
+        out << pm.barcode << ",";
         if (pm.parentId.isNull()) {
             out << ",";
         } else {
-            out << pm.parentId.toString(QUuid::WithBraces) << ",";
+            // parent barcode lookup
+            if (auto* parent = ProductRegistry::instance().findById(pm.parentId)) {
+                out << parent->barcode << ",";
+            } else {
+                out << ",";
+            }
         }
-        out << pm.name << ",";
-        out << pm.barcode << "\n";
+        out << pm.name << "\n";
     }
 
     zInfo(QString("💾 ProductRepository: %1 terméktípus mentve → %2")

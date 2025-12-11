@@ -4,6 +4,12 @@
 #include "needs/repository/need_rule_traits.h"
 #include "needs/registry/need_rule_registry.h"
 
+/*
+productId,materialId
+ROL-RR,TE-R-23
+ROL-RR,ROL-P
+*/
+
 /**
  * 📂 NeedRuleRepository – CSV import/export a NeedRule-hoz
  *

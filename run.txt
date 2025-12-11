@@ -1,29 +1,34 @@
 📊 Összevont állapottábla – aktuális + jövőbeli (2025.12.09. frissítés)
 
------------------------------------------------------------------------
-Modul / Feladat                 Állapot          Megjegyzés
-------------------------------- ---------------- ----------------------
-Material pipeline               ✅ Kész          Stage2.5 validátor
-Product pipeline                ✅ Kész          Export/import formátum
-Logger subsystem                ✅ Kész          Auditálható logolás
-Startup subsystem               ✅ Kész          Inicializáció
-Settings subsystem              ✅ Kész          Fallback logika
-FileNameHelper                  ✅ Kész          NeedRule path javítva
-CsvReader utility               ⚠️ Függőség      Importerhez szétválasztva
-RalImporter modul               ✅ Kész          Auditbarát regex validáció
-OrderManager                    🚧 Specifikáció  Modellek, státuszkezelés
-CustomerMaster                  🚧 Tervezés      Ügyféltörzs, autocomplete
-CutCalculator                   🚧 Specifikáció  Számítási logika, preview
-NeedsPresenter + NeedsView      🚧 Tervezés      Real‑time preview
-UI réteg (Qt)                   🚧 Tervezés      Order entry dialog 🚧
-Audit funkció                   🚧 Tervezés      AuditEntry, AuditService
-Test framework                  ✅ Kész          EventLogger tests
-NamedColor / Color registry     ✅ Kész          Pantone integráció előkészítve
-NeedRule / NeedCalculation      🚧 Tervezés      Új koncepció, templated irány
-Formula értelmezés              🚧 Tervezés      cparse integráció előkészítve
-🔥 SOS / Tűzoltás               🚧               Material import hibák
-Generikus kapcsolótábla         ➕ Új ötlet      Templated registry/repo/presenter
------------------------------------------------------------------------
+------------------------------------------------------------------------
+
+📊 Összevont állapottábla – aktuális + jövőbeli (2025.12.11. frissítés)
+
+  --------------------------------------------------------------------------
+  Modul / Feladat                  Állapot        Megjegyzés
+  ----------------------- -------------- -----------------------------------
+  Material pipeline                ✅ Kész        Stage2.5 validátor
+  Product pipeline                 ✅ Kész        Export/import formátum
+  Logger subsystem                 ✅ Kész        Auditálható logolás
+  Startup subsystem                ✅ Kész        Inicializáció
+  Settings subsystem               ✅ Kész        Fallback logika
+  FileNameHelper                   ✅ Kész        NeedRule path javítva
+  CsvReader utility                ⚠️ Függőség    Importerhez szétválasztva
+  RalImporter modul                ✅ Kész        Auditbarát regex validáció
+  OrderManager                     🚧 Specifikáció Modellek, státuszkezelés
+  CustomerMaster                   🚧 Tervezés    Ügyféltörzs, autocomplete
+  CutCalculator                    🚧 Specifikáció Számítási logika, preview
+  NeedsPresenter + NeedsView       🚧 Tervezés    Real‑time preview
+  UI réteg (Qt)                    🚧 Tervezés    Order entry dialog
+  Audit funkció                    🚧 Tervezés    AuditEntry, AuditService
+  Test framework                   ✅ Kész        EventLogger tests
+  NamedColor / Color  registry     ✅ Kész        Pantone integráció előkészítve
+  NeedRule /  NeedCalculation      🚧 Tervezés    Új koncepció, templated irány
+  Formula értelmezés               🚧 Tervezés    cparse integráció előkészítve
+  🔥 SOS / Tűzoltás                🚧             Material import hibák
+  Generikus kapcsolótábla          ➕ Új ötlet    Templated registry/repo/presenter
+  BarcodeValidator subsystem       🚧 Tervezés    Globális QSet + CRUD, IdentifiableEntity integráció
+------------------------------------------------------------------------
 
 📊 Idővonalas roadmap
 

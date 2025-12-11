@@ -48,6 +48,19 @@ struct ConnectionEntity {
         return std::nullopt;
     }
 
+    QString leftBarcode() const {
+        if (auto opt = left()) {
+            return opt->barcode;   // mert LeftEntity örökli az IdentifiableEntity-t
+        }
+        return {};
+    }
+
+    QString rightBarcode() const {
+        if (auto opt = right()) {
+            return opt->barcode;   // mert RightEntity örökli az IdentifiableEntity-t
+        }
+        return {};
+    }
 
 
 

@@ -24,6 +24,13 @@ ProductMaster* ProductRegistry::findById(const QUuid& id) {
     return nullptr;
 }
 
+ProductMaster* ProductRegistry::findByBarcode(const QString& barcode) {
+    for (auto& def : _data) {
+        if (def.barcode == barcode) return &def;
+    }
+    return nullptr;
+}
+
 QVector<ProductMaster> ProductRegistry::findChildren(const QUuid& parentId) const {
     QVector<ProductMaster> children;
     for (const auto& def : _data) {
