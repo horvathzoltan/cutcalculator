@@ -2,6 +2,8 @@
 #include "common/csv/csvimporter.h"
 #include "common/logger/event_logger.h"
 #include "common/logger/logger.h"
+
+#include <QFileInfo>
 //#include "common/logger/error_bucketizer.h" // új segédosztály a hibák kategorizálására
 
 using namespace CsvImporter;
@@ -83,6 +85,7 @@ void FileContextCollector::logSummary() const {
                 // opcionálisan: azonosítók gyűjtése
                 agg.barcodes.push_back(err.barcode());
                 agg.names.push_back(err.name());
+                agg.files.push_back(ctx._filepath);
             }
 
 
@@ -113,15 +116,16 @@ void FileContextCollector::logSummary() const {
     // Hibakategóriák sorlistával
     if (!errorBuckets.isEmpty()) {
         zInfo("— Hibakategóriák —");
-        //zInfo(L("------------------------------------------------------------------------------------------------"));
-        for (auto it = errorBuckets.constBegin(); it != errorBuckets.constEnd(); ++it) {
-            QStringList nums;
-            for (int ln : it.value().lines) nums << QString::number(ln);
 
-            QStringList ids;
+        for (auto it = errorBuckets.constBegin(); it != errorBuckets.constEnd(); ++it) {
+            // fájlonként csoportosítjuk
+            QMap<QString, QStringList> fileGroups;
+
             for (int i = 0; i < it.value().lines.size(); ++i) {
+                const int ln = it.value().lines[i];
                 const QString& bc = it.value().barcodes[i];
                 const QString& nm = it.value().names[i];
+                const QString file = QFileInfo(it.value().files[i]).fileName(); // csak a fájlnév
 
                 QString idPart;
                 if (!bc.isEmpty() && !nm.isEmpty()) {
@@ -132,20 +136,26 @@ void FileContextCollector::logSummary() const {
                     idPart = QString("[%1]").arg(nm);
                 }
 
-                if (!idPart.isEmpty()) {
-                    ids << QString("%1 %2").arg(it.value().lines[i]).arg(idPart);
-                } else {
-                    ids << QString::number(it.value().lines[i]);
-                }
+                QString entry = idPart.isEmpty()
+                                    ? QString::number(ln)
+                                    : QString("%1 %2").arg(ln).arg(idPart);
+
+                fileGroups[file].append(entry);
             }
 
+            // összeállítjuk a sorlistát fájlonként
+            QStringList fileLists;
+            for (auto fg = fileGroups.constBegin(); fg != fileGroups.constEnd(); ++fg) {
+                fileLists << QString("%1(%2)").arg(fg.key()).arg(fg.value().join(", "));
+            }
 
-            QString lineList = ids.isEmpty() ? "" : L(" (Sorok: %1)").arg(ids.join(", "));
+            QString lineList = fileLists.isEmpty() ? "" : L(" Sorok: %1").arg(fileLists.join(", "));
             zInfo(L("• %1× %2%3")
                       .arg(it.value().count)
                       .arg(it.key())
                       .arg(lineList));
         }
+
     }
 
     // Globális mérleg

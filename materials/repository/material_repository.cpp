@@ -16,6 +16,7 @@
 #include "colors/model/named_color.h"
 #include "materials/model/cutting_mode.h"
 #include "materials/model/painting_mode.h"
+#include "common/registry/barcode_table.h"
 
 // --- Stage 1: Convert ---
 std::optional<CsvImporter::AuditedRow<MaterialRepository::MaterialRow>>
@@ -64,8 +65,22 @@ MaterialRepository::validateMaterialRow(const MaterialRow& row, int lineNumber) 
     // if(row.barcode == "ROL-P"){
     //     zInfo("brekk");
     // }
-    if (row.barcode.isEmpty())
+    if (row.barcode.isEmpty()){
         errors.append(makeError(lineNumber, "⚠️ Hiányzó barcode", row));
+    } else {
+    // 🔍 Globális uniqueness check
+        if (!BarcodeTable::instance().checkUnique(row.barcode, "Material", QUuid{})) {
+            if (auto rec = BarcodeTable::instance().find(row.barcode)) {
+                QString msg1 = QString("Barcode collision: %1 -> %2(%3)[%1]")
+                                    .arg(row.barcode, rec->entityType)
+                                    .arg(rec->status == BarcodeTable::Status::Active ? "Active" : "Retired");
+                errors.append(makeError(lineNumber,msg1,row));
+            } else {
+                QString msg1 = QString("Barcode collision: %1 (record not found after check)").arg(row.barcode);
+                errors.append(makeError(lineNumber,msg1,row));
+            }
+        }
+    }
 
     if (row.cuttingMode.compare("Length", Qt::CaseInsensitive) == 0) {
         if (row.stockLength <= 0)
@@ -185,7 +200,10 @@ bool MaterialRepository::loadFromCSV(MaterialRegistry& registry) {
         zWarning(QString("⚠️ Hibák az anyag import során (%1)").arg(ctx.errorsSize()));
     }
 
-    registry.setData(defs);
+    for (const auto& m : defs) {
+        registry.registerData(m); // ez már bejegyzi a BarcodeTable-be
+    }
+
     zInfo(QString("📊 MaterialRepository: %1 anyag betöltve").arg(defs.size()));
     return !defs.isEmpty();
 }

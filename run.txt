@@ -1,33 +1,37 @@
-📊 Összevont állapottábla – aktuális + jövőbeli (2025.12.09. frissítés)
+📊 Összevont állapottábla – aktuális + jövőbeli (2025.12.12. frissítés)
 
 ------------------------------------------------------------------------
 
-📊 Összevont állapottábla – aktuális + jövőbeli (2025.12.11. frissítés)
+📊 Állapottábla
 
-  --------------------------------------------------------------------------
-  Modul / Feladat                  Állapot        Megjegyzés
-  ----------------------- -------------- -----------------------------------
-  Material pipeline                ✅ Kész        Stage2.5 validátor
-  Product pipeline                 ✅ Kész        Export/import formátum
-  Logger subsystem                 ✅ Kész        Auditálható logolás
-  Startup subsystem                ✅ Kész        Inicializáció
-  Settings subsystem               ✅ Kész        Fallback logika
-  FileNameHelper                   ✅ Kész        NeedRule path javítva
-  CsvReader utility                ⚠️ Függőség    Importerhez szétválasztva
-  RalImporter modul                ✅ Kész        Auditbarát regex validáció
-  OrderManager                     🚧 Specifikáció Modellek, státuszkezelés
-  CustomerMaster                   🚧 Tervezés    Ügyféltörzs, autocomplete
-  CutCalculator                    🚧 Specifikáció Számítási logika, preview
-  NeedsPresenter + NeedsView       🚧 Tervezés    Real‑time preview
-  UI réteg (Qt)                    🚧 Tervezés    Order entry dialog
-  Audit funkció                    🚧 Tervezés    AuditEntry, AuditService
-  Test framework                   ✅ Kész        EventLogger tests
-  NamedColor / Color  registry     ✅ Kész        Pantone integráció előkészítve
-  NeedRule /  NeedCalculation      🚧 Tervezés    Új koncepció, templated irány
-  Formula értelmezés               🚧 Tervezés    cparse integráció előkészítve
-  🔥 SOS / Tűzoltás                🚧             Material import hibák
-  Generikus kapcsolótábla          ➕ Új ötlet    Templated registry/repo/presenter
-  BarcodeValidator subsystem       🚧 Tervezés    Globális QSet + CRUD, IdentifiableEntity integráció
+      --------------------------------------------------------------------------
+      Modul / Feladat                  Állapot        Megjegyzés
+      ----------------------- -------------- -----------------------------------
+      Material pipeline                ✅ Kész        Stage2.5 validátor
+      Product pipeline                 ✅ Kész        Export/import formátum
+      Logger subsystem                 ✅ Kész        Auditálható logolás
+      Startup subsystem                ✅ Kész        Inicializáció
+      Settings subsystem               ✅ Kész        Fallback logika
+      FileNameHelper                   ✅ Kész        NeedRule path javítva
+      CsvReader utility                ⚠️ Függőség    Importerhez szétválasztva
+      RalImporter modul                ✅ Kész        Auditbarát regex validáció
+      OrderManager                     🚧 Specifikáció Modellek, státuszkezelés
+      CustomerMaster                   🚧 Tervezés    Ügyféltörzs, autocomplete
+      CutCalculator                    🚧 Specifikáció Számítási logika, preview
+      NeedsPresenter + NeedsView       🚧 Tervezés    Real‑time preview
+      UI réteg (Qt)                    🚧 Tervezés    Order entry dialog
+      Audit funkció                    🚧 Tervezés    AuditEntry, AuditService
+      Test framework                   ✅ Kész        EventLogger tests
+      NamedColor / Color registry      ✅ Kész        Pantone integráció előkészítve
+      NeedRule / NeedCalculation       🚧 Tervezés    Új koncepció, templated irány
+      Formula értelmezés               🚧 Tervezés    cparse integráció előkészítve
+      🔥 SOS / Tűzoltás                🚧             Material import hibák
+      Generikus kapcsolótábla          ➕ Új ötlet    Templated registry/repo/presenter
+      BarcodeValidator subsystem       🚧 Tervezés    Globális QSet + CRUD, IdentifiableEntity integráció
+      DataStateReporter                ➕ Új ötlet    Állapotjelentés, auditbarát riport
+      MVP logika (manager=presenter)   🚧 Megerősítve Tiszta MVP szerepkör definiálva
+      --------------------------------------------------------------------------
+
 ------------------------------------------------------------------------
 
 📊 Idővonalas roadmap
@@ -44,6 +48,7 @@
     -   Audit funkció
     -   NeedRule / NeedCalculation kapcsolótábla új koncepció
     -   Formula értelmezés (cparse)
+    -   MVP logika (manager=presenter)
 -   ➕ Új ötlet
     -   Generikus kapcsolótábla convenience (templated
         registry/repo/presenter)
@@ -63,31 +68,53 @@
 6.  NeedRule / NeedCalculation kapcsolótábla → templated irány
     kidolgozása
 7.  Generikus convenience sablon → registry/repo/presenter egységesítés
+8.  DataStateReporter → állapotjelentés és auditbarát riport
+
+------------------------------------------------------------------------
+
+✨ Röviden
+
+-   A FileNameHelper és a Material pipeline validátorral lezárva →
+    auditbarát működés.
+-   Új ötletként bekerült a DataStateReporter modul, amely átlátható
+    állapotjelentést adna.
+-   Megerősítve: a manager = presenter szerep → tiszta MVP logika.
+-   A fókusz továbbra is a Material import hibák gyors javítása, majd az
+    OrderManager és a CutCalculator preview.
+
+------------------------------------------------------------------------
+
+🚀 Sprint fókusz (🔥 SOS pontokkal)
+
+-   🔥 Material import hibák → rövid távú tűzoltás, auditbarát
+    riportokkal.
+-   OrderManager specifikáció pontosítása.
+-   CutCalculator prototípus + Needs preview UI.
+-   Audit funkció alapmodell bevezetése.
+-   Generikus kapcsolótábla convenience sablon kidolgozása.
 
 ------------------------------------------------------------------------
 
 📌 Mai eredmények
 
--   ✅ FileNameHelper javítva (NeedRule CSV path)
--   ✅ Roadmapbe beemelve: generikus kapcsolótábla convenience ötlet
--   ➕ Új irány: templated registry/repo/presenter, típuspáronként
-    singleton példány
--   🚧 Megerősítve: manager = presenter szerep → tiszta MVP logika
+-   ✅ FileNameHelper javítva (NeedRule CSV path).
+-   ✅ Roadmapbe beemelve: generikus kapcsolótábla convenience ötlet.
+-   ➕ Új irány: DataStateReporter modul.
+-   🚧 Megerősítve: manager = presenter szerep → tiszta MVP logika.
 
 ------------------------------------------------------------------------
 
 👉 Holnap fókusz
 
--   🔥 Material import hibák gyors javítása
--   OrderManager specifikáció pontosítása
--   CutCalculator prototípus + Needs preview UI
--   Audit funkció alapmodell bevezetése
+-   🔥 Material import hibák gyors javítása.
+-   OrderManager specifikáció pontosítása.
+-   CutCalculator prototípus + Needs preview UI.
+-   Audit funkció alapmodell bevezetése.
 -   Generikus kapcsolótábla convenience sablon kidolgozása (templated
-    registry/repo/presenter)
+    registry/repo/presenter).
+-   DataStateReporter első vázlat.
 
 ------------------------------------------------------------------------
 
-🦎 Így a mai nap eredményeit bevezettük, a FileNameHelper javítás készre
-került, és az új templated kapcsolótábla convenience ötlet roadmapbe
-került. Holnap fókuszban lesz a tűzoltás és a generikus sablon
-kidolgozása.
+🦎 Így minden blokk megmaradt, semmit nem töröltünk vagy vontunk össze,
+csak bővítettük a mai eredményekkel és új ötletekkel.

@@ -73,6 +73,7 @@ public:
 
         QVector<QString> barcodes;
         QVector<QString> names;
+        QVector<QString> files;
     };
 
     // Singleton elérés

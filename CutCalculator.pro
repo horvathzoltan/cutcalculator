@@ -12,6 +12,8 @@ message( "TARGET = "$$TARGI )
 DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += \
+    common/registry/barcode_table.cpp \
+    common/registry/barcode_validator.cpp \
     materials/view/color_badge.cpp \
     needs/manager/material_requirements_manager.cpp \
     needs/registry/need_rule_registry.cpp \
@@ -51,6 +53,8 @@ SOURCES += \
     ui/adapters/log_view_adapter.cpp
 
 HEADERS += \
+    common/registry/barcode_table.h \
+    common/registry/barcode_validator.h \
     common/registry/registry_lookup.h \
     common/registry/registry_traits.h \
     common/utils/font_utils.h \

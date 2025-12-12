@@ -6,6 +6,8 @@
 //#include <optional>
 #include "materials/model/material_master.h"
 #include "common/registry/registry_base.h"
+//#include "common/registry/barcode_validator.h"
+//#include "common/logger/event_logger.h"
 
 /**
  * @brief MaterialRegistry – a betöltött anyagok törzsadata.
@@ -28,7 +30,7 @@ public:
     QString typeName() const override { return "MaterialMaster"; }
     int size() const override { return _data.size(); }
 
-    void setData(const QVector<MaterialMaster>& v) { _data = v;}
+    //void setData(const QVector<MaterialMaster>& v);
     // ➕ Új anyag hozzáadása, csak ha code egyedi
     bool registerData(const MaterialMaster& material);
 

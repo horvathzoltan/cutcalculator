@@ -69,7 +69,7 @@ public:
 
     void addError(int l, const QString& msg,
     const QString& msgBarcode = QString(), const QString& msgName = QString()) {
-        _errors.append({l, msg, msgBarcode, msgName});
+        _errors.append({ l, msg, msgBarcode, msgName});
     }
 
     void addErrors(const QVector<RowError>& errs) {

@@ -11,11 +11,16 @@ private:
 
     QString _barcode; // opcionális
     QString _name;    // opcionális
+
+  //  QString _fileName; // új mező
+
 public:
     RowError(int lineIndex, const QString& errorMessage = QString(),
              const QString& barcode = QString(), const QString& name = QString())
-        : _lineIndex(lineIndex), _errorMessage(errorMessage),
-            _barcode(barcode), _name(name) {}
+        : _lineIndex(lineIndex), _errorMessage(errorMessage)
+        , _barcode(barcode), _name(name)
+     //   , _fileName(fileName)
+    {}
 
     QString toString() const {
         if (_errorMessage.isEmpty())
@@ -34,6 +39,10 @@ public:
     QString name() const {
         return _name;
     }
+
+    // QString fileName() const {
+    //     return _fileName;
+    // }
 
     int lineIndex() const {return _lineIndex;}
 };

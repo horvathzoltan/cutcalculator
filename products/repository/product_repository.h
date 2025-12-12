@@ -43,5 +43,6 @@ private:
     // --- Stage 3: Load & Assemble ---
     static QVector<CsvImporter::AuditedRow<ProductRow>> loadProductRows(CsvImporter::FileContext& ctx);
     static void resolveParents(QVector<ProductMaster> &defs, const QVector<CsvImporter::AuditedRow<ProductRepository::ProductRow> > &rows, CsvImporter::FileContext &ctx);
-    static void validateProductRows(const QVector<CsvImporter::AuditedRow<ProductRepository::ProductRow> > &rows, CsvImporter::FileContext &ctx);
+    //static void validateProductRows(const QVector<CsvImporter::AuditedRow<ProductRepository::ProductRow> > &rows, CsvImporter::FileContext &ctx);
+    static CsvImporter::RowError makeError(int lineNumber, const QString &message, const ProductRepository::ProductRow &row);
 };

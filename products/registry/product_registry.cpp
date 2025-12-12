@@ -3,6 +3,8 @@
 #include "common/utils/filename_helper.h"
 #include "common/utils/scoped_per_thread_lock.h"
 #include "products/repository/product_repository.h"
+#include "common/registry/barcode_table.h"
+#include "common/logger/event_logger.h"
 
 ProductRegistry& ProductRegistry::instance() {
     static ProductRegistry inst;
@@ -48,7 +50,7 @@ QVector<ProductMaster> ProductRegistry::roots() const {
     }
 
     for (const auto& pm : _data) {
-        if (pm.parentId.isNull() || !allIds.contains(pm.parentId)) {
+        if (pm.parentId.isNull() ) {//|| !allIds.contains(pm.parentId)
             result.append(pm);
         }
     }
@@ -62,46 +64,84 @@ QVector<ProductMaster> ProductRegistry::roots() const {
 void ProductRegistry::insert(const ProductMaster& pm) {
     {
         ScopedPerThreadLock locker(static_cast<void*>(&_mutex), /*recursive=*/true);
+
+        // 🔍 Globális uniqueness check
+        if (!BarcodeTable::instance().checkUnique(pm.barcode, "Product", pm.id)) {
+            zWarning(QString("Product barcode collision: %1 (%2)")
+                         .arg(pm.barcode, pm.name));
+            zEventWARN(QString("Product barcode ütközés: %1 (%2)")
+                           .arg(pm.barcode, pm.name));
+            return; // Strict model: nem kerül be
+        }
+
+        // ✅ Ha unique, regisztráljuk
+        BarcodeTable::instance().registerNew(pm.barcode, "Product", pm.id);
         _data.append(pm);
+
+        // zEventINFO(QString("Product registered: %1 [%2]")
+        //                .arg(pm.name, pm.barcode));
     }
     persist();
 }
 
 bool ProductRegistry::update(const ProductMaster& updated) {
     bool changed = false;
-    {
-        ScopedPerThreadLock locker(static_cast<void*>(&_mutex), true);
-        for (auto& pm : _data) {
-            if (pm.id == updated.id) {
-                pm = updated;   // teljes objektum cseréje
-                changed = true;
-                break;
+    ScopedPerThreadLock locker(static_cast<void*>(&_mutex), true);
+
+    for (auto& pm : _data) {
+        if (pm.id == updated.id) {
+            // 🔍 Ha változott a barcode, ellenőrizzük
+            if (pm.barcode != updated.barcode) {
+                if (!BarcodeTable::instance().checkUnique(updated.barcode, "Product", updated.id)) {
+                    zWarning(QString("Product barcode collision on update: %1 (%2)")
+                                 .arg(updated.barcode, updated.name));
+                    zEventWARN(QString("Product barcode ütközés update közben: %1 (%2)")
+                                   .arg(updated.barcode, updated.name));
+                    return false;
+                }
+                // Nyugdíjazzuk a régi barcode‑ot
+                BarcodeTable::instance().retire(pm.barcode, "Product updated");
+                // Regisztráljuk az újat
+                BarcodeTable::instance().registerNew(updated.barcode, "Product", updated.id);
             }
+
+            pm = updated;   // teljes objektum cseréje
+            changed = true;
+            break;
         }
     }
+
     if (changed) {
         persist();
-        //zEvent(QString("✏️ Product updated: %1").arg(updated.name));
+        zEventINFO(QString("✏️ Product updated: %1 [%2]")
+                       .arg(updated.name, updated.barcode));
     }
     return changed;
 }
 
 
+
 bool ProductRegistry::remove(const QUuid& id) {
     bool removed = false;
-    {
-        ScopedPerThreadLock locker(static_cast<void*>(&_mutex), true);
-        for (int i = 0; i < _data.size(); ++i) {
-            if (_data[i].id == id) {
-                _data.remove(i);
-                removed = true;
-                break;
-            }
+    ScopedPerThreadLock locker(static_cast<void*>(&_mutex), true);
+
+    for (int i = 0; i < _data.size(); ++i) {
+        if (_data[i].id == id) {
+            const auto code = _data[i].barcode;
+            _data.remove(i);
+            removed = true;
+
+            // 🔧 Barcode retire
+            BarcodeTable::instance().retire(code, "Product deleted");
+            zEventINFO(QString("Product removed, barcode retired: %1").arg(code));
+            break;
         }
     }
+
     if (removed) persist();
     return removed;
 }
+
 
 
 
