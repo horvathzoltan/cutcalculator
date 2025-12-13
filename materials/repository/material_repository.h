@@ -51,4 +51,5 @@ private:
     // --- Stage 3: Load & Assemble ---
     static QVector<CsvImporter::AuditedRow<MaterialRow>> loadMaterialRows(CsvImporter::FileContext& ctx);
     static CsvImporter::RowError makeError(int lineNumber, const QString &message, const MaterialRepository::MaterialRow &row);
+    //static QString toDisplay(const MaterialRow &row);
 };

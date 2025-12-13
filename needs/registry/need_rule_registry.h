@@ -6,20 +6,20 @@
 /**
  * 📚 NeedRuleRegistry – auditbarát, on-the-fly perzisztáló kapcsolattábla
  *
- * Örököl a RegistryBase-ből (audit) és a ConnectionRegistry<NeedRule>-ből (CRUD).
+ * Örököl a IdentifiableRegistryBase-ből (audit) és a ConnectionRegistry<NeedRule>-ből (CRUD).
  */
 class NeedRuleRegistry
     : public RegistryBase,
       public ConnectionRegistry<NeedRule> {
 
 private:
-    NeedRuleRegistry() : RegistryBase("NeedRuleRegistry") {}
+    NeedRuleRegistry() : RegistryBase("NeedRuleRegistry", "NeedRule") {}
     NeedRuleRegistry(const NeedRuleRegistry&) = delete;
 
 public:
     static NeedRuleRegistry& instance();
 
-    QString typeName() const override;
+    //QString typeName() const override;
     int size() const override;
 
     void insert(const NeedRule& rule);

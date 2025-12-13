@@ -17,6 +17,8 @@
 #include "materials/model/cutting_mode.h"
 #include "materials/model/painting_mode.h"
 #include "common/registry/barcode_table.h"
+#include "common/registry/registry_manager.h"
+#include "common/registry/barcode_collision_helper.h"
 
 // --- Stage 1: Convert ---
 std::optional<CsvImporter::AuditedRow<MaterialRepository::MaterialRow>>
@@ -56,6 +58,10 @@ CsvImporter::RowError MaterialRepository::makeError(int lineNumber,
     return { lineNumber, message, row.barcode, row.name };
 }
 
+// QString MaterialRepository::toDisplay(const MaterialRow& row) {
+//     return row.name.isEmpty() ? "[" + row.barcode + "]"
+//                               : row.name + " [" + row.barcode + "]";
+// }
 
 // --- Stage 2.5: Validate ---
 QVector<CsvImporter::RowError>
@@ -68,17 +74,12 @@ MaterialRepository::validateMaterialRow(const MaterialRow& row, int lineNumber) 
     if (row.barcode.isEmpty()){
         errors.append(makeError(lineNumber, "⚠️ Hiányzó barcode", row));
     } else {
-    // 🔍 Globális uniqueness check
-        if (!BarcodeTable::instance().checkUnique(row.barcode, "Material", QUuid{})) {
-            if (auto rec = BarcodeTable::instance().find(row.barcode)) {
-                QString msg1 = QString("Barcode collision: %1 -> %2(%3)[%1]")
-                                    .arg(row.barcode, rec->entityType)
-                                    .arg(rec->status == BarcodeTable::Status::Active ? "Active" : "Retired");
-                errors.append(makeError(lineNumber,msg1,row));
-            } else {
-                QString msg1 = QString("Barcode collision: %1 (record not found after check)").arg(row.barcode);
-                errors.append(makeError(lineNumber,msg1,row));
-            }
+        if (auto err = BarcodeCollisionHelper::makeBarcodeCollisionError(
+                  "Material",
+                  BarcodeCollisionHelper::RowInfo{ row.barcode, row.name },
+                  lineNumber))
+        {
+            errors.append(*err);
         }
     }
 

@@ -10,6 +10,7 @@
 #include "common/csv/csvimporter.h"
 #include "common/logger/logger.h"
 #include "common/utils/filename_helper.h"
+#include "common/registry/barcode_collision_helper.h"
 
 // --- Stage 1: Convert ---
 std::optional<CsvImporter::AuditedRow<ProductRepository::ProductRow>>
@@ -95,17 +96,12 @@ ProductRepository::validateProductRow(const ProductRow& row, int lineNumber) {
     if (row.barcode.isEmpty()){
         errors.append({lineNumber, "⚠️ Hiányzó barcode", row.barcode, row.name});
     } else {
-        // 🔍 Globális uniqueness check
-        if (!BarcodeTable::instance().checkUnique(row.barcode, "Product", QUuid{})) {
-            if (auto rec = BarcodeTable::instance().find(row.barcode)) {
-                QString msg1 = QString("Barcode collision: %1 -> %2(%3)[%1]")
-                                   .arg(row.barcode, rec->entityType)
-                                   .arg(rec->status == BarcodeTable::Status::Active ? "Active" : "Retired");
-                errors.append(makeError(lineNumber, msg1, row));
-            } else{
-                QString msg1 = QString("Barcode collision: %1 (record not found after check)").arg(row.barcode);
-                errors.append(makeError(lineNumber,msg1,row));
-            }
+        if (auto err = BarcodeCollisionHelper::makeBarcodeCollisionError(
+                "Product",
+                BarcodeCollisionHelper::RowInfo{ row.barcode, row.name },
+                lineNumber))
+        {
+            errors.append(*err);
         }
     }
 

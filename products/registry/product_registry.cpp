@@ -19,7 +19,7 @@ const QVector<ProductMaster>& ProductRegistry::readAll() const {
     return _data;
 }
 
-ProductMaster* ProductRegistry::findById(const QUuid& id) {
+const ProductMaster* ProductRegistry::findById(const QUuid& id) const {
     for (auto& def : _data) {
         if (def.id == id) return &def;
     }
@@ -66,7 +66,7 @@ void ProductRegistry::insert(const ProductMaster& pm) {
         ScopedPerThreadLock locker(static_cast<void*>(&_mutex), /*recursive=*/true);
 
         // 🔍 Globális uniqueness check
-        if (!BarcodeTable::instance().checkUnique(pm.barcode, "Product", pm.id)) {
+        if (!BarcodeTable::instance().checkUnique(pm.barcode, typeName(), pm.id)) {
             zWarning(QString("Product barcode collision: %1 (%2)")
                          .arg(pm.barcode, pm.name));
             zEventWARN(QString("Product barcode ütközés: %1 (%2)")
@@ -75,7 +75,7 @@ void ProductRegistry::insert(const ProductMaster& pm) {
         }
 
         // ✅ Ha unique, regisztráljuk
-        BarcodeTable::instance().registerNew(pm.barcode, "Product", pm.id);
+        BarcodeTable::instance().registerNew(pm.barcode, typeName(), pm.id);
         _data.append(pm);
 
         // zEventINFO(QString("Product registered: %1 [%2]")
@@ -92,7 +92,7 @@ bool ProductRegistry::update(const ProductMaster& updated) {
         if (pm.id == updated.id) {
             // 🔍 Ha változott a barcode, ellenőrizzük
             if (pm.barcode != updated.barcode) {
-                if (!BarcodeTable::instance().checkUnique(updated.barcode, "Product", updated.id)) {
+                if (!BarcodeTable::instance().checkUnique(updated.barcode, typeName(), updated.id)) {
                     zWarning(QString("Product barcode collision on update: %1 (%2)")
                                  .arg(updated.barcode, updated.name));
                     zEventWARN(QString("Product barcode ütközés update közben: %1 (%2)")
@@ -102,7 +102,7 @@ bool ProductRegistry::update(const ProductMaster& updated) {
                 // Nyugdíjazzuk a régi barcode‑ot
                 BarcodeTable::instance().retire(pm.barcode, "Product updated");
                 // Regisztráljuk az újat
-                BarcodeTable::instance().registerNew(updated.barcode, "Product", updated.id);
+                BarcodeTable::instance().registerNew(updated.barcode, typeName(), updated.id);
             }
 
             pm = updated;   // teljes objektum cseréje
@@ -165,4 +165,12 @@ void ProductRegistry::persist() const {
     } // lock feloldva itt
 
     ProductRepository::saveToCSV(toWrite, path);
+}
+
+const IdentifiableEntity* ProductRegistry::findEntityById(const QUuid &id) const
+{
+    if (auto* pm = findById(id)) {
+        return pm; // implicit upcast ProductMaster* → IdentifiableEntity*
+    }
+    return nullptr;
 }

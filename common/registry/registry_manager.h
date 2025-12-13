@@ -2,6 +2,7 @@
 #pragma once
 #include "common/logger/event_logger.h"
 #include "common/logger/logger.h"
+#include "common/model/identifiable_entity.h"
 #include "registry_base.h"
 
 #include <QVector>
@@ -25,8 +26,15 @@ public:
         return mgr;
     }
 
+    void registerRepo(IdentifiableRegistryBase* repo) {
+        identifiable.append(repo);
+    }
+
     void registerRepo(RegistryBase* repo) {
         repos.append(repo);
+        if (auto* idRepo = dynamic_cast<IdentifiableRegistryBase*>(repo)) {
+            identifiable.append(idRepo);
+        }
     }
 
     // registry_manager.cpp
@@ -56,8 +64,8 @@ public:
         return sum;
     }
 
-    RegistryBase* findByTypeName(const QString& typeName) const {
-        for (auto* repo : repos) {
+    IdentifiableRegistryBase* findByTypeName(const QString& typeName) const {
+        for (auto* repo : identifiable) {
             if (repo->typeName() == typeName)
                 return repo;
         }
@@ -68,8 +76,16 @@ public:
         return repos;
     }
 
+    const IdentifiableEntity* findEntity(const QString& typeName, const QUuid& id) const {
+        IdentifiableRegistryBase* repo = findByTypeName(typeName);
+        if (repo) {
+            return repo->findEntityById(id); // minden registry implementálja → IdentifiableEntity*
+        }
+        return nullptr;
+    }
 
 private:
     RegistryManager() = default;
     QVector<RegistryBase*> repos;
+    QVector<IdentifiableRegistryBase*> identifiable;  // csak az azonosíthatók
 };

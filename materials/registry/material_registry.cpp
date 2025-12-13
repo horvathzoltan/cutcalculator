@@ -9,9 +9,7 @@ MaterialRegistry &MaterialRegistry::instance() {
 }
 
 const MaterialMaster* MaterialRegistry::findById(const QUuid& id) const {
-    for (const auto& m : _data)
-        if (m.id == id)
-            return &m;
+    for (const auto& m : _data) if (m.id == id) return &m;
     return nullptr;
 }
 
@@ -29,6 +27,14 @@ bool MaterialRegistry::isBarcodeUnique(const QString& barcode) const {
     return true;
 }
 
+const IdentifiableEntity* MaterialRegistry::findEntityById(const QUuid& id) const {
+    if (auto* mat = findById(id)) {
+        return mat; // implicit upcast MaterialMaster* → IdentifiableEntity*
+    }
+    return nullptr;
+}
+
+
 // bool MaterialRegistry::registerData(const MaterialMaster& material) {
 //     if (!isBarcodeUnique(material.barcode))
 //         return false;
@@ -41,7 +47,7 @@ bool MaterialRegistry::isBarcodeUnique(const QString& barcode) const {
 
 bool MaterialRegistry::registerData(const MaterialMaster& material) {
     // 🔍 Globális uniqueness check – fail fast, ha ütközés van
-    if (!BarcodeTable::instance().checkUnique(material.barcode, "Material", material.id)) {
+    if (!BarcodeTable::instance().checkUnique(material.barcode, typeName(), material.id)) {
         // ⚠️ Audit jelzés – nem kerül be az adat
         zWarning(QString("Material barcode collision: %1 (%2)")
                      .arg(material.barcode, material.name));
@@ -51,11 +57,16 @@ bool MaterialRegistry::registerData(const MaterialMaster& material) {
     }
 
     // ✅ Ha unique, regisztráljuk a BarcodeTable-be és a registrybe
-    BarcodeTable::instance().registerNew(material.barcode, "Material", material.id);
+    BarcodeTable::instance().registerNew(material.barcode,
+                                         typeName(),
+                                         material.id);
     _data.append(material);
 
-    // zEventINFO(QString("Material registered: %1 [%2]")
-    //                .arg(material.name, material.barcode));
+    zInfo(QString("Material registered: %1 [%2] {%3}")
+                   .arg(material.name)
+                   .arg(material.barcode)
+                   .arg(material.id.toString(QUuid::WithoutBraces)));
+
     return true;
 }
 

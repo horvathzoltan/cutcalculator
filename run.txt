@@ -1,4 +1,4 @@
-📊 Összevont állapottábla – aktuális + jövőbeli (2025.12.12. frissítés)
+📊 Összevont állapottábla – aktuális + jövőbeli (2025.12.13. frissítés)
 
 ------------------------------------------------------------------------
 
@@ -79,8 +79,8 @@
 -   Új ötletként bekerült a DataStateReporter modul, amely átlátható
     állapotjelentést adna.
 -   Megerősítve: a manager = presenter szerep → tiszta MVP logika.
--   A fókusz továbbra is a Material import hibák gyors javítása, majd az
-    OrderManager és a CutCalculator preview.
+-   A fókusz továbbra is a 🔥 Material import hibák gyors javítása, majd
+    az OrderManager és a CutCalculator preview.
 
 ------------------------------------------------------------------------
 
@@ -113,8 +113,3 @@
 -   Generikus kapcsolótábla convenience sablon kidolgozása (templated
     registry/repo/presenter).
 -   DataStateReporter első vázlat.
-
-------------------------------------------------------------------------
-
-🦎 Így minden blokk megmaradt, semmit nem töröltünk vagy vontunk össze,
-csak bővítettük a mai eredményekkel és új ötletekkel.

@@ -10,7 +10,7 @@
 /**
  * @brief ColorRegistry – a betöltött színek törzsadata.
  *
- * A RegistryBase-ből öröklődik, így automatikusan regisztrálja magát
+ * A IdentifiableRegistryBase-ből öröklődik, így automatikusan regisztrálja magát
  * a RegistryManager-be. Auditbarát elemszám riportot ad.
  *
  * Feladata:
@@ -21,7 +21,7 @@
 class ColorRegistry : public RegistryBase {
 private:
     /// Privát konstruktor – singleton
-    ColorRegistry() : RegistryBase("ColorRegistry") {}
+    ColorRegistry() : RegistryBase("ColorRegistry","NamedColor") {}
     ColorRegistry(const ColorRegistry&) = delete;
 
     QVector<NamedColor> _data;          ///< Tárolt színek listája
@@ -32,7 +32,7 @@ public:
     static ColorRegistry& instance();
 
     /// RegistryBase kötelező metódusok
-    QString typeName() const override { return "NamedColor"; }
+    //QString typeName() const override { return "NamedColor"; }
     int size() const override { return _data.size(); }
 
     /// Adatkezelő metódusok
@@ -47,4 +47,6 @@ public:
 
     /// Segédfüggvény: üres-e a registry
     bool isEmpty() const { return _data.isEmpty(); }
+
+
 };

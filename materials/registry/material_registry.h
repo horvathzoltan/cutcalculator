@@ -12,13 +12,13 @@
 /**
  * @brief MaterialRegistry – a betöltött anyagok törzsadata.
  *
- * A RegistryBase-ből öröklődik, így automatikusan regisztrálja magát
+ * A IdentifiableRegistryBase-ből öröklődik, így automatikusan regisztrálja magát
  * a RegistryManager-be. Auditbarát elemszám riportot ad.
  */
 
-class MaterialRegistry: public RegistryBase {
+class MaterialRegistry: public IdentifiableRegistryBase {
 private:
-    MaterialRegistry() : RegistryBase("MaterialRegistry") {}//    MaterialRegistry() = default;  // 🔐 Privát konstruktor a singletonhoz
+    MaterialRegistry() : IdentifiableRegistryBase("MaterialRegistry", "Material") {}//    MaterialRegistry() = default;  // 🔐 Privát konstruktor a singletonhoz
     MaterialRegistry(const MaterialRegistry&) = delete;
 
     QVector<MaterialMaster> _data;  // 📦 Betöltött anyagtörzs lista
@@ -27,7 +27,7 @@ public:
     // 🔁 Singleton elérés
     static MaterialRegistry& instance();
 
-    QString typeName() const override { return "MaterialMaster"; }
+    //QString typeName() const override { return "Material"; }
     int size() const override { return _data.size(); }
 
     //void setData(const QVector<MaterialMaster>& v);
@@ -41,6 +41,8 @@ public:
     bool isBarcodeUnique(const QString& barcode) const;
 
     bool isEmpty() const { return _data.isEmpty(); }
+
+    const IdentifiableEntity* findEntityById(const QUuid& id) const override;
 
     //int size() const { return _data.size(); }
 };

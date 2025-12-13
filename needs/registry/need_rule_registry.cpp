@@ -6,9 +6,9 @@ NeedRuleRegistry& NeedRuleRegistry::instance() {
     return inst;
 }
 
-QString NeedRuleRegistry::typeName() const {
-    return "NeedRule";
-}
+// QString NeedRuleRegistry::typeName() const {
+//     return "NeedRule";
+// }
 
 int NeedRuleRegistry::size() const {
     // közvetlenül a ConnectionRegistry-ből örökölt size()

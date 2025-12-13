@@ -42,3 +42,5 @@ QVector<NamedColor> ColorRegistry::findBySystem(RalSystem sys) const {
     }
     return result;
 }
+
+

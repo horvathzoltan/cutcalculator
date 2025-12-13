@@ -23,15 +23,12 @@ void ProductTreeView::dropEvent(QDropEvent* event) {
     QUuid newParentId;
 
     if (droppedIndex.isValid()) {
-        // Új parent ID a cél sorból
         QString parentIdStr = sim->itemFromIndex(droppedIndex.sibling(droppedIndex.row(), 2))->text();
         newParentId = QUuid(parentIdStr);
     } else {
-        // Üres területre dobás → gyökér
-        newParentId = QUuid();
+        newParentId = QUuid(); // gyökér
     }
 
-    // Mozgatott elem ID
     QModelIndex selected = currentIndex();
     if (!selected.isValid()) {
         QTreeView::dropEvent(event);
@@ -41,20 +38,22 @@ void ProductTreeView::dropEvent(QDropEvent* event) {
     QString idStr = sim->itemFromIndex(selected.sibling(selected.row(), 2))->text();
     QUuid id(idStr);
 
-    if (auto* pm = ProductRegistry::instance().findById(id)) {
-        QUuid oldParent = pm->parentId;
-        pm->parentId = newParentId;
-        ProductRegistry::instance().update(*pm);
+    if (const ProductMaster* pm = ProductRegistry::instance().findById(id)) {
+        ProductMaster updated = *pm;        // munka-másolat
+        QUuid oldParent = updated.parentId; // régi parent
+        updated.parentId = newParentId;     // új parent
+
+        ProductRegistry::instance().update(updated); // audit + persist
 
         zEventINFO(QString("🔀 Product moved: %1 → new parent: %2 (was: %3)")
-                       .arg(pm->name)
+                       .arg(updated.name)
                        .arg(newParentId.toString())
                        .arg(oldParent.toString()));
     }
 
-    // Alap drop kezelés
-    QTreeView::dropEvent(event);
+    QTreeView::dropEvent(event); // alap drop kezelés
 
     emit productMoved(id, newParentId);
 }
+
 

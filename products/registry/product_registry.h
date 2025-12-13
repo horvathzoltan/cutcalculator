@@ -11,9 +11,9 @@
  * Singleton tároló a ProductDefinition elemekhez.
  * Olvasható, kereshető, és gyerekek lekérdezése parentId alapján.
  */
-class ProductRegistry: public RegistryBase  {
+class ProductRegistry: public IdentifiableRegistryBase  {
 private:
-    ProductRegistry() : RegistryBase("ProductRegistry") {}//    MaterialRegistry() = default;  // 🔐 Privát konstruktor a singletonhoz
+    ProductRegistry() : IdentifiableRegistryBase("ProductRegistry", "Product") {}//    MaterialRegistry() = default;  // 🔐 Privát konstruktor a singletonhoz
     ProductRegistry(const ProductRegistry&) = delete;
 
     QVector<ProductMaster> _data;
@@ -23,13 +23,13 @@ public:
     // 🔁 Singleton elérés
     static ProductRegistry& instance();
 
-    QString typeName() const override { return "ProductMaster"; }
+    //QString typeName() const override { return "ProductMaster"; }
     int size() const override { return _data.size(); }
 
     void setData(const QVector<ProductMaster>& v);
     const QVector<ProductMaster>& readAll() const;
 
-    ProductMaster* findById(const QUuid& id);
+    const ProductMaster* findById(const QUuid& id) const;
     ProductMaster* findByBarcode(const QString& barcode);   // 🔧 Új függvény
 
     QVector<ProductMaster> findChildren(const QUuid& parentId) const;
@@ -54,4 +54,8 @@ public:
     bool isBarcodeUnique(const QString& barcode, const QUuid& excludeId = QUuid()) const;
 
     void persist() const;
+
+    const IdentifiableEntity* findEntityById(const QUuid& id) const override;
+
+
 };

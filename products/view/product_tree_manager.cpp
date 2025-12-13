@@ -168,18 +168,18 @@ void ProductTreeManager::removeProduct() {
 }
 
 void ProductTreeManager::onItemChanged(QStandardItem* item) {
-    //QString idStr = _model->item(item->row(), 2)->text();
     auto index = item->index();
     QString idStr = _model->itemFromIndex(index.sibling(index.row(), 2))->text();
-
     QUuid id(idStr);
 
-    if (auto* pm = ProductRegistry::instance().findById(id)) {
+    if (const ProductMaster* pm = ProductRegistry::instance().findById(id)) {
+        // készítünk egy munka-másolatot
+        ProductMaster updated = *pm;
+
         if (item->column() == 0) { // name
-            pm->name = item->text();
+            updated.name = item->text();
             zEvent(QString("✏️ Product renamed: %1").arg(item->text()));
-        }
-        else if (item->column() == 1) { // barcode
+        } else if (item->column() == 1) { // barcode
             QString newCode = item->text();
 
             // Validálás: nem lehet üres
@@ -197,13 +197,15 @@ void ProductTreeManager::onItemChanged(QStandardItem* item) {
             }
 
             // Ha minden rendben → registry frissítése
-            pm->barcode = newCode;
+            updated.barcode = newCode;
             zEvent(QString("✏️ Product barcode updated: %1").arg(newCode));
         }
 
-        ProductRegistry::instance().update(*pm);
+        // audit-barát update → perzisztál is
+        ProductRegistry::instance().update(updated);
     }
 }
+
 
 void ProductTreeManager::onProductMoved(const QUuid& id, const QUuid& newParentId) {
     Q_UNUSED(id)
