@@ -1,5 +1,7 @@
 #include "barcode_table.h"
+#include "common/logger/logger.h"
 #include <algorithm>
+#include "common/system/verbose_manager.h"
 
 BarcodeTable& BarcodeTable::instance() {
     static BarcodeTable inst;
@@ -60,7 +62,7 @@ bool BarcodeTable::registerNew(const QString& code,
     QMutexLocker lock(&_mtx);
 
     if (exists(code)) {
-        zEventERROR(QString("Barcode collision on registerNew: %1").arg(code));
+        zInfo(QString("Barcode collision on registerNew: %1").arg(code));
         return false;
     }
 
@@ -72,8 +74,11 @@ bool BarcodeTable::registerNew(const QString& code,
     r.status = Status::Active;
     _records.append(r);
 
-    zEventINFO(QString("Barcode introduced: %1 (%2, id=%3)")
+    if(IS_VERBOSE_THIS())
+    {
+        zInfo(QString("Barcode introduced: %1 (%2, id=%3)")
                    .arg(code, entityType, id.toString(QUuid::WithoutBraces)));
+    }
     return true;
 }
 
@@ -82,26 +87,26 @@ bool BarcodeTable::retire(const QString& code, const QString& reason) {
 
     auto idx = indexOf(code);
     if (!idx.has_value()) {
-        zEventWARN(QString("Retire requested for unknown code: %1").arg(code));
+        zWarning(QString("Retire requested for unknown code: %1").arg(code));
         return false;
     }
 
     auto& r = _records[idx.value()];
     if (r.status == Status::Retired) {
-        zEventWARN(QString("Retire requested for already retired code: %1").arg(code));
+        zWarning(QString("Retire requested for already retired code: %1").arg(code));
         return false;
     }
 
     r.status = Status::Retired;
     r.retiredAt = QDateTime::currentDateTime();
 
-    zEventINFO(QString("Barcode retired: %1 (reason=%2)").arg(code, reason));
+    zWarning(QString("Barcode retired: %1 (reason=%2)").arg(code, reason));
     return true;
 }
 
 void BarcodeTable::dumpSummary() const {
     QMutexLocker lock(&_mtx);
-    zEventINFO(QString("BarcodeTable summary: total=%1, active=%2, retired=%3")
+    zInfo(QString("BarcodeTable summary: total=%1, active=%2, retired=%3")
                    .arg(QString::number(_records.size()),
                         QString::number(activeCount()),
                         QString::number(retiredCount())));

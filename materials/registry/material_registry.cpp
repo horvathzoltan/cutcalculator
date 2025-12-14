@@ -2,6 +2,8 @@
 #include "common/logger/logger.h"
 #include "common/registry/barcode_table.h"
 #include "common/logger/event_logger.h"
+#include "common/system/verbose_manager.h"
+
 
 MaterialRegistry &MaterialRegistry::instance() {
     static MaterialRegistry reg;
@@ -62,10 +64,12 @@ bool MaterialRegistry::registerData(const MaterialMaster& material) {
                                          material.id);
     _data.append(material);
 
+    if(IS_VERBOSE_THIS()){
     zInfo(QString("Material registered: %1 [%2] {%3}")
                    .arg(material.name)
                    .arg(material.barcode)
                    .arg(material.id.toString(QUuid::WithoutBraces)));
+    }
 
     return true;
 }

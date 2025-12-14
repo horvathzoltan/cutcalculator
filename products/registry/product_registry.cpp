@@ -67,10 +67,10 @@ void ProductRegistry::insert(const ProductMaster& pm) {
 
         // 🔍 Globális uniqueness check
         if (!BarcodeTable::instance().checkUnique(pm.barcode, typeName(), pm.id)) {
-            zWarning(QString("Product barcode collision: %1 (%2)")
-                         .arg(pm.barcode, pm.name));
-            zEventWARN(QString("Product barcode ütközés: %1 (%2)")
-                           .arg(pm.barcode, pm.name));
+            zWarning(QString("%3 barcode collision: %1 (%2)")
+                         .arg(pm.barcode, pm.name, typeName()));
+            // zEventWARN(QString("Product barcode ütközés: %1 (%2)")
+            //                .arg(pm.barcode, pm.name));
             return; // Strict model: nem kerül be
         }
 
@@ -93,14 +93,14 @@ bool ProductRegistry::update(const ProductMaster& updated) {
             // 🔍 Ha változott a barcode, ellenőrizzük
             if (pm.barcode != updated.barcode) {
                 if (!BarcodeTable::instance().checkUnique(updated.barcode, typeName(), updated.id)) {
-                    zWarning(QString("Product barcode collision on update: %1 (%2)")
-                                 .arg(updated.barcode, updated.name));
-                    zEventWARN(QString("Product barcode ütközés update közben: %1 (%2)")
-                                   .arg(updated.barcode, updated.name));
+                    zWarning(QString("%3 barcode collision on update: %1 (%2)")
+                                 .arg(updated.barcode, updated.name, typeName()));
+                    // zEventWARN(QString("Product barcode ütközés update közben: %1 (%2)")
+                    //                .arg(updated.barcode, updated.name));
                     return false;
                 }
                 // Nyugdíjazzuk a régi barcode‑ot
-                BarcodeTable::instance().retire(pm.barcode, "Product updated");
+                BarcodeTable::instance().retire(pm.barcode, typeName()+ " updated");
                 // Regisztráljuk az újat
                 BarcodeTable::instance().registerNew(updated.barcode, typeName(), updated.id);
             }
@@ -113,8 +113,8 @@ bool ProductRegistry::update(const ProductMaster& updated) {
 
     if (changed) {
         persist();
-        zEventINFO(QString("✏️ Product updated: %1 [%2]")
-                       .arg(updated.name, updated.barcode));
+        zEventINFO(QString("✏️ %3 updated: %1 [%2]")
+                       .arg(updated.name, updated.barcode, typeName()));
     }
     return changed;
 }
@@ -132,8 +132,8 @@ bool ProductRegistry::remove(const QUuid& id) {
             removed = true;
 
             // 🔧 Barcode retire
-            BarcodeTable::instance().retire(code, "Product deleted");
-            zEventINFO(QString("Product removed, barcode retired: %1").arg(code));
+            BarcodeTable::instance().retire(code, typeName()+" deleted");
+            zEventINFO(QString("%2 removed, barcode retired: %1").arg(code, typeName()));
             break;
         }
     }

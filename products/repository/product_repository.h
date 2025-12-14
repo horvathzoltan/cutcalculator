@@ -17,6 +17,7 @@
  *  - Build: ProductRow → ProductDefinition
  *  - Assemble: ProductDefinition → ProductRegistry
  */
+
 class ProductRepository {
 public:
     static bool loadFromCSV(ProductRegistry& registry);

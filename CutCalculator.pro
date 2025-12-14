@@ -15,6 +15,9 @@ SOURCES += \
     common/registry/barcode_collision_helper.cpp \
     common/registry/barcode_table.cpp \
     common/registry/barcode_validator.cpp \
+    common/system/verbose_manager.cpp \
+    common/system/verbose_registry_initializer.cpp \
+    common/utils/table_formatter.cpp \
     materials/view/color_badge.cpp \
     needs/manager/material_requirements_manager.cpp \
     needs/registry/need_rule_registry.cpp \
@@ -59,7 +62,10 @@ HEADERS += \
     common/registry/barcode_validator.h \
     common/registry/registry_lookup.h \
     common/registry/registry_traits.h \
+    common/system/nameof.hpp \
+    common/system/verbose_manager.h \
     common/utils/font_utils.h \
+    common/utils/table_formatter.h \
     connections/connection_entity.h \
     connections/connection_registry.h \
     connections/connection_repository.h \

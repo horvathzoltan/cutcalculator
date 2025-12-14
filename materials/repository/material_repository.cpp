@@ -16,9 +16,10 @@
 #include "colors/model/named_color.h"
 #include "materials/model/cutting_mode.h"
 #include "materials/model/painting_mode.h"
-#include "common/registry/barcode_table.h"
-#include "common/registry/registry_manager.h"
+//#include "common/registry/barcode_table.h"
+//#include "common/registry/registry_manager.h"
 #include "common/registry/barcode_collision_helper.h"
+//#include "common/system/verbose_manager.h"
 
 // --- Stage 1: Convert ---
 std::optional<CsvImporter::AuditedRow<MaterialRepository::MaterialRow>>

@@ -9,6 +9,8 @@
 #include <QString>
 #include <QDebug>
 
+#include "common/utils/table_formatter.h"
+
 //class RegistryBase;
 
 /**
@@ -39,23 +41,33 @@ public:
 
     // registry_manager.cpp
     void auditReport() const {
-        zInfo() << "📊 Registry audit összefoglaló:";
-        zInfo().noquote() << QString("Registry           | Type              | Count");
-        zInfo().noquote() << QString("-----------------------------------------------");
+        zInfo("📊 Registry audit összefoglaló:");
+
+        // --- Fejléc + sorok előkészítése ---
+        QVector<QString> header = {"Registry", "Type", "Count"};
+        QVector<QVector<QString>> rows;
 
         for (auto* repo : repos) {
-            zInfo().noquote() << QString("%1 | %2 | %3")
-            .arg(repo->name(), -18)
-                .arg(repo->typeName(), -18)
-                .arg(repo->size(), 5);
+            rows.push_back({
+                repo->name(),
+                repo->typeName(),
+                QString::number(repo->size())
+            });
         }
 
-        zInfo().noquote() << QString("-----------------------------------------------");
+        // --- Táblázat formázása ---
+        auto lines = TableFormatter::format(header, rows);
+
+        for (const auto& line : lines)
+            zInfo().noquote() << line;
+
+        // --- Összesen sor ---
         zInfo().noquote() << QString("Összesen: %1").arg(totalCount());
 
         // Rövid nyugta zEvent-tel
         zEvent(QString("Registry audit összefoglaló – összesen %1 elem tárolva").arg(totalCount()));
     }
+
 
 
     int totalCount() const {

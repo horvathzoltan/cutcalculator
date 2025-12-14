@@ -4,6 +4,8 @@
 #include "common/logger/logger.h"
 
 #include <QFileInfo>
+
+#include "common/utils/table_formatter.h"
 //#include "common/logger/error_bucketizer.h" // új segédosztály a hibák kategorizálására
 
 using namespace CsvImporter;
@@ -31,10 +33,151 @@ void FileContextCollector::onContextDestroyed(const FileContext& ctx) {
     _contexts.append(FileContextSnapshot(ctx));
 }
 
+// void FileContextCollector::logSummary() const {
+//     QMutexLocker lock(&_mutex);
+
+//     //const QString now = QDateTime::currentDateTime().toString("yyyy-MM-dd HH:mm:ss");
+//     if (_contexts.isEmpty()) {
+//         zInfo(L("📊 CSV import összefoglaló: nincs begyűjtött kontextus."));
+//         zEvent(L("📊 CSV import összefoglaló: nincs begyűjtött kontextus."));
+//         return;
+//     }
+
+//     int totalErrors = 0;
+//     int totalFilesWithErrors = 0;
+//     int totalLines = 0;
+//     int totalOkLines = 0;
+
+//     struct FileRow {
+//         QString file;
+//         int lines;
+//         int okLines;
+//         int errors;
+//         QString status;
+//         QString op;
+//     };
+//     QVector<FileRow> table;
+
+//     // Aggregált hibák: üzenet -> sorok
+//     QMap<QString, ErrorAggregate> errorBuckets;
+
+//     zInfo(L("📊 CSV import összefoglaló (%1 fájl)").arg(_contexts.size()));
+
+//     for (const auto& ctx : _contexts) {
+//         const QString path = ctx._filepath;
+//         const int lines = ctx._totalLines;
+//         const int read = ctx._readlines;
+
+//         totalLines += lines;
+
+//         if (ctx.hasError()) {
+//             const int errs = ctx._errors.size();
+//             totalErrors += errs;
+//             totalFilesWithErrors++;
+
+//             int okLines = qMax(0, lines - errs);
+//             totalOkLines += okLines;
+
+//             // Hibák aggregálása
+//             for (const auto& err : ctx._errors) {
+//                 auto& agg = errorBuckets[err.errorMessage()];
+//                 agg.count++;
+//                 agg.lines.push_back(err.lineIndex());
+
+//                 // opcionálisan: azonosítók gyűjtése
+//                 agg.barcodes.push_back(err.barcode());
+//                 agg.names.push_back(err.name());
+//                 agg.files.push_back(ctx._filepath);
+//             }
+
+
+//             table.push_back(FileRow{ path, lines, okLines, errs, L("⚠️ Hibás"), ctx._operationName });
+//         } else {
+//             totalOkLines += lines;
+//             table.push_back(FileRow{ path, lines, lines, 0, L("✅ OK"), ctx._operationName });
+//         }
+//     }
+
+//     // Táblázat
+//     //zInfo("— Összesítés táblázat —");
+//     zInfo(L("Sorok | Hibátlan | Hibás | Státusz | Fájl                                   | Művelet"));
+//     zInfo(L("------------------------------------------------------------------------------------------------"));
+//     for (const auto& r : table) {
+//         QString fileCol = r.file;
+//         if (fileCol.size() > 40) fileCol = "…" + fileCol.right(39);
+//         zInfo(L("%1 | %2 | %3 | %4 | %5 | %6")
+//                   .arg(QString::number(r.lines), -5)
+//                   .arg(QString::number(r.okLines), -8)
+//                   .arg(QString::number(r.errors), -5)
+//                   .arg(r.status, -7)
+//                   .arg(fileCol, -40)
+//                   .arg(r.op));
+//     }
+//     zInfo(L("------------------------------------------------------------------------------------------------"));
+
+//     // Hibakategóriák sorlistával
+//     if (!errorBuckets.isEmpty()) {
+//         zInfo("— Hibakategóriák —");
+
+//         for (auto it = errorBuckets.constBegin(); it != errorBuckets.constEnd(); ++it) {
+//             // fájlonként csoportosítjuk
+//             QMap<QString, QStringList> fileGroups;
+
+//             for (int i = 0; i < it.value().lines.size(); ++i) {
+//                 const int ln = it.value().lines[i];
+//                 const QString& bc = it.value().barcodes[i];
+//                 const QString& nm = it.value().names[i];
+//                 const QString file = QFileInfo(it.value().files[i]).fileName(); // csak a fájlnév
+
+//                 QString idPart;
+//                 if (!bc.isEmpty() && !nm.isEmpty()) {
+//                     idPart = QString("[%1:%2]").arg(bc).arg(nm);
+//                 } else if (!bc.isEmpty()) {
+//                     idPart = QString("[%1]").arg(bc);
+//                 } else if (!nm.isEmpty()) {
+//                     idPart = QString("[%1]").arg(nm);
+//                 }
+
+//                 QString entry = idPart.isEmpty()
+//                                     ? QString::number(ln)
+//                                     : QString("%1 %2").arg(ln).arg(idPart);
+
+//                 fileGroups[file].append(entry);
+//             }
+
+//             // összeállítjuk a sorlistát fájlonként
+//             QStringList fileLists;
+//             for (auto fg = fileGroups.constBegin(); fg != fileGroups.constEnd(); ++fg) {
+//                 fileLists << QString("%1(%2)").arg(fg.key()).arg(fg.value().join(", "));
+//             }
+
+//             QString lineList = fileLists.isEmpty() ? "" : L(" Sorok: %1").arg(fileLists.join(", "));
+//             zInfo(L("• %1× %2%3")
+//                       .arg(it.value().count)
+//                       .arg(it.key())
+//                       .arg(lineList));
+//         }
+
+//     }
+
+//     // Globális mérleg
+//     if (totalErrors > 0) {
+//         zEvent(L("⚠️ CSV import összefoglaló: %1 fájlban %2 hiba történt. Összes sor: %3; hibátlan: %4; hibás: %5.")
+//                    .arg(totalFilesWithErrors)
+//                    .arg(totalErrors)
+//                    .arg(totalLines)
+//                    .arg(totalOkLines)
+//                    .arg(totalErrors));
+//     } else {
+//         zEvent(L("✅ CSV import összefoglaló: minden fájl hibátlanul beolvasható volt. Összes sor: %1; hibátlan: %2.")
+//                    .arg(totalLines)
+//                    .arg(totalOkLines));
+//     }
+// }
+
 void FileContextCollector::logSummary() const {
     QMutexLocker lock(&_mutex);
 
-    //const QString now = QDateTime::currentDateTime().toString("yyyy-MM-dd HH:mm:ss");
     if (_contexts.isEmpty()) {
         zInfo(L("📊 CSV import összefoglaló: nincs begyűjtött kontextus."));
         zEvent(L("📊 CSV import összefoglaló: nincs begyűjtött kontextus."));
@@ -56,7 +199,6 @@ void FileContextCollector::logSummary() const {
     };
     QVector<FileRow> table;
 
-    // Aggregált hibák: üzenet -> sorok
     QMap<QString, ErrorAggregate> errorBuckets;
 
     zInfo(L("📊 CSV import összefoglaló (%1 fájl)").arg(_contexts.size()));
@@ -64,8 +206,6 @@ void FileContextCollector::logSummary() const {
     for (const auto& ctx : _contexts) {
         const QString path = ctx._filepath;
         const int lines = ctx._totalLines;
-        const int read = ctx._readlines;
-
         totalLines += lines;
 
         if (ctx.hasError()) {
@@ -76,18 +216,14 @@ void FileContextCollector::logSummary() const {
             int okLines = qMax(0, lines - errs);
             totalOkLines += okLines;
 
-            // Hibák aggregálása
             for (const auto& err : ctx._errors) {
                 auto& agg = errorBuckets[err.errorMessage()];
                 agg.count++;
                 agg.lines.push_back(err.lineIndex());
-
-                // opcionálisan: azonosítók gyűjtése
                 agg.barcodes.push_back(err.barcode());
                 agg.names.push_back(err.name());
                 agg.files.push_back(ctx._filepath);
             }
-
 
             table.push_back(FileRow{ path, lines, okLines, errs, L("⚠️ Hibás"), ctx._operationName });
         } else {
@@ -96,45 +232,44 @@ void FileContextCollector::logSummary() const {
         }
     }
 
-    // Táblázat
-    //zInfo("— Összesítés táblázat —");
-    zInfo(L("Sorok | Hibátlan | Hibás | Státusz | Fájl                                   | Művelet"));
-    zInfo(L("------------------------------------------------------------------------------------------------"));
+    // --- TableFormatter integráció ---
+    QVector<QString> header = {"Sorok", "Hibátlan", "Hibás", "Státusz", "Fájl", "Művelet"};
+    QVector<QVector<QString>> rows;
+
     for (const auto& r : table) {
         QString fileCol = r.file;
         if (fileCol.size() > 40) fileCol = "…" + fileCol.right(39);
-        zInfo(L("%1 | %2 | %3 | %4 | %5 | %6")
-                  .arg(QString::number(r.lines), -5)
-                  .arg(QString::number(r.okLines), -8)
-                  .arg(QString::number(r.errors), -5)
-                  .arg(r.status, -7)
-                  .arg(fileCol, -40)
-                  .arg(r.op));
-    }
-    zInfo(L("------------------------------------------------------------------------------------------------"));
 
-    // Hibakategóriák sorlistával
+        rows.push_back({
+            QString::number(r.lines),
+            QString::number(r.okLines),
+            QString::number(r.errors),
+            r.status,
+            fileCol,
+            r.op
+        });
+    }
+
+    auto lines = TableFormatter::format(header, rows);
+
+    for (const auto& line : lines)
+        zInfo(line);
+
+    // --- Hibakategóriák ---
     if (!errorBuckets.isEmpty()) {
         zInfo("— Hibakategóriák —");
-
         for (auto it = errorBuckets.constBegin(); it != errorBuckets.constEnd(); ++it) {
-            // fájlonként csoportosítjuk
             QMap<QString, QStringList> fileGroups;
-
             for (int i = 0; i < it.value().lines.size(); ++i) {
                 const int ln = it.value().lines[i];
                 const QString& bc = it.value().barcodes[i];
                 const QString& nm = it.value().names[i];
-                const QString file = QFileInfo(it.value().files[i]).fileName(); // csak a fájlnév
+                const QString file = QFileInfo(it.value().files[i]).fileName();
 
                 QString idPart;
-                if (!bc.isEmpty() && !nm.isEmpty()) {
-                    idPart = QString("[%1:%2]").arg(bc).arg(nm);
-                } else if (!bc.isEmpty()) {
-                    idPart = QString("[%1]").arg(bc);
-                } else if (!nm.isEmpty()) {
-                    idPart = QString("[%1]").arg(nm);
-                }
+                if (!bc.isEmpty() && !nm.isEmpty()) idPart = QString("[%1:%2]").arg(bc).arg(nm);
+                else if (!bc.isEmpty()) idPart = QString("[%1]").arg(bc);
+                else if (!nm.isEmpty()) idPart = QString("[%1]").arg(nm);
 
                 QString entry = idPart.isEmpty()
                                     ? QString::number(ln)
@@ -143,11 +278,9 @@ void FileContextCollector::logSummary() const {
                 fileGroups[file].append(entry);
             }
 
-            // összeállítjuk a sorlistát fájlonként
             QStringList fileLists;
-            for (auto fg = fileGroups.constBegin(); fg != fileGroups.constEnd(); ++fg) {
+            for (auto fg = fileGroups.constBegin(); fg != fileGroups.constEnd(); ++fg)
                 fileLists << QString("%1(%2)").arg(fg.key()).arg(fg.value().join(", "));
-            }
 
             QString lineList = fileLists.isEmpty() ? "" : L(" Sorok: %1").arg(fileLists.join(", "));
             zInfo(L("• %1× %2%3")
@@ -155,10 +288,9 @@ void FileContextCollector::logSummary() const {
                       .arg(it.key())
                       .arg(lineList));
         }
-
     }
 
-    // Globális mérleg
+    // --- Globális mérleg ---
     if (totalErrors > 0) {
         zEvent(L("⚠️ CSV import összefoglaló: %1 fájlban %2 hiba történt. Összes sor: %3; hibátlan: %4; hibás: %5.")
                    .arg(totalFilesWithErrors)
@@ -172,6 +304,7 @@ void FileContextCollector::logSummary() const {
                    .arg(totalOkLines));
     }
 }
+
 
 
 

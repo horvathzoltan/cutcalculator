@@ -11,6 +11,7 @@
 #include "common/logger/logger.h"
 #include "common/utils/filename_helper.h"
 #include "common/registry/barcode_collision_helper.h"
+#include "common/system/verbose_manager.h"
 
 // --- Stage 1: Convert ---
 std::optional<CsvImporter::AuditedRow<ProductRepository::ProductRow>>
@@ -248,10 +249,12 @@ void ProductRepository::resolveParents(QVector<ProductMaster>& defs,
         }
     }
 
-    // részletes feloldási log (diagnosztika)
-    for (const auto& pm : defs) {
-        zInfo(QString("resolveParents result: %1 barcode=%2 parentId=%3")
-                  .arg(pm.name, pm.barcode, pm.parentId.toString(QUuid::WithoutBraces)));
+    if(IS_VERBOSE(ProductRepository)){
+        // részletes feloldási log (diagnosztika)
+        for (const auto& pm : defs) {
+            zInfo(QString("resolveParents result: %1 barcode=%2 parentId=%3")
+                      .arg(pm.name, pm.barcode, pm.parentId.toString(QUuid::WithoutBraces)));
+        }
     }
 
     // orphan összefoglaló blokk

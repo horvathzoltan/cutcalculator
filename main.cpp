@@ -13,11 +13,16 @@
 #include "common/system/lifecycle_manager.h"
 #include "common/startup/startup_status_manager.h"
 #include "common/registry/registry_manager.h"
+//#include "common/system/verbose_manager.h"
+
+extern void registerAllVerbose();
 
 int main(int argc, char *argv[])
 {
     Logger::setBreakOnError(false);
     Logger::setVerbose(false);
+    registerAllVerbose(); // 🐧 Kowalski aktiválva
+
     QString sysInfo = SysInfoHelper::instance().sysInfo();
     zInfo() << sysInfo;
     zEvent(sysInfo);
