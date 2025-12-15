@@ -5,6 +5,7 @@
 #include "products/repository/product_repository.h"
 #include "common/registry/barcode_table.h"
 #include "common/logger/event_logger.h"
+#include "barcodes/registry/barcode_registry.h"
 
 ProductRegistry& ProductRegistry::instance() {
     static ProductRegistry inst;
@@ -65,21 +66,15 @@ void ProductRegistry::insert(const ProductMaster& pm) {
     {
         ScopedPerThreadLock locker(static_cast<void*>(&_mutex), /*recursive=*/true);
 
-        // 🔍 Globális uniqueness check
-        if (!BarcodeTable::instance().checkUnique(pm.barcode, typeName(), pm.id)) {
-            zWarning(QString("%3 barcode collision: %1 (%2)")
-                         .arg(pm.barcode, pm.name, typeName()));
-            // zEventWARN(QString("Product barcode ütközés: %1 (%2)")
-            //                .arg(pm.barcode, pm.name));
+        auto& barcodeRegistry = BarcodeRegistry::instance();
+
+        // ✅ A BarcodeRegistry::registerNew maga ellenőrzi és auditál
+        if (!barcodeRegistry.registerNew(pm.barcode, typeName(), pm.id)) {
+            // Audit WARN már a BarcodeRegistry-ben megtörtént
             return; // Strict model: nem kerül be
         }
 
-        // ✅ Ha unique, regisztráljuk
-        BarcodeTable::instance().registerNew(pm.barcode, typeName(), pm.id);
         _data.append(pm);
-
-        // zEventINFO(QString("Product registered: %1 [%2]")
-        //                .arg(pm.name, pm.barcode));
     }
     persist();
 }
@@ -88,21 +83,20 @@ bool ProductRegistry::update(const ProductMaster& updated) {
     bool changed = false;
     ScopedPerThreadLock locker(static_cast<void*>(&_mutex), true);
 
+    auto& barcodeRegistry = BarcodeRegistry::instance();
+
     for (auto& pm : _data) {
         if (pm.id == updated.id) {
-            // 🔍 Ha változott a barcode, ellenőrizzük
+            // 🔍 Ha változott a barcode, kezeljük az életciklust
             if (pm.barcode != updated.barcode) {
-                if (!BarcodeTable::instance().checkUnique(updated.barcode, typeName(), updated.id)) {
-                    zWarning(QString("%3 barcode collision on update: %1 (%2)")
-                                 .arg(updated.barcode, updated.name, typeName()));
-                    // zEventWARN(QString("Product barcode ütközés update közben: %1 (%2)")
-                    //                .arg(updated.barcode, updated.name));
+                // A BarcodeRegistry::registerNew maga ellenőrzi a uniqueness-et és auditál
+                if (!barcodeRegistry.registerNew(updated.barcode, typeName(), updated.id)) {
+                    // Audit WARN már a BarcodeRegistry-ben megtörtént
                     return false;
                 }
-                // Nyugdíjazzuk a régi barcode‑ot
-                BarcodeTable::instance().retire(pm.barcode, typeName()+ " updated");
-                // Regisztráljuk az újat
-                BarcodeTable::instance().registerNew(updated.barcode, typeName(), updated.id);
+
+                // Nyugdíjazzuk a régi barcode-ot auditbarát módon
+                barcodeRegistry.retire(pm.barcode, typeName() + " updated");
             }
 
             pm = updated;   // teljes objektum cseréje
@@ -119,11 +113,11 @@ bool ProductRegistry::update(const ProductMaster& updated) {
     return changed;
 }
 
-
-
 bool ProductRegistry::remove(const QUuid& id) {
     bool removed = false;
     ScopedPerThreadLock locker(static_cast<void*>(&_mutex), true);
+
+    auto& barcodeRegistry = BarcodeRegistry::instance();
 
     for (int i = 0; i < _data.size(); ++i) {
         if (_data[i].id == id) {
@@ -132,7 +126,7 @@ bool ProductRegistry::remove(const QUuid& id) {
             removed = true;
 
             // 🔧 Barcode retire
-            BarcodeTable::instance().retire(code, typeName()+" deleted");
+            barcodeRegistry.retire(code, typeName() + " deleted");
             zEventINFO(QString("%2 removed, barcode retired: %1").arg(code, typeName()));
             break;
         }

@@ -12,6 +12,8 @@ message( "TARGET = "$$TARGI )
 DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += \
+    barcodes/registry/barcode_registry.cpp \
+    barcodes/repository/barcode_repository.cpp \
     common/registry/barcode_collision_helper.cpp \
     common/registry/barcode_table.cpp \
     common/registry/barcode_validator.cpp \
@@ -57,6 +59,9 @@ SOURCES += \
     ui/adapters/log_view_adapter.cpp
 
 HEADERS += \
+    barcodes/model/barcode_record.h \
+    barcodes/registry/barcode_registry.h \
+    barcodes/repository/barcode_repository.h \
     common/registry/barcode_collision_helper.h \
     common/registry/barcode_table.h \
     common/registry/barcode_validator.h \
@@ -65,6 +70,7 @@ HEADERS += \
     common/system/nameof.hpp \
     common/system/verbose_manager.h \
     common/utils/font_utils.h \
+    common/utils/optional_utils.h \
     common/utils/table_formatter.h \
     connections/connection_entity.h \
     connections/connection_registry.h \
@@ -152,6 +158,7 @@ DISTFILES += \
     run_4_ThreePhaseImport.txt \
     run_4_ValidationRules.txt \
     run_4_WordcodeTranslation.txt \
+    testdata/barcodes.csv \
     testdata/products.csv \
     testdata/needrules.csv \
     testdata/settings.ini

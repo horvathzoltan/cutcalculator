@@ -107,4 +107,5 @@ public:
     QString getNeedRuleCsvFile() const;
     QString getNeedCalculationCsvFile() const;
     QString getNeedCalculationDetailCsvFile() const;
+    QString getBarcodeCsvFile() const;
 };

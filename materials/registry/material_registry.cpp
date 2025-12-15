@@ -3,6 +3,7 @@
 #include "common/registry/barcode_table.h"
 #include "common/logger/event_logger.h"
 #include "common/system/verbose_manager.h"
+#include "barcodes/registry/barcode_registry.h"
 
 
 MaterialRegistry &MaterialRegistry::instance() {
@@ -48,20 +49,15 @@ const IdentifiableEntity* MaterialRegistry::findEntityById(const QUuid& id) cons
 
 
 bool MaterialRegistry::registerData(const MaterialMaster& material) {
-    // 🔍 Globális uniqueness check – fail fast, ha ütközés van
-    if (!BarcodeTable::instance().checkUnique(material.barcode, typeName(), material.id)) {
-        // ⚠️ Audit jelzés – nem kerül be az adat
-        zWarning(QString("Material barcode collision: %1 (%2)")
-                     .arg(material.barcode, material.name));
-        zEventWARN(QString("Material barcode ütközés: %1 (%2)")
-                       .arg(material.barcode, material.name));
+
+    auto& barcodeRegistry = BarcodeRegistry::instance();
+
+    // ✅ Ha unique, a BarcodeRegistry::registerNew maga ellenőrzi és auditál
+    if (!barcodeRegistry.registerNew(material.barcode, typeName(), material.id)) {
+        // Audit WARN már a BarcodeRegistry-ben megtörtént
         return false;
     }
 
-    // ✅ Ha unique, regisztráljuk a BarcodeTable-be és a registrybe
-    BarcodeTable::instance().registerNew(material.barcode,
-                                         typeName(),
-                                         material.id);
     _data.append(material);
 
     if(IS_VERBOSE_THIS()){

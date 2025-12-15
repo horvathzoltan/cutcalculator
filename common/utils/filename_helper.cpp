@@ -135,6 +135,17 @@ QString FileNameHelper::getNeedRuleCsvFile() const {
     return path;
 }
 
+/* Barcode */
+QString FileNameHelper::getBarcodeCsvFile() const {
+    QString path = _dataRoot.filePath("barcodes.csv");
+
+    if (!QFile::exists(path)) {
+        // fallback fejlesztéshez
+        path = _dataRoot_TEST.filePath("barcodes.csv");
+    }
+    return path;
+}
+
 
 QString FileNameHelper::getNeedCalculationCsvFile() const {
     return _dataRoot.filePath("needcalculations.csv");

@@ -8,14 +8,20 @@
 #include "materials/registry/material_registry.h"
 #include "products/repository/product_repository.h"
 #include "products/registry/product_registry.h"
-
 #include "needs/repository/need_rule_repository.h"
 #include "needs/registry/need_rule_registry.h"
+
+#include "barcodes/repository/barcode_repository.h"
+#include "barcodes/registry/barcode_registry.h"
 
 StartupStatus StartupManager::runStartupSequence() {
     StartupStatus ralColorStatus = initRalColors();
     if (!ralColorStatus.isSuccess())
         return ralColorStatus;
+
+    StartupStatus barcodeStatus = initBarcodeRegistry();
+    if (!barcodeStatus.isSuccess())
+        return barcodeStatus;
 
     StartupStatus materialStatus = initMaterialRegistry();
     if (!materialStatus.isSuccess())
@@ -31,6 +37,7 @@ StartupStatus StartupManager::runStartupSequence() {
 
     StartupStatus finalStatus = StartupStatus::success();
     finalStatus.addWarnings(ralColorStatus.warnings());
+    finalStatus.addWarnings(barcodeStatus.warnings());
     finalStatus.addWarnings(materialStatus.warnings());
     finalStatus.addWarnings(productStatus.warnings());
     finalStatus.addWarnings(needRuleStatus.warnings());
@@ -97,5 +104,16 @@ StartupStatus StartupManager::initNeedRuleRegistry() {
         zEventINFO(QString("📊 NeedRuleRegistry: %1 kapcsolat tárolva").arg(count));
     }
 
+    return StartupStatus::success();
+}
+
+StartupStatus StartupManager::initBarcodeRegistry() {
+    bool loaded = BarcodeRepository::loadFromCSV(BarcodeRegistry::instance());
+    if (loaded) {
+        zInfo(QString("📊 BarcodeRegistry: %1 rekord tárolva")
+                  .arg(BarcodeRegistry::instance().size()));
+    } else {
+        return StartupStatus::failure("⚠️ BarcodeRegistry: barcodes betöltése sikertelen.");
+    }
     return StartupStatus::success();
 }

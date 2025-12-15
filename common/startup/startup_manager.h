@@ -24,4 +24,5 @@ private:
     StartupStatus initProductRegistry();
     StartupStatus initRalColors();
     StartupStatus initNeedRuleRegistry();
+    StartupStatus initBarcodeRegistry();
 };

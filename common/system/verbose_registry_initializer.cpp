@@ -16,9 +16,10 @@ void registerAllVerbose() {
     auto& vm = VerboseManager::instance();
 
     vm.registerClass(QString::fromStdString(std::string(nameof::nameof_type<MaterialRegistry>())), false);
+    vm.registerClass(QString::fromStdString(std::string(nameof::nameof_type<BarcodeRegistry>())), false);
     vm.registerClass(QString::fromStdString(std::string(nameof::nameof_type<ProductRepository>())), false);
     vm.registerClass(QString::fromStdString(std::string(nameof::nameof_type<ProductRegistry>())), true);
-    vm.registerClass(QString::fromStdString(std::string(nameof::nameof_type<BarcodeTable>())), false);
+    //vm.registerClass(QString::fromStdString(std::string(nameof::nameof_type<BarcodeTable>())), false);
     vm.registerClass(QString::fromStdString(std::string(nameof::nameof_type<BarcodeValidator>())), true);
     vm.registerClass(QString::fromStdString(std::string(nameof::nameof_type<BarcodeCollisionHelper>())), false);
     vm.registerClass(QString::fromStdString(std::string(nameof::nameof_type<RegistryManager>())), false);

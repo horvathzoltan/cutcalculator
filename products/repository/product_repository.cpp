@@ -121,13 +121,13 @@ ProductRepository::loadProductRows(CsvImporter::FileContext& ctx) {
 
 // --- Entry Point ---
 bool ProductRepository::loadFromCSV(ProductRegistry& registry) {
-    const auto& helper = FileNameHelper::instance();
-    if (!helper.isInitialized()) {
+    const auto& fileNameHelper_instance = FileNameHelper::instance();
+    if (!fileNameHelper_instance.isInitialized()) {
         zWarning("❌ A FileNameHelper nincs inicializálva.");
         return false;
     }
 
-    const QString path = helper.getProductCsvFile(); // products.csv
+    const QString path = fileNameHelper_instance.getProductCsvFile(); // products.csv
     CsvImporter::FileContext ctx("Product import", path);
 
     const auto rows = loadProductRows(ctx);
