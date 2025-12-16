@@ -88,54 +88,116 @@ Lefuttatja a formulákat → NeedResult.
 
 Aggregálás: azonos ügyfél + termék + szín összevonása.
 
-🛠️ Implementációs terv View réteg (Qt UI)
+*************
+🟢 Rendben, Zoltán 🦎 — frissítsük az előző tervünket, hogy tükrözze a
+mostani irányt: NeedRule + NeedCalculation + NeedCalculationDetail egy
+közös layoutban, auditbarát validációval és ikonokkal a Cutting/Kitting
+sorokhoz.
 
-MaterialRequirementsView: Product ↔ Material lista.
+------------------------------------------------------------------------
 
-CalculationModesView: Product ↔ Mode lista.
+🔄 Aktualizált végrehajtható terv
 
-CalculationModeDetailView: Mode ↔ Material + formula lista.
+1️⃣ Adatmodellek
 
-Repository réteg
+-   NeedRule → ProductDefinition ↔ MaterialMaster (már kész).
 
-need_rule_repository.h/.cpp
+-   NeedCalculation → ProductDefinition ↔ CalculationMode
 
-need_calculation_repository.h/.cpp
+        struct NeedCalculation {
+            QUuid id;
+            QUuid productDefinitionId;
+            QString modeName; // pl. "falc", "glass"
+        };
 
-need_calculation_detail_repository.h/.cpp
+-   NeedCalculationDetail → NeedCalculation ↔ MaterialMaster + formula
 
-Service réteg
+        struct NeedCalculationDetail {
+            QUuid id;
+            QUuid needCalculationId;
+            QUuid materialId;
+            QString formula; // pl. "w-15", "fixed:2"
+        };
 
-need_calculator.h/.cpp: OrderLine + NeedRule + NeedCalculationDetail →
-NeedResult.
+2️⃣ Repository réteg
 
-Audit funkció
+-   need_calculation_repository.h/.cpp → CSV import/export a számítási
+    módokhoz.
+-   need_calculation_detail_repository.h/.cpp → CSV import/export a
+    formulákhoz.
+-   Audit: jelzés, ha hiányzik vagy hibás formula.
 
-Jelzés, ha hiányzik anyag, számítási mód vagy formula.
+3️⃣ Registry réteg
 
-AuditLogView: hibák listázása.
+-   NeedCalculationRegistry → CRUD számítási módokra.
+-   NeedCalculationDetailRegistry → CRUD formulákra.
+-   Validáció: formula nem üres, material létezik.
 
-📊 Példa folyamat OrderLine: Roletta, w=1000, h=500, qty=3.
+4️⃣ Service réteg
 
-Lekérjük NeedRule sorokat → tok, tengely, vászon, rugó, pálca.
+-   NeedCalculator
+    -   Input: OrderLine (pl. Roletta, w=1000, h=500, qty=3).
+    -   Lookup: NeedRule → anyagok, NeedCalculation → mód,
+        NeedCalculationDetail → formulák.
+    -   Kiértékelés: futtatja a formulákat → mennyiségek.
+    -   Output: CutRequest (⚙️ fogaskerék ikon) és KitRequest (📦 doboz
+        ikon).
+    -   Audit: jelzés, ha hiányzik formula vagy számítási mód.
 
-Lekérjük NeedCalculation sorokat → pl. „falc” mód.
+5️⃣ View réteg (Qt UI)
 
-Lekérjük NeedCalculationDetail sorokat → formulák.
+-   Layout:
+    -   Bal felső: NeedRules (MaterialRequirementsView).
+    -   Bal alsó: NeedCalculations (CalculationModesView).
+    -   Jobb oldal: NeedCalculationDetails (CalculationModeDetailView).
+-   Ikonok:
+    -   Cutting sorokhoz → ⚙️ fogaskerék.
+    -   Kitting sorokhoz → 📦 doboz.
+-   Tooltip: auditbarát magyarázat („Cutting request – vágási művelet”,
+    „Kitting request – összeállítási művelet”).
 
-Kiértékelés:
+6️⃣ Audit funkció
 
-Tengely: 1000-15 = 985 mm × 3
+-   Jelzés, ha:
+    -   Hiányzik számítási mód.
+    -   Hiányzik formula.
+    -   Formula hibás.
+-   AuditLogView → hibák listázása.
+-   Audit üzenetek központosítása (AuditMessages helper).
 
-Vászon: 1000-0 = 1000 mm × 3
+7️⃣ Példa folyamat
 
-Rugó: fixed:2 × 3 = 6 db
+-   OrderLine: Roletta, w=1000, h=500, qty=3.
+-   NeedRule → tok, tengely, vászon, rugó, pálca.
+-   NeedCalculation → "falc" mód.
+-   NeedCalculationDetail → formulák:
+    -   Tengely: "w-15" → 985 mm × 3.
+    -   Vászon: "w-0" → 1000 mm × 3.
+    -   Rugó: "fixed:2" → 6 db.
+    -   Pálca: "h-10" → 490 mm × 3.
+-   NeedCalculator → Cut list (⚙️) + Kitting list (📦).
+-   Audit: ha hiányzik formula → ⚠️ warning.
 
-Pálca: 500-10 = 490 mm × 3
+------------------------------------------------------------------------
 
-Eredmény: Cut list + Kitting list.
+✨ Röviden
 
-Audit: ha hiányzik formula → ⚠ figyelmeztetés.
+-   NeedRule már kész.
+-   Következő lépés: NeedCalculation és NeedCalculationDetail
+    bevezetése.
+-   UI: közös layout → bal fent anyagszükséglet, bal lent számítási
+    módok, jobb oldalon formulák.
+-   Service: NeedCalculator → CutRequest (⚙️) + KitRequest (📦).
+-   Audit: központosított üzenetek, hibák riportálása.
+
+🦎 Így a terv naprakész, végrehajtható, és a teljes pipeline (NeedRule →
+NeedCalculation → NeedCalculationDetail → NeedCalculator) auditbarát
+módon épül fel.
+
+👉 Szeretnéd, hogy a következő körben készítsek egy Qt layout skeleton
+kódot (QSplitter + három view), ami mutatja, hogyan nézne ki ez a panel?
+
+*************
 
 ✨ Összefoglalás NeedRule → terméktípus ↔ anyag kapcsolatok.
 

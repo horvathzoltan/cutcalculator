@@ -1,4 +1,4 @@
-#include "barcode_validator.h"
+#include "barcodes/validator//barcode_validator.h"
 #include "common/logger/event_logger.h"
 
 bool BarcodeValidator::checkAndRegister(const QString& code,
@@ -30,7 +30,7 @@ bool BarcodeValidator::checkAndRegister(const QString& code,
     }
 
     // Ha unique, megpróbáljuk bejegyezni
-    if (!br.registerNew(code, entityType, id)) {
+    if (!br.registerNew(code, entityType, id, name)) {
         // Elvileg ide nem kéne eljutni, de ha race vagy más anomália, legyen audit
         ctx.addError(ctx.currentLineNumber(),
                      QString("Failed to register barcode: %1").arg(code),

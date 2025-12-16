@@ -1,6 +1,5 @@
 #include "materials/registry/material_registry.h"
 #include "common/logger/logger.h"
-#include "common/registry/barcode_table.h"
 #include "common/logger/event_logger.h"
 #include "common/system/verbose_manager.h"
 #include "barcodes/registry/barcode_registry.h"
@@ -53,7 +52,7 @@ bool MaterialRegistry::registerData(const MaterialMaster& material) {
     auto& barcodeRegistry = BarcodeRegistry::instance();
 
     // ✅ Ha unique, a BarcodeRegistry::registerNew maga ellenőrzi és auditál
-    if (!barcodeRegistry.registerNew(material.barcode, typeName(), material.id)) {
+    if (!barcodeRegistry.registerNew(material.barcode, typeName(), material.id, material.name)) {
         // Audit WARN már a BarcodeRegistry-ben megtörtént
         return false;
     }

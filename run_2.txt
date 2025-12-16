@@ -57,7 +57,7 @@ Könyvtár dumpolás:
 
 ./sourcetotxt.sh ~/source/repos/CutCalculator/colors/ > masi2.txt
 
-./sourcetotxt.sh -d ~/source/repos/CutCalculator needrule_required_files.txt > masi2.txt
+./sourcetotxt.sh -d ~/source/repos/CutCalculator files.txt > masi2.txt
 
 split -l 5000 masi2.txt masi2_part_ --additional-suffix=.txt
 

@@ -5,9 +5,8 @@
 #include "materials/registry/material_registry.h"
 #include "products/repository/product_repository.h"
 #include "products/registry/product_registry.h"
-#include "common/registry/barcode_table.h"
-#include "common/registry/barcode_validator.h"
-#include "common/registry/barcode_collision_helper.h"
+#include "barcodes/validator/barcode_validator.h"
+#include "barcodes/helpers/barcode_collision_helper.h"
 #include "common/registry/registry_manager.h"
 #include "common/utils/table_formatter.h"
 

@@ -3,14 +3,12 @@
 #include <QFile>
 #include <QTextStream>
 
-#include <common/registry/barcode_table.h>
-
 #include "products/repository/product_repository.h"
 #include "products/registry/product_registry.h"
 #include "common/csv/csvimporter.h"
 #include "common/logger/logger.h"
 #include "common/utils/filename_helper.h"
-#include "common/registry/barcode_collision_helper.h"
+#include "barcodes/helpers/barcode_collision_helper.h"
 #include "common/system/verbose_manager.h"
 
 // --- Stage 1: Convert ---

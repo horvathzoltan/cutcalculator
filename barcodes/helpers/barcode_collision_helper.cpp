@@ -1,4 +1,4 @@
-#include "common/registry/barcode_collision_helper.h"
+#include "barcodes/helpers/barcode_collision_helper.h"
 #include "common/logger/event_logger.h"
 #include "common/registry/registry_manager.h"
 #include "common/utils/optional_utils.h"
@@ -40,6 +40,10 @@ BarcodeCollisionHelper::makeBarcodeCollisionError(const QString& myTypeName,
                 rec->entityId.has_value()
                     ? RegistryManager::instance().findEntity(rec->entityType, *rec->entityId)
                     : nullptr;
+
+            // const auto* thisEntity =
+            //     RegistryManager::instance().findEntityByBarcode(myTypeName, row.barcode);
+
 
             const QString status = formatStatus(*rec);
 

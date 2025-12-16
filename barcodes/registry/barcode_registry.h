@@ -46,7 +46,7 @@ public:
 
     // 🔍 Azonosító alapján keresés (audit kompatibilis)
     const IdentifiableEntity* findEntityById(const QUuid& id) const override;
-    bool registerNew(const QString &code, const QString &entityType, const QUuid &id);
+    bool registerNew(const QString &code, const QString &entityType, const QUuid &id, const QString& name);
     bool retire(const QString &code, const QString &reason);
 
     void persist() const;   // 🔧 Új: on-the-fly perzisztálás

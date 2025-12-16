@@ -18,7 +18,7 @@
 #include "materials/model/painting_mode.h"
 //#include "common/registry/barcode_table.h"
 //#include "common/registry/registry_manager.h"
-#include "common/registry/barcode_collision_helper.h"
+#include "barcodes/helpers/barcode_collision_helper.h"
 //#include "common/system/verbose_manager.h"
 
 // --- Stage 1: Convert ---

@@ -96,6 +96,17 @@ public:
         return nullptr;
     }
 
+    // registry_manager.h
+    // const IdentifiableEntity* findEntityByBarcode(const QString& typeName,
+    //                                               const QString& barcode) const {
+    //     IdentifiableRegistryBase* repo = findByTypeName(typeName);
+    //     if (repo) {
+    //         return repo->findEntityByBarcode(barcode); // minden registry implementálja
+    //     }
+    //     return nullptr;
+    // }
+
+
 private:
     RegistryManager() = default;
     QVector<RegistryBase*> repos;

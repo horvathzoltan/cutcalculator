@@ -5,6 +5,7 @@
 #include "barcodes/repository/barcode_repository.h"
 #include "common/utils/filename_helper.h"
 #include "common/utils/optional_utils.h"
+#include "barcodes/helpers/barcode_collision_helper.h"
 
 BarcodeRegistry& BarcodeRegistry::instance() {
     static BarcodeRegistry reg;
@@ -37,7 +38,8 @@ const IdentifiableEntity* BarcodeRegistry::findEntityById(const QUuid& id) const
 
 bool BarcodeRegistry::registerNew(const QString& code,
                                   const QString& entityType,
-                                  const QUuid& id)
+                                  const QUuid& id,
+                                  const QString& name)
 {
     if (auto* rec = const_cast<BarcodeRecord*>(findByCode(code))) {
         // Már létezik → hazatérés
@@ -47,8 +49,15 @@ bool BarcodeRegistry::registerNew(const QString& code,
         } else {
             // Ha már van entityId és más → ütközés
             if (rec->entityId != id) {
-                zWarning(QString("Barcode collision: %1 (%2)").arg(code, entityType));
-                zEventWARN(QString("Barcode ütközés: %1 (%2)").arg(code, entityType));
+                if (auto err = BarcodeCollisionHelper::makeBarcodeCollisionError(
+                        entityType,
+                        BarcodeCollisionHelper::RowInfo{ code, name },
+                        /* lineNumber */ 0)) // ha nincs CSV sor, adhatsz 0-t vagy -1-et
+                {
+                    // audit log – ugyanazt az üzenetet használjuk
+                    zWarning(err->errorMessage());
+                    zEventWARN(err->errorMessage());
+                }
                 return false;
             }
             return true; // ugyanaz az entitás → oké

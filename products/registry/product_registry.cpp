@@ -3,7 +3,6 @@
 #include "common/utils/filename_helper.h"
 #include "common/utils/scoped_per_thread_lock.h"
 #include "products/repository/product_repository.h"
-#include "common/registry/barcode_table.h"
 #include "common/logger/event_logger.h"
 #include "barcodes/registry/barcode_registry.h"
 
@@ -69,7 +68,7 @@ void ProductRegistry::insert(const ProductMaster& pm) {
         auto& barcodeRegistry = BarcodeRegistry::instance();
 
         // ✅ A BarcodeRegistry::registerNew maga ellenőrzi és auditál
-        if (!barcodeRegistry.registerNew(pm.barcode, typeName(), pm.id)) {
+        if (!barcodeRegistry.registerNew(pm.barcode, typeName(), pm.id, pm.name)) {
             // Audit WARN már a BarcodeRegistry-ben megtörtént
             return; // Strict model: nem kerül be
         }
@@ -90,7 +89,7 @@ bool ProductRegistry::update(const ProductMaster& updated) {
             // 🔍 Ha változott a barcode, kezeljük az életciklust
             if (pm.barcode != updated.barcode) {
                 // A BarcodeRegistry::registerNew maga ellenőrzi a uniqueness-et és auditál
-                if (!barcodeRegistry.registerNew(updated.barcode, typeName(), updated.id)) {
+                if (!barcodeRegistry.registerNew(updated.barcode, typeName(), updated.id, updated.name)) {
                     // Audit WARN már a BarcodeRegistry-ben megtörtént
                     return false;
                 }
