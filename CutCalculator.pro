@@ -24,6 +24,15 @@ SOURCES += \
     needs/registry/need_rule_registry.cpp \
     needs/view/material_picker_dialog.cpp \
     needs/view/material_requirements_view.cpp \
+    needscalculation/manager/calculation_mode_detail_manager.cpp \
+    needscalculation/manager/calculation_modes_manager.cpp \
+    needscalculation/registry/need_calculation_detail_registry.cpp \
+    needscalculation/registry/need_calculation_registry.cpp \
+    needscalculation/repository/need_calculation_detail_repository.cpp \
+    needscalculation/repository/need_calculation_repository.cpp \
+    needscalculation/service/need_calculator.cpp \
+    needscalculation/view/calculation_mode_detail_view.cpp \
+    needscalculation/view/calculation_modes_view.cpp \
     workbench/view/bom_workbench.cpp \
     colors/model/named_color.cpp \
     colors/registry/color_registry.cpp \
@@ -82,6 +91,17 @@ HEADERS += \
     needs/repository/need_rule_traits.h \
     needs/view/material_picker_dialog.h \
     needs/view/material_requirements_view.h \
+    needscalculation/manager/calculation_mode_detail_manager.h \
+    needscalculation/manager/calculation_modes_manager.h \
+    needscalculation/model/need_calculation.h \
+    needscalculation/model/need_calculation_detail.h \
+    needscalculation/registry/need_calculation_detail_registry.h \
+    needscalculation/registry/need_calculation_registry.h \
+    needscalculation/repository/need_calculation_detail_repository.h \
+    needscalculation/repository/need_calculation_repository.h \
+    needscalculation/service/need_calculator.h \
+    needscalculation/view/calculation_mode_detail_view.h \
+    needscalculation/view/calculation_modes_view.h \
     workbench/view/bom_workbench.h \
     colors/model/named_color.h \
     colors/registry/color_registry.h \
@@ -155,6 +175,7 @@ DISTFILES += \
     run_4_RegistryManager.txt \
     run_4_ThreePhaseImport.txt \
     run_4_ValidationRules.txt \
+    run_4_WidgetGeometrySettings.txt \
     run_4_WordcodeTranslation.txt \
     testdata/barcodes.csv \
     testdata/products.csv \

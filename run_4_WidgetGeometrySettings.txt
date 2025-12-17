@@ -1,0 +1,92 @@
+🟢 Rendben, Zoltán 🦎 — frissítsük a terveinket az eddig megbeszéltek
+alapján, hogy a splitterek és ablakok állapotkezelése auditbarát,
+képernyőfüggetlen és önmagát gyógyító legyen.
+
+------------------------------------------------------------------------
+
+📋 Követelményspecifikáció (frissített)
+
+-   Splitter állapotok:
+    -   Mentés arányosan (százalékban), nem bináris blobként.
+    -   Példa: main_splitter_state=70,30 → bal panel 70%, jobb panel
+        30%.
+    -   Több gyerek esetén lista: 50,30,20.
+-   Ablak geometriák:
+    -   Mentés százalékban a képernyőhöz viszonyítva (x%, y%, w%, h%).
+    -   Példa: window_geometry=10%,10%,80%,80%.
+    -   Így mindig arányosan újraméretezhető.
+-   Screen méret mentése:
+    -   Leálláskor elmentjük az aktuális képernyő méretet (pl.
+        screen_size=1920x1080).
+    -   Induláskor összevetjük a mentettel.
+    -   Ha eltérés van → log + újraméretezés.
+-   Futás közbeni detektálás:
+    -   QScreen::geometryChanged esemény figyelése.
+    -   Ha változik → ugyanaz a funkció fut, mint induláskor.
+-   Audit log:
+    -   Minden mentés és visszaállítás explicit logolva van (zEventINFO,
+        zEventWARN).
+    -   Példa: "✅ Splitter state saved: 70,30" vagy
+        "⚠️ Invalid geometry, fallback 60% screen".
+
+------------------------------------------------------------------------
+
+⚙️ Funkcionális specifikáció (frissített)
+
+-   Mentéskor:
+    -   Splitter → sizes() → arányos lista → string.
+    -   Ablak → geometry() → screen méret → százalékos értékek.
+    -   Screen méret → QScreen::size() → string.
+-   Visszaállításkor:
+    -   Splitter → string parse → setSizes().
+    -   Ablak → százalékos értékek × aktuális screen méret →
+        setGeometry().
+    -   Screen méret összevetés → ha változott, újraszámolás.
+
+------------------------------------------------------------------------
+
+🛠️ Implementációs terv
+
+1.  SettingsStore/Manager bővítése
+    -   Új kulcs: screen_size.
+    -   Getter/setter százalékos ablakgeometriára.
+    -   Getter/setter arányos splitter állapotra.
+2.  BOMWorkbench módosítása
+    -   saveState() → splitter arányok + ablak százalékos geometriák +
+        screen méret.
+    -   restoreState() → összevetés + újraszámolás.
+3.  Event wiring
+    -   QScreen::geometryChanged → hívja az adjustWindowGeometry()
+        függvényt.
+    -   Induláskor is hívjuk ugyanezt, ha screen változott.
+
+------------------------------------------------------------------------
+
+📑 Példa settings.ini (emberbarát)
+
+    [General]
+    current_tab_index=3
+    datapath=/home/zoli/CutData
+    main_splitter_state=70,30
+    left_vertical_splitter_state=60,40
+    product_types_splitter_state=50,50
+    product_tree_header_state=200,300,400
+    window_geometry=10%,10%,80%,80%
+    screen_size=1920x1080
+
+------------------------------------------------------------------------
+
+✨ Röviden
+
+-   Splitterek: arányosan mentve.
+-   Ablakok: százalékban a screenhez képest.
+-   Screen méret: mentve, induláskor összevetve.
+-   Audit log minden lépésnél.
+-   Futás közben és induláskor ugyanaz a önmagát gyógyító logika fut.
+
+🦎 Szaladgyík: így a rendszer mindig tudja, ha a képernyő változik, és
+az ablakok/splitterek sosem fognak eltűnni, hanem arányosan
+újraméreteződnek.
+
+Szeretnéd, hogy adjak egy konkrét adjustWindowGeometry() implementációt,
+ami százalékos értékekből számolja újra az ablakot?

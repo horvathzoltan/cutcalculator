@@ -110,6 +110,7 @@ class SettingsManager {
         static inline const auto CurrentTabIndex      = "current_tab_index";
         static inline const auto ProductTreeHeaderState      = "product_tree_header_state";
         static inline const auto ProductTypesSplitterState      = "product_types_splitter_state";
+        static inline const auto LeftVerticalSplitterState      = "left_vertical_splitter_state";
 
     };
 
@@ -187,6 +188,15 @@ public:
 
     void setProductTypesSplitterState(const QByteArray& state) {
         _store.setValue(Keys::ProductTypesSplitterState, state);
+    }
+
+
+    QByteArray leftVerticalSplitterState() const {
+        return _store.value(Keys::LeftVerticalSplitterState).toByteArray();
+    }
+
+    void setLeftVerticalSplitterState(const QByteArray& state) {
+        _store.setValue(Keys::LeftVerticalSplitterState, state);
     }
 private:
     SettingsManager();

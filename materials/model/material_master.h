@@ -33,5 +33,5 @@ struct MaterialMaster : public IdentifiableEntity {
     PaintingMode paintingMode = PaintingMode::Paintable; // jelzi, ha az anyag festhető
     CuttingMode cuttingMode = CuttingMode::Length; // 🔧 Alapértelmezés: szálhossz vágás
 
-    QString comment;       // opcionális, UI-ba is jó    
+    QString comment;       // opcionális, UI-ba is jó
 };

@@ -1,36 +1,213 @@
-📌 BOMWorkbench implementációs terv
+Bom workbench requirements
 
-1.  Könyvtárstruktúra előkészítése
-    -   Hozz létre egy workbench/view/ könyvtárat.
-    -   Ide kerül a bom_workbench.h/.cpp.
-2.  Alap osztály létrehozása
-    -   class BOMWorkbench : public QWidget.
-    -   Tagok: QSplitter, ProductTreeView, ProductTreeManager, QToolBar,
-        QWidget* rightPanel.
-3.  UI skeleton felépítése
-    -   QVBoxLayout → toolbar + splitter.
-    -   Splitter bal oldal: ProductTreeView.
-    -   Splitter jobb oldal: placeholder panel (később anyagszükséglet +
-        számítási mód).
-4.  Állapotkezelés
-    -   restoreState() → splitter + header állapot visszaállítása
-        SettingsManager‑ből.
-    -   saveState() → állapot mentése bezáráskor.
-5.  Toolbar műveletek
-    -   CRUD akciók: új kategória, új típus, átnevezés, törlés.
-    -   Összekötés a ProductTreeManager slotjaival.
-6.  Jobb panel kibővítése
-    -   QTabWidget két füllel:
-        -   Anyagszükséglet lista (MaterialRequirementsView).
-        -   Számítási módok lista (CalculationModesView).
-    -   Ezek később külön widgetek lesznek, saját állapotkezeléssel.
-7.  Integráció a MainWindow‑ba
-    -   ui->tabWidget->addTab(new BOMWorkbench(ui->tabWidget), tr("BOM Workbench"));
-    -   closeEvent → saveState() meghívása.
-8.  Audit log integráció
-    -   Minden CRUD és állapotváltozás zEvent‑tel naplózva.
-    -   Például: „💾 BOMWorkbench splitter state saved”.
-9.  Következő bővítések
-    -   Anyagszükséglet és számítási módok adatmodellje
-        (MaterialRegistry, CalculationRuleRegistry).
-    -   Jobb panel dinamikus frissítése a fa kiválasztott eleméhez.
+Az új BOMWorkbench a NeedRule + NeedCalculation + NeedCalculationDetail
+hármast egy közös, auditbarát munkafelületen jeleníti meg. Cél: egy
+terméktípushoz tartozó anyagok, számítási módok és formulák egyszerre,
+átláthatóan kezelhetők legyenek.
+
+-   Cél: Egy panelen, egymásra rálátva szerkeszthető legyen:
+    -   NeedRules (ProductDefinition ↔ MaterialMaster),
+    -   NeedCalculations (ProductDefinition ↔ ModeName),
+    -   NeedCalculationDetails (NeedCalculation ↔ MaterialMaster +
+        formula).
+-   Layout: Bal oldali függőleges splitteren két lista (NeedRules felül,
+    NeedCalculations alul), jobb oldalon a kiválasztott mód részletei
+    (NeedCalculationDetails).
+-   Ikonok:
+    -   Cutting sorok: ⚙️ fogaskerék,
+    -   Kitting sorok: 📦 doboz.
+-   Audit: Minden CRUD művelet naplózva; hiányzó/hibás formula és
+    hiányzó mód jelzése.
+-   Állapotkezelés: Splitter méretek, oszlopszélességek, kiválasztások
+    mentése és visszaállítása.
+-   Konzisztencia: ProductDefinition azonosítás következetesen
+    (productDefinitionId).
+
+------------------------------------------------------------------------
+
+Functional specification
+
+Panel elrendezés és viselkedés
+
+-   Bal felső (NeedRules):
+    -   Lista: ProductDefinition ↔ MaterialMaster kapcsolatok.
+    -   Műveletek: Add/Remove kapcsolat.
+    -   Audit: Jelzés, ha Material nem található (runtime), vagy
+        duplikált kapcsolat próbálkozik.
+-   Bal alsó (NeedCalculations):
+    -   Lista: ProductDefinition ↔ modeName kapcsolatok.
+    -   Műveletek: Add/Remove/Rename mód.
+    -   Audit: Figyelmeztetés, ha nincs aktív mód a termékhez.
+-   Jobb oldal (NeedCalculationDetails):
+    -   Lista: NeedCalculation ↔ Material + formula.
+    -   Műveletek: Add/Remove, formula szerkesztés.
+    -   Audit: Hibás vagy hiányzó formula jelzése.
+
+Ikonok és vizuális jelzések
+
+-   Cutting jelölés: ⚙️ a vágással érintett anyagok sorain.
+-   Kitting jelölés: 📦 a kitting (összeállítás) sorokon.
+-   Tooltip:
+    -   Cutting: „Cutting request – vágási művelet”
+    -   Kitting: „Kitting request – összeállítási művelet”
+-   Hibás sorok: piros háttér és magyarázó tooltip (formula hiány/hiba,
+    törölt anyag).
+
+Interakciók
+
+-   Termékválasztás (bal fa vagy külső kiválasztó):
+    -   NeedRules és NeedCalculations listák szűrve a kiválasztott
+        productDefinitionId-re.
+    -   NeedCalculationDetails dinamikusan frissül a kiválasztott mód
+        szerint.
+-   Módválasztás: a jobb oldali panel az adott mód anyag+formula
+    listáját mutatja.
+-   CRUD műveletek:
+    -   NeedRule: Add/Remove.
+    -   NeedCalculation: Add/Remove/Rename.
+    -   NeedCalculationDetail: Add/Remove/Edit formula.
+-   Clipboard convenience: aktuális product barcode másolása
+    kiválasztáskor.
+
+Audit és állapot
+
+-   CRUD logok: minden változás zEventINFO/WARN/ERROR.
+-   Import/Export: CSV szinkron a három kapcsolattáblához.
+-   Állapotmentés: splitter méretek, oszlopok, utolsó kiválasztások.
+
+------------------------------------------------------------------------
+
+Implementation plan
+
+Files and structure
+
+-   Workbench:
+    -   workbench/view/bom_workbench.h/.cpp — fő konténer, splitter és
+        toolbar.
+-   Needs (már megvan):
+    -   needs/view/material_requirements_view.h/.cpp
+    -   needs/manager/material_requirements_manager.h/.cpp
+-   Needscalculation (új könyvtár):
+    -   needscalculation/model/need_calculation.h
+    -   needscalculation/model/need_calculation_detail.h
+    -   needscalculation/registry/need_calculation_registry.h/.cpp
+    -   needscalculation/registry/need_calculation_detail_registry.h/.cpp
+    -   needscalculation/repository/need_calculation_repository.h/.cpp
+    -   needscalculation/repository/need_calculation_detail_repository.h/.cpp
+    -   needscalculation/view/calculation_modes_view.h/.cpp
+    -   needscalculation/view/calculation_mode_detail_view.h/.cpp
+    -   needscalculation/manager/calculation_modes_manager.h/.cpp
+    -   needscalculation/manager/calculation_mode_detail_manager.h/.cpp
+    -   needscalculation/service/need_calculator.h/.cpp — CutRequest
+        ⚙️ + KitRequest 📦 generálás.
+
+  Sources: a QMake/CMake listákba a needscalculation könyvtár új
+  fájljait vedd fel; a meglévő needs fájlok maradnak változatlanul.
+
+Step-by-step tasks
+
+1.  Model skeletonok
+    -   NeedCalculation: id, productDefinitionId, modeName.
+    -   NeedCalculationDetail: id, needCalculationId, materialId,
+        formula.
+2.  Registryk (CRUD + audit):
+    -   NeedCalculationRegistry:
+        -   Insert/Remove/Rename módok; validáció: üres modeName
+            tiltása, duplikáció tiltása a terméken belül.
+        -   Signals a view felé (opcionális).
+    -   NeedCalculationDetailRegistry:
+        -   Insert/Remove/Update formula; validáció: material létezés,
+            formula nem üres.
+        -   Helper: formula audit (pl. egyszerű szintaxis ellenőrzés:
+            „w-”, „h-”, „fixed:”).
+3.  Repositoryk (CSV I/O):
+    -   need_calculation_repository:
+        -   Headers: productDefinitionId, modeName.
+        -   Load/Save: audit hibák FileContext-ben.
+    -   need_calculation_detail_repository:
+        -   Headers: needCalculationId, materialBarcode, formula.
+        -   Load/Save: materialBarcode → lookup MaterialMaster.
+4.  Viewok:
+    -   CalculationModesView:
+        -   Columns: Mode name, count of details.
+        -   Actions: Add, Remove, Rename.
+        -   Selection signal: current modeId changed.
+    -   CalculationModeDetailView:
+        -   Columns: Material (name+barcode), Formula, Type icon
+            (⚙️/📦).
+        -   Actions: Add Material+Formula, Remove, Edit Formula.
+        -   Visuals: piros háttér formulahiba esetén; tooltip
+            magyarázat.
+5.  Manager glue:
+    -   CalculationModesManager: összeköti a view-t a
+        registry/repository-val; termékváltáskor listát frissít.
+    -   CalculationModeDetailManager: módváltásra részletek frissítése;
+        CRUD végrehajtás, audit és persist.
+6.  BOMWorkbench layout:
+    -   LeftSplit (vertical): top=MaterialRequirementsView,
+        bottom=CalculationModesView.
+    -   Right pane: CalculationModeDetailView.
+    -   Toolbar:
+        -   NeedRule: ➕/🗑.
+        -   NeedCalculation: ➕/🗑/✏️.
+        -   NeedCalculationDetail: ➕/🗑/✏️ (formula).
+    -   State: restore/save splitter arányok és oszlopszélességek
+        SettingsManager-rel.
+7.  Icons and tooltips:
+    -   Resource: :/icons/gear.png → ⚙️, :/icons/box.png → 📦 (vagy
+        Unicode fallback).
+    -   Tooltips: Cutting/Kitting magyarázat soronként.
+8.  NeedCalculator service:
+    -   Input: OrderLine{productDefinitionId, w, h, qty, color?}.
+    -   Flow:
+        -   NeedRule: anyagok listája a termékhez.
+        -   NeedCalculation: kiválasztott mód (explicit vagy default).
+        -   NeedCalculationDetail: formulák lekérése az anyagokra.
+        -   Evaluate:
+            -   w-15 → mm, h-10 → mm, fixed:2 → db.
+        -   Output:
+            -   CutRequest: profilok, hosszok, darabszámok ⚙️.
+            -   KitRequest: darabos komponensek 📦.
+        -   Audit: hiányzó formula → ⚠️; nem található material → ⚠️.
+9.  Audit üzenetek:
+    -   Egységes helper:
+        -   invalidModeName(name)
+        -   duplicateMode(productDefinitionId, name)
+        -   missingFormula(materialBarcode)
+        -   invalidFormula(materialBarcode, formula)
+        -   materialNotFound(barcode)
+    -   zEventINFO/WARN: minden lényegi művelet és hiba naplózva.
+
+------------------------------------------------------------------------
+
+Testing plan
+
+-   Smoke: termékválasztásra mindhárom panel frissül; módválasztás
+    részleteket hoz.
+-   CRUD:
+    -   Add/Remove NeedRule; CSV mentés és visszatöltés.
+    -   Add/Remove/Rename NeedCalculation; duplikáció tiltás
+        ellenőrzése.
+    -   Add/Remove/Edit NeedCalculationDetail; formula validáció és
+        vizualizáció.
+-   Formula evaluation: w/h/fixed minták; hibás inputra audit warning.
+-   Icons: ⚙️/📦 konzisztens megjelenés és tooltip.
+-   State: splitter és oszlopok visszaállnak újraindítás után.
+
+------------------------------------------------------------------------
+
+Rollout checklist
+
+-   Könyvtár létrehozása: needscalculation/…
+-   Model+Registry+Repository: alap skeletonok és build integráció.
+-   Views+Managers: CalculationModesView/DetailView és a két manager
+    összekötése.
+-   Workbench frissítés: új layout, toolbar akciók, state restore/save.
+-   Icons: resource hozzáadása; tooltip-ek.
+-   Audit: helper üzenetek és zEvent integráció.
+-   CSV: minta fájlok és tesztadatok (módok, formulák).
+
+🦎 Ezzel a tervvel a BOMWorkbench nem csak átlátható és konzisztens
+lesz, hanem auditbarát és fejleszthető: a felhasználó egyben látja az
+anyaglistát, a számítási módokat és a formulákat, miközben a rendszer
+minden lépést naplóz és vizuálisan jelzi a cutting/kitting különbséget.

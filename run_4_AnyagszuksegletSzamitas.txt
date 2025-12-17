@@ -334,3 +334,12 @@ napháló  típusok és anyagszükségletek:
   TetőtériRugó;ROL-TR;0;;Spring;CM3;Steel;;;Piece;None
 
 ────────────────────────────────────────────
+
+roletta - rugós:(w*h)60*100
+
+tengely 57mm -> levonás= w-3.0mm
+vászon 56mm -> levonás= w-4.0mm
+alsópálca 57,3mm -> levonás= w-2,7
+záróléc
+tok
+────────────────────────────────────────────

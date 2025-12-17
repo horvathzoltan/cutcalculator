@@ -5,8 +5,6 @@ adj egy tervet lépésenként - snippetet régi és új kóddal, +/‑ jelek né
 adj snippetet régi és új kóddal, +/‑ jelek nélkül, külön blokkban
 
 
-
-
 állapottáblánkat frissítsük, egészítsük ki a mai nap eredményeivel és ötleteivel,
 vezessük a státuszbeli változásokat - ami készen lett azt jelöljük készre - 
 de ne töröljünk és ne vonjunk össze semmit!
@@ -17,14 +15,18 @@ az 📊 Idővonalas roadmap
 ✨ Röviden
 majd az alábbi bontásban:
 a 🚀 Sprint fókusz (🔥 SOS pontokkal), a 📌 Mai eredmények és az 👉 Holnap fókusz.
+emoji‑készlet státuszokra
+📐 = Tervezés
+🚧 = Folyamatban (implementáció, de még nem tesztelt)
+✅ = Kész
+🔥 = SOS / Tűzoltás
+💡 = Új ötlet
 
 Példa prompt:
 Adj egy teljes implementációt (C++20, Qt6.10) a fent szóban forgó komponensekről (osztály, függvények, stb.).
-Használj kommenteket és dockommenteket hunglish stílusban (magyar + angol keverve), mert nekem az a könnyebb.
+Használj kommenteket és dockommenteket hunglish stílusban, de ne írd oda kommentben, hogy hunglish.
 Adj javaslatokat az elnevezésre, a fájlok elhelyezésére a projektben, és az integrációra a jelenlegi programba.
-
 A fájlnevek kövessék a projekt névkonvencióját (snake_case, pl. registry_base.h, registry_manager.h).
-
 **Fontos:** legelőször csak azoknak a fájloknak a listáját add meg (files.txt‑be másolható, soronként egy fájl), amelyek tartalmát meg kell ismerned a teljes implementációhoz.
 Ne adj még kódot, csak a fájlneveket.
 

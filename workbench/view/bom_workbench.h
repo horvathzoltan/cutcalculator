@@ -3,69 +3,75 @@
 #include <QWidget>
 #include <QSplitter>
 #include <QToolBar>
-#include <QTabWidget>
 #include <QVBoxLayout>
 
 #include "needs/view/material_requirements_view.h"
 #include "products/view/product_tree_view.h"
 #include "products/view/product_tree_manager.h"
+#include "needscalculation/view/calculation_modes_view.h"
+#include "needscalculation/view/calculation_mode_detail_view.h"
+#include "needs/manager/material_requirements_manager.h"
+#include "needscalculation/manager/calculation_modes_manager.h"
+#include "needscalculation/manager/calculation_mode_detail_manager.h"
 
 /**
  * @class BOMWorkbench
- * @brief Bill of Materials Workbench – anyagszükséglet-összeállító munkapad.
+ * @brief Bill of Materials Workbench – anyagszükséglet + számítási módok + formulák közös munkapad.
  *
- * Központi elem: a terméktípus-fa (bal panel), amelyhez BOM komponensek társulnak (jobb panel).
+ * Új layout:
  * - Bal oldal: ProductTreeView + ProductTreeManager (CRUD, drag&drop).
- * - Jobb oldal: QTabWidget a BOM-hoz kapcsolódó nézetekhez:
- *      - "Anyagszükséglet" (placeholder jelenleg)
- *      - "Számítási módok" (placeholder jelenleg)
- * - Állapotkezelés: splitter és fa header állapot mentése és visszaállítása.
+ * - Jobb oldal: fő splitter (horizontal):
+ *      - Bal vertical splitter:
+ *          - Felső: MaterialRequirementsView (NeedRules)
+ *          - Alsó: CalculationModesView (NeedCalculations)
+ *      - Jobb: CalculationModeDetailView (NeedCalculationDetails)
  *
- * Elhelyezés a projektben:
- * - Mivel átível a products törzsadatokon, a workbench/ névtér alá kerül.
- * - Javasolt útvonal: workbench/view/bom_workbench.h/.cpp
- *   (Ha a .pro "bom_workbench/view"-t vár, azt egységesítsd a buildhez.)
- *
- * Integráció:
- * - A MainWindow tabjai közé illeszthető egy külön fülön ("BOM Workbench").
- * - A jelenlegi Product Types tab kiváltható vele, vagy ideiglenesen párhuzamosan futtatható.
+ * Állapotkezelés: splitter és fa header állapot mentése és visszaállítása.
+ * Integráció: MainWindow tabjai közé illeszthető külön fülön ("BOM Workbench").
  */
 class BOMWorkbench : public QWidget {
     Q_OBJECT
 public:
     explicit BOMWorkbench(QWidget* parent = nullptr);
 
-    /**
-     * @brief Visszaállítja a splitter és a fa header állapotát a SettingsManager-ből.
-     */
+    /// Visszaállítja a splitter és a fa header állapotát a SettingsManager-ből.
     void restoreState();
 
-    /**
-     * @brief Elmenti a splitter és a fa header állapotát a SettingsManager-be.
-     */
+    /// Elmenti a splitter és a fa header állapotát a SettingsManager-be.
     void saveState();
 
 private:
     // UI váz
     QVBoxLayout* _layout = nullptr;
-    //QToolBar* _toolbar = nullptr;
-    QSplitter* _splitter = nullptr;
+    QSplitter* _splitter = nullptr;              // fő horizontal splitter (bal fa + jobb panel)
+    QSplitter* _rightMainSplitter = nullptr;     // jobb oldali horizontal splitter
+    QSplitter* _leftVerticalSplitter = nullptr;  // bal oldali vertical splitter (NeedRules + Modes)
 
     // Bal oldal: terméktípus-fa
     ProductTreeView* _treeView = nullptr;
     ProductTreeManager* _treeManager = nullptr;
 
-    // Jobb oldal: BOM nézetek (placeholder)
-    QTabWidget* _rightTabs = nullptr;
-    QWidget* _materialsTab = nullptr;    // "Anyagszükséglet"
-    QWidget* _calcModesTab = nullptr;    // "Számítási módok"
+    // Jobb oldal: három view
+    MaterialRequirementsView* _matView = nullptr;
+    CalculationModesView* _modesView = nullptr;
+    CalculationModeDetailView* _detailView = nullptr;
 
-    QAction* _addMaterialAction = nullptr;
+    // Managerek
+    MaterialRequirementsManager* _matManager = nullptr;
+    CalculationModesManager* _modesManager = nullptr;
+    CalculationModeDetailManager* _detailManager = nullptr;
+
+    // Toolbars (opcionális)
+    QToolBar* _treeToolbar = nullptr;
+    QToolBar* _matToolbar = nullptr;
+    QToolBar* _modesToolbar = nullptr;
+    QToolBar* _detailsToolbar = nullptr;
 
     // Belső segédek
-    void buildToolbar();
     void buildLeftPanel();
     void buildRightPanel();
-    QToolBar *buildTreeToolbar(QWidget *parent);
-    QToolBar *buildMaterialToolbar(QWidget *parent, MaterialRequirementsView *mat_view);
+    QToolBar* buildTreeToolbar(QWidget* parent);
+    QToolBar* buildMaterialToolbar(QWidget* parent, MaterialRequirementsView* mat_view);
+    QToolBar* buildModesToolbar(QWidget* parent, CalculationModesView* modes_view);
+    QToolBar* buildDetailsToolbar(QWidget* parent, CalculationModeDetailView* detail_view);
 };

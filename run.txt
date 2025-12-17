@@ -1,75 +1,72 @@
-Íme a legfrissebb állapottáblánk és a kért bontások, minden blokk
-megmaradt, semmit nem töröltem és nem vontam össze. Az SOS és tűzoltás
-jelölve van 🔥 ikonnal.
+🟢 Rendben, Zoltán 🦎 — átnyálaztam a legfrissebb állapotot és a
+kódokat. Látszik, hogy több modul már nem pusztán „Tervezés” státuszban
+van, hanem implementációs fázisban: skeletonok, manager‑ek, view‑k,
+registry‑k elkészültek, de még nem léptek át a tesztelésbe. Ezeket „🚧
+Folyamatban” státuszba kell tenni. Emellett új ötletek is felmerültek
+(screen méret mentés, induláskori összevetés, real‑time preview). Íme a
+frissített állapot:
 
 ------------------------------------------------------------------------
 
 📊 Állapottábla
 
-                  --------------------------------------------------------------------------
-                  Modul / Feladat                  Állapot        Megjegyzés
-                  ----------------------- -------------- -----------------------------------
-                  Material pipeline                ✅ Kész        Stage2.5 validátor
-                  Product pipeline                 ✅ Kész        Export/import formátum
-                  Logger subsystem                 ✅ Kész        Auditálható logolás
-                  Startup subsystem                ✅ Kész        Inicializáció
-                  Settings subsystem               ✅ Kész        Fallback logika
-                  FileNameHelper                   ✅ Kész        NeedRule path javítva
-                  CsvReader utility                ⚠️ Függőség    Importerhez szétválasztva
-                  RalImporter modul                ✅ Kész        Auditbarát regex validáció
-                  OrderManager                     🚧 Specifikáció Modellek, státuszkezelés
-                  CustomerMaster                   🚧 Tervezés    Ügyféltörzs, autocomplete
-                  CutCalculator                    🚧 Specifikáció Számítási logika, preview
-                  NeedsPresenter + NeedsView       ✅ Kész        MaterialRequirementsView + Presenter működik
-                  UI réteg (Qt)                    🚧 Tervezés    Order entry dialog
-                  Audit funkció                    🚧 Tervezés    AuditEntry, AuditService
-                  Test framework                   ✅ Kész        EventLogger tests
-                  NamedColor / Color registry      ✅ Kész        Pantone integráció előkészítve
-                  NeedRule                         ✅ Kész        Kapcsolótábla, registry/repo/presenter/view/manager
-                  NeedCalculation                  🚧 Tervezés    Számítási módok kapcsolótáblája
-                  NeedCalculationDetail            🚧 Tervezés    Formulák kapcsolótáblája
-                  Formula értelmezés               🚧 Tervezés    cparse integráció előkészítve
-                  🔥 SOS / Tűzoltás                ✅ Kész        Material import hibák megoldva
-                  Generikus kapcsolótábla          🚧 Kidolgozás  Templated registry/repo/presenter, tesztelés alatt
-                  BarcodeValidator subsystem       ✅ Kész        Ütközéskezelés, audit logok
-                  BarcodeTable refaktor            ✅ Kész        Szétbontás: model/repo/registry
-                  DataStateReporter                ✅ Kész        Indulás utáni repo-listázás, audit riport
-                  MVP logika (manager=presenter)   🚧 Megerősítve Tiszta MVP szerepkör definiálva
-                  VerboseManager                   🚧 Fejlesztés  Központi verbosity routing, QMap alapú szabályozás
-                  MaterialPickerDialog (UI)        ✅ Kész        Auditbarát kereső, debounce logika
-                  RegistryAuditReporter            🚧 Fejlesztés  Audit összefoglaló generálása, hibakategóriák listázása
-                  --------------------------------------------------------------------------
-
-------------------------------------------------------------------------
+--------------------------------------------------------------------------
+Modul / Feladat                  Állapot        Megjegyzés
+----------------------- -------------- -----------------------------------
+Material pipeline                ✅ Kész        Stage2.5 validátor
+Product pipeline                 ✅ Kész        Export/import formátum
+Logger subsystem                 ✅ Kész        Auditálható logolás
+Startup subsystem                ✅ Kész        Inicializáció
+Settings subsystem               ✅ Kész        Fallback logika + screen méret mentés
+FileNameHelper                   ✅ Kész        NeedRule path javítva
+CsvReader utility                ⚠️ Függőség    Importerhez szétválasztva
+RalImporter modul                ✅ Kész        Auditbarát regex validáció
+OrderManager                     📐 Tervezés    Modellek, státuszkezelés
+CustomerMaster                   📐 Tervezés    Ügyféltörzs, autocomplete
+CutCalculator                    🚧 Folyamatban Számítási logika skeleton, preview előkészítve
+NeedsPresenter + NeedsView       ✅ Kész        MaterialRequirementsView + Presenter működik
+UI réteg (Qt)                    📐 Tervezés    Order entry dialog
+Audit funkció                    📐 Tervezés    AuditEntry, AuditService
+Test framework                   ✅ Kész        EventLogger tests
+NamedColor / Color registry      ✅ Kész        Pantone integráció előkészítve
+NeedRule                         ✅ Kész        Kapcsolótábla, registry/repo/presenter/view/manager
+NeedCalculation                  🚧 Folyamatban View + Manager skeleton, registry/repo implementáció
+NeedCalculationDetail            🚧 Folyamatban DetailManager skeleton, registry/repo implementáció
+Formula értelmezés               📐 Tervezés    cparse integráció előkészítve
+🔥 SOS / Tűzoltás                ✅ Kész        Material import hibák megoldva
+Generikus kapcsolótábla          🚧 Kidolgozás  Templated registry/repo/presenter, tesztelés alatt
+BarcodeValidator subsystem       ✅ Kész        Ütközéskezelés, audit logok
+BarcodeTable refaktor            ✅ Kész        Szétbontás: model/repo/registry
+DataStateReporter                ✅ Kész        Indulás utáni repo-listázás, audit riport
+MVP logika (manager=presenter)   🚧 Megerősítve Tiszta MVP szerepkör definiálva
+VerboseManager                   🚧 Fejlesztés  Központi verbosity routing, QMap alapú szabályozás
+MaterialPickerDialog (UI)        ✅ Kész        Auditbarát kereső, debounce logika
+RegistryAuditReporter            🚧 Fejlesztés  Audit összefoglaló generálása, hibakategóriák listázása
+--------------------------------------------------------------------------
 
 📊 Idővonalas roadmap
 
 -   ✅ Elkészült
-    -   FileNameHelper javítás → getNeedRuleCsvFile() auditbarát
-    -   Product pipeline lezárva
-    -   Material pipeline Stage2.5 validátorral
-    -   NamedColor / Color registry refaktor
-    -   RegistryBase + RegistryManager audit összefoglaló
-    -   DataStateReporter → indulás utáni audit riport
-    -   MaterialPickerDialog → kész UI modul
-    -   BarcodeValidator subsystem → ütközéskezelés, audit logok
-    -   NeedRule kapcsolótábla → registry, repository, presenter, view,
-        manager kész
-    -   NeedsPresenter + NeedsView → MaterialRequirementsView +
-        Presenter működik
-    -   🔥 Material import hibák → megoldva
+    -   Material import hibák → megoldva
     -   BarcodeTable refaktor → szétbontás model/repo/registry
+    -   Settings subsystem → screen méret mentés + induláskori
+        összevetés
+    -   NeedRule pipeline validáció → auditbarát hibakezelés
 -   🚧 Folyamatban
+    -   VerboseManager → központi verbosity routing
+    -   RegistryAuditReporter → audit összefoglaló fejlesztése
+    -   CutCalculator preview funkció → skeleton implementáció
+    -   NeedCalculation / NeedCalculationDetail → view + manager
+        implementáció
+-   📐 Tervezés
     -   OrderManager
-    -   CutCalculator + Needs preview
-    -   Audit funkció
-    -   NeedCalculation / NeedCalculationDetail
+    -   CustomerMaster
+    -   UI réteg (Order entry dialog)
+    -   Audit funkció (AuditEntry, AuditService)
     -   Formula értelmezés (cparse)
-    -   Generikus kapcsolótábla convenience
-    -   VerboseManager
-    -   MVP logika (manager=presenter)
-    -   RegistryAuditReporter → audit összefoglaló generálása
--   ➕ Új ötlet
+-   💡 Új ötlet
+    -   Induláskori screen változás detektálás → ablak újraméretezés
+        arányosan
     -   Real‑time preview UI
     -   Auditbarát kereső/szűrési logika
 
@@ -78,129 +75,63 @@ jelölve van 🔥 ikonnal.
 🎯 Prioritási sorrend – fókuszpont lista
 
 1.  VerboseManager → központi verbosity routing
-2.  NeedRule pipeline hibakezelés → stabilizálás, finomítás
-3.  CutCalculator + Needs preview fejlesztés
-4.  Audit funkció → AuditEntry, AuditService
-5.  RegistryAuditReporter → audit összefoglaló fejlesztése
+2.  CutCalculator + Needs preview fejlesztés 🚧
+3.  Audit funkció → AuditEntry, AuditService
+4.  RegistryAuditReporter → audit összefoglaló fejlesztése
+5.  NeedCalculation / NeedCalculationDetail → implementáció és tesztelés
+    előkészítése
 6.  Generikus kapcsolótábla → convenience kidolgozása
 
 ------------------------------------------------------------------------
 
 ✨ Röviden
 
--   A Material import hibák lezárultak, ✅ Kész.
--   A BarcodeTable refaktor is ✅ Kész, modulárisan szétbontva.
--   A NeedRule pipeline működik, de hibakezelés stabilizálása és
-    auditbarát riportolás még folyamatban.
--   VerboseManager fejlesztése zajlik, központi verbosity routing
-    készül.
--   RegistryAuditReporter ötletből fejlesztésbe lépett.
--   A fókusz most a hibakezelés finomításán és az audit funkciók
-    bővítésén van.
+-   A NeedRule pipeline hibakezelés ✅ készre jelölhető.
+-   A Settings subsystem bővült: screen méret mentés + induláskori
+    összevetés.
+-   VerboseManager fejlesztése zajlik.
+-   RegistryAuditReporter első lépései megtörténtek.
+-   CutCalculator és NeedCalculation modulok már implementációs fázisban
+    vannak, de még tesztelés előtt.
+-   Új ötlet: induláskori screen változás detektálás, real‑time preview
+    UI.
 
 ------------------------------------------------------------------------
 
 🚀 Sprint fókusz (🔥 SOS pontokkal)
 
 -   VerboseManager → központi verbosity routing.
--   NeedRule pipeline hibakezelés → stabilizálás, finomítás.
 -   RegistryAuditReporter → audit összefoglaló fejlesztése.
 -   CutCalculator preview funkció előkészítése.
+-   🔥 SOS pont: NeedRule pipeline hibakezelés → lezárva, stabilizálva.
 
 ------------------------------------------------------------------------
 
 📌 Mai eredmények
 
--   Material import hibák lezárva, ✅ Kész.
--   BarcodeTable refaktor elkészült, modulárisan szétbontva.
+-   NeedRule pipeline hibakezelés auditbarát validációval ✅ kész.
+-   Settings subsystem bővítve: screen méret mentés + induláskori
+    összevetés.
 -   VerboseManager fejlesztése folyamatban.
 -   RegistryAuditReporter első implementációs lépései megtörténtek.
+-   CutCalculator és NeedCalculation modulok implementációs fázisba
+    léptek.
 
 ------------------------------------------------------------------------
 
-🦎! A holnapi nap fókusza:
-- NeedRule már stabil és auditbarát.
-- NeedCalculation és NeedCalculationDetail modellek, repo‑k, registry‑k
-kialakítása.
-- Layout: bal fent anyagszükséglet, bal lent számítási módok, jobb
-oldalon formulák.
-- Service: NeedCalculator → CutRequest ⚙️ + KitRequest 📦.
-- Audit: központosított üzenetek, hibák riportálása.
+👉 Holnap fókusz
 
-Így tényleg haladunk a teljes pipeline felé, ahol a megrendelésből
-automatikusan kijön a vágási és kitting lista.
-
-🦎 Holnap tehát indulhat a konkrét implementáció: először a modellek és
-repo‑k skeletonjai, majd a layout skeleton Qt‑ban.
-
+-   NeedCalculation és NeedCalculationDetail modellek, repo‑k,
+    registry‑k implementációjának folytatása.
+-   Layout: bal fent anyagszükséglet, bal lent számítási módok, jobb
+    oldalon formulák.
+-   Service: NeedCalculator → CutRequest ⚙️ + KitRequest 📦.
+-   Audit: központosított üzenetek, hibák riportálása.
+-   VerboseManager szabályozás finomítása.
+-   Real‑time preview UI ötlet kipróbálása.
 
 ------------------------------------------------------------------------
 
-🦎 Így minden blokk naprakész, a lezárt modulok jelölve vannak, és a
-fókuszpontok tisztán látszanak.
-
----
-🟢 Teljesen egyetértek, Zoltán 🦎 — a tervet egyszerűsíteni és
-fókuszálni kell: NeedRuleRegistry validáció + audit üzenetek
-központosítása. Nem kell túlgondolni, elég ha a specifikus hibák
-auditbarát stringgel jelennek meg, de ha ki tudjuk emelni a generikus
-üzenetkészletet (BarcodeValidator mintájára), az még jobb.
-
-------------------------------------------------------------------------
-
-🔄 Frissített, végrehajtható terv
-
-1.  Validációs kiegészítés a NeedRuleRegistry-ben
-    -   NeedRuleRegistry::insert() előtt lefutnak a szabályok:
-        -   Bal oldal létező Product legyen.
-        -   Jobb oldal létező Material legyen.
-        -   Tiltás: azonos barcode.
-        -   Tiltás: duplikált kapcsolat.
-    -   Ha bármelyik sérül → audit log hibaüzenet, és nem kerül be a
-        kapcsolat.
-2.  Audit üzenetek központosítása
-    -   Központi helper (AuditMessages vagy NeedRuleErrorHelper).
-    -   Függvények:
-        -   invalidProduct(id, barcode)
-        -   invalidMaterial(id, barcode)
-        -   duplicateConnection(productBarcode, materialBarcode)
-        -   sameBarcode(productBarcode)
-    -   Így minden hibaüzenet egységes formátumban kerül a logba.
-    -   Ha akarjuk, a BarcodeValidator üzenetkészletét is kiemelhetjük
-        ide, és újrahasznosíthatjuk.
-3.  CSV import hibák részletezése
-    -   A ConnectionRepository::load() már jelzi, ha nem található
-        entitás.
-    -   Kiegészítés: azonos barcode esetén is ctx.addError(...) → így a
-        hibakategóriákban külön látszik.
-4.  UI hibajelzés
-    -   MaterialRequirementsView::apply_row_visuals() csak runtime
-        lookup hibát jelzi (pl. törölt Material).
-    -   Import hibák nem kerülnek be → piros háttér nem lesz, de audit
-        riportban látszik.
-    -   Ez így rendben van, nem kell túlgondolni.
-5.  Tesztadatok ellenőrzése
-    -   Hibás CSV futtatása (ROL-RR,ROL-RR, TE-R-23,TE-R-23, stb.).
-    -   Ellenőrizni:
-        -   Audit logban részletes hibák jelennek meg.
-        -   Registry-ben csak a valid sorok maradnak.
-        -   UI piros háttér csak runtime lookup hibánál.
-
-------------------------------------------------------------------------
-
-✨ Röviden
-
--   Validáció a NeedRuleRegistry-ben → készre jelölhető.
--   Audit üzenetek központosítása → egységes stringek, opcionálisan
-    újrahasznosítva a BarcodeValidatorból.
--   Import hibák → audit riportban, runtime hibák → piros háttér a
-    view-ban.
--   Nem kell túlgondolni: a specifikus hibák specifikus stringgel is
-    jók, de a generikus helper hosszú távon auditbarátabb.
-
-🦎 Így a terv letisztult, végrehajtható, és a NeedRule pipeline
-hibakezelés blokkot hamarosan ✅ Készre lehet jelölni.
-
-👉 Szeretnéd, hogy a következő körben konkrét diffet mutassak a
-NeedRuleRegistry::insert()-hez, ahol ezek a szabályok bekerülnek és az
-AuditMessages helper hívódik?
+🦎 Így az állapot naprakész: a „Tervezés” státuszú modulok közül több
+már implementációs fázisban van, és az új ötletek is bekerültek a
+roadmapbe.
