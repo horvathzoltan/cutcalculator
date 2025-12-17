@@ -72,18 +72,6 @@ RegistryAuditReporter            🚧 Fejlesztés  Audit összefoglaló generál
 
 ------------------------------------------------------------------------
 
-🎯 Prioritási sorrend – fókuszpont lista
-
-1.  VerboseManager → központi verbosity routing
-2.  CutCalculator + Needs preview fejlesztés 🚧
-3.  Audit funkció → AuditEntry, AuditService
-4.  RegistryAuditReporter → audit összefoglaló fejlesztése
-5.  NeedCalculation / NeedCalculationDetail → implementáció és tesztelés
-    előkészítése
-6.  Generikus kapcsolótábla → convenience kidolgozása
-
-------------------------------------------------------------------------
-
 ✨ Röviden
 
 -   A NeedRule pipeline hibakezelés ✅ készre jelölhető.
@@ -95,15 +83,6 @@ RegistryAuditReporter            🚧 Fejlesztés  Audit összefoglaló generál
     vannak, de még tesztelés előtt.
 -   Új ötlet: induláskori screen változás detektálás, real‑time preview
     UI.
-
-------------------------------------------------------------------------
-
-🚀 Sprint fókusz (🔥 SOS pontokkal)
-
--   VerboseManager → központi verbosity routing.
--   RegistryAuditReporter → audit összefoglaló fejlesztése.
--   CutCalculator preview funkció előkészítése.
--   🔥 SOS pont: NeedRule pipeline hibakezelés → lezárva, stabilizálva.
 
 ------------------------------------------------------------------------
 
@@ -119,6 +98,28 @@ RegistryAuditReporter            🚧 Fejlesztés  Audit összefoglaló generál
 
 ------------------------------------------------------------------------
 
+🎯 Prioritási sorrend – fókuszpont lista
+
+1.  VerboseManager → központi verbosity routing
+2.  CutCalculator + Needs preview fejlesztés 🚧
+3.  Audit funkció → AuditEntry, AuditService
+4.  RegistryAuditReporter → audit összefoglaló fejlesztése
+5.  NeedCalculation / NeedCalculationDetail → implementáció és tesztelés
+    előkészítése
+6.  Generikus kapcsolótábla → convenience kidolgozása
+
+------------------------------------------------------------------------
+
+🚀 Sprint fókusz (🔥 SOS pontokkal)
+
+-   VerboseManager → központi verbosity routing.
+-   RegistryAuditReporter → audit összefoglaló fejlesztése.
+-   CutCalculator preview funkció előkészítése.
+-   🔥 SOS pont: NeedRule pipeline hibakezelés → lezárva, stabilizálva.
+
+
+------------------------------------------------------------------------
+
 👉 Holnap fókusz
 
 -   NeedCalculation és NeedCalculationDetail modellek, repo‑k,
@@ -131,6 +132,7 @@ RegistryAuditReporter            🚧 Fejlesztés  Audit összefoglaló generál
 -   Real‑time preview UI ötlet kipróbálása.
 
 ------------------------------------------------------------------------
+
 
 🦎 Így az állapot naprakész: a „Tervezés” státuszú modulok közül több
 már implementációs fázisban van, és az új ötletek is bekerültek a

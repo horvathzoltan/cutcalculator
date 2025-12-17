@@ -8,20 +8,21 @@ adj snippetet régi és új kóddal, +/‑ jelek nélkül, külön blokkban
 állapottáblánkat frissítsük, egészítsük ki a mai nap eredményeivel és ötleteivel,
 vezessük a státuszbeli változásokat - ami készen lett azt jelöljük készre - 
 de ne töröljünk és ne vonjunk össze semmit!
-az sos és a tűzoltást jelölt tűz ikonnal! ezek a blokkok kellenek: 
-a táblázat,
-az 📊 Idővonalas roadmap
-🎯 Prioritási sorrend – fókuszpont lista
-✨ Röviden
-majd az alábbi bontásban:
-a 🚀 Sprint fókusz (🔥 SOS pontokkal), a 📌 Mai eredmények és az 👉 Holnap fókusz.
-git commithoz comment javaslatot is kérek!
 emoji‑készlet státuszokra
 📐 = Tervezés
 🚧 = Folyamatban (implementáció, de még nem tesztelt)
 ✅ = Kész
 🔥 = SOS / Tűzoltás
 💡 = Új ötlet
+ezek a blokkok kellenek: 
+📊 Állapottábla
+📊 Idővonalas roadmap
+✨ Röviden - stratégiai összefoglaló
+📌 Mai eredmények - részletes taktikai napzáró blokk
+🎯 Prioritási sorrend – fókuszpont lista
+🚀 Sprint fókusz (🔥 SOS pontokkal) és a 👉 Holnap fókusz.
+git commithoz comment javaslatot is kérek, 56 karakteres legyen az első sor, ami pontosan belefér a Git commit subject limitbe, és mégis informatív.
+
 
 Példa prompt:
 Adj egy teljes implementációt (C++20, Qt6.10) a fent szóban forgó komponensekről (osztály, függvények, stb.).
