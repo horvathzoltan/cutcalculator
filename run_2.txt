@@ -15,6 +15,7 @@ az 📊 Idővonalas roadmap
 ✨ Röviden
 majd az alábbi bontásban:
 a 🚀 Sprint fókusz (🔥 SOS pontokkal), a 📌 Mai eredmények és az 👉 Holnap fókusz.
+git commithoz comment javaslatot is kérek!
 emoji‑készlet státuszokra
 📐 = Tervezés
 🚧 = Folyamatban (implementáció, de még nem tesztelt)
