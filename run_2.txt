@@ -21,7 +21,7 @@ ezek a blokkok kellenek:
 📌 Mai eredmények - részletes taktikai napzáró blokk
 🎯 Prioritási sorrend – fókuszpont lista
 🚀 Sprint fókusz (🔥 SOS pontokkal) és a 👉 Holnap fókusz.
-git commithoz comment javaslatot is kérek, 56 karakteres legyen az első sor, ami pontosan belefér a Git commit subject limitbe, és mégis informatív.
+git commithoz comment javaslatot is kérek, 55 karakteres legyen az első sor, ami pontosan belefér a Git commit subject limitbe, és mégis informatív.
 
 
 Példa prompt:
