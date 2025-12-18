@@ -25,12 +25,15 @@ git commithoz comment javaslatot is kérek, 56 karakteres legyen az első sor, a
 
 
 Példa prompt:
+
 Adj egy teljes implementációt (C++20, Qt6.10) a fent szóban forgó komponensekről (osztály, függvények, stb.).
-Használj kommenteket és dockommenteket hunglish stílusban, de ne írd oda kommentben, hogy hunglish.
+A kódot magyar nyelvű kommentekkel kérem, de az angol terminológiát (class, method, Qt API) tartsd meg.
+Ne írd bele a kommentekbe, hogy Hunglish, csak természetesen keverd a magyar magyarázatot az angol szavakkal.
 Adj javaslatokat az elnevezésre, a fájlok elhelyezésére a projektben, és az integrációra a jelenlegi programba.
-A fájlnevek kövessék a projekt névkonvencióját (snake_case, pl. registry_base.h, registry_manager.h).
-**Fontos:** legelőször csak azoknak a fájloknak a listáját add meg (files.txt‑be másolható, soronként egy fájl), amelyek tartalmát meg kell ismerned a teljes implementációhoz.
+A fájlnevek kövessék a projekt névkonvencióját (snake_case).
+Fontos: legelőször csak azoknak a fájloknak a listáját add meg (files.txt‑be másolható, soronként egy fájl), amelyek tartalmát meg kell ismerned a teljes implementációhoz.
 Ne adj még kódot, csak a fájlneveket.
+
 
 
 

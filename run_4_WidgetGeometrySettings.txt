@@ -1,9 +1,4 @@
-🟢 Rendben, Zoltán 🦎 — frissítsük a terveinket az eddig megbeszéltek
-alapján, hogy a splitterek és ablakok állapotkezelése auditbarát,
-képernyőfüggetlen és önmagát gyógyító legyen.
-
 ------------------------------------------------------------------------
-
 📋 Követelményspecifikáció (frissített)
 
 -   Splitter állapotok:
@@ -90,3 +85,71 @@ az ablakok/splitterek sosem fognak eltűnni, hanem arányosan
 
 Szeretnéd, hogy adjak egy konkrét adjustWindowGeometry() implementációt,
 ami százalékos értékekből számolja újra az ablakot?
+*********************************
+Pontosan 🎯 — a „15px jelenség” tipikus tünete annak, hogy a restore túl korán fut, amikor a splitter még nem kapott tényleges méretet. A helperen tényleg érdemes finomítani, hogy a jövőben ne kelljen mindenhol kézzel showEvent‑be tenni a restore‑t.
+
+---
+
+## Mit lehet beépíteni a helperbe?
+
+### 1. **Guard check a totalPixels‑re**
+Ha a `splitter->size().width()` vagy `height()` túl kicsi (pl. < 50px), akkor ne állíts vissza azonnal, hanem halaszd későbbre:
+
+```cpp
+if (totalPixels < 50) {
+    QTimer::singleShot(0, splitter, [splitter, percentState]() {
+        GeometryHelper::restoreSplitterState(splitter, percentState);
+    });
+    zEventWARN("⚠️ Splitter restore postponed: size too small");
+    return;
+}
+```
+
+Így a helper maga gondoskodik arról, hogy ne legyen 15px‑es állapot.
+
+---
+
+### 2. **Kezdeti fallback értelmes elosztással**
+Ha nincs értelmes méret, akkor ne 15px‑et osszon szét, hanem adjon egyenlő arányt, de nagyobb minimumot:
+
+```cpp
+if (totalPixels <= 0) {
+    QList<int> equal(childCount, 100); // minden gyerek kapjon legalább 100px
+    splitter->setSizes(equal);
+    return;
+}
+```
+
+---
+
+### 3. **Stretch factor automatikus beállítása**
+A helper beállíthatja a stretch factorokat is, hogy a Qt ne essen vissza abszurd defaultokra:
+
+```cpp
+for (int i = 0; i < childCount; ++i) {
+    splitter->setStretchFactor(i, 1);
+}
+```
+
+---
+
+### 4. **Audit log finomítása**
+Írd ki restore előtt a `totalPixels` értéket, így azonnal látod, ha túl kicsi:
+
+```cpp
+zEventINFO(QString("🔎 Splitter restore diag: total=%1, percent=%2")
+           .arg(totalPixels).arg(percentState));
+```
+
+---
+
+## Röviden
+
+- A helperben legyen **méretellenőrzés**: ha túl kicsi, halassza későbbre.
+- Adjon **értelmes fallbacket** (pl. 100px per child).
+- Állítson be **stretch factorokat** automatikusan.
+- Audit logban jelezze, ha halasztott restore történt.
+
+---
+
+🦎 Szaladgyík: így a GeometryHelper maga védi ki a „15px jelenséget”, és nem kell mindenhol külön showEvent‑be tenni a restore‑t. Ez lesz a következő finomítási feladatunk.

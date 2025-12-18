@@ -21,6 +21,8 @@
 #include <QHeaderView>
 #include <QToolBar>
 
+#include "common/utils/geometry_helper.h"
+
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
@@ -31,14 +33,18 @@ MainWindow::MainWindow(QWidget *parent)
     // — Ablak geometria visszaállítása —
     // ablakméret - az esemény időzítve (Qt event queue-ban)
     QtEventUtil::post(this, [this]() {
-        restoreGeometry(SettingsManager::instance().windowGeometry());
+        // Ablak geometriát visszaállítjuk
+        QString geom = SettingsManager::instance().windowGeometryPercent();
+        QSize savedScreen = GeometryHelper::parseScreenSize(SettingsManager::instance().screenSizeString());
+        GeometryHelper::restoreWindowGeometry(this, geom, savedScreen);
 
-        // — Splitter állapot visszaállítása —
-        ui->splitter->restoreState(SettingsManager::instance().mainSplitterState());
+        // Splitter állapot visszaállítása
+        QString split = SettingsManager::instance().mainSplitterPercent();
+        GeometryHelper::restoreSplitterState(ui->splitter, split);
 
-        zEvent("✅ UI Settings loaded");
-        zInfo("✅ UI Settings loaded");
+        zEventINFO("✅ UI Settings loaded (percent-based)");
     });
+
 
     // — Aktív tab (opcionális) —
     int savedTab = SettingsManager::instance().currentTabIndex();
@@ -94,26 +100,52 @@ bool MainWindow::event(QEvent* e)
     return QMainWindow::event(e); // minden más esemény átadva az alapnak
 }
 
+// void MainWindow::closeEvent(QCloseEvent* event)
+// {
+//     // — Ablak geometria mentése —
+//     SettingsManager::instance().setWindowGeometry(saveGeometry());
+
+//     // — Splitter állapot mentése —
+//     SettingsManager::instance().setMainSplitterState(ui->splitter->saveState());
+
+//     // BOMWorkbench állapot mentés (splitter + fa fejlécek)
+//     if (auto* bom = ui->tabWidget->findChild<BOMWorkbench*>()) {
+//         bom->saveState();
+//     }
+
+//     if (_productTypesSplitter) {
+//         SettingsManager::instance().setProductTypesSplitterState(
+//             _productTypesSplitter->saveState()
+//             );
+//     }
+
+//     // — Aktív tab mentése (opcionális) —
+//     SettingsManager::instance().setCurrentTabIndex(ui->tabWidget->currentIndex());
+
+//     SettingsManager::instance().save();
+//     event->accept();
+// }
+
 void MainWindow::closeEvent(QCloseEvent* event)
 {
-    // — Ablak geometria mentése —
-    SettingsManager::instance().setWindowGeometry(saveGeometry());
+    // Ablak geometriát mentjük percent stringként
+    QString geom = GeometryHelper::saveWindowGeometry(this);
+    SettingsManager::instance().setWindowGeometryPercent(geom);
 
-    // — Splitter állapot mentése —
-    SettingsManager::instance().setMainSplitterState(ui->splitter->saveState());
+    // Screen méretet is mentjük
+    QString scr = GeometryHelper::serializeScreenSize(this->screen()->size());
+    SettingsManager::instance().setScreenSizeString(scr);
 
-    // BOMWorkbench állapot mentés (splitter + fa fejlécek)
+    // Splitter állapot mentése percent stringként
+    QString split = GeometryHelper::saveSplitterState(ui->splitter);
+    SettingsManager::instance().setMainSplitterPercent(split);
+
+    // BOMWorkbench állapot mentés
     if (auto* bom = ui->tabWidget->findChild<BOMWorkbench*>()) {
         bom->saveState();
     }
 
-    if (_productTypesSplitter) {
-        SettingsManager::instance().setProductTypesSplitterState(
-            _productTypesSplitter->saveState()
-            );
-    }
-
-    // — Aktív tab mentése (opcionális) —
+    // Aktív tab mentése
     SettingsManager::instance().setCurrentTabIndex(ui->tabWidget->currentIndex());
 
     SettingsManager::instance().save();

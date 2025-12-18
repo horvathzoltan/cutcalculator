@@ -12,11 +12,14 @@
 #include "needs/view/material_requirements_view.h"
 
 #include "products/view/product_tree_manager.h"
-#include "needs/repository/need_rule_repository.h"
+//#include "needs/repository/need_rule_repository.h"
 
 #include "needscalculation/manager/calculation_mode_detail_manager.h"
-#include "needscalculation/registry/need_calculation_detail_registry.h"
-#include "common/registry/registry_manager.h"
+//#include "needscalculation/registry/need_calculation_detail_registry.h"
+//#include "common/registry/registry_manager.h"
+
+#include "common/utils/geometry_helper.h"
+#include "common/utils/qt_event_util.h"
 
 BOMWorkbench::BOMWorkbench(QWidget* parent)
     : QWidget(parent)
@@ -41,9 +44,41 @@ BOMWorkbench::BOMWorkbench(QWidget* parent)
     buildRightPanel();
 
     // Állapot visszaállítása
-    restoreState();
+    // QtEventUtil::post(this, [this]() {
+    //     restoreState();
+    //  });
 
     zEventINFO("BOMWorkbench initialized");
+}
+
+void BOMWorkbench::showEvent(QShowEvent* event) {
+    QWidget::showEvent(event);
+    if (_restoredOnce) return;
+
+    // Biztosítsuk, hogy a layout már kiosztotta a méreteket
+    // QTimer::singleShot(0, this, [this]() {
+    //     restoreState();
+    //     _restoredOnce = true;
+    //     zEventINFO("🧩 BOMWorkbench state restored (showEvent + queued)");
+    // });
+
+    QtEventUtil::post(this, [this]() {
+         restoreState();
+         _restoredOnce = true;
+         zEventINFO("🧩 BOMWorkbench state restored (showEvent + queued)");
+    });
+}
+
+bool BOMWorkbench::event(QEvent* e)
+{
+    //🎯 Ha ez egy LambdaEvent, akkor futtatjuk a benne levő lambdát
+    if (e->type() == QEvent::User) {
+        auto* le = static_cast<LambdaEvent*>(e);
+        le->execute();
+        return true; // jelezzük, hogy kezeltük
+    }
+    // 🔄 Egyéb események átadása az alapkezelésnek
+    return QWidget::event(e); // minden más esemény átadva az alapnak
 }
 
 QToolBar* BOMWorkbench::buildTreeToolbar(QWidget* parent) {
@@ -257,36 +292,88 @@ void BOMWorkbench::buildRightPanel() {
 }
 
 
+// void BOMWorkbench::restoreState() {
+//     if (_leftVerticalSplitter) {
+//         QByteArray leftState = SettingsManager::instance().leftVerticalSplitterState();
+//         if (!leftState.isEmpty()) _leftVerticalSplitter->restoreState(leftState);
+//     }
+
+//     if (_splitter) {
+//         QByteArray splitterState = SettingsManager::instance().productTypesSplitterState();
+//         if (!splitterState.isEmpty()) _splitter->restoreState(splitterState);
+//     }
+//     if (_rightMainSplitter) {
+//         QByteArray rightState = SettingsManager::instance().mainSplitterState();
+//         if (!rightState.isEmpty()) _rightMainSplitter->restoreState(rightState);
+//     }
+//     // a startupmanagerben betöltésre kerülnek!
+//     //NeedRuleRepository::load();
+//     if (_treeView && _treeView->header()) {
+//         QByteArray headerState = SettingsManager::instance().productTreeHeaderState();
+//         if (!headerState.isEmpty()) _treeView->header()->restoreState(headerState);
+//     }
+//     zEventINFO("BOMWorkbench state restored");
+// }
+
+// void BOMWorkbench::saveState() {
+//     if (_leftVerticalSplitter)
+//         SettingsManager::instance().setLeftVerticalSplitterState(_leftVerticalSplitter->saveState());
+//     if (_splitter) SettingsManager::instance().setProductTypesSplitterState(_splitter->saveState());
+//     if (_rightMainSplitter) SettingsManager::instance().setMainSplitterState(_rightMainSplitter->saveState());
+//     if (_treeView && _treeView->header())
+//         SettingsManager::instance().setProductTreeHeaderState(_treeView->header()->saveState());
+//     SettingsManager::instance().save();
+//     zEventINFO("BOMWorkbench state saved");
+// }
 void BOMWorkbench::restoreState() {
     if (_leftVerticalSplitter) {
-        QByteArray leftState = SettingsManager::instance().leftVerticalSplitterState();
-        if (!leftState.isEmpty()) _leftVerticalSplitter->restoreState(leftState);
+        QString leftState = SettingsManager::instance().leftVerticalSplitterPercent();
+        if (!leftState.isEmpty()) GeometryHelper::restoreSplitterState(_leftVerticalSplitter, leftState);
     }
 
     if (_splitter) {
-        QByteArray splitterState = SettingsManager::instance().productTypesSplitterState();
-        if (!splitterState.isEmpty()) _splitter->restoreState(splitterState);
+        QString splitState = SettingsManager::instance().productTypesSplitterPercent();
+        if (!splitState.isEmpty()) GeometryHelper::restoreSplitterState(_splitter, splitState);
     }
+
     if (_rightMainSplitter) {
-        QByteArray rightState = SettingsManager::instance().mainSplitterState();
-        if (!rightState.isEmpty()) _rightMainSplitter->restoreState(rightState);
+        QString rightState = SettingsManager::instance().rightVerticalSplitterPercent();
+        if (!rightState.isEmpty()) GeometryHelper::restoreSplitterState(_rightMainSplitter, rightState);
     }
-    // a startupmanagerben betöltésre kerülnek!
-    //NeedRuleRepository::load();
+
     if (_treeView && _treeView->header()) {
-        QByteArray headerState = SettingsManager::instance().productTreeHeaderState();
-        if (!headerState.isEmpty()) _treeView->header()->restoreState(headerState);
+        QString headerState = SettingsManager::instance().productTreeHeaderPercent();
+        if (!headerState.isEmpty()) {
+            GeometryHelper::restoreHeaderState(_treeView->header(), headerState);
+        }
     }
-    zEventINFO("BOMWorkbench state restored");
+
+
+    zEventINFO("BOMWorkbench state restored (percent-based)");
 }
 
 void BOMWorkbench::saveState() {
-    if (_leftVerticalSplitter)
-        SettingsManager::instance().setLeftVerticalSplitterState(_leftVerticalSplitter->saveState());
-    if (_splitter) SettingsManager::instance().setProductTypesSplitterState(_splitter->saveState());
-    if (_rightMainSplitter) SettingsManager::instance().setMainSplitterState(_rightMainSplitter->saveState());
-    if (_treeView && _treeView->header())
-        SettingsManager::instance().setProductTreeHeaderState(_treeView->header()->saveState());
+    if (_leftVerticalSplitter) {
+        QString leftState = GeometryHelper::saveSplitterState(_leftVerticalSplitter);
+        SettingsManager::instance().setLeftVerticalSplitterPercent(leftState);
+    }
+
+    if (_splitter) {
+        QString splitState = GeometryHelper::saveSplitterState(_splitter);
+        SettingsManager::instance().setProductTypesSplitterPercent(splitState);
+    }
+
+    if (_rightMainSplitter) {
+        QString rightState = GeometryHelper::saveSplitterState(_rightMainSplitter);
+        SettingsManager::instance().setRightVerticalSplitterPercent(rightState);
+    }
+
+    if (_treeView && _treeView->header()) {
+        QString headerState = GeometryHelper::saveHeaderState(_treeView->header());
+        SettingsManager::instance().setProductTreeHeaderPercent(headerState);
+    }
+
+
     SettingsManager::instance().save();
-    zEventINFO("BOMWorkbench state saved");
+    zEventINFO("BOMWorkbench state saved (percent-based)");
 }

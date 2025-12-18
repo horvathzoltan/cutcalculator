@@ -105,14 +105,19 @@ class SettingsManager {
     struct Keys {
         static inline const auto DataPath            = "datapath";
         static inline const auto CuttingPlanFileName = "cutting_plan_file_name";
-        static inline const auto WindowGeometry      = "window_geometry";
-        static inline const auto MainSplitterState      = "main_splitter_state";
         static inline const auto CurrentTabIndex      = "current_tab_index";
-        static inline const auto ProductTreeHeaderState      = "product_tree_header_state";
-        static inline const auto ProductTypesSplitterState      = "product_types_splitter_state";
-        static inline const auto LeftVerticalSplitterState      = "left_vertical_splitter_state";
+
+        static inline const auto WindowGeometryPercent     = "window_geometry_percent";
+        static inline const auto ScreenSize                = "screen_size";
+        static inline const auto MainSplitterPercent       = "main_splitter_percent";
+        static inline const auto ProductTypesSplitterPercent = "product_types_splitter_percent";
+        static inline const auto LeftVerticalSplitterPercent = "left_vertical_splitter_percent";
+        static inline const auto RightVerticalSplitterPercent = "right_vertical_splitter_percent";
+
+        static inline const auto ProductTreeHeaderPercent = "product_tree_header_percent";
 
     };
+
 
 public:
     static SettingsManager& instance();
@@ -147,23 +152,6 @@ public:
         _store.setValue_persistent(Keys::CuttingPlanFileName, fn);
     }
 
-    // ablakméret
-    void setWindowGeometry(const QByteArray& state) {
-        _store.setValue(Keys::WindowGeometry, state);
-    }
-
-    QByteArray windowGeometry() const {
-        return _store.value(Keys::WindowGeometry).toByteArray();
-    }
-
-    // Splitter state
-    void setMainSplitterState(const QByteArray& state) {
-        _store.setValue(Keys::MainSplitterState, state);
-    }
-
-    QByteArray mainSplitterState() const {
-        return _store.value(Keys::MainSplitterState).toByteArray();
-    }
 
     // Current tab
     void setCurrentTabIndex(int i) {
@@ -174,30 +162,56 @@ public:
         return _store.value(Keys::CurrentTabIndex).toInt();
     }
 
-    QByteArray productTreeHeaderState() const {
-        return _store.value(Keys::ProductTreeHeaderState).toByteArray();
+    void setProductTreeHeaderPercent(const QString& s) {
+        _store.setValue_persistent(Keys::ProductTreeHeaderPercent, s);
+    }
+    QString productTreeHeaderPercent() const {
+        return _store.value(Keys::ProductTreeHeaderPercent).toString();
     }
 
-    void setProductTreeHeaderState(const QByteArray& state) {
-        _store.setValue(Keys::ProductTreeHeaderState, state);
+    void setWindowGeometryPercent(const QString& s) {
+        _store.setValue_persistent(Keys::WindowGeometryPercent, s);
+    }
+    QString windowGeometryPercent() const {
+        return _store.value(Keys::WindowGeometryPercent).toString();
     }
 
-    QByteArray productTypesSplitterState() const {
-        return _store.value(Keys::ProductTypesSplitterState).toByteArray();
+    void setScreenSizeString(const QString& s) {
+        _store.setValue_persistent(Keys::ScreenSize, s);
+    }
+    QString screenSizeString() const {
+        return _store.value(Keys::ScreenSize).toString();
     }
 
-    void setProductTypesSplitterState(const QByteArray& state) {
-        _store.setValue(Keys::ProductTypesSplitterState, state);
+    // a mainon lévő splitter
+    void setMainSplitterPercent(const QString& s) {
+        _store.setValue_persistent(Keys::MainSplitterPercent, s);
+    }
+    QString mainSplitterPercent() const {
+        return _store.value(Keys::MainSplitterPercent).toString();
     }
 
-
-    QByteArray leftVerticalSplitterState() const {
-        return _store.value(Keys::LeftVerticalSplitterState).toByteArray();
+    void setProductTypesSplitterPercent(const QString& s) {
+        _store.setValue_persistent(Keys::ProductTypesSplitterPercent, s);
+    }
+    QString productTypesSplitterPercent() const {
+        return _store.value(Keys::ProductTypesSplitterPercent).toString();
     }
 
-    void setLeftVerticalSplitterState(const QByteArray& state) {
-        _store.setValue(Keys::LeftVerticalSplitterState, state);
+    void setLeftVerticalSplitterPercent(const QString& s) {
+        _store.setValue_persistent(Keys::LeftVerticalSplitterPercent, s);
     }
+    QString leftVerticalSplitterPercent() const {
+        return _store.value(Keys::LeftVerticalSplitterPercent).toString();
+    }
+
+    void setRightVerticalSplitterPercent(const QString& s) {
+        _store.setValue_persistent(Keys::RightVerticalSplitterPercent, s);
+    }
+    QString rightVerticalSplitterPercent() const {
+        return _store.value(Keys::RightVerticalSplitterPercent).toString();
+    }
+
 private:
     SettingsManager();
 

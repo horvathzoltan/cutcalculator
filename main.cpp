@@ -13,7 +13,7 @@
 #include "common/system/lifecycle_manager.h"
 #include "common/startup/startup_status_manager.h"
 #include "common/registry/registry_manager.h"
-//#include "common/system/verbose_manager.h"
+#include "common/utils/geometry_helper.h"
 
 extern void registerAllVerbose();
 
@@ -62,7 +62,7 @@ int main(int argc, char *argv[])
 
     QApplication a(argc, argv);
     // 3. QApplication bekötése
-    LifecycleManager::instance().setPhase_3(&a);
+    LifecycleManager::instance().setPhase_3(&a);   
 
     StartupManager manager;
     StartupStatus status = manager.runStartupSequence();
@@ -80,6 +80,15 @@ int main(int argc, char *argv[])
     }
 
     MainWindow w;
+
+    QScreen* scr = QGuiApplication::primaryScreen();
+    QObject::connect(scr, &QScreen::geometryChanged, &w, [&w]() {
+        QString geom = SettingsManager::instance().windowGeometryPercent();
+        QSize savedScreen = GeometryHelper::parseScreenSize(SettingsManager::instance().screenSizeString());
+        GeometryHelper::restoreWindowGeometry(&w, geom, savedScreen);
+    });
+
+
     // MainWindow megnyílás/bezárás automatikus követése
     LifecycleManager::instance().setPhase_4(&w);
     w.show();

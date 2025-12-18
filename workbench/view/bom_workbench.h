@@ -74,4 +74,8 @@ private:
     QToolBar* buildMaterialToolbar(QWidget* parent, MaterialRequirementsView* mat_view);
     QToolBar* buildModesToolbar(QWidget* parent, CalculationModesView* modes_view);
     QToolBar* buildDetailsToolbar(QWidget* parent, CalculationModeDetailView* detail_view);
+
+    bool event(QEvent *e) override;
+    void showEvent(QShowEvent* event) override;
+        bool _restoredOnce = false;
 };

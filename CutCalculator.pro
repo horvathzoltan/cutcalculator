@@ -18,6 +18,7 @@ SOURCES += \
     barcodes/validator/barcode_validator.cpp \
     common/system/verbose_manager.cpp \
     common/system/verbose_registry_initializer.cpp \
+    common/utils/geometry_helper.cpp \
     common/utils/table_formatter.cpp \
     materials/view/color_badge.cpp \
     needs/manager/material_requirements_manager.cpp \
@@ -77,6 +78,7 @@ HEADERS += \
     common/system/nameof.hpp \
     common/system/verbose_manager.h \
     common/utils/font_utils.h \
+    common/utils/geometry_helper.h \
     common/utils/optional_utils.h \
     common/utils/table_formatter.h \
     connections/connection_entity.h \
