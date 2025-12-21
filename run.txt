@@ -1,45 +1,121 @@
-Zoltán, hozom a teljes, frissített projekt‑állapotot pontosan a kért
-formában, a mai fejleményekkel, a NeedCalculation‑refaktorral, a
-ModeName dialóggal, az EventLog‑túlcsordulás felismerésével és a
-CSV‑warning UX‑finomítással együtt.
+🌙 Mai nap összefoglalója – 2025‑12‑21
 
-A stílus marad fejlesztőbarát, tömör, de informatív — és minden
-státuszváltozást átvezettem.
+Ez a nap a CutCalculator projekt egyik legnagyobb mérföldköve volt.
+Nem egy modul készült el — hanem egy teljes architektúra állt össze.
 
 ------------------------------------------------------------------------
 
-✅ 1) Mai nap összefoglalója (tömör, fejlesztőbarát)
+✅ 1. NeedCalculation / NeedCalculationDetail domain‑szétválasztás
 
-A NeedCalculation / NeedCalculationDetail domain‑szétválasztás sikeresen
-lezárult.
-A projekt most először domain‑helyes, tiszta és forduló állapotba
-került.
+A két domain (calcmodes és calculation) most először tisztán, ipari
+minőségben külön él.
 
-A ModeNameDialog elkészült, működik, de UX‑finomítás szükséges
-(pozicionálás, vizuális kiemelés, whitespace‑validáció).
+-   NeedCalculation → konfigurációs domain (GUI, CRUD)
+-   NeedCalculationDetail → számítási motor domain (formula lépések)
+-   BOMWorkbench integráció stabil
+-   Registry/Repository/Manager/View szétválasztva
 
-A BOMWorkbench integráció hibátlan, a három domain (needs / calcmodes /
-calculation) tisztán kapcsolódik.
-
-A CSV‑fájlok hiánya miatt keletkező warningok helyesek, de a vizuális
-jelzés (❌) félrevezető → átállítjuk ⚠️‑ra.
-
-Az EventLog túlterhelődött, mert rendszerlogok is oda kerülnek.
-Felismertük, hogy két logcsatorna kell:
-- SystemLog (fájlba, technikai)
-- EventLog (UI‑események, user‑érthető)
-
-Ez új fókuszpont.
-
-A snapshot/fallback architektúra stabil, minden modul (SnapshotManager,
-LayoutDefaultStore, GeometryHelper) kiforrott.
-
-A projekt állapottáblája frissítve, a NeedCalculation modul most már
-ténylegesen halad, nem csak „folyamatban”.
+Ez a projekt hosszú távú fenntarthatóságának alapja.
 
 ------------------------------------------------------------------------
 
-✅ 2) Frissített Állapottábla (2025‑12‑21 éjszakai állapot)
+✅ 2. BOMWorkbench integráció stabilizálva
+
+A három domain (needs / calcmodes / calculation) most először logikusan
+és tisztán kapcsolódik össze.
+
+-   Bal felső: anyagszükséglet
+-   Bal alsó: számítási módok
+-   Jobb oldal: formula lépések
+
+A layout működik, a wiring helyes, a snapshot restore hibátlan.
+
+------------------------------------------------------------------------
+
+✅ 3. ModeNameDialog elkészült
+
+A számítási módok felviteléhez szükséges dialógus működik:
+
+-   megjelenik
+-   validál
+-   integrálódik a managerbe
+-   a registry helyesen tiltja az üres / duplikált neveket
+
+UX‑finomítás szükséges (pozicionálás, vizuális kiemelés).
+
+------------------------------------------------------------------------
+
+✅ 4. CSV warningok helyesen működnek
+
+A hiányzó fájlok warningjai megjelennek:
+
+-   testdata/needcalcs.csv
+-   testdata/needcalc_details.csv
+
+Ez a kezdeti állapot része.
+A rendszer helyesen jelzi, de nem omlik össze.
+
+UX‑finomítás: ❌ → ⚠️ ikonváltás.
+
+------------------------------------------------------------------------
+
+✅ 5. EventLog túlterhelés felismerve
+
+A jelenlegi EventLog túl sok technikai üzenetet kap:
+
+-   CSV import részletek
+-   registry audit
+-   fájlmegnyitási hibák
+-   belső validációk
+
+Ez elárasztja a felhasználót.
+
+Új feladat született:
+
+-   SystemLog (technikai)
+-   EventLog (UI‑események)
+
+szétválasztása.
+
+------------------------------------------------------------------------
+
+✅ 6. Snapshot/fallback architektúra lezárult
+
+A következő modulok most először együtt, stabilan működnek:
+
+-   SnapshotManager
+-   LayoutDefaultStore
+-   GeometryHelper (guard + deferred restore)
+-   MainWindow + BOMWorkbench snapshot restore
+
+Ez ipari szintű UI‑állapotkezelés.
+
+------------------------------------------------------------------------
+
+✅ 7. A projekt fordul, stabil, és készen áll a következő modulokra
+
+A mai nap eredményei megalapozzák:
+
+-   a CutCalculator preview
+-   a formula‑motor
+-   a NeedCalculation UX befejezése
+-   a NeedCalculationDetail workflow működőképessé tétele
+
+Ez egy nagyon erős nap volt.
+
+------------------------------------------------------------------------
+
+🌟 Összegzés
+
+A projekt ma átlépett egy nagy küszöböt:
+a mély technikai adósságok eltűntek, a domain‑szétválasztás kész, a
+UI‑állapotkezelés stabil, és a számítási módok workflow‑ja elindult.
+
+Holnaptól jöhet a finomítás és a felhasználói élmény építése.
+
+------------------------------------------------------------------------
+
+📊 Állapottábla – 2025‑12‑21 (éjszakai állapot)
 
   ------------------------------------------------------------------------
   Modul / Feladat                  Állapot          Megjegyzés
@@ -47,15 +123,18 @@ ténylegesen halad, nem csak „folyamatban”.
   Material pipeline                ✅ Kész          Stage2.5 validátor
                                                     stabil
 
-  Product pipeline                 ✅ Kész          Export/import végleges
+  Product pipeline                 ✅ Kész          Export/import formátum
+                                                    végleges
 
   Logger subsystem                 ✅ Kész          Auditálható logolás
 
-  Startup subsystem                ✅ Kész          Snapshot-aware init
+  Startup subsystem                ✅ Kész          Snapshot-aware
+                                                    inicializáció
 
-  Settings subsystem               ✅ Kész          Percent-based layout
+  Settings subsystem               ✅ Kész          Percent-based layout +
+                                                    fallback
 
-  FileNameHelper                   ✅ Kész          ui_snapshots
+  FileNameHelper                   ✅ Kész          ui_snapshots path
                                                     integrálva
 
   CsvReader utility                ⚠️ Függőség      Importerhez
@@ -64,9 +143,11 @@ ténylegesen halad, nem csak „folyamatban”.
   RalImporter modul                ✅ Kész          ColorRepository-ba
                                                     migrálva
 
-  OrderManager                     📐 Tervezés      Modellek, státuszok
+  OrderManager                     📐 Tervezés      Modellek,
+                                                    státuszkezelés
 
-  CustomerMaster                   📐 Tervezés      Autocomplete
+  CustomerMaster                   📐 Tervezés      Ügyféltörzs,
+                                                    autocomplete
 
   CutCalculator                    🚧 Folyamatban   Preview előkészítve
 
@@ -81,21 +162,23 @@ ténylegesen halad, nem csak „folyamatban”.
 
   NamedColor / Color registry      ✅ Kész          Pantone-ready
 
-  NeedRule                         ✅ Kész          Pipeline teljes
+  NeedRule                         ✅ Kész          Kapcsolótábla teljes
+                                                    pipeline
 
-  NeedCalculation                  🚧 Folyamatban   Domain‑szétválasztás
-                                                    kész, ModeNameDialog
-                                                    kész, UX finomítás
+  NeedCalculation                  🚧 Folyamatban   Domain-szétválasztás
+                                                    kész; ModeNameDialog
+                                                    kész; UX finomítás
                                                     kell
 
   NeedCalculationDetail            🚧 Folyamatban   DetailManager
-                                                    skeleton,
+                                                    skeleton;
                                                     MaterialPicker
                                                     integráció hiányzik
 
   Formula értelmezés               📐 Tervezés      cparse integráció
 
   SOS / Tűzoltás                   ✅ Kész          Material import hibák
+                                                    megoldva
 
   Generikus kapcsolótábla          ✅ Kész          CSV IO tesztelve
 
@@ -103,7 +186,8 @@ ténylegesen halad, nem csak „folyamatban”.
 
   BarcodeTable refaktor            ✅ Kész          Model/repo/registry
 
-  DataStateReporter                ✅ Kész          Audit riport
+  DataStateReporter                ✅ Kész          Repo-listázás, audit
+                                                    riport
 
   MVP logika                       🚧 Folyamatban   Presenter/Manager
                                                     tisztítása
@@ -115,10 +199,12 @@ ténylegesen halad, nem csak „folyamatban”.
 
   RegistryAuditReporter            ✅ Kész          Audit összefoglaló
 
-  Screen-change detector           ✅ Kész          Snapshot integráció
+  Screen-change detector           ✅ Kész          Snapshot
+                                                    architektúrával
+                                                    integrálva
 
-  GeometryHelper finomítás         ✅ Kész          Deferred restore,
-                                                    guard
+  GeometryHelper finomítás         ✅ Kész          Deferred restore +
+                                                    guard logika
 
   SnapshotManager                  ✅ Kész          Monitorprofil alapú
                                                     snapshot
@@ -130,110 +216,168 @@ ténylegesen halad, nem csak „folyamatban”.
 
   EventLog tisztítása              💡 Új ötlet      SystemLog + EventLog
                                                     szétválasztása
+                                                    szükséges
 
-  CSV warning UX                   💡 Új ötlet      ❌ → ⚠️ váltás
+  CSV warning UX                   💡 Új ötlet      ❌ → ⚠️ ikonváltás,
+                                                    user‑barát jelzés
   ------------------------------------------------------------------------
 
-------------------------------------------------------------------------
 
-✅ 3) Idővonalas roadmap (frissítve)
+📊 Roadmap – 2025‑12‑21 (frissített, idővonalas)
 
-✅ Elkészült
+A roadmap most már a domain‑szétválasztás utáni új valóságot tükrözi.
+
+✅ Elkészült (Done Zone)
+
+Ezek stabilak, lezártak, nem igényelnek további fejlesztést:
 
 -   SnapshotManager
 -   LayoutDefaultStore
--   GeometryHelper guard
+-   GeometryHelper guard + deferred restore
 -   UI Snapshot Architecture
+-   Material pipeline
+-   Product pipeline
 -   NeedRule pipeline
--   ColorRegistry
+-   ColorRegistry + RAL import
 -   BarcodeTable refaktor
--   Material import stabilizálás
--   ModeNameDialog (v1)
+-   Settings subsystem
+-   Startup subsystem
+-   VerboseManager
+-   RegistryAuditReporter
+-   MaterialPickerDialog
+-   Test framework
+-   Logger subsystem
+-   Screen-change detector
 
-🚧 Folyamatban
+→ Ezek a projekt stabil alapjai.
 
--   NeedCalculation / NeedCalculationDetail workflow
+------------------------------------------------------------------------
+
+🚧 Folyamatban (Active Zone)
+
+Ezeken dolgozunk most, vagy közvetlenül ezek következnek:
+
+-   NeedCalculation domain (ModeNameDialog kész, UX finomítás kell)
+-   NeedCalculationDetail domain (DetailManager skeleton, MaterialPicker
+    integráció hiányzik)
 -   CutCalculator preview
--   MVP tisztítása
+-   MVP logika tisztítása
+-   EventLog tisztítása (új SystemLog bevezetése)
 
-📐 Tervezés
+→ Ezek adják a következő sprint magját.
 
--   Formula parser (cparse)
+------------------------------------------------------------------------
+
+📐 Tervezés (Design Zone)
+
+Ezekhez még specifikáció kell, vagy nagyobb architektúra‑döntés:
+
+-   Formula parser (cparse integráció)
 -   AuditEntry + AuditService
 -   OrderManager
 -   CustomerMaster
 -   Order entry UI
+-   Real‑time preview UI
 
-💡 Új ötletek
+→ Ezek a következő nagy modulok.
+
+------------------------------------------------------------------------
+
+💡 Új ötletek (Idea Zone)
+
+Ma születtek:
 
 -   EventLog / SystemLog szétválasztása
--   CSV warning UX finomítás (❌ → ⚠️)
+-   CSV warning ikonváltás (❌ → ⚠️)
 -   ModeNameDialog UX kiemelés (pozicionálás, keret, fókusz)
 
-------------------------------------------------------------------------
-
-✅ 4) Röviden – stratégiai összefoglaló
-
-A projekt most először domain‑helyes, tiszta és stabil.
-A snapshot architektúra lezárult, a NeedCalculation modul végre
-működőképes alapokon áll.
-A következő nagy lépés a számítási módok UX‑ének és a
-formula‑workflow‑nak a befejezése.
-
-A rendszer most már alkalmas arra, hogy a CutCalculator preview és a
-formula‑motor ráépüljön.
+→ Ezeket beépítjük a következő sprintbe.
 
 ------------------------------------------------------------------------
 
-✅ 5) Mai eredmények – részletes taktikai napzáró
+✨ Röviden – stratégiai összefoglaló
 
--   NeedCalculation / NeedCalculationDetail domain‑szétválasztás → ✅
+A projekt ma átlépett egy nagy küszöböt:
+
+-   A NeedCalculation / NeedCalculationDetail domain‑szétválasztás elkészült.
+-   A BOMWorkbench integráció stabil.
+-   A snapshot architektúra ipari szintű.
+-   A projekt fordul, stabil, tiszta.
+-   A számítási módok workflow‑ja elindult.
+-   A következő lépés: UX finomítás + formula workflow befejezése.
+
+A mai nap eredményei megalapozzák a CutCalculator preview és a
+formula‑motor következő fázisát.
+
+------------------------------------------------------------------------
+
+📌 Mai eredmények – részletes taktikai napzáró
+
+-   NeedCalculation / NeedCalculationDetail domain szétválasztása → ✅
 -   ModeNameDialog implementálva → ✅
--   BOMWorkbench integráció ellenőrizve → ✅
--   CSV warningok helyesen jelzik a hiányzó fájlokat → ✅
--   EventLog túlterhelés felismerve → 💡 új feladat
--   ModeNameDialog UX‑probléma azonosítva → 💡 új feladat
+-   BOMWorkbench wiring ellenőrizve → ✅
+-   CSV warningok helyesen működnek → ✅
+-   EventLog túlterhelés felismerve → 💡
+-   ModeNameDialog UX‑probléma azonosítva → 💡
 -   Validáció túl szigorú whitespace esetén → finomítás szükséges
--   A projekt fordul, stabil, snapshot architektúra működik → ✅
+-   Snapshot architektúra stabil → ✅
+-   A projekt fordul, minden modul a helyén → ✅
+
+Ez egy nagyon erős nap volt.
 
 ------------------------------------------------------------------------
 
-✅ 6) Prioritási sorrend – fókuszpont lista
+🎯 Prioritási sorrend – fókuszpont lista
 
-1.  NeedCalculation UX (ModeNameDialog finomítás, rename dialog)
-2.  NeedCalculationDetail UX (MaterialPicker + FormulaEditor)
-3.  EventLog tisztítása (SystemLog szétválasztás)
+1.  NeedCalculation UX
+    -   ModeNameDialog UX finomítás
+    -   Rename dialog
+    -   Duplikáció‑kezelés dialógusban
+2.  NeedCalculationDetail UX
+    -   MaterialPicker integráció
+    -   FormulaEditorDialog
+    -   Validáció vizuális jelzése
+3.  EventLog tisztítása
+    -   SystemLog + EventLog szétválasztása
+    -   UI‑log csak user‑érthető eseményekkel
 4.  CutCalculator preview
+    -   vágási/kitting lista előnézet
 5.  Formula parser (cparse)
+    -   w‑h‑fixed helyett valódi parser
 
 ------------------------------------------------------------------------
 
-✅ 7) Sprint fókusz és holnap fókusz
-
-🚀 Sprint fókusz
+🚀 Sprint fókusz (következő napok)
 
 -   NeedCalculation modul befejezése
 -   NeedCalculationDetail workflow működőképessé tétele
 -   EventLog / SystemLog szétválasztása
+-   ModeNameDialog UX upgrade
+-   CSV warning ikonváltás
+
+------------------------------------------------------------------------
 
 👉 Holnap fókusz
 
--   ModeNameDialog UX finomítás (pozicionálás, keret, fókusz)
--   CSV warning ikon váltása ❌ → ⚠️
--   EventLog tisztítás első lépése: kategorizálás
+1.  ModeNameDialog UX upgrade
+    -   egér alá pozicionálás
+    -   kék keret
+    -   fókusz + selectAll
+    -   whitespace tiltása
+2.  EventLog tisztítás – első lépés
+    -   kategorizálás
+    -   technikai logok kiszervezése
+3.  CSV warning ikonváltás
+    -   ❌ → ⚠️
+4.  NeedCalculationDetail – MaterialPicker integráció előkészítése
 
 ------------------------------------------------------------------------
 
 ✅ Git commit subject (≤55 karakter)
 
-    Update module status; finalize NeedCalc refactor
+    Finalize NeedCalc split; update roadmap and status
 
 ------------------------------------------------------------------------
 
-Ha szeretnéd, holnap reggel megcsinálhatjuk:
-
-✅ a ModeNameDialog UX‑upgrade‑jét
-✅ az EventLog / SystemLog szétválasztásának konkrét tervét
-✅ a CSV warning ikon cseréjét
-
-Csak szólj, melyikkel kezdjük.
+Ha szeretnéd, holnap reggel indulhatunk a ModeNameDialog
+UX‑upgrade‑jével.
