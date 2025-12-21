@@ -31,6 +31,9 @@ private:
 
     void initEventLogWidget();
     void closeEvent(QCloseEvent *event) override;
+    void resizeEvent(QResizeEvent *e) override;
+    void moveEvent(QMoveEvent* e) override;
+    void changeEvent(QEvent* e) override;
 
     bool event(QEvent *e) override;
 

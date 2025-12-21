@@ -27,10 +27,14 @@ int main(int argc, char *argv[])
     zInfo() << sysInfo;
     zEvent(sysInfo);
 
-    // induláskor
+    // induláskor - SIGKILL esetén NEM fut le.
     SignalHelper::setCleanupHandler([](int sig){
         LifecycleManager::instance().onAbort(sig);
         // ide jöhetnek a tényleges cleanup műveletek: registry flush, fájlmentés, stb.
+        if (auto* win = LifecycleManager::instance().mainWindow()) {
+            SettingsManager::instance().saveGeometrySnapshot(win);
+        }
+
     });
 
     SignalHelper::setShutDownSignal(SignalHelper::SIGINT_); // shut down on ctrl-c
@@ -81,13 +85,14 @@ int main(int argc, char *argv[])
 
     MainWindow w;
 
+    LifecycleManager::instance().setMainWindow(&w);
+
     QScreen* scr = QGuiApplication::primaryScreen();
     QObject::connect(scr, &QScreen::geometryChanged, &w, [&w]() {
-        QString geom = SettingsManager::instance().windowGeometryPercent();
-        QSize savedScreen = GeometryHelper::parseScreenSize(SettingsManager::instance().screenSizeString());
-        GeometryHelper::restoreWindowGeometry(&w, geom, savedScreen);
+        // Monitor felbontás változott → instant snapshot
+        SettingsManager::instance().saveGeometrySnapshot(&w);
+        zEventINFO("💾 Screen geometry changed → instant window snapshot saved");
     });
-
 
     // MainWindow megnyílás/bezárás automatikus követése
     LifecycleManager::instance().setPhase_4(&w);

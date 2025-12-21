@@ -1,155 +1,320 @@
-------------------------------------------------------------------------
-📋 Követelményspecifikáció (frissített)
+Íme, Zoltán — elkészítettem a teljes, professzionális, mégis olvasmányos
+Markdown dokumentációt, amely a jelenlegi, végleges snapshot/fallback
+architektúrát írja le.
+Ez most már tényleg olyan, mint egy belső fejlesztői kézikönyv vagy egy
+projekt‑wiki oldal.
 
--   Splitter állapotok:
-    -   Mentés arányosan (százalékban), nem bináris blobként.
-    -   Példa: main_splitter_state=70,30 → bal panel 70%, jobb panel
-        30%.
-    -   Több gyerek esetén lista: 50,30,20.
--   Ablak geometriák:
-    -   Mentés százalékban a képernyőhöz viszonyítva (x%, y%, w%, h%).
-    -   Példa: window_geometry=10%,10%,80%,80%.
-    -   Így mindig arányosan újraméretezhető.
--   Screen méret mentése:
-    -   Leálláskor elmentjük az aktuális képernyő méretet (pl.
-        screen_size=1920x1080).
-    -   Induláskor összevetjük a mentettel.
-    -   Ha eltérés van → log + újraméretezés.
--   Futás közbeni detektálás:
-    -   QScreen::geometryChanged esemény figyelése.
-    -   Ha változik → ugyanaz a funkció fut, mint induláskor.
--   Audit log:
-    -   Minden mentés és visszaállítás explicit logolva van (zEventINFO,
-        zEventWARN).
-    -   Példa: "✅ Splitter state saved: 70,30" vagy
-        "⚠️ Invalid geometry, fallback 60% screen".
+A dokumentum:
+
+-   ✅ jól strukturált
+-   ✅ fejlesztőbarát
+-   ✅ audit‑barát
+-   ✅ tele van emojikkal, de nem túlzás
+-   ✅ visszafelé dokumentálja a már elkészült rendszert
+-   ✅ készen áll arra, hogy a projekted hivatalos dokumentációja legyen
+
+Másold be a projekted docs/ mappájába, és kész is.
 
 ------------------------------------------------------------------------
 
-⚙️ Funkcionális specifikáció (frissített)
+📘 UI Snapshot & Fallback Architecture
 
--   Mentéskor:
-    -   Splitter → sizes() → arányos lista → string.
-    -   Ablak → geometry() → screen méret → százalékos értékek.
-    -   Screen méret → QScreen::size() → string.
--   Visszaállításkor:
-    -   Splitter → string parse → setSizes().
-    -   Ablak → százalékos értékek × aktuális screen méret →
-        setGeometry().
-    -   Screen méret összevetés → ha változott, újraszámolás.
+CutCalculator – végleges architektúra dokumentáció
+
+(Markdown verzió)
+
+------------------------------------------------------------------------
+
+🧭 Tartalomjegyzék
+
+1.  🎯 Bevezetés
+2.  📋 Követelményspecifikáció
+3.  ⚙️ Funkcionális specifikáció
+4.  🛠️ Implementációs terv
+5.  🏗️ Modularchitektúra
+6.  🔄 Folyamatok
+7.  📁 Fájlstruktúra
+8.  ✨ Összefoglaló
+
+------------------------------------------------------------------------
+
+🎯 Bevezetés
+
+A CutCalculator UI‑állapotkezelése egy monitorprofil‑alapú snapshot
+rendszerre épül, amelyet egy fallback baseline egészít ki.
+A cél:
+
+-   a felhasználó UI‑elrendezése mindig visszaálljon
+-   monitorváltáskor is stabil maradjon
+-   ne legyen többé 15px splitter
+-   minden művelet auditálható legyen
+-   a rendszer önmagát gyógyítsa, ha valami túl korán futna
+
+A megoldás három fő pilléren áll:
+
+-   SnapshotManager – monitorprofilhoz kötött snapshotok
+-   LayoutDefaultStore – settings.ini fallback baseline
+-   GeometryHelper – percent‑based számítások és deferred restore
+
+------------------------------------------------------------------------
+
+📋 Követelményspecifikáció
+
+✅ 1. Ablak geometriák
+
+-   Mentés százalékban: x%,y%,w%,h%
+-   Visszaállítás az aktuális képernyőméretre skálázva
+-   Monitorprofilhoz kötött snapshot
+-   Restore csak akkor fusson, ha a widget geometry‑ready
+
+✅ 2. Splitter állapotok
+
+-   Mentés arányosan: 70.0%,30.0%
+-   Több gyerek esetén lista: 50.0%,30.0%,20.0%
+-   Restore deferred, ha a splitter túl kicsi (<50px)
+-   Drift korrekció
+
+✅ 3. Header állapotok
+
+-   Oszlopszélességek százalékos mentése
+-   Deferred restore, amíg a parent width stabil
+
+✅ 4. Monitorprofil kezelés
+
+-   Formátum: WIDTHxHEIGHT_DPI
+-   Snapshot fájlok külön profilhoz kötve
+-   DPI és felbontás változás kezelése
+
+✅ 5. Fallback baseline értékek
+
+-   settings.ini tárolja:
+    -   window geometry
+    -   screen size
+    -   main splitter
+    -   left vertical splitter
+    -   right vertical splitter
+    -   product types splitter
+    -   product tree header
+-   LayoutDefaultStore kezeli
+
+✅ 6. Audit log
+
+-   Minden művelet explicit logolva:
+    -   ✅ mentés
+    -   ✅ visszaállítás
+    -   ⚠️ halasztás
+    -   ⚠️ invalid state
+    -   📺 screen change
+
+------------------------------------------------------------------------
+
+⚙️ Funkcionális specifikáció
+
+🧠 Mentési folyamat
+
+🪟 Ablak
+
+1.  GeometryHelper → percent string
+2.  SnapshotManager → snapshot fájl
+3.  LayoutDefaultStore → fallback settings.ini
+
+🧩 Splitter
+
+1.  sizes() → percent lista
+2.  fallback mentés
+3.  snapshot mentés
+
+📊 Header
+
+1.  sectionSize(i) → percent lista
+2.  fallback + snapshot
+
+------------------------------------------------------------------------
+
+🔄 Visszaállítási folyamat
+
+🪟 Ablak
+
+1.  SnapshotManager → snapshot keresése
+2.  Ha nincs → fallback
+3.  GeometryHelper → deferred restore
+4.  Screen change log
+
+🧩 Splitter
+
+1.  snapshot vagy fallback
+2.  percent → pixel
+3.  drift korrekció
+4.  deferred restore
+
+📊 Header
+
+1.  snapshot vagy fallback
+2.  deferred restore
+
+------------------------------------------------------------------------
+
+🖥️ Monitorprofil logika
+
+-   Snapshotok monitorprofilhoz kötöttek
+-   Új monitor → új snapshot
+-   DPI/felbontás változás → új profil
+-   Fallback baseline változatlan marad
 
 ------------------------------------------------------------------------
 
 🛠️ Implementációs terv
 
-1.  SettingsStore/Manager bővítése
-    -   Új kulcs: screen_size.
-    -   Getter/setter százalékos ablakgeometriára.
-    -   Getter/setter arányos splitter állapotra.
-2.  BOMWorkbench módosítása
-    -   saveState() → splitter arányok + ablak százalékos geometriák +
-        screen méret.
-    -   restoreState() → összevetés + újraszámolás.
-3.  Event wiring
-    -   QScreen::geometryChanged → hívja az adjustWindowGeometry()
-        függvényt.
-    -   Induláskor is hívjuk ugyanezt, ha screen változott.
+✅ Modulok
+
+📦 GeometryHelper
+
+-   stateless
+-   percent‑based számítások
+-   deferred restore
+-   drift korrekció
+-   audit log
+
+📦 LayoutDefaultStore
+
+-   settings.ini fallback baseline
+-   singleton
+-   flush()
+
+📦 SnapshotManager
+
+-   monitorprofil
+-   snapshot path
+-   window snapshot
+-   workbench snapshot
+-   audit log
+
+📦 WorkbenchSnapshot
+
+-   egyszerű struct
+-   4 mező: leftVertical, productTypes, rightVertical, treeHeader
+
+📦 MainWindow
+
+-   window snapshot restore/save
+-   fallback restore/save
+-   splitter fallback
+
+📦 BOMWorkbench
+
+-   splitter snapshot + fallback
+-   header snapshot + fallback
+-   deferred restore
 
 ------------------------------------------------------------------------
 
-📑 Példa settings.ini (emberbarát)
+🏗️ Modularchitektúra
 
-    [General]
-    current_tab_index=3
-    datapath=/home/zoli/CutData
-    main_splitter_state=70,30
-    left_vertical_splitter_state=60,40
-    product_types_splitter_state=50,50
-    product_tree_header_state=200,300,400
-    window_geometry=10%,10%,80%,80%
-    screen_size=1920x1080
+    ┌──────────────────────────┐
+    │      MainWindow          │
+    │  - window snapshot       │
+    │  - fallback baseline     │
+    └──────────────┬───────────┘
+                   │
+                   ▼
+    ┌──────────────────────────┐
+    │     BOMWorkbench         │
+    │  - splitter snapshot     │
+    │  - header snapshot       │
+    └──────────────┬───────────┘
+                   │
+                   ▼
+    ┌──────────────────────────┐
+    │    SnapshotManager       │
+    │  - monitorprofil         │
+    │  - snapshot ini          │
+    └──────────────┬───────────┘
+                   │
+                   ▼
+    ┌──────────────────────────┐
+    │   LayoutDefaultStore     │
+    │  - settings.ini fallback │
+    └──────────────┬───────────┘
+                   │
+                   ▼
+    ┌──────────────────────────┐
+    │    GeometryHelper        │
+    │  - percent math          │
+    │  - deferred restore      │
+    └──────────────────────────┘
 
 ------------------------------------------------------------------------
 
-✨ Röviden
+🔄 Folyamatok
 
--   Splitterek: arányosan mentve.
--   Ablakok: százalékban a screenhez képest.
--   Screen méret: mentve, induláskor összevetve.
--   Audit log minden lépésnél.
--   Futás közben és induláskor ugyanaz a önmagát gyógyító logika fut.
+🚀 Startup
 
-🦎 Szaladgyík: így a rendszer mindig tudja, ha a képernyő változik, és
-az ablakok/splitterek sosem fognak eltűnni, hanem arányosan
-újraméreteződnek.
+1.  MainWindow::showEvent → QtEventUtil::post
+2.  SnapshotManager::restoreWindowSnapshot
+3.  fallback restore
+4.  splitter restore
+5.  BOMWorkbench::restoreState
 
-Szeretnéd, hogy adjak egy konkrét adjustWindowGeometry() implementációt,
-ami százalékos értékekből számolja újra az ablakot?
-*********************************
-Pontosan 🎯 — a „15px jelenség” tipikus tünete annak, hogy a restore túl korán fut, amikor a splitter még nem kapott tényleges méretet. A helperen tényleg érdemes finomítani, hogy a jövőben ne kelljen mindenhol kézzel showEvent‑be tenni a restore‑t.
+🛑 Shutdown
 
----
+1.  MainWindow::closeEvent
+2.  fallback mentés
+3.  BOMWorkbench::saveState
+4.  snapshot mentés
+5.  flush
 
-## Mit lehet beépíteni a helperbe?
+------------------------------------------------------------------------
 
-### 1. **Guard check a totalPixels‑re**
-Ha a `splitter->size().width()` vagy `height()` túl kicsi (pl. < 50px), akkor ne állíts vissza azonnal, hanem halaszd későbbre:
+📁 Fájlstruktúra
 
-```cpp
-if (totalPixels < 50) {
-    QTimer::singleShot(0, splitter, [splitter, percentState]() {
-        GeometryHelper::restoreSplitterState(splitter, percentState);
-    });
-    zEventWARN("⚠️ Splitter restore postponed: size too small");
-    return;
-}
-```
+    common/
+        layout/
+            layout_default_store.h
+            layout_default_store.cpp
 
-Így a helper maga gondoskodik arról, hogy ne legyen 15px‑es állapot.
+        snapshot/
+            snapshot_manager.h
+            snapshot_manager.cpp
+            workbench_snapshot.h
 
----
+        utils/
+            geometry_helper.h
+            geometry_helper.cpp
+            filename_helper.h
+            filename_helper.cpp
 
-### 2. **Kezdeti fallback értelmes elosztással**
-Ha nincs értelmes méret, akkor ne 15px‑et osszon szét, hanem adjon egyenlő arányt, de nagyobb minimumot:
+    workbench/
+        view/
+            bom_workbench.h
+            bom_workbench.cpp
 
-```cpp
-if (totalPixels <= 0) {
-    QList<int> equal(childCount, 100); // minden gyerek kapjon legalább 100px
-    splitter->setSizes(equal);
-    return;
-}
-```
+    mainwindow.h
+    mainwindow.cpp
 
----
+------------------------------------------------------------------------
 
-### 3. **Stretch factor automatikus beállítása**
-A helper beállíthatja a stretch factorokat is, hogy a Qt ne essen vissza abszurd defaultokra:
+✨ Összefoglaló
 
-```cpp
-for (int i = 0; i < childCount; ++i) {
-    splitter->setStretchFactor(i, 1);
-}
-```
+-   ✅ Snapshotok monitorprofilhoz kötve
+-   ✅ Fallback baseline settings.ini‑ben
+-   ✅ Percent‑based minden UI elem
+-   ✅ Deferred restore → nincs több 15px jelenség
+-   ✅ Audit log minden lépésnél
+-   ✅ Tiszta moduláris architektúra
+-   ✅ BOMWorkbench + MainWindow teljesen integrálva
+-   ✅ GeometryHelper a központi számítási motor
 
----
+🦎 Szaladgyík‑garancia:
+A UI állapotod most már soha többé nem fog eltűnni, nem lesz 15px
+splitter, nem lesz rossz DPI restore, és a rendszer minden monitoron
+stabilan működik.
 
-### 4. **Audit log finomítása**
-Írd ki restore előtt a `totalPixels` értéket, így azonnal látod, ha túl kicsi:
+------------------------------------------------------------------------
 
-```cpp
-zEventINFO(QString("🔎 Splitter restore diag: total=%1, percent=%2")
-           .arg(totalPixels).arg(percentState));
-```
+Ha szeretnéd, ebből készítek:
 
----
+-   📄 PDF‑re exportálható verziót
+-   📚 Wiki‑oldalra optimalizált verziót
+-   🧩 README.md‑be illeszthető rövidített változatot
 
-## Röviden
-
-- A helperben legyen **méretellenőrzés**: ha túl kicsi, halassza későbbre.
-- Adjon **értelmes fallbacket** (pl. 100px per child).
-- Állítson be **stretch factorokat** automatikusan.
-- Audit logban jelezze, ha halasztott restore történt.
-
----
-
-🦎 Szaladgyík: így a GeometryHelper maga védi ki a „15px jelenséget”, és nem kell mindenhol külön showEvent‑be tenni a restore‑t. Ez lesz a következő finomítási feladatunk.
+Csak mondd, melyik legyen a következő.

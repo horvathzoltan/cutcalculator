@@ -77,5 +77,8 @@ private:
 
     bool event(QEvent *e) override;
     void showEvent(QShowEvent* event) override;
-        bool _restoredOnce = false;
+
+    bool _restoredOnce = false;
+    bool _isFullyShown = false;
+
 };

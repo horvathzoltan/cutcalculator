@@ -74,6 +74,9 @@ public:
     void setPhase_4_2();
     /// Befejezés
     void setPhase_5(int exitCode);
+    void setMainWindow(QMainWindow* w){ _mainWindow = w;}
+    QMainWindow* mainWindow() const { return _mainWindow; }
+
 private:
     explicit LifecycleManager(QObject* parent = nullptr);
 
@@ -96,4 +99,6 @@ private:
     bool startupMarked_ = false;
     bool applicationMarked_ = false;
     bool shutdownMarked_ = false;
+
+    QMainWindow* _mainWindow = nullptr;
 };

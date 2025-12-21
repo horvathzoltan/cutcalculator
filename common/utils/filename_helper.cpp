@@ -178,3 +178,45 @@ QString FileNameHelper::getRalPlastic2CsvFile() const {
     return getRalColorsFilePath("p2.csv");
 }
 
+QString FileNameHelper::dataRootPath() const {
+    return _dataRoot.filePath("");
+}
+
+
+QString FileNameHelper::uiSnapshotDirectory() const {
+    const QString root = dataRootPath();   // <-- EZ a helyes, publikus API
+
+    if (root.isEmpty()) {
+        zWarning("⚠️ uiSnapshotDirectory: dataRootPath is empty");
+        return {};
+    }
+
+    QDir dir(root);
+    const QString sub = "ui_snapshots";
+
+    if (!dir.exists(sub)) {
+        if (!dir.mkpath(sub)) {
+            zError("❌ uiSnapshotDirectory: mkpath(ui_snapshots) failed");
+            return {};
+        }
+    }
+
+    dir.cd(sub);
+    return dir.absolutePath();
+}
+
+
+QString FileNameHelper::uiSnapshotFilePath(const QString& profile) const {
+    const QString dirPath = uiSnapshotDirectory();
+    if (dirPath.isEmpty()) {
+        zWarning("⚠️ uiSnapshotFilePath: snapshot directory is empty");
+        return {};
+    }
+
+    QDir dir(dirPath);
+    const QString fileName = QStringLiteral("geometry_%1.ini").arg(profile);
+
+    return dir.filePath(fileName);
+}
+
+

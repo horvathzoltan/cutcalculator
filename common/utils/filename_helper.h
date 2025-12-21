@@ -108,4 +108,11 @@ public:
     QString getNeedCalculationCsvFile() const;
     QString getNeedCalculationDetailCsvFile() const;
     QString getBarcodeCsvFile() const;
+
+    // Új: snapshot könyvtár
+    QString uiSnapshotDirectory() const;
+
+    // Új: snapshot file path monitorprofil alapján
+    QString uiSnapshotFilePath(const QString& profile) const;
+    QString dataRootPath() const;
 };

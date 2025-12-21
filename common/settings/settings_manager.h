@@ -217,5 +217,7 @@ private:
 
     SettingsStore _store;
     QString _testProfile = "none";
+    bool _windowRestored = false;
+
 };
 

@@ -16,10 +16,13 @@ SOURCES += \
     barcodes/registry/barcode_registry.cpp \
     barcodes/repository/barcode_repository.cpp \
     barcodes/validator/barcode_validator.cpp \
+    common/layout/layout_default_store.cpp \
+    common/snapshot/snapshot_manager.cpp \
     common/system/verbose_manager.cpp \
     common/system/verbose_registry_initializer.cpp \
     common/utils/geometry_helper.cpp \
     common/utils/table_formatter.cpp \
+    mainwindow.cpp \
     materials/view/color_badge.cpp \
     needs/manager/material_requirements_manager.cpp \
     needs/registry/need_rule_registry.cpp \
@@ -53,7 +56,6 @@ SOURCES += \
     common/utils/filename_helper.cpp \
     common/utils/project_root_locator.cpp \
     main.cpp \
-    mainwindow.cpp \
     materials/view/material_table_widget.cpp \
     materials/model/crosssectionshape.cpp \
     materials/model/material_type.cpp \
@@ -73,8 +75,11 @@ HEADERS += \
     barcodes/repository/barcode_repository.h \
     barcodes/helpers/barcode_collision_helper.h \
     barcodes/validator/barcode_validator.h \
+    common/layout/layout_default_store.h \
     common/registry/registry_lookup.h \
     common/registry/registry_traits.h \
+    common/snapshot/snapshot_manager.h \
+    common/snapshot/workbench_snapshot.h \
     common/system/nameof.hpp \
     common/system/verbose_manager.h \
     common/utils/font_utils.h \

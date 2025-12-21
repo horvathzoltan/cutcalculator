@@ -1,5 +1,6 @@
 #include "settings_manager.h"
 #include "common/utils/filename_helper.h"
+#include "common/utils/geometry_helper.h"
 
 SettingsManager& SettingsManager::instance() {
     static SettingsManager _instance;
@@ -70,3 +71,7 @@ void SettingsStore::setValue_persistent(const QString& key, const QByteArray& va
     setValue(key, value);
     sync();
 }
+
+
+
+

@@ -89,6 +89,7 @@ public:
 
     static QString saveHeaderState(QHeaderView *header);
     static void restoreHeaderState(QHeaderView *header, const QString &percentState);
+    static bool isWindowGeometryReady(QWidget *w);
 private:
     static double parsePercentToken(const QString& token);
     static QStringList toPercentTokens(const QList<int>& sizes);

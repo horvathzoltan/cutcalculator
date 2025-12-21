@@ -1,5 +1,4 @@
 #include "mainwindow.h"
-//#include "products/view/product_tree_view.h"
 #include "ui_mainwindow.h"
 
 #include "common/logger/event_logger.h"
@@ -9,12 +8,6 @@
 
 #include "materials/view/material_table_widget.h"
 #include "materials/view/material_table_manager.h"
-//#include "materials/repository/material_repository.h"
-//#include "materials/registry/material_registry.h"
-
-//#include "products/repository/product_repository.h"
-//#include "products/registry/product_registry.h"
-//#include "products/view/product_tree_manager.h"
 
 #include "workbench/view/bom_workbench.h"
 
@@ -22,6 +15,10 @@
 #include <QToolBar>
 
 #include "common/utils/geometry_helper.h"
+
+#include "common/layout/layout_default_store.h"
+#include "common/snapshot/snapshot_manager.h"
+
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -33,16 +30,26 @@ MainWindow::MainWindow(QWidget *parent)
     // — Ablak geometria visszaállítása —
     // ablakméret - az esemény időzítve (Qt event queue-ban)
     QtEventUtil::post(this, [this]() {
-        // Ablak geometriát visszaállítjuk
-        QString geom = SettingsManager::instance().windowGeometryPercent();
-        QSize savedScreen = GeometryHelper::parseScreenSize(SettingsManager::instance().screenSizeString());
-        GeometryHelper::restoreWindowGeometry(this, geom, savedScreen);
+        // 1) Window restore snapshotból (per monitor profil)
+        bool restoredFromSnapshot = SnapshotManager::instance().restoreWindowSnapshot(this);
 
-        // Splitter állapot visszaállítása
-        QString split = SettingsManager::instance().mainSplitterPercent();
-        GeometryHelper::restoreSplitterState(ui->splitter, split);
+        // 2) Ha nincs snapshot, akkor fallback a UiDefaultStore-ból (settings.ini)
+        if (!restoredFromSnapshot) {
+            const QString geom = LayoutDefaultStore::instance().windowGeometryPercent();
+            const QSize savedScreen = GeometryHelper::parseScreenSize(
+                LayoutDefaultStore::instance().screenSizeString());
+            if (!geom.isEmpty()) {
+                GeometryHelper::restoreWindowGeometry(this, geom, savedScreen);
+            }
+        }
 
-        zEventINFO("✅ UI Settings loaded (percent-based)");
+        // 3) MainWindow splitter állapot – fallback percent alapú
+        const QString split = LayoutDefaultStore::instance().mainSplitterPercent();
+        if (!split.isEmpty()) {
+            GeometryHelper::restoreSplitterState(ui->splitter, split);
+        }
+
+        zEventINFO("✅ UI Settings loaded (percent-based + snapshot-aware)");
     });
 
 
@@ -54,9 +61,6 @@ MainWindow::MainWindow(QWidget *parent)
 
     //loadMaterials(); // 1) Anyagok betöltése registry-be (CSV)
     initMaterialsTab(); // 2) Viewer fül inicializálása és feltöltése
-
-    //loadProductDefinitions();     // 1) Betöltés a registry-be
-    //initProductTypesTab();     // 2) Tab + fa felépítése
 
     // BOM Workbench fül
     {
@@ -71,6 +75,58 @@ MainWindow::~MainWindow()
 {
     delete _logAdapter;
     delete ui;
+}
+
+void MainWindow::resizeEvent(QResizeEvent* e) {
+    QMainWindow::resizeEvent(e);
+    if (GeometryHelper::isWindowGeometryReady(this)) {
+        SnapshotManager::instance().saveWindowSnapshot(this);
+    }
+}
+
+void MainWindow::moveEvent(QMoveEvent* e) {
+    QMainWindow::moveEvent(e);
+    if (GeometryHelper::isWindowGeometryReady(this)) {
+        SnapshotManager::instance().saveWindowSnapshot(this);
+    }
+}
+
+void MainWindow::changeEvent(QEvent* e) {
+    if (e->type() == QEvent::WindowStateChange) {
+        if (GeometryHelper::isWindowGeometryReady(this)) {
+            SnapshotManager::instance().saveWindowSnapshot(this);
+        }
+    }
+    QMainWindow::changeEvent(e);
+}
+
+void MainWindow::closeEvent(QCloseEvent* event)
+{
+    // Window fallback layout percent-based – UiDefaultStore kezeli a settings.ini-t
+    const QString geom = GeometryHelper::saveWindowGeometry(this);
+    LayoutDefaultStore::instance().setWindowGeometryPercent(geom);
+
+    const QString scr = this->screen()
+                            ? GeometryHelper::serializeScreenSize(this->screen()->size())
+                            : QString();
+    LayoutDefaultStore::instance().setScreenSizeString(scr);
+
+    // Main splitter fallback
+    const QString split = GeometryHelper::saveSplitterState(ui->splitter);
+    LayoutDefaultStore::instance().setMainSplitterPercent(split);
+
+    // BOMWorkbench állapot mentés (ez belül maga is hívja a SnapshotManager-t + UiDefaultStore-t)
+    if (auto* bom = ui->tabWidget->findChild<BOMWorkbench*>()) {
+        bom->saveState();
+    }
+
+    // Aktív tab mentése – ez továbbra is klasszikus setting
+    SettingsManager::instance().setCurrentTabIndex(ui->tabWidget->currentIndex());
+
+    // Fallback settings flush
+    LayoutDefaultStore::instance().flush();
+
+    event->accept();
 }
 
 void MainWindow::initEventLogWidget() {
@@ -100,66 +156,6 @@ bool MainWindow::event(QEvent* e)
     return QMainWindow::event(e); // minden más esemény átadva az alapnak
 }
 
-// void MainWindow::closeEvent(QCloseEvent* event)
-// {
-//     // — Ablak geometria mentése —
-//     SettingsManager::instance().setWindowGeometry(saveGeometry());
-
-//     // — Splitter állapot mentése —
-//     SettingsManager::instance().setMainSplitterState(ui->splitter->saveState());
-
-//     // BOMWorkbench állapot mentés (splitter + fa fejlécek)
-//     if (auto* bom = ui->tabWidget->findChild<BOMWorkbench*>()) {
-//         bom->saveState();
-//     }
-
-//     if (_productTypesSplitter) {
-//         SettingsManager::instance().setProductTypesSplitterState(
-//             _productTypesSplitter->saveState()
-//             );
-//     }
-
-//     // — Aktív tab mentése (opcionális) —
-//     SettingsManager::instance().setCurrentTabIndex(ui->tabWidget->currentIndex());
-
-//     SettingsManager::instance().save();
-//     event->accept();
-// }
-
-void MainWindow::closeEvent(QCloseEvent* event)
-{
-    // Ablak geometriát mentjük percent stringként
-    QString geom = GeometryHelper::saveWindowGeometry(this);
-    SettingsManager::instance().setWindowGeometryPercent(geom);
-
-    // Screen méretet is mentjük
-    QString scr = GeometryHelper::serializeScreenSize(this->screen()->size());
-    SettingsManager::instance().setScreenSizeString(scr);
-
-    // Splitter állapot mentése percent stringként
-    QString split = GeometryHelper::saveSplitterState(ui->splitter);
-    SettingsManager::instance().setMainSplitterPercent(split);
-
-    // BOMWorkbench állapot mentés
-    if (auto* bom = ui->tabWidget->findChild<BOMWorkbench*>()) {
-        bom->saveState();
-    }
-
-    // Aktív tab mentése
-    SettingsManager::instance().setCurrentTabIndex(ui->tabWidget->currentIndex());
-
-    SettingsManager::instance().save();
-    event->accept();
-}
-
-/**/
-
-// void MainWindow::loadMaterials() {
-//     // Betölti a materials.csv-t → registry.setData(...)
-//     // Ha a FileNameHelper nincs inicializálva, a repo false-szal tér vissza.
-//     MaterialRepository::loadFromCSV(MaterialRegistry::instance());
-// }
-
 void MainWindow::initMaterialsTab() {
     // Keressünk egy tabot, vagy hozzunk létre egyet programból
     // Feltételezzük, hogy a Designerben van egy QTabWidget: ui->tabWidget
@@ -182,87 +178,3 @@ void MainWindow::initMaterialsTab() {
     _materialsManager->populateAll();
 }
 
-/*products*/
-
-// void MainWindow::loadProductDefinitions() {
-//     bool loaded = ProductRepository::loadFromCSV(ProductRegistry::instance());
-//     if(loaded){
-//         zInfo(QString("📊 ProductRegistry: %1 terméktípus tárolva").arg(ProductRegistry::instance().size()));
-//     }
-//     else{
-//         zInfo("⚠️ ProductRegistry: terméktípusok betöltése sikertelen");
-//     }
-// }
-
-// void MainWindow::initProductTypesTab() {
-//     // Új tab programból
-//     QWidget* productTab = new QWidget(ui->tabWidget);
-//     productTab->setObjectName("productTypesTab");
-//     ui->tabWidget->addTab(productTab, tr("Product Types"));
-
-//     auto* layout = new QVBoxLayout(productTab);
-//     _productTypesSplitter = new QSplitter(Qt::Horizontal, productTab);
-
-//     layout->addWidget(_productTypesSplitter);
-
-//     // Bal oldal: fa
-//     _productTreeView = new ProductTreeView(_productTypesSplitter);
-
-//     // Oszlopszélességek visszaállítása
-//     QByteArray headerState = SettingsManager::instance().productTreeHeaderState();
-//     if (!headerState.isEmpty()) {
-//         _productTreeView->header()->restoreState(headerState);
-//     }
-
-//     _productTypesSplitter->addWidget(_productTreeView);
-
-//     // Jobb oldal: placeholder (később CalculationRule table)
-//     auto* rightPlaceholder = new QWidget(_productTypesSplitter);
-//     _productTypesSplitter->addWidget(rightPlaceholder);
-
-
-//     QByteArray splitterState = SettingsManager::instance().productTypesSplitterState();
-//     if (!splitterState.isEmpty()) {
-//         _productTypesSplitter->restoreState(splitterState);
-//     }
-
-
-//     // Manager: feltölti a fát
-//     _productTreeManager = new ProductTreeManager(_productTreeView, this);
-//     _productTreeManager->populate();
-
-
-// /**
-//  * Product Types tab inicializálása.
-//  *
-//  * - Bal oldal: fa nézet (Termékcsoportok és Terméktípusok hierarchiája).
-//  * - Jobb oldal: placeholder (később CalculationRule táblázat).
-//  * - Toolbar: új kategória (Termékcsoport), új terméktípus, átnevezés, törlés.
-//  *
-//  * Terminológia:
-//  * - Termékcsoport = kategória (ág, félkövér ciánkék).
-//  * - Terméktípus   = levél (dőlt fehér).
-//  */
-
-//     // Toolbar a productTab fölé
-//     QToolBar* productToolbar = new QToolBar("Product Actions", productTab);
-//     layout->insertWidget(0, productToolbar);
-
-//     QAction* addCategoryAction   = productToolbar->addAction("➕ Új kategória");
-//     QAction* addTypeAction       = productToolbar->addAction("➕ Új terméktípus");
-//     QAction* renameAction   = productToolbar->addAction("✏️ Átnevezés");
-//     QAction* removeAction   = productToolbar->addAction("🗑️ Törlés");
-
-//     // Összekötés a manager slotjaival
-//     connect(addCategoryAction,  &QAction::triggered, _productTreeManager, &ProductTreeManager::addRootProduct);
-//     connect(addTypeAction, &QAction::triggered, _productTreeManager, &ProductTreeManager::addChildProduct);
-//     connect(renameAction,   &QAction::triggered, _productTreeManager, &ProductTreeManager::renameProduct);
-//     connect(removeAction,   &QAction::triggered, _productTreeManager, &ProductTreeManager::removeProduct);
-
-//     // Kontextmenü a QTreeView-hoz
-//     _productTreeView->setContextMenuPolicy(Qt::ActionsContextMenu);
-//     _productTreeView->addAction(addTypeAction);
-//     _productTreeView->addAction(renameAction);
-//     _productTreeView->addAction(removeAction);
-
-// }

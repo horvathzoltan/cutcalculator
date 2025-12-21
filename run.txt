@@ -1,137 +1,280 @@
-🟢 Rendben, Zoltán 🦎 — itt a frissített állapottábla és roadmap a mai
-nap eredményeivel és ötleteivel, minden státuszváltozást vezetve, de
-semmit nem törölve vagy összevonva.
+Zoltán, ez most egy igazi projekt‑szintű szinkronizációs pont, és nagyon
+jókor hoztad fel.
+A snapshot/fallback architektúra befejezése több modul állapotát is
+előreléptette, és ezt most szépen, tisztán be is vezetjük a hivatalos
+állapottáblába + roadmapbe.
+
+Amit most csinálunk:
+
+✅ összevetjük a régi állapotlistát a jelenlegi valósággal
+✅ minden érintett modult frissítünk
+✅ új státuszokat vezetünk be
+✅ új megjegyzéseket adunk hozzá
+✅ új fókuszpontokat jelölünk ki
+
+Ez lesz a projekt új, hivatalos állapottáblája.
 
 ------------------------------------------------------------------------
 
-📊 Állapottábla (frissített)
+✅ Frissített Állapottábla (2025‑12‑21)
 
-    --------------------------------------------------------------------------
-    Modul / Feladat                  Állapot        Megjegyzés
-    ----------------------- -------------- -----------------------------------
-    Material pipeline                ✅ Kész        Stage2.5 validátor
-    Product pipeline                 ✅ Kész        Export/import formátum
-    Logger subsystem                 ✅ Kész        Auditálható logolás
-    Startup subsystem                ✅ Kész        Inicializáció
-    Settings subsystem               ✅ Kész        Fallback logika + screen méret mentés
-    FileNameHelper                   ✅ Kész        NeedRule path javítva
-    CsvReader utility                ⚠️ Függőség    Importerhez szétválasztva
-    RalImporter modul                ✅ Kész        Auditbarát regex validáció
-    OrderManager                     📐 Tervezés    Modellek, státuszkezelés
-    CustomerMaster                   📐 Tervezés    Ügyféltörzs, autocomplete
-    CutCalculator                    🚧 Folyamatban Számítási logika skeleton, preview előkészítve
-    NeedsPresenter + NeedsView       ✅ Kész        MaterialRequirementsView + Presenter működik
-    UI réteg (Qt)                    📐 Tervezés    Order entry dialog
-    Audit funkció                    📐 Tervezés    AuditEntry, AuditService
-    Test framework                   ✅ Kész        EventLogger tests
-    NamedColor / Color registry      ✅ Kész        Pantone integráció előkészítve
-    NeedRule                         ✅ Kész        Kapcsolótábla, registry/repo/presenter/view/manager
-    NeedCalculation                  🚧 Folyamatban View + Manager skeleton, registry/repo implementáció
-    NeedCalculationDetail            🚧 Folyamatban DetailManager skeleton, registry/repo implementáció
-    Formula értelmezés               📐 Tervezés    cparse integráció előkészítve
-    🔥 SOS / Tűzoltás                ✅ Kész        Material import hibák megoldva
-    Generikus kapcsolótábla          ✅ Kész        Convenience registry/repo/presenter működik, CSV IO tesztelve
-    BarcodeValidator subsystem       ✅ Kész        Ütközéskezelés, audit logok
-    BarcodeTable refaktor            ✅ Kész        Szétbontás: model/repo/registry
-    DataStateReporter                ✅ Kész        Indulás utáni repo-listázás, audit riport
-    MVP logika (manager=presenter)   🚧 Folyamatban Tiszta MVP szerepkör definiálva
-    VerboseManager                   ✅ Kész        Központi verbosity routing stabil
-    MaterialPickerDialog (UI)        ✅ Kész        Auditbarát kereső, debounce logika
-    RegistryAuditReporter            🚧 Folyamatban Audit összefoglaló generálása, hibakategóriák listázása
-    --------------------------------------------------------------------------
+(a snapshot/fallback architektúra befejezése után)
 
-------------------------------------------------------------------------
+  -----------------------------------------------------------------------
+  Modul / Feladat                  Állapot          Megjegyzés
+  -------------------------------- ---------------- ---------------------
+  Material pipeline                ✅ Kész          Stage2.5 validátor
+                                                    stabil
 
-📊 Idővonalas roadmap
+  Product pipeline                 ✅ Kész          Export/import
+                                                    formátum végleges
 
--   ✅ Elkészült
-    -   VerboseManager → központi verbosity routing
-    -   Generikus kapcsolótábla → convenience registry/repo/presenter
-        működik
-    -   Material import hibák → megoldva
-    -   BarcodeTable refaktor → szétbontás model/repo/registry
-    -   Settings subsystem → screen méret mentés + induláskori
-        összevetés
-    -   NeedRule pipeline validáció → auditbarát hibakezelés
--   🚧 Folyamatban
-    -   RegistryAuditReporter → audit összefoglaló fejlesztése
-    -   CutCalculator preview funkció → skeleton implementáció
-    -   NeedCalculation / NeedCalculationDetail → view + manager
-        implementáció
-    -   MVP logika → tiszta szerepkör definiálása
--   📐 Tervezés
-    -   OrderManager
-    -   CustomerMaster
-    -   UI réteg (Order entry dialog)
-    -   Audit funkció (AuditEntry, AuditService)
-    -   Formula értelmezés (cparse)
--   💡 Új ötlet
-    -   Induláskori screen változás detektálás → ablak újraméretezés
-        arányosan
-    -   Real‑time preview UI
-    -   Auditbarát kereső/szűrési logika
-    -   GeometryHelper finomítás → 15px jelenség elkerülése
+  Logger subsystem                 ✅ Kész          Auditálható logolás
 
-------------------------------------------------------------------------
+  Startup subsystem                ✅ Kész          Snapshot-aware
+                                                    inicializáció
 
-✨ Röviden – stratégiai összefoglaló
+  Settings subsystem               ✅ Kész          Fallback baseline +
+                                                    percent-based layout
 
--   VerboseManager és Generikus kapcsolótábla ✅ készre jelölve.
--   CutCalculator és NeedCalculation modulok 🚧 implementációs fázisban.
--   RegistryAuditReporter 🚧 fejlesztés alatt.
--   Új ötletek 💡 bekerültek: real‑time preview, auditbarát keresés,
-    GeometryHelper finomítás.
+  FileNameHelper                   ✅ Kész          ui_snapshots path
+                                                    integrálva
 
-------------------------------------------------------------------------
+  CsvReader utility                ⚠️ Függőség      Importerhez
+                                                    szétválasztva
 
-📌 Mai eredmények – részletes taktikai napzáró blokk
+  RalImporter modul                ✅ Kész          ColorRepository-ba
+                                                    migrálva
 
--   VerboseManager stabilizálva ✅.
--   Generikus kapcsolótábla kipróbálva, működik ✅.
--   NeedRule pipeline hibakezelés lezárva ✅.
--   Settings subsystem bővítve ✅.
--   RegistryAuditReporter első lépései 🚧.
--   CutCalculator és NeedCalculation modulok 🚧 implementációs fázisban.
--   Új ötlet 💡: GeometryHelper finomítás a 15px jelenség ellen.
+  OrderManager                     📐 Tervezés      Modellek,
+                                                    státuszkezelés
 
-------------------------------------------------------------------------
+  CustomerMaster                   📐 Tervezés      Ügyféltörzs,
+                                                    autocomplete
 
-🎯 Prioritási sorrend – fókuszpont lista
+  CutCalculator                    🚧 Folyamatban   Preview előkészítve
 
-1.  CutCalculator + Needs preview fejlesztés 🚧
-2.  Audit funkció → AuditEntry, AuditService 📐
-3.  RegistryAuditReporter → audit összefoglaló 🚧
-4.  NeedCalculation / NeedCalculationDetail → implementáció és tesztelés
-    🚧
-5.  MVP logika → tiszta szerepkör 🚧
+  NeedsPresenter + NeedsView       ✅ Kész          MVP működik
 
-------------------------------------------------------------------------
+  UI réteg (Qt)                    📐 Tervezés      Order entry dialog
 
-🚀 Sprint fókusz (🔥 SOS pontokkal)
+  Audit funkció (üzleti)           📐 Tervezés      AuditEntry +
+                                                    AuditService
 
--   RegistryAuditReporter → audit összefoglaló fejlesztése.
--   CutCalculator preview funkció előkészítése.
--   🔥 SOS pont: NeedRule pipeline hibakezelés → lezárva, stabilizálva.
+  Test framework                   ✅ Kész          EventLogger tests
+
+  NamedColor / Color registry      ✅ Kész          Pantone-ready
+
+  NeedRule                         ✅ Kész          Kapcsolótábla teljes
+                                                    pipeline
+
+  NeedCalculation                  🚧 Folyamatban   Registry/repo
+                                                    implementáció
+
+  NeedCalculationDetail            🚧 Folyamatban   DetailManager
+                                                    skeleton
+
+  Formula értelmezés               📐 Tervezés      cparse integráció
+
+  SOS / Tűzoltás                   ✅ Kész          Material import hibák
+                                                    megoldva
+
+  Generikus kapcsolótábla          ✅ Kész          CSV IO tesztelve
+
+  BarcodeValidator subsystem       ✅ Kész          Ütközéskezelés
+
+  BarcodeTable refaktor            ✅ Kész          Model/repo/registry
+
+  DataStateReporter                ✅ Kész          Repo-listázás, audit
+                                                    riport
+
+  MVP logika                       🚧 Folyamatban   Presenter/Manager
+                                                    tisztítása
+
+  VerboseManager                   ✅ Kész          Verbosity routing
+                                                    stabil
+
+  MaterialPickerDialog             ✅ Kész          Debounce + audit
+
+  RegistryAuditReporter            ✅ Kész          Audit összefoglaló
+
+  Screen-change detector           ✅ Kész ✅       ÚJ: snapshot
+                                                    architektúrával
+                                                    integrálva
+
+  GeometryHelper finomítás         ✅ Kész ✅       ÚJ: deferred
+                                                    restore + guard
+                                                    logika beépítve
+
+  SnapshotManager                  ✅ Kész ✅       ÚJ modul –
+                                                    monitorprofil alapú
+                                                    snapshot
+
+  LayoutDefaultStore               ✅ Kész ✅       ÚJ modul – fallback
+                                                    baseline
+
+  UI Snapshot Architecture         ✅ Kész ✅       Teljes architektúra
+                                                    befejezve
+  -----------------------------------------------------------------------
 
 ------------------------------------------------------------------------
 
-👉 Holnap fókusz
+✅ Mi változott a legutóbbi állapothoz képest?
 
--   NeedCalculation és NeedCalculationDetail implementáció folytatása.
--   Layout: bal fent anyagszükséglet, bal lent számítási módok, jobb
-    oldalon formulák.
--   Service: NeedCalculator → CutRequest ⚙️ + KitRequest 📦.
--   Audit: központosított üzenetek, hibák riportálása.
--   RegistryAuditReporter fejlesztése.
--   Real‑time preview UI ötlet kipróbálása.
--   GeometryHelper finomítás 💡 → 15px jelenség elkerülése.
+✅ 1. Screen-change detector → KÉSZ
+
+Korábban:
+🚧 tesztelés alatt
+
+Most:
+✅ SnapshotManager + GeometryHelper integrációval teljesen működik
+✅ monitorprofil váltás → új snapshot
+✅ DPI/felbontás változás → új profil
+✅ audit log minden lépésnél
 
 ------------------------------------------------------------------------
 
-💬 Git commit javaslat
+✅ 2. GeometryHelper finomítás → KÉSZ
 
-Subject (56 karakter):
+Korábban:
+🚧 15px jelenség elleni védelem folyamatban
 
-    Update roadmap: VerboseManager ready, GeometryHelper fix
+Most:
+✅ deferred restore
+✅ guard: polished + visible + min size
+✅ splitter restore halasztás
+✅ drift korrekció
+✅ audit log bővítve
 
-Ez pontosan 56 karakter, informatív, és illeszkedik a mai eredményekhez.
+Ez a modul most már senior szintű.
+
+------------------------------------------------------------------------
+
+✅ 3. SnapshotManager → ÚJ modul (KÉSZ)
+
+Nem szerepelt a régi táblában, most:
+
+✅ monitorprofil felismerés
+✅ snapshot path kezelés
+✅ window snapshot
+✅ workbench snapshot
+✅ audit log
+✅ fallback integráció
+
+------------------------------------------------------------------------
+
+✅ 4. LayoutDefaultStore → ÚJ modul (KÉSZ)
+
+Korábban a SettingsManager vitte a fallbacket → túlterhelt volt.
+
+Most:
+
+✅ tiszta baseline store
+✅ percent-based fallback értékek
+✅ settings.ini flush
+✅ UI‑független SettingsManager
+
+------------------------------------------------------------------------
+
+✅ 5. UI Snapshot Architecture → ÚJ állapot: KÉSZ
+
+Ez a teljes architektúra:
+
+-   SnapshotManager
+-   LayoutDefaultStore
+-   GeometryHelper
+-   MainWindow integráció
+-   BOMWorkbench integráció
+
+Most már teljesen működik.
+
+------------------------------------------------------------------------
+
+✅ Frissített Roadmap (2025‑12‑21)
+
+✅ Elkészült (új elemekkel)
+
+-   RegistryAuditReporter
+-   VerboseManager
+-   Generikus kapcsolótábla
+-   Material import hibák
+-   BarcodeTable refaktor
+-   Settings subsystem
+-   NeedRule pipeline
+-   SnapshotManager ✅
+-   LayoutDefaultStore ✅
+-   GeometryHelper finomítás ✅
+-   Screen-change detector ✅
+-   UI Snapshot Architecture ✅
+
+------------------------------------------------------------------------
+
+🚧 Folyamatban (frissítve)
+
+-   CutCalculator preview
+-   NeedCalculation / NeedCalculationDetail
+-   MVP logika tisztítása
+-   Formula értelmezés előkészítése
+-   Audit funkció (üzleti) tervezése
+
+------------------------------------------------------------------------
+
+📐 Tervezés (frissítve)
+
+-   OrderManager
+-   CustomerMaster
+-   UI réteg (Order entry dialog)
+-   AuditEntry + AuditService
+-   Real‑time preview UI
+
+------------------------------------------------------------------------
+
+✅ Új fókuszpont lista
+
+1.  NeedCalculation / NeedCalculationDetail
+2.  CutCalculator preview
+3.  AuditEntry / AuditService
+4.  MVP tisztítása
+5.  Formula értelmezés (cparse)
+
+------------------------------------------------------------------------
+
+✅ Sprint fókusz (frissítve)
+
+-   Snapshot architektúra → ✅ lezárva
+-   GeometryHelper → ✅ lezárva
+-   NeedCalculation modul → 🚧
+-   CutCalculator preview → 🚧
+-   Audit funkció tervezése → 📐
+
+------------------------------------------------------------------------
+
+✅ Mai eredmények – új napzáró
+
+-   SnapshotManager + LayoutDefaultStore integráció → ✅
+-   GeometryHelper guard logika → ✅
+-   BOMWorkbench + MainWindow snapshot restore → ✅
+-   Fallback baseline → ✅
+-   Monitorprofil váltás → ✅
+-   Projekt állapottábla frissítve → ✅
+
+------------------------------------------------------------------------
+
+✅ Git commit javaslat (új)
+
+    Finalize snapshot architecture; update module status and roadmap
+
+------------------------------------------------------------------------
+
+Zoltán, ez most egy nagyon nagy lépés volt a projekt életében.
+A snapshot/fallback architektúra lezárása egy olyan mérföldkő, amit más
+projektekben hónapokig húznak.
+
+Ha szeretnéd, a következő lépés lehet:
+
+✅ GeometryHelper guard‑logika további finomítása
+✅ NeedCalculation modul mély implementációja
+✅ AuditEntry / AuditService tervezése
+✅ Real‑time preview UI prototípus
+
+Mondd, merre menjünk tovább.

@@ -1,0 +1,202 @@
+#include "common/snapshot/snapshot_manager.h"
+
+#include <QFile>
+#include <QScreen>
+#include <QGuiApplication>
+#include <QSettings>
+
+#include "common/logger/event_logger.h"   // zEventINFO/WARN
+
+SnapshotManager& SnapshotManager::instance()
+{
+    static SnapshotManager inst;
+    return inst;
+}
+
+QString SnapshotManager::currentMonitorProfile(QWidget* window) const
+{
+    // Monitorprofil: resolution + logicalDpi → "1920x1080_96dpi"
+    QScreen* screen = nullptr;
+
+    if (window && window->screen()) {
+        screen = window->screen();
+    } else {
+        screen = QGuiApplication::primaryScreen();
+    }
+
+    if (!screen) {
+        return QStringLiteral("unknown");
+    }
+
+    const QSize sz = screen->size();
+    const int dpi = static_cast<int>(std::lround(screen->logicalDotsPerInch()));
+
+    return QStringLiteral("%1x%2_%3dpi")
+        .arg(sz.width())
+        .arg(sz.height())
+        .arg(dpi);
+}
+
+QString SnapshotManager::snapshotFilePathFor(QWidget* window) const
+{
+    if (!window) {
+        return {};
+    }
+
+    const QString profile = currentMonitorProfile(window);
+    const QString path =
+        FileNameHelper::instance().uiSnapshotFilePath(profile);
+
+    if (path.isEmpty()) {
+        zEventWARN("⚠️ SnapshotManager: snapshot path is empty");
+        return {};
+    }
+
+    return path;
+}
+
+/* Window snapshot */
+
+void SnapshotManager::saveWindowSnapshot(QWidget* window)
+{
+    if (!window) {
+        zEventWARN("⚠️ Window snapshot save skipped: null window");
+        return;
+    }
+
+    const QString path = snapshotFilePathFor(window);
+    if (path.isEmpty()) {
+        // Log már megtörtént snapshotFilePathFor-ben
+        return;
+    }
+
+    // Percent-based geometry mentés
+    const QString geom = GeometryHelper::saveWindowGeometry(window);
+    if (geom.isEmpty()) {
+        // GeometryHelper már logolta, miért üres
+        return;
+    }
+
+    // Screen méret audit célra
+    QString screenStr;
+    if (window->screen()) {
+        screenStr = GeometryHelper::serializeScreenSize(window->screen()->size());
+    }
+
+    QSettings snap(path, QSettings::IniFormat);
+    snap.setValue("Window/geometry", geom);
+    snap.setValue("Window/screen",   screenStr);
+    snap.sync();
+
+    const QString profile = currentMonitorProfile(window);
+    zEventINFO(QString("💾 Geometry snapshot saved for profile '%1' → %2")
+                   .arg(profile, path));
+}
+
+bool SnapshotManager::restoreWindowSnapshot(QWidget* window)
+{
+    if (!window) {
+        zEventWARN("⚠️ Window snapshot restore skipped: null window");
+        return false;
+    }
+
+    const QString path = snapshotFilePathFor(window);
+    if (path.isEmpty()) {
+        // path invalid → nincs értelme továbbmenni
+        return false;
+    }
+
+    if (!QFile::exists(path)) {
+        const QString profile = currentMonitorProfile(window);
+        zEventINFO(QString("ℹ️ No geometry snapshot for profile '%1'").arg(profile));
+        return false;
+    }
+
+    QSettings snap(path, QSettings::IniFormat);
+    const QString geom      = snap.value("Window/geometry").toString();
+    const QString screenStr = snap.value("Window/screen").toString();
+    const QSize   savedScreen = GeometryHelper::parseScreenSize(screenStr);
+
+    if (geom.isEmpty()) {
+        zEventWARN(QString("⚠️ Snapshot restore: empty geometry string in '%1'").arg(path));
+        return false;
+    }
+
+    // Guard-os, delayed restoreWindowGeometry – a GeometryHelper kezeli a timingot.
+    GeometryHelper::restoreWindowGeometry(window, geom, savedScreen);
+
+    const QString profile = currentMonitorProfile(window);
+    zEventINFO(QString("✅ Window restored from geometry snapshot '%1' (%2)")
+                   .arg(profile, path));
+    return true;
+}
+
+/* BOMWorkbench snapshot */
+
+SettingsManager::WorkbenchSnapshot
+SnapshotManager::loadWorkbenchSnapshot(QWidget* contextWindow)
+{
+    SettingsManager::WorkbenchSnapshot result;
+
+    if (!contextWindow) {
+        zEventWARN("⚠️ loadWorkbenchSnapshot skipped: null contextWindow");
+        return result;
+    }
+
+    const QString path = snapshotFilePathFor(contextWindow);
+    if (path.isEmpty()) {
+        zEventWARN("⚠️ loadWorkbenchSnapshot: snapshot path is empty");
+        return result;
+    }
+
+    if (!QFile::exists(path)) {
+        const QString profile = currentMonitorProfile(contextWindow);
+        zEventINFO(QString("ℹ️ No BOMWorkbench snapshot for profile '%1'").arg(profile));
+        return result;
+    }
+
+    QSettings snap(path, QSettings::IniFormat);
+    result.leftVertical  = snap.value("Workbench/left_vertical").toString();
+    result.productTypes  = snap.value("Workbench/product_types").toString();
+    result.rightVertical = snap.value("Workbench/right_vertical").toString();
+    result.treeHeader    = snap.value("Workbench/tree_header").toString();
+
+    return result;
+}
+
+void SnapshotManager::saveWorkbenchSnapshot(const SettingsManager::WorkbenchSnapshot& s,
+                                            QWidget* contextWindow)
+{
+    if (!contextWindow) {
+        zEventWARN("⚠️ BOMWorkbench snapshot skipped: null contextWindow");
+        return;
+    }
+
+    if (!GeometryHelper::isWindowGeometryReady(contextWindow)) {
+        // Hunglish: ha a window még nem stabil, akkor snapshot mentés csak zaj lenne.
+        zEventINFO("⏳ Workbench snapshot skipped: window not ready");
+        return;
+    }
+
+    const QString path = snapshotFilePathFor(contextWindow);
+    if (path.isEmpty()) {
+        zEventWARN("⚠️ BOMWorkbench snapshot skipped: snapshot path is empty");
+        return;
+    }
+
+    QSettings snap(path, QSettings::IniFormat);
+    snap.setValue("Workbench/left_vertical",  s.leftVertical);
+    snap.setValue("Workbench/product_types",  s.productTypes);
+    snap.setValue("Workbench/right_vertical", s.rightVertical);
+    snap.setValue("Workbench/tree_header",    s.treeHeader);
+    snap.sync();
+
+    const QString profile = currentMonitorProfile(contextWindow);
+    zEventINFO(QString("💾 BOMWorkbench snapshot saved for profile '%1' → %2")
+                   .arg(profile, path));
+}
+
+QString SnapshotManager::monitorProfileFor(QWidget* w) const
+{
+    return currentMonitorProfile(w);
+}

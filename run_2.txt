@@ -38,7 +38,9 @@ Ne adj még kódot, csak a fájlneveket.
 
 
 Adj egy teljes követelményspecifikációt, funkcionális specifikációt és implementációs tervet 
-- használj emojikat - a fent említett funkció kifejlesztéséhez!
+- használj emojikat - a fent említett funkció kifejlesztéséhez! 
+
+Markdown dokumentációt kérek!
 
 
 ✨ Hogyan működik - sourcetotxt.sh
