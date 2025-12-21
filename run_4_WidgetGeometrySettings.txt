@@ -34,7 +34,9 @@ CutCalculator – végleges architektúra dokumentáció
 5.  🏗️ Modularchitektúra
 6.  🔄 Folyamatok
 7.  📁 Fájlstruktúra
-8.  ✨ Összefoglaló
+8.  🧩 Hogyan adjunk hozzá új UI elemet a snapshot rendszerhez?
+9.  🧪 Gyakorlati példák: új UI elemek integrálása lépésről lépésre
+A.  ✨ Összefoglaló
 
 ------------------------------------------------------------------------
 
@@ -293,6 +295,208 @@ A megoldás három fő pilléren áll:
 
 ------------------------------------------------------------------------
 
+🧩 Hogyan adjunk hozzá új UI elemet a snapshot rendszerhez?
+
+Ez a fejezet bemutatja, hogyan lehet bármilyen új UI komponenst
+(splitter, header, panel, custom widget) integrálni a CutCalculator
+snapshot‑architektúrájába.
+A folyamat három egyszerű, jól definiált lépésből áll.
+
+------------------------------------------------------------------------
+
+✅ 1. lépés — Döntsük el, hogy az új UI elem melyik modulhoz tartozik
+
+A snapshot rendszer moduláris:
+
+-   MainWindow → [Window] szekció
+-   BOMWorkbench → [Workbench] szekció
+-   Egyéb UI modulok → saját szekciót kaphatnak (pl. [ColorEditor],
+    [SettingsPanel])
+
+Alapszabály:
+👉 Az UI elem snapshotját mindig az a modul menti, amelyik birtokolja.
+
+Példák:
+
+  UI elem                     Modul           Snapshot szekció
+  --------------------------- --------------- ------------------
+  MainWindow geometry         MainWindow      [Window]
+  Workbench splitters         BOMWorkbench    [Workbench]
+  ProductTree header          BOMWorkbench    [Workbench]
+  Új SettingsPanel splitter   SettingsPanel   [SettingsPanel]
+
+------------------------------------------------------------------------
+
+✅ 2. lépés — Implementáljuk a mentést (saveState)
+
+Minden új UI elemhez két mentés készül:
+
+✅ 2.1 Fallback baseline (LayoutDefaultStore)
+
+Ez mindig percent‑alapú, emberi olvasható:
+
+    const QString state = GeometryHelper::saveSplitterState(mySplitter);
+    LayoutDefaultStore::instance().setMyNewSplitterPercent(state);
+
+✅ 2.2 Snapshot (SnapshotManager)
+
+A modul snapshot struktúrájába felvesszük:
+
+    snap.myNewSplitter = state;
+
+Majd a modul végén:
+
+    SnapshotManager::instance().saveMyModuleSnapshot(snap, this);
+
+------------------------------------------------------------------------
+
+✅ 3. lépés — Implementáljuk a visszaállítást (restoreState)
+
+A restore mindig:
+
+1.  snapshot → ha van
+2.  fallback → ha nincs snapshot
+3.  deferred restore → ha a widget még nem ready
+
+Példa:
+
+    const QString state = !snap.myNewSplitter.isEmpty()
+        ? snap.myNewSplitter
+        : LayoutDefaultStore::instance().myNewSplitterPercent();
+
+    if (!state.isEmpty()) {
+        GeometryHelper::restoreSplitterState(mySplitter, state);
+    }
+
+------------------------------------------------------------------------
+
+✅ 4. lépés — Deferred restore (ha szükséges)
+
+Ha az új UI elem mérete vagy layoutja csak később stabilizálódik,
+használjuk:
+
+    QtEventUtil::post(this, [this]() {
+        restoreState();
+    });
+
+Ez garantálja, hogy:
+
+-   nincs több 15px jelenség
+-   a layout már kiosztotta a méreteket
+-   a restore mindig stabil
+
+------------------------------------------------------------------------
+
+✅ 5. lépés — Audit log hozzáadása
+
+Minden új UI elemhez legyen:
+
+-   ✅ mentési log
+-   ✅ restore log
+-   ⚠️ halasztási log
+-   ⚠️ invalid state log
+
+Ez biztosítja a teljes átláthatóságot.
+
+------------------------------------------------------------------------
+
+🧪 Gyakorlati példák: új UI elemek integrálása
+
+Ebben a fejezetben három konkrét példán keresztül mutatjuk be a
+folyamatot.
+
+------------------------------------------------------------------------
+
+✅ Példa 1 — Új splitter hozzáadása a Workbenchhez
+
+1) Fallback mentés
+
+    const QString state = GeometryHelper::saveSplitterState(_newSplitter);
+    LayoutDefaultStore::instance().setNewSplitterPercent(state);
+    snap.newSplitter = state;
+
+2) Restore
+
+    const QString state = !snap.newSplitter.isEmpty()
+        ? snap.newSplitter
+        : LayoutDefaultStore::instance().newSplitterPercent();
+
+    GeometryHelper::restoreSplitterState(_newSplitter, state);
+
+------------------------------------------------------------------------
+
+✅ Példa 2 — Új header (QHeaderView) snapshot integrálása
+
+1) Mentés
+
+    const QString headerState = GeometryHelper::saveHeaderState(_myHeader);
+    LayoutDefaultStore::instance().setMyHeaderPercent(headerState);
+    snap.myHeader = headerState;
+
+2) Restore
+
+    const QString headerState = !snap.myHeader.isEmpty()
+        ? snap.myHeader
+        : LayoutDefaultStore::instance().myHeaderPercent();
+
+    GeometryHelper::restoreHeaderState(_myHeader, headerState);
+
+------------------------------------------------------------------------
+
+✅ Példa 3 — Egyedi widget (pl. ColorEditorPanel) snapshot integrálása
+
+1) Hozzunk létre egy új snapshot struktúrát
+
+    struct ColorEditorSnapshot {
+        QString leftPanel;
+        QString rightPanel;
+        QString header;
+    };
+
+2) SnapshotManager bővítése
+
+-   loadColorEditorSnapshot()
+-   saveColorEditorSnapshot()
+
+3) A modul saveState() függvénye
+
+    ColorEditorSnapshot snap;
+    snap.leftPanel = GeometryHelper::saveSplitterState(_leftPanel);
+    snap.header = GeometryHelper::saveHeaderState(_header);
+    SnapshotManager::instance().saveColorEditorSnapshot(snap, this);
+
+4) A modul restoreState() függvénye
+
+    ColorEditorSnapshot snap =
+        SnapshotManager::instance().loadColorEditorSnapshot(this);
+
+    GeometryHelper::restoreSplitterState(_leftPanel, snap.leftPanel);
+    GeometryHelper::restoreHeaderState(_header, snap.header);
+
+------------------------------------------------------------------------
+
+✅ Összegzés
+
+Az új UI elemek integrálása a snapshot rendszerbe:
+
+1.  Modul kiválasztása
+2.  Fallback mentés
+3.  Snapshot mentés
+4.  Restore (snapshot → fallback)
+5.  Deferred restore, ha szükséges
+6.  Audit log minden lépésnél
+
+Ezzel a módszerrel a CutCalculator UI‑állapotkezelése:
+
+-   stabil
+-   moduláris
+-   monitorfüggetlen
+-   DPI‑független
+-   auditálható
+-   és könnyen bővíthető
+
+------------------------------------------------------------------------
+
 ✨ Összefoglaló
 
 -   ✅ Snapshotok monitorprofilhoz kötve
@@ -303,18 +507,12 @@ A megoldás három fő pilléren áll:
 -   ✅ Tiszta moduláris architektúra
 -   ✅ BOMWorkbench + MainWindow teljesen integrálva
 -   ✅ GeometryHelper a központi számítási motor
+-   ✅ Fine‑grained snapshot szekciók (Window / Workbench / Splitters /    Headers)
+-   ✅ _restoredOnce és _isFullyShown flag-ek → helyes időzítés, nincs    korai mentés
+-   ✅ Snapshot + fallback hibrid modell → gyors, mégis biztonságos    UI‑restore
+-   ✅ Új UI elemek könnyen integrálhatók (splitter, header, custom    widget)
+-   ✅ SnapshotManager és LayoutDefaultStore teljes szétválasztása
+-   ✅ Monitorváltás és DPI‑váltás stabilan kezelve
+-   ✅ Snapshot fájl emberi olvasható, auditálható, moduláris
+-   ✅ A rendszer ipari szintű UI‑state engine‑né vált
 
-🦎 Szaladgyík‑garancia:
-A UI állapotod most már soha többé nem fog eltűnni, nem lesz 15px
-splitter, nem lesz rossz DPI restore, és a rendszer minden monitoron
-stabilan működik.
-
-------------------------------------------------------------------------
-
-Ha szeretnéd, ebből készítek:
-
--   📄 PDF‑re exportálható verziót
--   📚 Wiki‑oldalra optimalizált verziót
--   🧩 README.md‑be illeszthető rövidített változatot
-
-Csak mondd, melyik legyen a következő.

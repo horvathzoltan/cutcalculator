@@ -4,7 +4,7 @@
 #include "common/registry/registry_base.h"
 #include "common/registry/registry_manager.h"
 #include "common/logger/event_logger.h"
-#include "needscalculation/model/need_calculation.h"
+#include "calcmodes/model/need_calculation.h"
 
 /**
  * @class NeedCalculationRegistry

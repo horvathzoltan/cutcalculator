@@ -1,10 +1,10 @@
 #pragma once
 #include <QObject>
-#include "needscalculation/view/calculation_modes_view.h"
-#include "needscalculation/registry/need_calculation_registry.h"
-#include "needscalculation/registry/need_calculation_detail_registry.h"
-#include "needscalculation/repository/need_calculation_repository.h"
-#include "needscalculation/repository/need_calculation_detail_repository.h"
+#include "calcmodes/view/calculation_modes_view.h"
+#include "calcmodes/registry/need_calculation_registry.h"
+#include "calculation/registry/need_calculation_detail_registry.h"
+#include "calcmodes/repository/need_calculation_repository.h"
+#include "calculation/repository/need_calculation_detail_repository.h"
 
 /**
  * @class CalculationModesManager

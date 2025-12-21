@@ -1,4 +1,4 @@
-#include "needscalculation/view/calculation_mode_detail_view.h"
+#include "calculation/view/calculation_mode_detail_view.h"
 #include <QHeaderView>
 #include <QTableWidgetItem>
 

@@ -1,5 +1,5 @@
-#include "needscalculation/manager/calculation_mode_detail_manager.h"
-#include "needscalculation/registry/need_calculation_detail_registry.h"
+#include "calculation/manager/calculation_mode_detail_manager.h"
+#include "calculation/registry/need_calculation_detail_registry.h"
 #include "common/registry/registry_manager.h"
 #include "common/logger/event_logger.h"
 #include "materials/registry/material_registry.h"

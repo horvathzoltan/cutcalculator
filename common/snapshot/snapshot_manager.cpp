@@ -7,6 +7,8 @@
 
 #include "common/logger/event_logger.h"   // zEventINFO/WARN
 
+#include "workbench_snapshot.h"
+
 SnapshotManager& SnapshotManager::instance()
 {
     static SnapshotManager inst;
@@ -133,10 +135,10 @@ bool SnapshotManager::restoreWindowSnapshot(QWidget* window)
 
 /* BOMWorkbench snapshot */
 
-SettingsManager::WorkbenchSnapshot
+WorkbenchSnapshot
 SnapshotManager::loadWorkbenchSnapshot(QWidget* contextWindow)
 {
-    SettingsManager::WorkbenchSnapshot result;
+    WorkbenchSnapshot result;
 
     if (!contextWindow) {
         zEventWARN("⚠️ loadWorkbenchSnapshot skipped: null contextWindow");
@@ -164,7 +166,7 @@ SnapshotManager::loadWorkbenchSnapshot(QWidget* contextWindow)
     return result;
 }
 
-void SnapshotManager::saveWorkbenchSnapshot(const SettingsManager::WorkbenchSnapshot& s,
+void SnapshotManager::saveWorkbenchSnapshot(const WorkbenchSnapshot& s,
                                             QWidget* contextWindow)
 {
     if (!contextWindow) {

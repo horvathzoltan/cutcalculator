@@ -8,11 +8,11 @@
 #include "needs/view/material_requirements_view.h"
 #include "products/view/product_tree_view.h"
 #include "products/view/product_tree_manager.h"
-#include "needscalculation/view/calculation_modes_view.h"
-#include "needscalculation/view/calculation_mode_detail_view.h"
+#include "calcmodes/view/calculation_modes_view.h"
+#include "calculation/view/calculation_mode_detail_view.h"
 #include "needs/manager/material_requirements_manager.h"
-#include "needscalculation/manager/calculation_modes_manager.h"
-#include "needscalculation/manager/calculation_mode_detail_manager.h"
+#include "calcmodes/manager/calculation_modes_manager.h"
+#include "calculation/manager/calculation_mode_detail_manager.h"
 
 /**
  * @class BOMWorkbench
@@ -80,5 +80,8 @@ private:
 
     bool _restoredOnce = false;
     bool _isFullyShown = false;
+
+
+    void closeEvent(QCloseEvent *event) override;
 
 };

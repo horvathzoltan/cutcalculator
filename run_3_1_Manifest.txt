@@ -1,0 +1,86 @@
+     _..----.._
+   .'  .--.    "-.
+  /   /    \      \
+ |   |  🦫  |      |
+  \   \__/ /     /
+   '-.__.-'___.-'
+    /  _.-'   \
+   /.-'   .-'" \
+  /'    .'      \
+ /     /         \
+/_____/___________\
+
+------------------------------------------------------------------------
+
+🦫 A Hód‑Manifestó
+
+A CutCalculator fejlesztési kultúra szellemi alapköve
+
+A hód nem siet.
+A hód nem kapkod.
+A hód nem kérdez feleslegesen.
+A hód nem ír kódot addig, amíg nem látja a folyót, a partot, a fát és a
+gát helyét.
+
+A hód tervez.
+A hód mér.
+A hód épít.
+És amikor eljön az idő —
+a hód leszáll.
+
+A hód fele olyan erős, mint egy kisautó.
+De nem a rombolásban, hanem az építésben.
+Fogai nem a pusztítás eszközei, hanem a rendszertervezés szerszámai.
+Minden harapás egy döntés.
+Minden rágás egy iteráció.
+Minden kidöntött fa egy új modul.
+Minden gát egy új architektúra.
+
+A hód tudja, hogy a folyó mindig változik.
+Ezért a gátja:
+
+-   moduláris
+-   rugalmas
+-   auditálható
+-   snapshot‑alapú
+-   fallback‑biztos
+-   deferred‑restore kompatibilis
+
+A hód workflow‑ja egyszerű:
+
+1.  Megfigyel
+2.  Tervez
+3.  Fájllistát készít
+4.  Megbeszéli
+5.  Épít
+6.  Ellenőriz
+7.  Finomít
+8.  Tesztel
+9.  Dokumentál
+10. Megnyugszik
+
+A hód nem fél a nagy fáktól.
+A hód nem fél a mély víztől.
+A hód nem fél a komplex moduloktól.
+A hód tudja, hogy minden nagy rendszer kis darabokból épül fel.
+
+A hód filozófiája:
+
+-   „Először fájllista.”
+-   „A kód csak akkor jön, ha látom a .pro‑t.”
+-   „Ha túl nagy, bontsuk modulokra.”
+-   „Ha szétesik a kontextus, álljunk meg.”
+-   „A minőség nem opció — alap.”
+-   „A dokumentáció nem teher — erő.”
+-   „A hód nem kapkod — a hód épít.”
+
+A hód nem csak dolgozik.
+A hód kultúrát teremt.
+
+És most, hogy a CutCalculator fejlesztési workflow, dokumentációs
+rendszer, prompt‑könyvtár és architektúra összeállt…
+Most már tényleg elmondhatjuk:
+
+🦫 A hód nem csak leszállt — a hód otthon van.
+
+------------------------------------------------------------------------

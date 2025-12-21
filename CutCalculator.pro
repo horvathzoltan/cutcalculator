@@ -16,6 +16,7 @@ SOURCES += \
     barcodes/registry/barcode_registry.cpp \
     barcodes/repository/barcode_repository.cpp \
     barcodes/validator/barcode_validator.cpp \
+    calcmodes/dialogs/mode_name_dialog.cpp \
     common/layout/layout_default_store.cpp \
     common/snapshot/snapshot_manager.cpp \
     common/system/verbose_manager.cpp \
@@ -28,15 +29,15 @@ SOURCES += \
     needs/registry/need_rule_registry.cpp \
     needs/view/material_picker_dialog.cpp \
     needs/view/material_requirements_view.cpp \
-    needscalculation/manager/calculation_mode_detail_manager.cpp \
-    needscalculation/manager/calculation_modes_manager.cpp \
-    needscalculation/registry/need_calculation_detail_registry.cpp \
-    needscalculation/registry/need_calculation_registry.cpp \
-    needscalculation/repository/need_calculation_detail_repository.cpp \
-    needscalculation/repository/need_calculation_repository.cpp \
-    needscalculation/service/need_calculator.cpp \
-    needscalculation/view/calculation_mode_detail_view.cpp \
-    needscalculation/view/calculation_modes_view.cpp \
+    calculation/manager/calculation_mode_detail_manager.cpp \
+    calcmodes/manager/calculation_modes_manager.cpp \
+    calculation/registry/need_calculation_detail_registry.cpp \
+    calcmodes/registry/need_calculation_registry.cpp \
+    calculation/repository/need_calculation_detail_repository.cpp \
+    calcmodes/repository/need_calculation_repository.cpp \
+    calculation/service/need_calculator.cpp \
+    calculation/view/calculation_mode_detail_view.cpp \
+    calcmodes/view/calculation_modes_view.cpp \
     workbench/view/bom_workbench.cpp \
     colors/model/named_color.cpp \
     colors/registry/color_registry.cpp \
@@ -75,6 +76,7 @@ HEADERS += \
     barcodes/repository/barcode_repository.h \
     barcodes/helpers/barcode_collision_helper.h \
     barcodes/validator/barcode_validator.h \
+    calcmodes/dialogs/mode_name_dialog.h \
     common/layout/layout_default_store.h \
     common/registry/registry_lookup.h \
     common/registry/registry_traits.h \
@@ -98,17 +100,17 @@ HEADERS += \
     needs/repository/need_rule_traits.h \
     needs/view/material_picker_dialog.h \
     needs/view/material_requirements_view.h \
-    needscalculation/manager/calculation_mode_detail_manager.h \
-    needscalculation/manager/calculation_modes_manager.h \
-    needscalculation/model/need_calculation.h \
-    needscalculation/model/need_calculation_detail.h \
-    needscalculation/registry/need_calculation_detail_registry.h \
-    needscalculation/registry/need_calculation_registry.h \
-    needscalculation/repository/need_calculation_detail_repository.h \
-    needscalculation/repository/need_calculation_repository.h \
-    needscalculation/service/need_calculator.h \
-    needscalculation/view/calculation_mode_detail_view.h \
-    needscalculation/view/calculation_modes_view.h \
+    calculation/manager/calculation_mode_detail_manager.h \
+    calcmodes/manager/calculation_modes_manager.h \
+    calcmodes/model/need_calculation.h \
+    calculation/model/need_calculation_detail.h \
+    calculation/registry/need_calculation_detail_registry.h \
+    calcmodes/registry/need_calculation_registry.h \
+    calculation/repository/need_calculation_detail_repository.h \
+    calcmodes/repository/need_calculation_repository.h \
+    calculation/service/need_calculator.h \
+    calculation/view/calculation_mode_detail_view.h \
+    calcmodes/view/calculation_modes_view.h \
     workbench/view/bom_workbench.h \
     colors/model/named_color.h \
     colors/registry/color_registry.h \
@@ -173,8 +175,12 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 DISTFILES += \
     README.md \
     run.txt \
-    run_2.txt \
-    run_3_1.txt \
+    run_2_1_Kodgeneralas.txt \
+    run_2_2_Dokumentacio.txt \
+    run_2_3_Allapottabla.txt \
+    run_2_4_Kezikonyvek.txt \
+    run_3_1_Manifest.txt \
+    run_4_1_Rendszerterv.txt \
     run_4_AnyagszuksegletSzamitas.txt \
     run_4_BOMWorkbench.txt \
     run_4_ColorRegistry.txt \

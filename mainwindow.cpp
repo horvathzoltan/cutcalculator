@@ -43,6 +43,9 @@ MainWindow::MainWindow(QWidget *parent)
             }
         }
 
+        // ✅ Itt állítjuk be
+        _windowRestoredOnce = true;
+
         // 3) MainWindow splitter állapot – fallback percent alapú
         const QString split = LayoutDefaultStore::instance().mainSplitterPercent();
         if (!split.isEmpty()) {
@@ -79,21 +82,21 @@ MainWindow::~MainWindow()
 
 void MainWindow::resizeEvent(QResizeEvent* e) {
     QMainWindow::resizeEvent(e);
-    if (GeometryHelper::isWindowGeometryReady(this)) {
+    if (_windowRestoredOnce && GeometryHelper::isWindowGeometryReady(this)) {
         SnapshotManager::instance().saveWindowSnapshot(this);
     }
 }
 
 void MainWindow::moveEvent(QMoveEvent* e) {
     QMainWindow::moveEvent(e);
-    if (GeometryHelper::isWindowGeometryReady(this)) {
+    if (_windowRestoredOnce && GeometryHelper::isWindowGeometryReady(this)) {
         SnapshotManager::instance().saveWindowSnapshot(this);
     }
 }
 
 void MainWindow::changeEvent(QEvent* e) {
     if (e->type() == QEvent::WindowStateChange) {
-        if (GeometryHelper::isWindowGeometryReady(this)) {
+        if (_windowRestoredOnce && GeometryHelper::isWindowGeometryReady(this)) {
             SnapshotManager::instance().saveWindowSnapshot(this);
         }
     }
@@ -116,9 +119,11 @@ void MainWindow::closeEvent(QCloseEvent* event)
     LayoutDefaultStore::instance().setMainSplitterPercent(split);
 
     // BOMWorkbench állapot mentés (ez belül maga is hívja a SnapshotManager-t + UiDefaultStore-t)
-    if (auto* bom = ui->tabWidget->findChild<BOMWorkbench*>()) {
-        bom->saveState();
-    }
+    // ezt a BOMWorkbench closeEvent-je kezeli
+
+    // if (auto* bom = ui->tabWidget->findChild<BOMWorkbench*>()) {
+    //     bom->saveState();
+    // }
 
     // Aktív tab mentése – ez továbbra is klasszikus setting
     SettingsManager::instance().setCurrentTabIndex(ui->tabWidget->currentIndex());

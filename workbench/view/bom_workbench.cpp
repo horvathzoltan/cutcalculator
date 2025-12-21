@@ -5,7 +5,7 @@
 #include <QAction>
 #include <QLabel>
 
-#include "common/settings/settings_manager.h"
+//#include "common/settings/settings_manager.h"
 #include "common/logger/event_logger.h"
 #include "needs/manager/material_requirements_manager.h"
 #include "needs/view/material_picker_dialog.h"
@@ -14,7 +14,7 @@
 #include "products/view/product_tree_manager.h"
 //#include "needs/repository/need_rule_repository.h"
 
-#include "needscalculation/manager/calculation_mode_detail_manager.h"
+#include "calculation/manager/calculation_mode_detail_manager.h"
 //#include "needscalculation/registry/need_calculation_detail_registry.h"
 //#include "common/registry/registry_manager.h"
 
@@ -139,26 +139,29 @@ QToolBar* BOMWorkbench::buildModesToolbar(QWidget* parent, CalculationModesView*
     QAction* removeModeAction = modesToolbar->addAction("🗑️ Mód törlése");
     QAction* renameModeAction = modesToolbar->addAction("✏️ Átnevezés");
 
-    // Hunglish: a view jelzi a managernek, a manager intézi a registry CRUD-ot
     connect(addModeAction, &QAction::triggered, this, [this, modes_view]() {
-        if (_treeManager) {
-            const QUuid productId = _treeManager->currentProductId();
-            emit modes_view->request_add_mode(productId);
-        }
+        if (!_treeManager)
+            return;
+
+        const QUuid productId = _treeManager->currentProductId();
+        emit modes_view->request_add_mode(productId);
     });
 
-    connect(removeModeAction, &QAction::triggered, this, [this, modes_view]() {
+    connect(removeModeAction, &QAction::triggered, this, [modes_view]() {
         auto modeIdOpt = modes_view->currentModeId();
-        if (modeIdOpt) emit modes_view->request_remove_mode(*modeIdOpt);
+        if (modeIdOpt)
+            emit modes_view->request_remove_mode(*modeIdOpt);
     });
 
-    connect(renameModeAction, &QAction::triggered, this, [this, modes_view]() {
+    connect(renameModeAction, &QAction::triggered, this, [modes_view]() {
         auto modeIdOpt = modes_view->currentModeId();
-        if (modeIdOpt) emit modes_view->request_rename_mode(*modeIdOpt);
+        if (modeIdOpt)
+            emit modes_view->request_rename_mode(*modeIdOpt);
     });
 
     return modesToolbar;
 }
+
 
 QToolBar* BOMWorkbench::buildDetailsToolbar(QWidget* parent, CalculationModeDetailView* detail_view) {
     QToolBar* detailsToolbar = new QToolBar("Formula műveletek", parent);
@@ -167,33 +170,57 @@ QToolBar* BOMWorkbench::buildDetailsToolbar(QWidget* parent, CalculationModeDeta
     QAction* removeDetailAction = detailsToolbar->addAction("🗑️ Formula törlése");
     QAction* editDetailAction   = detailsToolbar->addAction("✏️ Formula szerkesztése");
 
+    // Új formula hozzáadása
     connect(addDetailAction, &QAction::triggered, this, [this, detail_view]() {
-        if (_modesView) {
-            auto modeIdOpt = _modesView->currentModeId();
-            if (modeIdOpt) emit detail_view->request_add_detail(*modeIdOpt);
-        }
+        if (!_modesView)
+            return;
+
+        auto modeIdOpt = _modesView->currentModeId();
+        if (modeIdOpt)
+            emit detail_view->request_add_detail(*modeIdOpt);
     });
 
+    // Formula törlése
     connect(removeDetailAction, &QAction::triggered, this, [detail_view]() {
-        auto ranges = detail_view->findChildren<QTableWidget*>().first()->selectedRanges();
-        if (!ranges.isEmpty()) {
-            int row = ranges.first().topRow();
-            auto* item = detail_view->findChildren<QTableWidget*>().first()->item(row,0);
-            if (item) emit detail_view->request_remove_detail(item->data(Qt::UserRole).toUuid());
-        }
+        auto tables = detail_view->findChildren<QTableWidget*>();
+        if (tables.isEmpty())
+            return;
+
+        QTableWidget* table = tables.first();
+        auto ranges = table->selectedRanges();
+        if (ranges.isEmpty())
+            return;
+
+        int row = ranges.first().topRow();
+        QTableWidgetItem* item = table->item(row, 0);
+        if (!item)
+            return;
+
+        emit detail_view->request_remove_detail(item->data(Qt::UserRole).toUuid());
     });
 
+    // Formula szerkesztése
     connect(editDetailAction, &QAction::triggered, this, [detail_view]() {
-        auto ranges = detail_view->findChildren<QTableWidget*>().first()->selectedRanges();
-        if (!ranges.isEmpty()) {
-            int row = ranges.first().topRow();
-            auto* item = detail_view->findChildren<QTableWidget*>().first()->item(row,0);
-            if (item) emit detail_view->request_edit_formula(item->data(Qt::UserRole).toUuid());
-        }
+        auto tables = detail_view->findChildren<QTableWidget*>();
+        if (tables.isEmpty())
+            return;
+
+        QTableWidget* table = tables.first();
+        auto ranges = table->selectedRanges();
+        if (ranges.isEmpty())
+            return;
+
+        int row = ranges.first().topRow();
+        QTableWidgetItem* item = table->item(row, 0);
+        if (!item)
+            return;
+
+        emit detail_view->request_edit_formula(item->data(Qt::UserRole).toUuid());
     });
 
     return detailsToolbar;
 }
+
 
 
 
@@ -422,3 +449,9 @@ void BOMWorkbench::saveState()
 
     zEventINFO("BOMWorkbench state saved (percent-based + snapshot-aware)");
 }
+
+void BOMWorkbench::closeEvent(QCloseEvent* e) {
+    saveState();
+    QWidget::closeEvent(e);
+}
+

@@ -372,10 +372,7 @@ void GeometryHelper::restoreHeaderState(QHeaderView* header, const QString& perc
             return false;
 
         int w = parent ? parent->width() : header->width();
-        if (w < 50)
-            return false;
-
-        return true;
+        return w >= 50;
     };
 
     if (!isReady()) {
@@ -396,6 +393,7 @@ void GeometryHelper::restoreHeaderState(QHeaderView* header, const QString& perc
     for (int i = 0; i < header->count(); ++i) {
         total += header->sectionSize(i);
     }
+
     if (total <= 0) {
         total = parent ? parent->width() : header->width();
         if (total <= 0) {
@@ -412,7 +410,8 @@ void GeometryHelper::restoreHeaderState(QHeaderView* header, const QString& perc
 
     for (int i = 0; i < parts.size() && i < header->count(); ++i) {
         QString p = parts[i].trimmed();
-        if (p.endsWith('%')) p.chop(1);
+        if (p.endsWith('%'))
+            p.chop(1);
 
         bool ok = false;
         double pct = p.toDouble(&ok) / 100.0;
@@ -426,14 +425,16 @@ void GeometryHelper::restoreHeaderState(QHeaderView* header, const QString& perc
         header->resizeSection(i, px);
     }
 
+    // ✅ Clazy-clean: nincs range-loop detach
     QStringList pxTokens;
-    for (int px : newSizes) {
-        pxTokens << QString::number(px) + "px";
+    pxTokens.reserve(newSizes.size());
+    for (int i = 0; i < newSizes.size(); ++i) {
+        pxTokens << QString::number(newSizes[i]) + "px";
     }
 
+    // ✅ Clazy-clean: multi-arg .arg() használat
     zEventINFO(QString("✅ Header state restored: %1 → [%2] (total=%3)")
-                   .arg(percentState)
-                   .arg(pxTokens.join(","))
-                   .arg(total));
+                   .arg(percentState,
+                        pxTokens.join(","),
+                        QString::number(total)));
 }
-

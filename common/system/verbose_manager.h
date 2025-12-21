@@ -23,13 +23,15 @@
  *  - Kód közben: IS_VERBOSE(ClassName) vagy isVerbose<T>() (static metódusokhoz)
  */
 
-// Self-registration makró – minden osztály .cpp-ben használandó
-// #define REGISTER_VERBOSE(ClassName, flag) \
-// namespace { const bool _##ClassName##_verbose_registered = [](){ \
-//         VerboseManager::instance().registerClass( \
-//             QString::fromStdString(std::string(nameof::nameof_type<ClassName>())), \
-//             flag); \
-//         return true; }(); }
+/*
+Self-registration makró – minden osztály .cpp-ben használandó
+#define REGISTER_VERBOSE(ClassName, flag) \
+namespace { const bool _##ClassName##_verbose_registered = [](){ \
+        VerboseManager::instance().registerClass( \
+            QString::fromStdString(std::string(nameof::nameof_type<ClassName>())), \
+            flag); \
+        return true; }(); }
+*/
 
 // Rövidítés static metódusokhoz (nincs this)
 #define IS_VERBOSE(ClassName) \

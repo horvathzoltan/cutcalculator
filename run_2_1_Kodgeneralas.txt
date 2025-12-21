@@ -1,0 +1,382 @@
+A négy sablon:
+
+1.  ✅ Kódgenerálási workflow prompt
+2.  ✅ Refaktor prompt
+3.  ✅ Unit test prompt
+4.  ✅ Kódreview prompt
+
+Mindegyik:
+
+-   fejlesztőbarát
+-   Copilot‑optimalizált
+-   moduláris
+-   ipari szintű
+-   magyar komment + angol terminológia kompatibilis
+-   a CutCalculator projektstruktúrájához igazított
+
+Másolhatod őket a saját „prompt‑könyvtáradba”.
+
+------------------------------------------------------------------------
+
+✅ 1) Kódgenerálási workflow prompt (végleges, ipari szintű)
+
+Ez a fő prompt, amit minden új implementációhoz használni fogsz.
+
+    Kérlek, adj egy átgondolt, fejlesztőbarát fájllistát a következő komponensek
+    megvalósításához (C++20, Qt 6.10, Clazy‑tiszta, biztonságos, olvasható, hatékony).
+
+    Fontos szabályok:
+
+    1) Először **csak a fájllistát** add meg, soronként egy fájlt, files.txt‑be másolható formában.
+    2) A fájllista lehet kreatív, javasolhatsz új modulokat vagy fájlokat is —
+       de **ne generálj még kódot**, csak beszéljük meg.
+    3) A projektstruktúrát (common/, workbench/, mainwindow/, stb.)
+       **mindig vedd figyelembe**, és a fájlokat oda javasold, ahol logikailag a helyük van.
+    4) A kódgenerálás **csak akkor indulhat el**, ha megkapod a projekt .pro fájlját.
+       Amíg nincs .pro, addig csak tervezünk.
+    5) Ha a feladat túl nagy, a kontextus szétesne, vagy túl sok fájl lenne egyszerre,
+       **jelezd**, és javasolj moduláris bontást.
+    6) A fájllista legyen teljes, de fókuszált: csak azok a fájlok szerepeljenek,
+       amelyek ténylegesen szükségesek az implementációhoz.
+       A lista készüljön kimásolható, files.txt fájlba beilleszthető módon!
+    7) A kódgenerálás második lépésben történik, miután jóváhagytam a fájllistát.
+
+    A kódgeneráláskor (második lépés):
+    - magyar kommenteket kérek, angol terminológiával (class, method, Qt API)
+    - ne írd bele, hogy Hunglish
+    - javasolj elnevezéseket és integrációs pontokat
+    - a fájlnevek legyenek snake_case formátumban
+
+------------------------------------------------------------------------
+
+✅ 2) Refaktor prompt (biztonságos, moduláris, Clazy‑tiszta refaktorokhoz)
+
+    Kérlek, refaktoráld a következő kódrészletet ipari szintű minőségre.
+
+    Elvárások:
+    - C++20, Qt 6.10
+    - Clazy‑tiszta
+    - biztonságos, olvasható, hatékony
+    - moduláris, SRP‑barát
+    - magyar kommentek angol terminológiával
+    - ne írj Hunglish megjegyzést
+    - tartsd tiszteletben a projektstruktúrát (common/, workbench/, stb.)
+
+    Kérlek, először csak:
+    1) a problémák listáját add meg
+    2) a refaktorálási javaslatokat
+    3) a tervezett új fájlokat (ha szükséges)
+
+    **Ne adj még kódot**, amíg nem hagyom jóvá a tervet.
+
+------------------------------------------------------------------------
+
+✅ 3) Unit test prompt (QtTest, moduláris, professzionális)
+
+    Kérlek, készíts unit teszt tervet a következő komponenshez.
+
+    Elvárások:
+    - QtTest keretrendszer
+    - C++20
+    - moduláris, izolált tesztek
+    - mockolás, ha szükséges
+    - edge case-ek lefedése
+    - magyar kommentek angol terminológiával
+    - ne generálj még kódot
+
+    Először add meg:
+    1) a tesztelendő funkciók listáját
+    2) a tesztesetek felsorolását
+    3) a szükséges mockok / stubok listáját
+    4) a fájlstruktúrát (test/…)
+    5) a coverage célokat
+
+    A kódgenerálás csak jóváhagyás után indul.
+
+------------------------------------------------------------------------
+
+✅ 4) Kódreview prompt (minőségellenőrzés, Clazy‑szem, architektúra‑szem)
+
+    Kérlek, végezz kódreview-t a következő kódrészleten.
+
+    A review szempontjai:
+    - C++20 best practice
+    - Qt 6.10 idiomák
+    - Clazy ajánlások
+    - memória- és erőforrásbiztonság
+    - thread‑safety (ha releváns)
+    - moduláris felépítés
+    - SRP, OCP, DIP
+    - naming consistency (snake_case, PascalCase)
+    - magyar kommentek minősége
+    - auditálhatóság
+
+    Kérlek, először csak:
+    1) a problémák listáját add meg
+    2) a javítási javaslatokat
+    3) a potenciális refaktor irányokat
+
+    Ne írj át kódot, amíg nem kérem.
+
+------------------------------------------------------------------------
+------------------------------------------------------------------------
+------------------------------------------------------------------------
+
+
+✅ Ezek együtt egy teljes fejlesztési kultúrát adnak
+
+A négy sablon együtt:
+
+-   lefedi a teljes fejlesztési életciklust
+-   ipari szintű minőséget biztosít
+-   moduláris workflow-t ad
+-   védi a kontextust
+-   védi a projektstruktúrát
+-   védi a minőséget
+-   és tökéletesen illeszkedik a CutCalculator architektúrájához
+
+------------------------------------------------------------------------
+
+CutCalculator‑fejlesztés workflow:
+
+-   tiszta
+-   követhető
+-   moduláris
+-   Copilot‑optimalizált
+-   ember‑optimalizált
+-   kontextus‑védett
+-   és pontosan illeszkedik ahhoz, ahogyan te dolgozol
+
+Ez lesz a CutCalculator Development Workflow v1.0.
+
+------------------------------------------------------------------------
+
+🧭 CutCalculator – Fejlesztési Workflow (ipari szint)
+
+1️⃣ Feature igény → Egyes prompt (Feature Spec)
+
+Amikor új funkció kell:
+
+-   leírod a funkciót
+-   lefuttatod az egyes promptot
+-   kapsz egy tömör, fejlesztőbarát specifikációt
+
+Ez lesz a munkadokumentum, a fejlesztői task lista.
+
+Kimenet:
+✅ Követelményspec
+✅ Funkcionális specifikáció
+✅ Implementációs terv
+✅ Emojik
+✅ Markdown
+
+------------------------------------------------------------------------
+
+2️⃣ Architektúra kontextus → Kettes dokumentum (Architecture Spec)
+
+Ha a funkció moduláris vagy mélyen érinti a rendszert:
+
+-   megnézed a kettes dokumentumot
+-   ha kell, frissíted
+-   ha új alrendszer készül, lefuttatod a kettes promptot
+
+Ez lesz a szentírás, a rendszer működésének dokumentuma.
+
+Kimenet:
+✅ Architektúra
+✅ Modulok
+✅ Folyamatok
+✅ Guardok
+✅ Audit logika
+✅ Snapshot/fallback filozófia
+
+------------------------------------------------------------------------
+
+3️⃣ Kódtervezés → Kódgenerálási prompt (fájllista)
+
+Most jön a Copilot.
+
+A workflow első lépése:
+
+✅ 3.1 Fájllista generálás
+
+A kódgenerálási promptot lefuttatod:
+
+-   Copilot ad egy fájllistát
+-   kreatív lehet
+-   javasolhat új modulokat
+-   de nem generál kódot
+-   és nem generál kódot, amíg nincs .pro fájl
+
+Ez a lépés a tervezés.
+
+Kimenet:
+✅ files.txt
+✅ moduljavaslatok
+✅ elnevezési javaslatok
+✅ integrációs pontok
+
+------------------------------------------------------------------------
+
+4️⃣ Megbeszélés → Fájllista jóváhagyása
+
+Itt jön a közös munka:
+
+-   átnézed a fájllistát
+-   megbeszéljük
+-   ha kell, módosítjuk
+-   ha túl nagy → bontjuk
+-   ha szétesik a kontextus → modulokra szedjük
+
+Ez a lépés a review.
+
+Kimenet:
+✅ végleges fájllista
+✅ moduláris bontás
+✅ tiszta projektstruktúra
+
+------------------------------------------------------------------------
+------------------------------------------------------------------------
+------------------------------------------------------------------------
+
+5️⃣ Kódgenerálás → A hód leszáll
+
+Ha a fájllista jóváhagyva, és a .pro fájl megérkezett:
+
+-   lefuttatod a kódgenerálási prompt 2. lépését
+-   Copilot generálja a teljes implementációt
+-   magyar kommentekkel
+-   angol terminológiával
+-   Clazy‑tiszta Qt6 kóddal
+
+Ez a lépés a megvalósítás.
+
+Kimenet:
+✅ teljes implementáció
+✅ header + cpp
+✅ integrációs javaslatok
+✅ snake_case fájlnevek
+
+------------------------------------------------------------------------
+
+6️⃣ Kódreview → Kódreview prompt
+
+A generált kódot átnézzük:
+
+-   lefuttatod a kódreview promptot
+-   Copilot listázza a problémákat
+-   javaslatokat ad
+-   refaktor irányokat mutat
+
+Ez a lépés a minőségbiztosítás.
+
+Kimenet:
+✅ problémalista
+✅ refaktor javaslatok
+✅ minőségi garancia
+
+------------------------------------------------------------------------
+
+7️⃣ Refaktor → Refaktor prompt
+
+Ha kell:
+
+-   lefuttatod a refaktor promptot
+-   Copilot először csak a tervet adja
+-   jóváhagyás után generálja a refaktort
+
+Ez a lépés a finomhangolás.
+
+Kimenet:
+✅ tisztább kód
+✅ jobb moduláris határok
+✅ Clazy‑tiszta működés
+
+------------------------------------------------------------------------
+
+8️⃣ Unit tesztek → Unit test prompt
+
+Ha a modul kritikus:
+
+-   lefuttatod a unit test promptot
+-   Copilot először teszttervet ad
+-   jóváhagyás után generálja a QtTest kódot
+
+Ez a lépés a biztonság.
+
+Kimenet:
+✅ tesztterv
+✅ tesztkód
+✅ coverage célok
+
+------------------------------------------------------------------------
+
+9️⃣ Integráció → Build → Snapshot
+
+A kód bekerül:
+
+-   beilleszted a projektbe
+-   frissíted a .pro fájlt
+-   build
+-   snapshotok frissülnek
+-   fallback baseline frissül
+
+Ez a lépés a deploy.
+
+------------------------------------------------------------------------
+
+🔟 Dokumentáció frissítése
+
+Ha a modul új:
+
+-   frissíted a kettes dokumentumot
+-   snapshot/fallback logikát
+-   modularchitektúrát
+-   folyamatokat
+
+Ez a lépés a tudásmegtartás.
+
+------------------------------------------------------------------------
+
+✅ A teljes workflow egy ábrában
+
+    Feature igény
+         ↓
+    Egyes prompt → Feature Spec
+         ↓
+    Kettes dokumentum (architektúra)
+         ↓
+    Kódgenerálási prompt (fájllista)
+         ↓
+    Megbeszélés, jóváhagyás
+         ↓
+    Kódgenerálás (a hód leszáll)
+         ↓
+    Kódreview prompt
+         ↓
+    Refaktor prompt (ha kell)
+         ↓
+    Unit test prompt (ha kell)
+         ↓
+    Integráció → Build → Snapshot
+         ↓
+    Dokumentáció frissítése
+
+------------------------------------------------------------------------
+
+✅ Miért ipari szintű ez a workflow?
+
+Mert:
+
+-   moduláris
+-   kontextus‑védett
+-   kétlépcsős kódgenerálás
+-   architektúra + feature szétválasztva
+-   minőségbiztosítás beépítve
+-   tesztelés beépítve
+-   dokumentáció frissítése beépítve
+-   Copilot‑optimalizált
+-   ember‑optimalizált
+
+------------------------------------------------------------------------
+

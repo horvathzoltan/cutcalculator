@@ -1,6 +1,6 @@
 #pragma once
 #include <QVector>
-#include "needscalculation/model/need_calculation_detail.h"
+#include "calculation/model/need_calculation_detail.h"
 
 /**
  * @class NeedCalculationDetailRepository

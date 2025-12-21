@@ -1,5 +1,5 @@
-#include "needscalculation/registry/need_calculation_detail_registry.h"
-#include "needscalculation/repository/need_calculation_detail_repository.h"
+#include "calculation/registry/need_calculation_detail_registry.h"
+#include "calculation/repository/need_calculation_detail_repository.h"
 #include "materials/registry/material_registry.h"
 
 bool NeedCalculationDetailRegistry::isFormulaValid(const QString& f) {

@@ -1,5 +1,5 @@
-#include "needscalculation/registry/need_calculation_registry.h"
-#include "needscalculation/repository/need_calculation_repository.h"
+#include "calcmodes/registry/need_calculation_registry.h"
+#include "calcmodes/repository/need_calculation_repository.h"
 
 bool NeedCalculationRegistry::existsOnProduct(const QUuid& productId, const QString& modeName) const {
     for (const auto& c : _data) {

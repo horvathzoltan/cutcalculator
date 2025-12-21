@@ -1,0 +1,191 @@
+
+Optimalizált, új állapottábla‑frissítő prompt
+
+-------------------------------------------------------------------------------------------------------------
+
+Kérlek, két lépésben dolgozzunk:
+
+1) Először készíts egy tömör, fejlesztőbarát összefoglalót a mai napról
+   az alapján, amit leírok vagy amit a fájlok/diff mutatnak.
+   Ez legyen a "Mai nap összefoglalója" blokk.
+
+2) A második lépésben frissítsd az állapottáblát és a roadmapet
+   a következő szabályok szerint:
+
+- ami elkészült → ✅ Kész
+- ami haladt → 🚧 Folyamatban
+- ami tervezés alatt → 📐 Tervezés
+- ami SOS volt → 🔥 SOS
+- ami új ötlet → 💡 Új ötlet
+- semmit ne törölj és ne vonj össze
+- minden státuszváltozást vezess át
+
+Emoji‑készlet:
+📐 = Tervezés
+🚧 = Folyamatban
+✅ = Kész
+🔥 = SOS / Tűzoltás
+💡 = Új ötlet
+
+A frissítés során készítsd el a következő blokkokat:
+
+📊 Állapottábla
+📊 Idővonalas roadmap
+✨ Röviden – stratégiai összefoglaló
+📌 Mai eredmények – részletes taktikai napzáró
+🎯 Prioritási sorrend – fókuszpont lista
+🚀 Sprint fókusz (🔥 SOS pontokkal) és 👉 Holnap fókusz
+
+Végül adj egy git commit subjectet (max 55 karakter).
+
+-------------------------------------------------------------------------------------------------------------
+
+
+Zoltán, akkor jöjjön mind a négy professzionális sablon, szépen
+összerendezve, egységes stílusban, hogy a CutCalculator fejlesztési
+kultúrája teljes legyen a workflow minden pontján.
+
+Ezeket akár külön .md fájlokba is kiteheted a projekt
+docs/prompt_library/ mappájába.
+
+A négy sablon:
+
+1.  ✅ Daily Sync – Napi összefoglaló sablon
+2.  ✅ Diff‑alapú állapottábla frissítés sablon
+3.  ✅ Sprint Review sablon
+4.  ✅ Release Notes generáló sablon
+
+Mindegyik ipari szintű, fejlesztőbarát, Copilot‑optimalizált.
+
+------------------------------------------------------------------------
+
+✅ 1) Daily Sync – Napi összefoglaló sablon
+
+Ez a sablon arra való, hogy minden nap végén egy tiszta, tömör,
+fejlesztőbarát összefoglalót készíts, amit aztán a Copilot a következő
+lépésben beépít az állapottáblába.
+
+    Kérlek, készíts egy tömör, fejlesztőbarát napi összefoglalót a mai munkáról.
+
+    A következő blokkokat kérem:
+
+    📝 Mai nap összefoglalója
+    - mi készült el
+    - mi haladt
+    - milyen ötletek születtek
+    - milyen problémák merültek fel
+    - milyen döntések születtek
+
+    📁 Érintett fájlok / modulok
+    - felsorolás
+    - ha van diff, azt is figyelembe veheted
+
+    💡 Új ötletek / megfigyelések
+    - röviden, bulletpontokban
+
+    Ez még NEM az állapottábla frissítése.
+    Ez csak a napi input, amit a következő lépésben használunk.
+
+------------------------------------------------------------------------
+
+✅ 2) Diff‑alapú állapottábla frissítés sablon
+
+Ez a sablon a Daily Sync után fut.
+Ez frissíti az állapottáblát, roadmapet, fókuszpontokat, sprint fókuszt,
+commit üzenetet.
+
+    A következő input alapján frissítsük az állapottáblát:
+
+    - Mai nap összefoglalója
+    - Érintett fájlok
+    - Új ötletek
+
+    Kérlek, a következő szabályok szerint dolgozz:
+
+    ✅ ami elkészült → jelöld ✅ Kész státuszra
+    🚧 ami haladt → maradjon vagy váltson 🚧 Folyamatban státuszra
+    📐 ami tervezés alatt → maradjon 📐 Tervezés
+    🔥 ami SOS volt → jelöld 🔥-ra
+    💡 új ötletek → add hozzá a megfelelő blokkhoz
+
+    Semmit ne törölj és ne vonj össze.
+
+    A következő blokkokat kérem:
+
+    📊 Állapottábla (frissítve)
+    📊 Idővonalas roadmap
+    ✨ Röviden – stratégiai összefoglaló
+    📌 Mai eredmények – részletes taktikai napzáró
+    🎯 Prioritási sorrend – fókuszpont lista
+    🚀 Sprint fókusz (🔥 SOS pontokkal) és 👉 Holnap fókusz
+
+    Végül adj egy git commit subjectet (max 55 karakter).
+
+------------------------------------------------------------------------
+
+✅ 3) Sprint Review sablon (heti vagy kétheti retrospektív)
+
+Ez a sablon a sprint végén fut, és egy teljes retrospektívet készít.
+
+    Kérlek, készíts egy professzionális Sprint Review dokumentumot a következő szempontok alapján:
+
+    ✅ Sprint célok – mi volt a kitűzött irány
+    ✅ Mi készült el – modulonként
+    ✅ Mi haladt – részletesen
+    ✅ Mi csúszott – okokkal
+    ✅ Mi volt a legnagyobb technikai eredmény
+    ✅ Mi volt a legnagyobb tanulság
+    ✅ Mi volt a legnagyobb akadály
+    ✅ Mit kell javítani a következő sprintben
+    ✅ Új ötletek, új modulok, új irányok
+    ✅ Snapshot a projekt aktuális állapotáról
+
+    A dokumentum végén kérek:
+
+    🎯 Következő sprint fókuszpontjai
+    📌 Kockázatok és mitigáció
+    🚀 Ajánlott sprint backlog
+
+------------------------------------------------------------------------
+
+✅ 4) Release Notes generáló sablon (verziókhoz, milestone‑okhoz)
+
+Ez a sablon akkor kell, amikor egy nagyobb modul vagy verzió elkészül.
+
+    Kérlek, készíts professzionális Release Notes dokumentumot a következő verzióhoz:
+
+    📦 Verziószám: X.Y.Z
+    📅 Dátum: YYYY-MM-DD
+
+    A dokumentum tartalmazza:
+
+    ✅ Újdonságok (New Features)
+    ✅ Fejlesztések (Improvements)
+    ✅ Hibajavítások (Fixes)
+    ✅ Architektúra változások
+    ✅ API változások (ha vannak)
+    ✅ Migrációs lépések (ha szükséges)
+    ✅ Snapshot a projekt aktuális állapotáról
+    ✅ Kiemelt modulok részletes leírása
+    ✅ Teljesítményjavítások
+    ✅ Stabilitási fejlesztések
+    ✅ UI változások
+    ✅ Dokumentáció frissítések
+
+    A végén kérek:
+
+    📌 Upgrade Guide (ha szükséges)
+    📁 Érintett fájlok listája
+    🔧 Build / deploy megjegyzések
+
+------------------------------------------------------------------------
+
+✅ Összegzés – most már teljes a CutCalculator fejlesztési kultúrája
+
+A négy sablon együtt:
+
+-   lefedi a napi munkát
+-   lefedi a stratégiai frissítést
+-   lefedi a sprint lezárást
+-   lefedi a verziók kiadását
+

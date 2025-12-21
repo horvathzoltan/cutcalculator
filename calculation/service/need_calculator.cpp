@@ -1,6 +1,6 @@
-#include "needscalculation/service/need_calculator.h"
-#include "needscalculation/registry/need_calculation_registry.h"
-#include "needscalculation/registry/need_calculation_detail_registry.h"
+#include "need_calculator.h"
+#include "calcmodes/registry/need_calculation_registry.h"
+#include "calculation/registry/need_calculation_detail_registry.h"
 #include "needs/registry/need_rule_registry.h"
 #include "common/logger/event_logger.h"
 

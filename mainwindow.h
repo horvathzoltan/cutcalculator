@@ -49,5 +49,7 @@ private:
 
     //void initProductTypesTab();   // új tab létrehozása + fa
     //void loadProductDefinitions(); // CSV → registry
+
+    bool _windowRestoredOnce = false;
 };
 #endif // MAINWINDOW_H

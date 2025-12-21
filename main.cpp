@@ -14,6 +14,7 @@
 #include "common/startup/startup_status_manager.h"
 #include "common/registry/registry_manager.h"
 #include "common/utils/geometry_helper.h"
+#include "common/snapshot/snapshot_manager.h"
 
 extern void registerAllVerbose();
 
@@ -30,12 +31,13 @@ int main(int argc, char *argv[])
     // induláskor - SIGKILL esetén NEM fut le.
     SignalHelper::setCleanupHandler([](int sig){
         LifecycleManager::instance().onAbort(sig);
-        // ide jöhetnek a tényleges cleanup műveletek: registry flush, fájlmentés, stb.
         if (auto* win = LifecycleManager::instance().mainWindow()) {
-            SettingsManager::instance().saveGeometrySnapshot(win);
+            if (GeometryHelper::isWindowGeometryReady(win)) {
+                SnapshotManager::instance().saveWindowSnapshot(win);
+            }
         }
-
     });
+
 
     SignalHelper::setShutDownSignal(SignalHelper::SIGINT_); // shut down on ctrl-c
     SignalHelper::setShutDownSignal(SignalHelper::SIGTERM_); // shut down on killall
@@ -89,9 +91,12 @@ int main(int argc, char *argv[])
 
     QScreen* scr = QGuiApplication::primaryScreen();
     QObject::connect(scr, &QScreen::geometryChanged, &w, [&w]() {
-        // Monitor felbontás változott → instant snapshot
-        SettingsManager::instance().saveGeometrySnapshot(&w);
-        zEventINFO("💾 Screen geometry changed → instant window snapshot saved");
+        if (GeometryHelper::isWindowGeometryReady(&w)) {
+            SnapshotManager::instance().saveWindowSnapshot(&w);
+            zEventINFO("💾 Screen geometry changed → instant window snapshot saved");
+        } else {
+            zEventINFO("⏳ Screen geometry changed, but window not ready → snapshot skipped");
+        }
     });
 
     // MainWindow megnyílás/bezárás automatikus követése
