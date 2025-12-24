@@ -3,34 +3,50 @@
 #include <QDialog>
 #include <QLineEdit>
 #include <QLabel>
+#include <QPushButton>
 #include <QDialogButtonBox>
 #include <QVBoxLayout>
+#include <QHBoxLayout>
+#include <QPropertyAnimation>
+#include <QScreen>
+#include <QGuiApplication>
 
 /**
- * @class ModeNameDialog
- * @brief Számítási mód név bekérő dialógus (ModeName).
+ * @brief ModeNameDialog – számítási mód nevének bekérése.
  *
- * Feladat:
- *  - Új NeedCalculation felvitelekor bekéri a modeName értéket.
- *  - Üres név esetén a dialógus nem engedélyezi az OK gombot.
+ * UX célok:
+ *  - Egér alá pozicionálás (attention focus)
+ *  - Accent keret (vizuális kiemelés)
+ *  - Inline validáció (üres / whitespace / duplikált név)
+ *  - Shake animáció hibánál
+ *  - SelectAll + fókusz
  *
- * Integráció:
- *  - CalculationModesManager-ben használjuk a request_add_mode jelre reagálva.
+ * A duplikáció ellenőrzéséhez egy callback függvényt kap:
+ *   std::function<bool(const QString&)> isDuplicate;
  */
-class ModeNameDialog : public QDialog
-{
+class ModeNameDialog : public QDialog {
     Q_OBJECT
-public:
-    explicit ModeNameDialog(QWidget* parent = nullptr);
 
-    /// Visszaadja a felhasználó által megadott számítási mód nevét (trimmed).
-    QString modeName() const;
+public:
+    explicit ModeNameDialog(QWidget* parent,
+                            const QString& initialValue,
+                            std::function<bool(const QString&)> duplicateCheck);
+
+    QString value() const;
+
+private slots:
+    void onTextChanged(const QString& text);
+
+private:
+    void applyAccentFrame();
+    void positionNearCursor();
+    void shake();
 
 private:
     QLineEdit* _edit = nullptr;
     QLabel* _label = nullptr;
     QDialogButtonBox* _buttons = nullptr;
+    QPushButton* _ok = nullptr;
 
-    void setupUi();
-    void connectSignals();
+    std::function<bool(const QString&)> _duplicateCheck;
 };

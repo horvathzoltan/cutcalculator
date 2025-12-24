@@ -1,7 +1,7 @@
 #include "calcmodes/registry/need_calculation_registry.h"
 #include "calcmodes/repository/need_calculation_repository.h"
 
-bool NeedCalculationRegistry::existsOnProduct(const QUuid& productId, const QString& modeName) const {
+bool NeedCalculationRegistry::exists(const QUuid& productId, const QString& modeName) const {
     for (const auto& c : _data) {
         if (c.productDefinitionId == productId && c.modeName.compare(modeName, Qt::CaseInsensitive) == 0)
             return true;
@@ -14,7 +14,7 @@ bool NeedCalculationRegistry::insert(const NeedCalculation& calc) {
         zEventWARN("⚠️ NeedCalculation insert: üres modeName nem engedélyezett");
         return false;
     }
-    if (existsOnProduct(calc.productDefinitionId, calc.modeName)) {
+    if (exists(calc.productDefinitionId, calc.modeName)) {
         zEventWARN(QString("⚠️ NeedCalculation insert: duplikált mód a terméken: %1").arg(calc.modeName));
         return false;
     }
@@ -42,7 +42,7 @@ bool NeedCalculationRegistry::rename(const QUuid& id, const QString& newName) {
     }
     for (auto& c : _data) {
         if (c.id == id) {
-            if (existsOnProduct(c.productDefinitionId, newName)) {
+            if (exists(c.productDefinitionId, newName)) {
                 zEventWARN(QString("⚠️ NeedCalculation rename: duplikáció %1").arg(newName));
                 return false;
             }

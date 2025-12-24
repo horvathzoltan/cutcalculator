@@ -178,8 +178,8 @@ DISTFILES += \
     run_2_1_Kodgeneralas.txt \
     run_2_2_Dokumentacio.txt \
     run_2_3_Allapottabla.txt \
-    run_2_4_Kezikonyvek.txt \
     run_3_1_Manifest.txt \
+    run_3_2_Prompt.txt \
     run_4_1_Rendszerterv.txt \
     run_4_AnyagszuksegletSzamitas.txt \
     run_4_BOMWorkbench.txt \

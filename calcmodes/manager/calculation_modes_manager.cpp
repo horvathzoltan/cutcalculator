@@ -1,58 +1,102 @@
 #include "calcmodes/manager/calculation_modes_manager.h"
 #include "common/logger/event_logger.h"
 #include "calcmodes/dialogs/mode_name_dialog.h"
+#include "calcmodes/registry/need_calculation_registry.h"
+#include "calcmodes/repository/need_calculation_repository.h"
+#include "calculation/registry/need_calculation_detail_registry.h"
+#include "calculation/repository/need_calculation_detail_repository.h"
 
+/* ============================================================
+ * 🧩 Konstruktor
+ * ============================================================ */
 CalculationModesManager::CalculationModesManager(CalculationModesView* view, QObject* parent)
     : QObject(parent), _view(view)
 {
     connectSignals();
-    reloadAll(); // initial load from CSV
+    reloadAll();
 }
 
+/* ============================================================
+ * 🧩 🔧 Signal kapcsolatok
+ * ============================================================ */
 void CalculationModesManager::connectSignals() {
-    connect(_view, &CalculationModesView::request_add_mode, this, [this](const QUuid& productId) {
-        NeedCalculation c;
-        c.id = QUuid::createUuid();
-        c.productDefinitionId = productId;
-        connect(_view, &CalculationModesView::request_add_mode, this, [this](const QUuid& productId) {
-            ModeNameDialog dlg;
-            if (dlg.exec() != QDialog::Accepted)
-                return;
 
-            const QString name = dlg.modeName();
-            if (name.isEmpty())
-                return; // extra védőháló, bár az OK gomb üresen nem engedélyezett
+    /* ------------------------------
+     * ➕ Új mód hozzáadása
+     * ------------------------------ */
+    connect(_view, &CalculationModesView::request_add_mode,
+            this, [this](const QUuid& productId) {
 
-            NeedCalculation c;
-            c.id = QUuid::createUuid();
-            c.productDefinitionId = productId;
-            c.modeName = name;
+                // 🧪 Duplikációs ellenőrzés callback
+                auto duplicateCheck = [&](const QString& name) {
+                    return NeedCalculationRegistry::instance().exists(productId, name);
+                };
 
-            if (NeedCalculationRegistry::instance().insert(c)) {
-                reloadAll();
-            }
-        });
-        // Hunglish default – később dialogból
-        if (NeedCalculationRegistry::instance().insert(c)) {
-            reloadAll();
-        }
-    });
+                // 🎨 Dialógus megnyitása
+                ModeNameDialog dlg(_view, "", duplicateCheck);
+                if (dlg.exec() != QDialog::Accepted)
+                    return;
 
-    connect(_view, &CalculationModesView::request_remove_mode, this, [this](const QUuid& id) {
-        if (NeedCalculationRegistry::instance().remove(id)) {
-            reloadAll();
-        }
-    });
+                const QString name = dlg.value();
+                if (name.isEmpty())
+                    return;
 
-    connect(_view, &CalculationModesView::request_rename_mode, this, [this](const QUuid& id) {
-        // Hunglish: no dialog here; placeholder rename
-        NeedCalculationRegistry::instance().rename(id, "glass");
-        reloadAll();
-    });
+                // 📦 Új entitás
+                NeedCalculation c;
+                c.id = QUuid::createUuid();
+                c.productDefinitionId = productId;
+                c.modeName = name;
+
+                if (NeedCalculationRegistry::instance().insert(c)) {
+                    zEventINFO(QString("➕ New mode added: %1").arg(name));
+                    reloadAll();
+                }
+            });
+
+    /* ------------------------------
+     * ❌ Mód törlése
+     * ------------------------------ */
+    connect(_view, &CalculationModesView::request_remove_mode,
+            this, [this](const QUuid& id) {
+                if (NeedCalculationRegistry::instance().remove(id)) {
+                    zEventINFO("🗑️ Mode removed");
+                    reloadAll();
+                }
+            });
+
+    /* ------------------------------
+     * ✏️ Mód átnevezése
+     * ------------------------------ */
+    connect(_view, &CalculationModesView::request_rename_mode,
+            this, [this](const QUuid& id) {
+
+                auto old = NeedCalculationRegistry::instance().findById(id);
+                if (!old)
+                    return;
+
+                auto duplicateCheck = [&](const QString& name) {
+                    return NeedCalculationRegistry::instance().exists(old->productDefinitionId, name);
+                };
+
+                ModeNameDialog dlg(_view, old->modeName, duplicateCheck);
+                if (dlg.exec() != QDialog::Accepted)
+                    return;
+
+                QString newName = dlg.value();
+                if (newName.isEmpty())
+                    return;
+
+                if (NeedCalculationRegistry::instance().rename(id, newName)) {
+                    zEventINFO(QString("✏️ Mode renamed: %1 → %2").arg(old->modeName, newName));
+                    reloadAll();
+                }
+            });
 }
 
+/* ============================================================
+ * 🧩 📦 Adatok újratöltése
+ * ============================================================ */
 void CalculationModesManager::reloadAll() {
-    // Load CSVs only once at startup ideally; here safe for now
     QVector<NeedCalculation> calcs;
     NeedCalculationRepository::load(calcs);
     NeedCalculationRegistry::instance().setAll(calcs);
@@ -62,18 +106,27 @@ void CalculationModesManager::reloadAll() {
     NeedCalculationDetailRegistry::instance().setAll(details);
 }
 
-void CalculationModesManager::refreshForProduct(const QUuid& productId, const QString& productName, const QString& productBarcode) {
+/* ============================================================
+ * 🧩 🎨 Nézet frissítése
+ * ============================================================ */
+void CalculationModesManager::refreshForProduct(const QUuid& productId,
+                                                const QString& productName,
+                                                const QString& productBarcode)
+{
     auto modes = NeedCalculationRegistry::instance().findByProduct(productId);
+
     QVector<CalculationModesView::ModeRow> rows;
     rows.reserve(modes.size());
-    for (const auto& m : modes) {
-        auto dets = NeedCalculationDetailRegistry::instance().findByCalculation(m.id);
-        //rows.append({ m.id, productId, m.modeName, dets.size() });
-        int detailCount = static_cast<int>(dets.size());
-        rows.append({ m.id, productId, m.modeName, detailCount });
 
+    for (const auto& m : modes) {
+        int detailCount =
+            NeedCalculationDetailRegistry::instance().findByCalculation(m.id).size();
+
+        rows.append({ m.id, productId, m.modeName, detailCount });
     }
+
     _view->set_current_product(productId, productName, productBarcode);
     _view->set_modes(rows);
+
     zEventINFO(QString("🔄 Modes refreshed: %1 (%2)").arg(productName, productBarcode));
 }

@@ -14,109 +14,128 @@ Mindegyik:
 -   magyar komment + angol terminológia kompatibilis
 -   a CutCalculator projektstruktúrájához igazított
 
-Másolhatod őket a saját „prompt‑könyvtáradba”.
+------------------------------------------------------------------------
+
+Kérlek, adj egy átgondolt, fejlesztőbarát fájllistát a következő komponensek
+megvalósításához (C++20, Qt 6.10, Clazy‑tiszta, biztonságos, olvasható, hatékony).
+
+Fontos szabályok:
+
+1) Először **csak a fájllistát** add meg, soronként egy fájlt, files.txt‑be másolható formában.
+2) A fájllista lehet kreatív, javasolhatsz új modulokat vagy fájlokat is —
+   de **ne generálj még kódot**, csak beszéljük meg.
+3) A projektstruktúrát (common/, workbench/, mainwindow/, stb.)
+   **mindig vedd figyelembe**, és a fájlokat oda javasold, ahol logikailag a helyük van.
+4) A kódgenerálás **csak akkor indulhat el**, ha megkapod a projekt .pro fájlját.
+   Amíg nincs .pro, addig csak tervezünk.
+5) Ha a feladat túl nagy, a kontextus szétesne, vagy túl sok fájl lenne egyszerre,
+   **jelezd**, és javasolj moduláris bontást.
+6) A fájllista legyen teljes, de fókuszált: csak azok a fájlok szerepeljenek,
+   amelyek ténylegesen szükségesek az implementációhoz.
+7) A kódgenerálás második lépésben történik, miután jóváhagytam a fájllistát.
+
+A kódgeneráláskor (második lépés):
+- magyar kommenteket kérek, angol terminológiával (class, method, Qt API)
+- ne írj Hunglish megjegyzést
+- javasolj elnevezéseket és integrációs pontokat
+- a fájlnevek legyenek snake_case formátumban
+
+/* ============================================================
+ * 🧩 Blokkfejlécek használata
+ * ============================================================ */
+
+Minden generált C++ fájlban használd a következő blokkfejléces stílust:
+
+    /* ============================================================
+     * 🧩 <Blokk neve>
+     * ============================================================ */
+
+A blokkfejléceket ott használd, ahol a kód logikailag több fejezetre bontható.
+UI, manager, repository, service osztályokban kötelező.
+Model és helper osztályokban opcionális, de bármikor használható.
+
+Tematikus emojik:
+- 🧩 általános komponens
+- 🖱️ pozicionálás
+- 🎛️ beállítások
+- 🧪 validáció
+- 🎨 UI elemek
+- 🔧 segédfüggvények
+- ⚙️ inicializálás
+- 📦 adatkezelés
+
 
 ------------------------------------------------------------------------
 
-✅ 1) Kódgenerálási workflow prompt (végleges, ipari szintű)
+Kérlek, refaktoráld a következő kódrészletet ipari szintű minőségre.
 
-Ez a fő prompt, amit minden új implementációhoz használni fogsz.
+Elvárások:
+- C++20, Qt 6.10
+- Clazy‑tiszta
+- biztonságos, olvasható, hatékony
+- moduláris, SRP‑barát
+- magyar kommentek angol terminológiával
+- ne írj Hunglish megjegyzést
+- tartsd tiszteletben a projektstruktúrát (common/, workbench/, stb.)
 
-    Kérlek, adj egy átgondolt, fejlesztőbarát fájllistát a következő komponensek
-    megvalósításához (C++20, Qt 6.10, Clazy‑tiszta, biztonságos, olvasható, hatékony).
+A blokkfejlécek használata ajánlott, ha a refaktor több logikai fejezetet hoz létre.
 
-    Fontos szabályok:
+Kérlek, először csak:
+1) a problémák listáját add meg
+2) a refaktorálási javaslatokat
+3) a tervezett új fájlokat (ha szükséges)
 
-    1) Először **csak a fájllistát** add meg, soronként egy fájlt, files.txt‑be másolható formában.
-    2) A fájllista lehet kreatív, javasolhatsz új modulokat vagy fájlokat is —
-       de **ne generálj még kódot**, csak beszéljük meg.
-    3) A projektstruktúrát (common/, workbench/, mainwindow/, stb.)
-       **mindig vedd figyelembe**, és a fájlokat oda javasold, ahol logikailag a helyük van.
-    4) A kódgenerálás **csak akkor indulhat el**, ha megkapod a projekt .pro fájlját.
-       Amíg nincs .pro, addig csak tervezünk.
-    5) Ha a feladat túl nagy, a kontextus szétesne, vagy túl sok fájl lenne egyszerre,
-       **jelezd**, és javasolj moduláris bontást.
-    6) A fájllista legyen teljes, de fókuszált: csak azok a fájlok szerepeljenek,
-       amelyek ténylegesen szükségesek az implementációhoz.
-       A lista készüljön kimásolható, files.txt fájlba beilleszthető módon!
-    7) A kódgenerálás második lépésben történik, miután jóváhagytam a fájllistát.
-
-    A kódgeneráláskor (második lépés):
-    - magyar kommenteket kérek, angol terminológiával (class, method, Qt API)
-    - ne írd bele, hogy Hunglish
-    - javasolj elnevezéseket és integrációs pontokat
-    - a fájlnevek legyenek snake_case formátumban
+**Ne adj még kódot**, amíg nem hagyom jóvá a tervet.
 
 ------------------------------------------------------------------------
 
-✅ 2) Refaktor prompt (biztonságos, moduláris, Clazy‑tiszta refaktorokhoz)
+Kérlek, készíts unit teszt tervet a következő komponenshez.
 
-    Kérlek, refaktoráld a következő kódrészletet ipari szintű minőségre.
+Elvárások:
+- QtTest keretrendszer
+- C++20
+- moduláris, izolált tesztek
+- mockolás, ha szükséges
+- edge case-ek lefedése
+- magyar kommentek angol terminológiával
+- ne generálj még kódot
 
-    Elvárások:
-    - C++20, Qt 6.10
-    - Clazy‑tiszta
-    - biztonságos, olvasható, hatékony
-    - moduláris, SRP‑barát
-    - magyar kommentek angol terminológiával
-    - ne írj Hunglish megjegyzést
-    - tartsd tiszteletben a projektstruktúrát (common/, workbench/, stb.)
+A blokkfejlécek használata opcionális, de ajánlott a tesztkód generálásakor.
 
-    Kérlek, először csak:
-    1) a problémák listáját add meg
-    2) a refaktorálási javaslatokat
-    3) a tervezett új fájlokat (ha szükséges)
+Először add meg:
+1) a tesztelendő funkciók listáját
+2) a tesztesetek felsorolását
+3) a szükséges mockok / stubok listáját
+4) a fájlstruktúrát (test/…)
+5) a coverage célokat
 
-    **Ne adj még kódot**, amíg nem hagyom jóvá a tervet.
+A kódgenerálás csak jóváhagyás után indul.
 
-------------------------------------------------------------------------
-
-✅ 3) Unit test prompt (QtTest, moduláris, professzionális)
-
-    Kérlek, készíts unit teszt tervet a következő komponenshez.
-
-    Elvárások:
-    - QtTest keretrendszer
-    - C++20
-    - moduláris, izolált tesztek
-    - mockolás, ha szükséges
-    - edge case-ek lefedése
-    - magyar kommentek angol terminológiával
-    - ne generálj még kódot
-
-    Először add meg:
-    1) a tesztelendő funkciók listáját
-    2) a tesztesetek felsorolását
-    3) a szükséges mockok / stubok listáját
-    4) a fájlstruktúrát (test/…)
-    5) a coverage célokat
-
-    A kódgenerálás csak jóváhagyás után indul.
 
 ------------------------------------------------------------------------
 
-✅ 4) Kódreview prompt (minőségellenőrzés, Clazy‑szem, architektúra‑szem)
+Kérlek, végezz kódreview-t a következő kódrészleten.
 
-    Kérlek, végezz kódreview-t a következő kódrészleten.
+A review szempontjai:
+- C++20 best practice
+- Qt 6.10 idiomák
+- Clazy ajánlások
+- memória- és erőforrásbiztonság
+- thread‑safety (ha releváns)
+- moduláris felépítés
+- SRP, OCP, DIP
+- naming consistency (snake_case, PascalCase)
+- magyar kommentek minősége
+- auditálhatóság
+- blokkfejlécek helyes használata
 
-    A review szempontjai:
-    - C++20 best practice
-    - Qt 6.10 idiomák
-    - Clazy ajánlások
-    - memória- és erőforrásbiztonság
-    - thread‑safety (ha releváns)
-    - moduláris felépítés
-    - SRP, OCP, DIP
-    - naming consistency (snake_case, PascalCase)
-    - magyar kommentek minősége
-    - auditálhatóság
+Kérlek, először csak:
+1) a problémák listáját add meg
+2) a javítási javaslatokat
+3) a potenciális refaktor irányokat
 
-    Kérlek, először csak:
-    1) a problémák listáját add meg
-    2) a javítási javaslatokat
-    3) a potenciális refaktor irányokat
+Ne írj át kódot, amíg nem kérem.
 
-    Ne írj át kódot, amíg nem kérem.
 
 ------------------------------------------------------------------------
 ------------------------------------------------------------------------

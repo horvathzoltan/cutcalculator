@@ -281,3 +281,19 @@ Ha szeretnéd, készítek:
 ✅ egy „Kézikönyv stílusguide” dokumentumot
 
 Csak mondd, melyikkel folytassuk.
+-----------
+
+zoli@pif:~$ pandoc handbook.md \
+  -o handbook.pdf \
+  --pdf-engine=lualatex \
+  --template=emoji-template.tex \
+  --toc \
+  --toc-depth=3 \
+  -V compact-lists=true \
+  -V author="Zoltán" \
+  -V date="2025" \
+  -V geometry:margin=2.5cm \
+  -V papersize=a4 \
+  -V pagestyle=plain \
+  --metadata linkcolor=blue
+

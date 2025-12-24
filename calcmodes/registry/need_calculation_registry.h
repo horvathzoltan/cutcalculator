@@ -39,6 +39,7 @@ public:
     void setAll(const QVector<NeedCalculation>& v) { _data = v; }
     void clear() { _data.clear(); }
     void persist() const;
+    bool exists(const QUuid& productId, const QString& modeName) const;
 
 private:
     NeedCalculationRegistry()
@@ -47,5 +48,4 @@ private:
     }
 
     QVector<NeedCalculation> _data;
-    bool existsOnProduct(const QUuid& productId, const QString& modeName) const;
 };
