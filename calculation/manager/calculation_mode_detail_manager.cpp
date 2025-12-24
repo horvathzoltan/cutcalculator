@@ -28,7 +28,7 @@ void CalculationModeDetailManager::connectSignals() {
         d.formula = "w-0";                    // demo formula
 
         if (!NeedCalculationDetailRegistry::instance().insert(d)) {
-            zEventWARN("⚠️ Detail insert failed – material or formula invalid");
+            zWarning("⚠️ Detail insert failed – material or formula invalid");
             return;
         }
         zEventINFO(QString("➕ Detail added for calcId=%1").arg(calcId.toString()));
@@ -38,7 +38,7 @@ void CalculationModeDetailManager::connectSignals() {
 
     connect(_view, &CalculationModeDetailView::request_remove_detail, this, [](const QUuid& detailId) {
         if (!NeedCalculationDetailRegistry::instance().remove(detailId)) {
-            zEventWARN(QString("⚠️ Detail remove failed: %1").arg(detailId.toString()));
+            zWarning(QString("⚠️ Detail remove failed: %1").arg(detailId.toString()));
         } else {
             zEventINFO(QString("🗑️ Detail removed: %1").arg(detailId.toString()));
         }
@@ -48,7 +48,7 @@ void CalculationModeDetailManager::connectSignals() {
         // Placeholder: itt majd formula editor dialog lesz.
         const QString newFormula = "fixed:2";
         if (!NeedCalculationDetailRegistry::instance().updateFormula(detailId, newFormula)) {
-            zEventWARN(QString("⚠️ Formula update failed for detailId=%1").arg(detailId.toString()));
+            zWarning(QString("⚠️ Formula update failed for detailId=%1").arg(detailId.toString()));
         } else {
             zEventINFO(QString("✏️ Formula updated: %1 → %2").arg(detailId.toString(), newFormula));
         }
@@ -71,7 +71,7 @@ void CalculationModeDetailManager::refreshForCalculation(const QUuid& calcId, co
     _view->set_current_calculation(calcId, modeName);
     _view->set_details(rows);
 
-    zEventINFO(QString("🔄 Details refreshed for mode: %1, count=%2").arg(modeName).arg(rows.size()));
+    zInfo(QString("🔄 Details refreshed for mode: %1, count=%2").arg(modeName).arg(rows.size()));
 }
 
 /**

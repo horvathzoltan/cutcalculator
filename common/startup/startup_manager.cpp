@@ -99,9 +99,9 @@ StartupStatus StartupManager::initNeedRuleRegistry() {
 
     int count = NeedRuleRegistry::instance().size();
     if (count == 0) {
-        zEventINFO("📊 NeedRuleRegistry: jelenleg nincs kapcsolat – tiszta indulás");
+        zInfo("📊 NeedRuleRegistry: jelenleg nincs kapcsolat – tiszta indulás");
     } else {
-        zEventINFO(QString("📊 NeedRuleRegistry: %1 kapcsolat tárolva").arg(count));
+        zInfo(QString("📊 NeedRuleRegistry: %1 kapcsolat tárolva").arg(count));
     }
 
     return StartupStatus::success();

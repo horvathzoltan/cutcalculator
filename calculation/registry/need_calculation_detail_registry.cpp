@@ -22,24 +22,24 @@ bool NeedCalculationDetailRegistry::isFormulaValid(const QString& f) {
 
 bool NeedCalculationDetailRegistry::insert(const NeedCalculationDetail& det) {
     if (!isFormulaValid(det.formula)) {
-        zEventWARN(QString("⚠️ NeedCalculationDetail insert: invalid formula: %1").arg(det.formula));
+        zWarning(QString("⚠️ NeedCalculationDetail insert: invalid formula: %1").arg(det.formula));
         return false;
     }
     // Material létezés check (auditbarát)
     auto* matRepoBase = RegistryManager::instance().findByTypeName("MaterialMaster");
     if (!matRepoBase) {
-        zEventWARN("⚠️ NeedCalculationDetail insert: Material registry hiányzik");
+        zWarning("⚠️ NeedCalculationDetail insert: Material registry hiányzik");
         return false;
     }
     auto* matRepo = dynamic_cast<IdentifiableRegistryBase*>(matRepoBase);
     if (!matRepo || !matRepo->findEntityById(det.materialId)) {
-        zEventWARN(QString("⚠️ NeedCalculationDetail insert: material not found: %1").arg(det.materialId.toString()));
+        zWarning(QString("⚠️ NeedCalculationDetail insert: material not found: %1").arg(det.materialId.toString()));
         return false;
     }
 
     _data.append(det);
     persist();
-    zEventINFO(QString("➕ NeedCalculationDetail: material=%1 formula=%2")
+    zInfo(QString("➕ NeedCalculationDetail: material=%1 formula=%2")
                    .arg(det.materialId.toString(), det.formula));
     return true;
 }
@@ -49,7 +49,7 @@ bool NeedCalculationDetailRegistry::remove(const QUuid& id) {
     if (it != _data.end()) {
         _data.erase(it, _data.end());
         persist();
-        zEventINFO(QString("🗑️ NeedCalculationDetail removed: %1").arg(id.toString()));
+        zInfo(QString("🗑️ NeedCalculationDetail removed: %1").arg(id.toString()));
         return true;
     }
     return false;
@@ -57,14 +57,14 @@ bool NeedCalculationDetailRegistry::remove(const QUuid& id) {
 
 bool NeedCalculationDetailRegistry::updateFormula(const QUuid& id, const QString& newFormula) {
     if (!isFormulaValid(newFormula)) {
-        zEventWARN(QString("⚠️ NeedCalculationDetail update: invalid formula: %1").arg(newFormula));
+        zWarning(QString("⚠️ NeedCalculationDetail update: invalid formula: %1").arg(newFormula));
         return false;
     }
     for (auto& d : _data) {
         if (d.id == id) {
             d.formula = newFormula;
             persist();
-            zEventINFO(QString("✏️ NeedCalculationDetail formula updated: %1").arg(id.toString()));
+            zInfo(QString("✏️ NeedCalculationDetail formula updated: %1").arg(id.toString()));
             return true;
         }
     }

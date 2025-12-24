@@ -59,7 +59,7 @@ void MaterialRequirementsManager::connectSignals() {
                     // CSV persist
                     NeedRuleRepository::save();
                 } else {
-                    zEventWARN(QString("⚠️ NeedRule remove failed: Product=%1 Material=%2")
+                    zWarning(QString("⚠️ NeedRule remove failed: Product=%1 Material=%2")
                                    .arg(productId.toString(), materialId.toString()));
                 }
 

@@ -190,6 +190,8 @@ DISTFILES += \
     run_4_ValidationRules.txt \
     run_4_WidgetGeometrySettings.txt \
     run_4_WordcodeTranslation.txt \
+    run_5_0.md \
+    run_5_1.md \
     testdata/barcodes.csv \
     testdata/products.csv \
     testdata/needrules.csv \

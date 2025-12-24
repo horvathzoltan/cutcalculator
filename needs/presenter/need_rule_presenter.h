@@ -24,7 +24,7 @@ public:
     bool initializeAndRefreshForProduct(const QUuid& productId) {
         const bool ok = NeedRuleRepository::load();
         if (!ok) {
-            zEventWARN("⚠️ NeedRulePresenter: load sikertelen");
+            zWarning("⚠️ NeedRulePresenter: load sikertelen");
         }
         refreshForProduct(productId);
         return ok;
@@ -58,7 +58,7 @@ public:
         }
 
         _view->set_requirements(rows);
-        zEventINFO(QString("📊 NeedRulePresenter: %1 sor a view-ban Product=%2")
+        zInfo(QString("📊 NeedRulePresenter: %1 sor a view-ban Product=%2")
                        .arg(rows.size())
                        .arg(productId.toString(QUuid::WithoutBraces)));
     }
@@ -86,7 +86,7 @@ public:
                            .arg(productId.toString(QUuid::WithoutBraces),
                                 materialId.toString(QUuid::WithoutBraces)));
         } else {
-            zEventWARN("⚠️ NeedRule remove: nem talált kapcsolat");
+            zWarning("⚠️ NeedRule remove: nem talált kapcsolat");
         }
 
         // Optional: azonnali mentés

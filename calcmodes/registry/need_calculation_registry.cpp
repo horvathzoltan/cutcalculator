@@ -11,16 +11,16 @@ bool NeedCalculationRegistry::exists(const QUuid& productId, const QString& mode
 
 bool NeedCalculationRegistry::insert(const NeedCalculation& calc) {
     if (calc.modeName.trimmed().isEmpty()) {
-        zEventWARN("⚠️ NeedCalculation insert: üres modeName nem engedélyezett");
+        zWarning("⚠️ NeedCalculation insert: üres modeName nem engedélyezett");
         return false;
     }
     if (exists(calc.productDefinitionId, calc.modeName)) {
-        zEventWARN(QString("⚠️ NeedCalculation insert: duplikált mód a terméken: %1").arg(calc.modeName));
+        zWarning(QString("⚠️ NeedCalculation insert: duplikált mód a terméken: %1").arg(calc.modeName));
         return false;
     }
     _data.append(calc);
     persist();
-    zEventINFO(QString("➕ NeedCalculation: %1").arg(calc.modeName));
+    zInfo(QString("➕ NeedCalculation: %1").arg(calc.modeName));
     return true;
 }
 
@@ -29,7 +29,7 @@ bool NeedCalculationRegistry::remove(const QUuid& id) {
     if (it != _data.end()) {
         _data.erase(it, _data.end());
         persist();
-        zEventINFO(QString("🗑️ NeedCalculation removed: %1").arg(id.toString()));
+        zInfo(QString("🗑️ NeedCalculation removed: %1").arg(id.toString()));
         return true;
     }
     return false;
@@ -37,18 +37,18 @@ bool NeedCalculationRegistry::remove(const QUuid& id) {
 
 bool NeedCalculationRegistry::rename(const QUuid& id, const QString& newName) {
     if (newName.trimmed().isEmpty()) {
-        zEventWARN("⚠️ NeedCalculation rename: üres új név tiltva");
+        zWarning("⚠️ NeedCalculation rename: üres új név tiltva");
         return false;
     }
     for (auto& c : _data) {
         if (c.id == id) {
             if (exists(c.productDefinitionId, newName)) {
-                zEventWARN(QString("⚠️ NeedCalculation rename: duplikáció %1").arg(newName));
+                zWarning(QString("⚠️ NeedCalculation rename: duplikáció %1").arg(newName));
                 return false;
             }
             c.modeName = newName;
             persist();
-            zEventINFO(QString("✏️ NeedCalculation renamed: %1 → %2").arg(id.toString(), newName));
+            zInfo(QString("✏️ NeedCalculation renamed: %1 → %2").arg(id.toString(), newName));
             return true;
         }
     }

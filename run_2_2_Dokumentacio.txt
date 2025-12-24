@@ -104,15 +104,15 @@ Könyvtár dumpolás:
 
 → rekurzívan kiírja a products könyvtár tartalmát.
 
----
-
-./sourcetotxt.sh ~/source/repos/CutCalculator/colors/ > masi2.txt
-
-./sourcetotxt.sh -d ~/source/repos/CutCalculator files.txt > masi2.txt
-
-split -l 5000 masi2.txt masi2_part_ --additional-suffix=.txt
+zoli@pif:~$ ./sourcetotxt.sh ~/source/repos/CutCalculator/ > masi2.txt
+zoli@pif:~$ split -l 2500 masi2.txt masi2_part_ --additional-suffix=.txt
 
 -----
 
 pandoc -s -f markdown -t plain -o masi2.txt masi2.txt
+
+------
+
+zoli@pif:~$ pandoc kezikonyv_1.md -o kezikonyv_1.pdf --pdf-engine=lualatex --template=emoji-template.tex
+zoli@pif:~$ pandoc kezikonyv_2.md -o kezikonyv_2.pdf --pdf-engine=lualatex --template=emoji-template.tex
 

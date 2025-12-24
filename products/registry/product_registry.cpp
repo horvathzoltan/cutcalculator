@@ -106,7 +106,7 @@ bool ProductRegistry::update(const ProductMaster& updated) {
 
     if (changed) {
         persist();
-        zEventINFO(QString("✏️ %3 updated: %1 [%2]")
+        zInfo(QString("✏️ %3 updated: %1 [%2]")
                        .arg(updated.name, updated.barcode, typeName()));
     }
     return changed;
@@ -126,7 +126,7 @@ bool ProductRegistry::remove(const QUuid& id) {
 
             // 🔧 Barcode retire
             barcodeRegistry.retire(code, typeName() + " deleted");
-            zEventINFO(QString("%2 removed, barcode retired: %1").arg(code, typeName()));
+            zInfo(QString("%1 removed, barcode retired: %2") .arg(typeName(), code));
             break;
         }
     }

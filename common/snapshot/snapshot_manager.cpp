@@ -50,7 +50,7 @@ QString SnapshotManager::snapshotFilePathFor(QWidget* window) const
         FileNameHelper::instance().uiSnapshotFilePath(profile);
 
     if (path.isEmpty()) {
-        zEventWARN("⚠️ SnapshotManager: snapshot path is empty");
+        zWarning("⚠️ SnapshotManager: snapshot path is empty");
         return {};
     }
 
@@ -62,7 +62,7 @@ QString SnapshotManager::snapshotFilePathFor(QWidget* window) const
 void SnapshotManager::saveWindowSnapshot(QWidget* window)
 {
     if (!window) {
-        zEventWARN("⚠️ Window snapshot save skipped: null window");
+        zWarning("⚠️ Window snapshot save skipped: null window");
         return;
     }
 
@@ -91,14 +91,14 @@ void SnapshotManager::saveWindowSnapshot(QWidget* window)
     snap.sync();
 
     const QString profile = currentMonitorProfile(window);
-    zEventINFO(QString("💾 Geometry snapshot saved for profile '%1' → %2")
+    zInfo(QString("💾 Geometry snapshot saved for profile '%1' → %2")
                    .arg(profile, path));
 }
 
 bool SnapshotManager::restoreWindowSnapshot(QWidget* window)
 {
     if (!window) {
-        zEventWARN("⚠️ Window snapshot restore skipped: null window");
+        zWarning("⚠️ Window snapshot restore skipped: null window");
         return false;
     }
 
@@ -110,7 +110,7 @@ bool SnapshotManager::restoreWindowSnapshot(QWidget* window)
 
     if (!QFile::exists(path)) {
         const QString profile = currentMonitorProfile(window);
-        zEventINFO(QString("ℹ️ No geometry snapshot for profile '%1'").arg(profile));
+        zWarning(QString("⚠️ No geometry snapshot for profile '%1'").arg(profile));
         return false;
     }
 
@@ -120,7 +120,7 @@ bool SnapshotManager::restoreWindowSnapshot(QWidget* window)
     const QSize   savedScreen = GeometryHelper::parseScreenSize(screenStr);
 
     if (geom.isEmpty()) {
-        zEventWARN(QString("⚠️ Snapshot restore: empty geometry string in '%1'").arg(path));
+        zWarning(QString("⚠️ Snapshot restore: empty geometry string in '%1'").arg(path));
         return false;
     }
 
@@ -128,7 +128,7 @@ bool SnapshotManager::restoreWindowSnapshot(QWidget* window)
     GeometryHelper::restoreWindowGeometry(window, geom, savedScreen);
 
     const QString profile = currentMonitorProfile(window);
-    zEventINFO(QString("✅ Window restored from geometry snapshot '%1' (%2)")
+    zInfo(QString("✅ Window restored from geometry snapshot '%1' (%2)")
                    .arg(profile, path));
     return true;
 }
@@ -141,19 +141,19 @@ SnapshotManager::loadWorkbenchSnapshot(QWidget* contextWindow)
     WorkbenchSnapshot result;
 
     if (!contextWindow) {
-        zEventWARN("⚠️ loadWorkbenchSnapshot skipped: null contextWindow");
+        zWarning("⚠️ loadWorkbenchSnapshot skipped: null contextWindow");
         return result;
     }
 
     const QString path = snapshotFilePathFor(contextWindow);
     if (path.isEmpty()) {
-        zEventWARN("⚠️ loadWorkbenchSnapshot: snapshot path is empty");
+        zWarning("⚠️ loadWorkbenchSnapshot: snapshot path is empty");
         return result;
     }
 
     if (!QFile::exists(path)) {
         const QString profile = currentMonitorProfile(contextWindow);
-        zEventINFO(QString("ℹ️ No BOMWorkbench snapshot for profile '%1'").arg(profile));
+        zWarning(QString("ℹ️ No BOMWorkbench snapshot for profile '%1'").arg(profile));
         return result;
     }
 
@@ -170,19 +170,19 @@ void SnapshotManager::saveWorkbenchSnapshot(const WorkbenchSnapshot& s,
                                             QWidget* contextWindow)
 {
     if (!contextWindow) {
-        zEventWARN("⚠️ BOMWorkbench snapshot skipped: null contextWindow");
+        zWarning("⚠️ BOMWorkbench snapshot skipped: null contextWindow");
         return;
     }
 
     if (!GeometryHelper::isWindowGeometryReady(contextWindow)) {
         // Hunglish: ha a window még nem stabil, akkor snapshot mentés csak zaj lenne.
-        zEventINFO("⏳ Workbench snapshot skipped: window not ready");
+        zWarning("⏳ Workbench snapshot skipped: window not ready");
         return;
     }
 
     const QString path = snapshotFilePathFor(contextWindow);
     if (path.isEmpty()) {
-        zEventWARN("⚠️ BOMWorkbench snapshot skipped: snapshot path is empty");
+        zWarning("⚠️ BOMWorkbench snapshot skipped: snapshot path is empty");
         return;
     }
 
@@ -194,7 +194,7 @@ void SnapshotManager::saveWorkbenchSnapshot(const WorkbenchSnapshot& s,
     snap.sync();
 
     const QString profile = currentMonitorProfile(contextWindow);
-    zEventINFO(QString("💾 BOMWorkbench snapshot saved for profile '%1' → %2")
+    zInfo(QString("💾 BOMWorkbench snapshot saved for profile '%1' → %2")
                    .arg(profile, path));
 }
 

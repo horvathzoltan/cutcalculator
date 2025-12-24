@@ -38,14 +38,14 @@ bool NeedCalculationDetailRepository::load(QVector<NeedCalculationDetail>& out) 
 
     out = std::move(tmp);
     FileContextCollector::instance().onContextDestroyed(ctx);
-    zEventINFO(QString("✅ NeedCalculationDetail loaded: %1 sor").arg(out.size()));
+    zInfo(QString("✅ NeedCalculationDetail loaded: %1 sor").arg(out.size()));
     return true;
 }
 
 bool NeedCalculationDetailRepository::save(const QVector<NeedCalculationDetail>& data) {
     QFile file(ncd_path());
     if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
-        zEventERROR("❌ NeedCalculationDetail save: nem nyitható meg írásra");
+        zWarning("❌ NeedCalculationDetail save: nem nyitható meg írásra");
         return false;
     }
     QTextStream out(&file);
@@ -56,6 +56,6 @@ bool NeedCalculationDetailRepository::save(const QVector<NeedCalculationDetail>&
             << d.materialId.toString(QUuid::WithoutBraces) << ";"
             << d.formula << "\n";
     }
-    zEventINFO(QString("💾 NeedCalculationDetail saved: %1 sor").arg(data.size()));
+    zInfo(QString("💾 NeedCalculationDetail saved: %1 sor").arg(data.size()));
     return true;
 }

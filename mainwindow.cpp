@@ -52,7 +52,7 @@ MainWindow::MainWindow(QWidget *parent)
             GeometryHelper::restoreSplitterState(ui->splitter, split);
         }
 
-        zEventINFO("✅ UI Settings loaded (percent-based + snapshot-aware)");
+        zInfo("✅ UI Settings loaded (percent-based + snapshot-aware)");
     });
 
 

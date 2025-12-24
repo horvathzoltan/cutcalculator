@@ -1,24 +1,24 @@
-------------------------------------------------------------------------
-
 🌙 Mai nap összefoglalója (tömör, fejlesztőbarát)
 
-A mai nap a CutCalculator egyik legnagyobb mérföldköve lett:
-a NeedCalculation / NeedCalculationDetail domain‑szétválasztás végre
-ipari minőségben elkészült, a BOMWorkbench integráció stabilizálódott,
-és a snapshot‑architektúra teljesen összeállt.
-A ModeNameDialog működik, validál, integrálódik, és a CSV warningok is
-helyesen jelennek meg.
-Felszínre került az EventLog túlterhelése, ami új architektúra‑feladatot
-szült (SystemLog + EventLog szétválasztása).
-A projekt most először áll olyan stabil, tiszta, moduláris állapotban,
-hogy a következő nagy modulok (formula‑motor, UX‑finomítások, preview)
-már akadály nélkül építhetők.
+A mai nap a CutCalculator log‑architektúrájának és UI‑snapshot
+rendszerének teljes konszolidációjáról szólt.
+A GeometryHelper, SnapshotManager, BOMWorkbench és a teljes UI‑restore
+pipeline audit‑szinten is átnézésre került, és minden modul tisztán,
+konzisztensen illeszkedik a SystemLog / EventLog kettős architektúrába.
+A NeedRule, Product, Material és BOM‑workflow logjai egységesítve
+lettek, a Presenter/Manager réteg logikai szerepei letisztultak, és a
+snapshot‑restore minden komponensnél audit‑barát módon működik.
+A BOMWorkbench wiring, state‑restore és splitter/header kezelés teljesen
+stabil, a logcsatornák pedig most először 100%-ban megfelelnek a projekt
+log‑szabályainak.
+A nap végére a teljes UI‑snapshot architektúra, a BOMWorkbench workflow
+és a NeedRule/Presenter logika ipari minőségben áll.
 
 ------------------------------------------------------------------------
 
 📊 Állapottábla – frissítve
 
-(A napzáró dokumentumod alapján minden státusz átvezetve.)
+(A mai nap során átnézett és stabilizált modulok státusza átvezetve.)
 
   -----------------------------------------------------------------------
   Modul / Feladat                 Állapot          Megjegyzés
@@ -146,6 +146,8 @@ már akadály nélkül építhetők.
 -   Test framework
 -   Logger subsystem
 -   Screen-change detector
+-   BOMWorkbench snapshot + restore pipeline
+-   Presenter/Manager log‑architektúra tisztázása
 
 🚧 Folyamatban (Active Zone)
 
@@ -155,6 +157,7 @@ már akadály nélkül építhetők.
 -   CutCalculator preview
 -   MVP logika tisztítása
 -   EventLog tisztítása (SystemLog bevezetése)
+-   BOMWorkbench UX finomítások
 
 📐 Tervezés (Design Zone)
 
@@ -170,49 +173,57 @@ már akadály nélkül építhetők.
 -   EventLog / SystemLog szétválasztása
 -   CSV warning ikonváltás
 -   ModeNameDialog UX kiemelés
+-   UI‑log kategorizálás
 
 ------------------------------------------------------------------------
 
 ✨ Röviden – stratégiai összefoglaló
 
-A projekt ma átlépett egy nagy küszöböt:
-a domain‑szétválasztás elkészült, a snapshot‑architektúra ipari szintű,
-a BOMWorkbench integráció stabil, és a számítási módok workflow‑ja
-elindult.
-A rendszer most először áll olyan tiszta, moduláris állapotban, hogy a
-következő nagy modulok (formula‑motor, UX‑finomítások, preview) már
-akadály nélkül építhetők.
+A mai nap a CutCalculator UI‑snapshot és log‑architektúrájának teljes
+konszolidációját hozta.
+A BOMWorkbench workflow, a splitter/header restore, a Presenter/Manager
+logika és a SnapshotManager integráció most először áll teljesen stabil,
+audit‑barát állapotban.
+A projekt ezzel belépett abba a fázisba, ahol a számítási módok, a
+formula‑motor és a preview modul már akadály nélkül építhetők.
 
 ------------------------------------------------------------------------
 
 📌 Mai eredmények – részletes taktikai napzáró
 
--   NeedCalculation / NeedCalculationDetail domain szétválasztása → ✅
--   ModeNameDialog implementálva → ✅
--   BOMWorkbench wiring ellenőrizve → ✅
--   CSV warningok helyesen működnek → ✅
--   EventLog túlterhelés felismerve → 💡
--   ModeNameDialog UX‑probléma azonosítva → 💡
--   Validáció whitespace esetén túl szigorú → finomítás kell
--   Snapshot architektúra stabil → ✅
--   A projekt fordul, minden modul a helyén → ✅
+-   BOMWorkbench state‑restore auditálva → ✅
+-   GeometryHelper restore logika validálva → ✅
+-   SnapshotManager + LayoutDefaultStore együttműködés stabil → ✅
+-   Presenter/Manager logcsatornák tisztázva → ✅
+-   ProductTreeView dropEvent logika auditálva → ✅
+-   NeedRule pipeline logjai egységesítve → ✅
+-   EventLog túlterhelés azonosítva → 💡
+-   SystemLog + EventLog szétválasztás előkészítve → 🚧
+-   BOMWorkbench UX finomítási pontok feltárva → 💡
 
 ------------------------------------------------------------------------
 
 🎯 Prioritási sorrend – fókuszpont lista
 
 1.  NeedCalculation UX
+
     -   ModeNameDialog UX finomítás
     -   Rename dialog
     -   Duplikáció‑kezelés
+
 2.  NeedCalculationDetail UX
+
     -   MaterialPicker integráció
     -   FormulaEditorDialog
     -   Validáció vizuális jelzése
+
 3.  EventLog tisztítása
+
     -   SystemLog + EventLog szétválasztása
-    -   UI‑log tisztítása
+    -   UI‑log kategorizálás
+
 4.  CutCalculator preview
+
 5.  Formula parser (cparse)
 
 ------------------------------------------------------------------------
@@ -226,6 +237,7 @@ akadály nélkül építhetők.
 -   EventLog / SystemLog szétválasztása
 -   ModeNameDialog UX upgrade
 -   CSV warning ikonváltás
+-   BOMWorkbench UX finomítások
 
 👉 Holnap fókusz
 
@@ -233,14 +245,15 @@ akadály nélkül építhetők.
 2.  EventLog tisztítás – kategorizálás
 3.  CSV warning ikonváltás
 4.  NeedCalculationDetail – MaterialPicker integráció előkészítése
+5.  BOMWorkbench splitter/header UX finomítás
 
 ------------------------------------------------------------------------
 
 📝 Git commit subject (≤55 karakter)
 
-    Finalize NeedCalc split; update roadmap and status
+    Refine BOMWorkbench & snapshot logs; update roadmap
 
 ------------------------------------------------------------------------
 
-Ha szeretnéd, holnap reggel innen folytatjuk a ModeNameDialog
-UX‑upgrade‑jével.
+Ha szeretnéd, készítek egy vizuális diff‑stílusú változáslistát is a
+reggeli állapothoz képest.

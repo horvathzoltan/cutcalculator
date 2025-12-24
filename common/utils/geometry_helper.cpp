@@ -1,4 +1,5 @@
 #include "common/utils/geometry_helper.h"
+#include "common/logger/logger.h"
 #include <QHeaderView>
 #include <cmath>
 
@@ -48,13 +49,13 @@ bool GeometryHelper::isWindowGeometryReady(QWidget* w) {
 /* window */
 QString GeometryHelper::saveWindowGeometry(QWidget* window) {
     if (!window) {
-        zEventWARN("⚠️ Window geometry save skipped: null window");
+        zWarning("⚠️ Window geometry save skipped: null window");
         return {};
     }
 
     // Ha nincs screen, nincs értelme menteni
     if (!window->screen()) {
-        zEventWARN("⚠️ Window geometry save skipped: no screen");
+        zWarning("⚠️ Window geometry save skipped: no screen");
         return {};
     }
 
@@ -64,7 +65,7 @@ QString GeometryHelper::saveWindowGeometry(QWidget* window) {
         !window->testAttribute(Qt::WA_WState_Polished)) {
 
         const QSize sz = window->size();
-        zEventWARN(QString("⚠️ Window geometry not stable "
+        zWarning(QString("⚠️ Window geometry not stable "
                            "(visible=%1, polished=%2, size=%3x%4) → save postponed")
                        .arg(window->isVisible())
                        .arg(window->testAttribute(Qt::WA_WState_Polished))
@@ -80,7 +81,7 @@ QString GeometryHelper::saveWindowGeometry(QWidget* window) {
 
     const QSize screenSize = window->screen()->size();
     if (!screenSize.isValid()) {
-        zEventWARN("⚠️ Window geometry save skipped: invalid screen size");
+        zWarning("⚠️ Window geometry save skipped: invalid screen size");
         return {};
     }
 
@@ -102,7 +103,7 @@ QString GeometryHelper::saveWindowGeometry(QWidget* window) {
                                .arg(wPct, 0, 'f', 1)
                                .arg(hPct, 0, 'f', 1);
 
-    zEventINFO(QString("✅ Window geometry saved: %1").arg(result));
+    zInfo(QString("✅ Window geometry saved: %1").arg(result));
     return result;
 }
 
@@ -113,20 +114,20 @@ void GeometryHelper::restoreWindowGeometry(QWidget* window,
                                            const QSize& savedScreenSize)
 {
     if (!window) {
-        zEventWARN("⚠️ Window geometry restore skipped: null window");
+        zWarning("⚠️ Window geometry restore skipped: null window");
         return;
     }
 
     const QStringList parts = percentGeometry.split(',', Qt::SkipEmptyParts);
     if (parts.size() != 4) {
-        zEventWARN(QString("⚠️ Invalid window geometry string: '%1'").arg(percentGeometry));
+        zWarning(QString("⚠️ Invalid window geometry string: '%1'").arg(percentGeometry));
         return;
     }
 
     // Geometry readiness guard
     if (!isGeometryReadyForRestore(window)) {
         const QSize sz = window->size();
-        zEventWARN(QString("⚠️ Window geometry not ready "
+        zWarning(QString("⚠️ Window geometry not ready "
                            "(visible=%1, polished=%2, size=%3x%4) → restore postponed")
                        .arg(window->isVisible())
                        .arg(window->testAttribute(Qt::WA_WState_Polished))
@@ -140,18 +141,18 @@ void GeometryHelper::restoreWindowGeometry(QWidget* window,
     }
 
     if (!window->screen()) {
-        zEventWARN("⚠️ Window geometry restore skipped: no screen");
+        zWarning("⚠️ Window geometry restore skipped: no screen");
         return;
     }
 
     const QSize currentScreenSize = window->screen()->size();
     if (!currentScreenSize.isValid()) {
-        zEventWARN("⚠️ Window geometry restore skipped: invalid screen size");
+        zWarning("⚠️ Window geometry restore skipped: invalid screen size");
         return;
     }
 
     if (savedScreenSize.isValid() && currentScreenSize != savedScreenSize) {
-        zEventINFO(QString("📺 Screen size changed: %1x%2 → %3x%4")
+        zInfo(QString("📺 Screen size changed: %1x%2 → %3x%4")
                        .arg(savedScreenSize.width()).arg(savedScreenSize.height())
                        .arg(currentScreenSize.width()).arg(currentScreenSize.height()));
     }
@@ -172,7 +173,7 @@ void GeometryHelper::restoreWindowGeometry(QWidget* window,
 
     window->setGeometry(x, y, w, h);
 
-    zEventINFO(QString("✅ Window geometry restored: %1,%2,%3,%4 (screen=%5x%6)")
+    zInfo(QString("✅ Window geometry restored: %1,%2,%3,%4 (screen=%5x%6)")
                    .arg(x).arg(y).arg(w).arg(h)
                    .arg(currentScreenSize.width())
                    .arg(currentScreenSize.height()));
@@ -184,44 +185,44 @@ void GeometryHelper::restoreWindowGeometry(QWidget* window,
 
 QString GeometryHelper::saveSplitterState(QSplitter* splitter) {
     if (!splitter) {
-        zEventWARN("⚠️ Splitter save skipped: null splitter");
+        zWarning("⚠️ Splitter save skipped: null splitter");
         return {};
     }
     const QList<int> sizes = splitter->sizes();
     if (sizes.isEmpty()) {
-        zEventWARN("⚠️ Splitter save skipped: no sizes");
+        zWarning("⚠️ Splitter save skipped: no sizes");
         return {};
     }
     int total = 0;
     for (int s : sizes) total += s;
     if (total <= 0) {
-        zEventWARN("⚠️ Splitter save skipped: total size = 0");
+        zWarning("⚠️ Splitter save skipped: total size = 0");
         return {};
     }
 
     const QStringList tokens = toPercentTokens(sizes);
     const QString result = tokens.join(",");
-    zEventINFO(QString("✅ Splitter state saved: %1").arg(result));
+    zInfo(QString("✅ Splitter state saved: %1").arg(result));
     return result;
 }
 
 void GeometryHelper::restoreSplitterState(QSplitter* splitter, const QString& percentState) {
     if (!splitter) {
-        zEventWARN("⚠️ Splitter restore skipped: null splitter");
+        zWarning("⚠️ Splitter restore skipped: null splitter");
         return;
     }
 
     QStringList tokens = percentState.split(',', Qt::SkipEmptyParts);
     const int childCount = splitter->count();
     if (tokens.isEmpty() || childCount <= 0) {
-        zEventWARN(QString("⚠️ Invalid splitter state: '%1'").arg(percentState));
+        zWarning(QString("⚠️ Invalid splitter state: '%1'").arg(percentState));
         return;
     }
 
     // Geometry readiness guard
     if (!isGeometryReadyForRestore(splitter)) {
         const QSize sz = splitter->size();
-        zEventWARN(QString("⚠️ Splitter geometry not ready "
+        zWarning(QString("⚠️ Splitter geometry not ready "
                            "(visible=%1, polished=%2, size=%3x%4) → restore postponed")
                        .arg(splitter->isVisible())
                        .arg(splitter->testAttribute(Qt::WA_WState_Polished))
@@ -241,7 +242,7 @@ void GeometryHelper::restoreSplitterState(QSplitter* splitter, const QString& pe
     if (totalPixels <= 0) {
         QList<int> equal(childCount, 100 / childCount);
         splitter->setSizes(equal);
-        zEventWARN("⚠️ Splitter total size unknown; applied equal distribution fallback");
+        zWarning("⚠️ Splitter total size unknown; applied equal distribution fallback");
         return;
     }
 
@@ -252,7 +253,7 @@ void GeometryHelper::restoreSplitterState(QSplitter* splitter, const QString& pe
     for (int szVal : newSizes) {
         pixelStrings << QString::number(szVal) + "px";
     }
-    zEventINFO(QString("✅ Splitter state restored: %1 → [%2] "
+    zInfo(QString("✅ Splitter state restored: %1 → [%2] "
                        "(totalPixels=%3, children=%4)")
                    .arg(percentState, pixelStrings.join(","))
                    .arg(totalPixels)
@@ -353,13 +354,13 @@ QString GeometryHelper::saveHeaderState(QHeaderView* header) {
 
 void GeometryHelper::restoreHeaderState(QHeaderView* header, const QString& percentState) {
     if (!header) {
-        zEventWARN("⚠️ Header restore skipped: null header");
+        zWarning("⚠️ Header restore skipped: null header");
         return;
     }
 
     QStringList parts = percentState.split(',', Qt::SkipEmptyParts);
     if (parts.isEmpty()) {
-        zEventWARN(QString("⚠️ Invalid header percent string: '%1'").arg(percentState));
+        zWarning(QString("⚠️ Invalid header percent string: '%1'").arg(percentState));
         return;
     }
 
@@ -377,7 +378,7 @@ void GeometryHelper::restoreHeaderState(QHeaderView* header, const QString& perc
 
     if (!isReady()) {
         int pw = parent ? parent->width() : header->width();
-        zEventWARN(QString("⚠️ Header geometry not ready "
+        zWarning(QString("⚠️ Header geometry not ready "
                            "(visible=%1, polished=%2, parentWidth=%3) → restore postponed")
                        .arg(header->isVisible())
                        .arg(header->testAttribute(Qt::WA_WState_Polished))
@@ -397,7 +398,7 @@ void GeometryHelper::restoreHeaderState(QHeaderView* header, const QString& perc
     if (total <= 0) {
         total = parent ? parent->width() : header->width();
         if (total <= 0) {
-            zEventWARN("⚠️ Header restore: total width still 0 → postponed again");
+            zWarning("⚠️ Header restore: total width still 0 → postponed again");
             QTimer::singleShot(0, header, [header, percentState]() {
                 GeometryHelper::restoreHeaderState(header, percentState);
             });
@@ -416,7 +417,7 @@ void GeometryHelper::restoreHeaderState(QHeaderView* header, const QString& perc
         bool ok = false;
         double pct = p.toDouble(&ok) / 100.0;
         if (!ok) {
-            zEventWARN(QString("⚠️ Invalid header percent token: '%1'").arg(parts[i]));
+            zWarning(QString("⚠️ Invalid header percent token: '%1'").arg(parts[i]));
             continue;
         }
 
@@ -433,7 +434,7 @@ void GeometryHelper::restoreHeaderState(QHeaderView* header, const QString& perc
     }
 
     // ✅ Clazy-clean: multi-arg .arg() használat
-    zEventINFO(QString("✅ Header state restored: %1 → [%2] (total=%3)")
+    zInfo(QString("✅ Header state restored: %1 → [%2] (total=%3)")
                    .arg(percentState,
                         pxTokens.join(","),
                         QString::number(total)));

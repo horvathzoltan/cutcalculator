@@ -121,14 +121,13 @@ bool BarcodeRegistry::retire(const QString& code, const QString& reason) {
         if (r.code != code) continue;
 
         if (r.retiredAt.has_value()){
-            zWarning(QString("Retire requested for already retired code: %1").arg(code));
+            zInfo(QString("Retire requested for already retired code: %1").arg(code));
             return false;
         }
 
         r.retiredAt = QDateTime::currentDateTime();
 
-        zWarning(QString("Barcode retired: %1 (reason=%2)").arg(code, reason));
-        zEventINFO(QString("Barcode retired: %1 (reason=%2)").arg(code, reason));
+        zInfo(QString("Barcode retired: %1 (reason=%2)").arg(code, reason));
 
         persist();
         return true;

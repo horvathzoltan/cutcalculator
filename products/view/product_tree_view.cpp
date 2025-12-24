@@ -3,6 +3,7 @@
 #include <QStandardItemModel>
 #include <QDebug>
 #include "common/logger/event_logger.h"
+#include "common/logger/logger.h"
 #include "common/utils/font_utils.h"
 #include "products/registry/product_registry.h"
 
@@ -43,12 +44,17 @@ void ProductTreeView::dropEvent(QDropEvent* event) {
         QUuid oldParent = updated.parentId; // régi parent
         updated.parentId = newParentId;     // új parent
 
-        ProductRegistry::instance().update(updated); // audit + persist
+        bool isUpdated = ProductRegistry::instance().update(updated);
+        if (isUpdated){ // audit + persist
 
-        zEventINFO(QString("🔀 Product moved: %1 → new parent: %2 (was: %3)")
-                       .arg(updated.name)
-                       .arg(newParentId.toString())
-                       .arg(oldParent.toString()));
+            zEventINFO(QString("🔀 Product moved: %1 → new parent: %2 (was: %3)")
+                           .arg(updated.name)
+                           .arg(newParentId.toString())
+                           .arg(oldParent.toString()));
+        }
+        else{
+            zWarning("⚠️ Product move failed (registry update rejected)");
+        }
     }
 
     QTreeView::dropEvent(event); // alap drop kezelés

@@ -93,9 +93,9 @@ int main(int argc, char *argv[])
     QObject::connect(scr, &QScreen::geometryChanged, &w, [&w]() {
         if (GeometryHelper::isWindowGeometryReady(&w)) {
             SnapshotManager::instance().saveWindowSnapshot(&w);
-            zEventINFO("💾 Screen geometry changed → instant window snapshot saved");
+            zInfo("💾 Screen geometry changed → instant window snapshot saved");
         } else {
-            zEventINFO("⏳ Screen geometry changed, but window not ready → snapshot skipped");
+            zInfo("⏳ Screen geometry changed, but window not ready → snapshot skipped");
         }
     });
 
