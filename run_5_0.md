@@ -237,11 +237,17 @@ A cél egy olyan architektúra bemutatása, amely stabil, moduláris és projekt
 - Picker
 - Editor
 
-### 4.6 Logolási architektúra
-- SystemLog
-- EventLog
-- Audit log
-- Verbose routing
+## **4.6 Logolási architektúra**
+### 4.6.1 A logolás szerepe az architektúrában
+### 4.6.2 A Logger háromrétegű modellje
+### 4.6.3 DebugLog szerepe (TRACE, DEBUG)
+### 4.6.4 SystemLog szerepe (INFO, WARNING, ERROR)
+### 4.6.5 EventLog szerepe (UI workflow)
+### 4.6.6 Időbélyegzés és ipari szabványok
+### 4.6.7 Audit‑barát logolás
+### 4.6.8 Logger API szereptérkép
+### 4.6.9 Logolási döntési fa
+### 4.6.10 A logikonok színének ergonomiai szerepe
 
 ### 4.7 Validációs architektúra
 - inline validation
@@ -892,53 +898,178 @@ UI, amely menthető, visszaállítható, guard‑olt és fallback‑képes.
 
 ***
 
-### 2.4 Logolási fogalmak
+# **2.4 Logolási fogalmak**
+*A logolás a rendszer átláthatóságának, auditálhatóságának és stabilitásának alapja.*
 
-## Logcsatornák (CutCalculator)
-A CutCalculator két logcsatornát használ:
-**SystemLog** (technikai + audit) és **EventLog** (felhasználói események).
-Az audit események nem külön logcsatornát alkotnak, hanem a SystemLog részei, INFO szinten.
+A CutCalculator log‑architektúrája három elkülönített fogalmi csatornára épül:
 
-### SystemLog (hiba log)
-- technikai logok
-- hibák (trace → error)
-- audit események (INFO szinten)
-- workflow részletek
-- verbose routing
+- **DebugLog** – fejlesztői diagnosztika
+- **SystemLog** – technikai és domain audit
+- **EventLog** – felhasználói workflow események
 
-### EventLog (eseménylog)
-- felhasználói események
-- rövid, emberi nyelvű üzenetek
-- non‑blocking UI visszajelzés
+A logszintekhez tartozó ikonok és kulcsszínek **nem dekorációk**, hanem kognitív‑ergonómiai eszközök, amelyek előemésztett információt hordoznak a felhasználó és a fejlesztő számára.
 
-### Audit event (nem külön logcsatorna!)
-- domain műveletek
-- entitás + művelet + paraméterek
-- SystemLog‑ba kerül, INFO szinten
+Az alábbi fogalmak a logolási rendszer alapját képezik.
 
-## EventChannel (új fogalom)
-Definíció:
-  A logolási rendszer három elkülönített fogalmi csatornája:
-  SystemLog, EventLog, AuditEvent.
-Példa:
-  - SystemLog → technikai részletek + audit
-  - EventLog → user‑szintű alkalmazás‑események
-  - AuditEvent → domain műveletek (SystemLog‑ban)
-Anti‑pattern:
-  - minden log egy csatornába
-  - user‑esemény SystemLog‑ba
-  - technikai hiba EventLog‑ba
+***
 
-### Application Event / AppEvent (új fogalom)
-Definíció:
-  Felhasználói művelet, amely az EventLog‑ba kerül.
-Példa:
-  „Mode created: Rugós”
-Anti‑pattern:
-  - Qt eventnek hívni
-  - technikai részleteket beleírni
-Naming:
-  EventLog::info("Mode created: %1", name);
+## **DebugLog**
+**Definíció:**
+Fejlesztői diagnosztikai csatorna, amely TRACE és DEBUG szinteket tartalmaz.
+Nem auditálható, nem kerül a végfelhasználói logokba.
+
+**Szintek és viselkedés:**
+
+- **TRACE** → vezérléskövetés („erre jártam” graffiti), nincs futási következmény
+- **DEBUG** → mély diagnosztika, stack trace, fejlesztői break lehetősége
+
+**Anti‑pattern:**
+- DebugLog használata release buildben
+- DebugLog keverése SystemLog vagy EventLog üzenetekkel
+
+**Naming:**
+`zTrace()`, `zDebug()`
+
+***
+
+## **SystemLog**
+**Definíció:**
+A rendszer technikai és domain műveleteinek auditálható csatornája.
+INFO, WARNING és ERROR szinteket tartalmaz.
+
+**Szintek és ikonok:**
+
+- **INFO** → ℹ️ kék (semleges), ✔️ zöld (siker), ❌ piros (sikertelen, de nem kritikus)
+- **WARNING** → ⚠️ sárga (óvatosság, fallback, degradált működés)
+- **ERROR** → ❌ piros (kritikus hiba, programleállás)
+
+**Viselkedési szerződés:**
+
+- INFO → normál működés
+- WARNING → tovább tudunk menni, de nem ideális
+- ERROR → nem tudunk tovább menni, a rendszer megáll
+
+**Anti‑pattern:**
+- WARNING vagy ERROR EventLog‑ban
+- audit esemény WARNING/ERROR szinten
+
+**Naming:**
+`zInfo()`, `zWarning()`, `zError()`
+
+***
+
+## **EventLog**
+**Definíció:**
+Felhasználói workflow események rövid, emberi nyelvű naplója.
+Csak INFO szintet tartalmaz.
+
+**Példák:**
+
+- „MaterialPicker opened”
+- „User clicked: Add Mode”
+- „BOMWorkbench opened”
+
+**Tiltások:**
+
+- WARNING → ❌
+- ERROR → ❌
+- technikai részletek → ❌
+
+**Naming:**
+`zEventINFO()`
+
+***
+
+## **AuditEvent**
+**Definíció:**
+Domain művelet, amely auditálható formában kerül rögzítésre a SystemLog INFO szintjén.
+Nem külön logcsatorna, hanem a SystemLog része.
+
+**Példák:**
+
+```
+INFO Need created: id=42, name="Rugós"
+INFO Material removed: id=12
+INFO Mode renamed: old="Rugós", new="Rugós 2"
+```
+
+**Követelmények:**
+
+- rövid, emberi nyelvű
+- determinisztikus formátum
+- ISO 8601 + UTC időbélyeg
+- paraméterek stabil sorrendben
+
+**Anti‑pattern:**
+- audit esemény WARNING vagy ERROR szinten
+- audit esemény EventLog‑ban
+- audit esemény túl hosszú vagy technikai részletekkel
+
+***
+
+## **EventChannel**
+**Definíció:**
+A logolási rendszer három elkülönített fogalmi csatornája:
+
+- **DebugLog** → fejlesztői diagnosztika
+- **SystemLog** → technikai + audit
+- **EventLog** → felhasználói események
+
+**Anti‑pattern:**
+- minden log egy csatornába
+- user‑esemény SystemLog‑ba
+- technikai hiba EventLog‑ba
+
+***
+
+## **Application Event / AppEvent**
+**Definíció:**
+Felhasználói művelet, amely az EventLog‑ba kerül.
+
+**Példa:**
+`EventLog::info("Mode created: %1", name);`
+
+**Anti‑pattern:**
+- Qt eventnek hívni
+- technikai részleteket beleírni
+
+***
+
+## **Kulcsszín (Key Color)**
+**Definíció:**
+A logikonok színe, amely pre‑attentív módon hordoz jelentést a felhasználó és a fejlesztő számára.
+
+**Kulcsszínek és jelentésük:**
+
+- **kék ℹ️** → semleges információ
+- **zöld ✔️** → sikeres művelet
+- **piros ❌** → sikertelen művelet vagy kritikus hiba
+- **sárga ⚠️** → figyelmeztetés, óvatosság
+
+**Anti‑pattern:**
+- ❌ ikon WARNING esetén
+- ⚠️ ikon ERROR esetén
+- ✔️ ikon sikertelen műveletnél
+- ℹ️ ikon hibás műveletnél
+
+***
+
+## **Viselkedési szerződés (Behavior Contract)**
+**Definíció:**
+A logszinthez tartozó futási viselkedés, amely meghatározza, hogyan reagál a rendszer.
+
+**Példák:**
+
+- TRACE → nincs futási következmény
+- DEBUG → stack trace, break
+- INFO → normál működés
+- WARNING → fallback, degradált működés
+- ERROR → programleállás
+
+**Anti‑pattern:**
+- logszint és viselkedés összekeverése
+- WARNING → programleállás
+- ERROR → továbbfutás
 
 ***
 
@@ -1460,38 +1591,397 @@ Domain‑entitás szerkesztése, preview támogatása.
 
 ***
 
-# **4.6 Logolási architektúra**
+# 📘 **4.6 Logolási architektúra**
+*A logolás nem mellékes technikai részlet — hanem a rendszer stabilitásának, auditálhatóságának és visszakövethetőségének alapja.*
 
-- SystemLog (hiba + audit + technikai)
-- EventLog (felhasználói események)
-- Audit event (SystemLog része)
-- Verbose routing
+A CutCalculator logolási architektúrája három, egymástól élesen elkülönülő rétegre épül:
 
-***
+1. **DebugLog** – fejlesztői diagnosztika (TRACE, DEBUG)
+2. **SystemLog** – technikai és domain audit (INFO, WARNING, ERROR)
+3. **EventLog** – felhasználói workflow események (INFO)
 
-## **4.6.1 SystemLog**
-- technikai részletek
-- CSV import
-- registry audit
+A három réteg célja, életciklusa és következményei eltérőek.
+A rendszer stabilitása érdekében **nem keverhetők**, és minden loghívásnak egyértelműen beazonosítható szerepe van.
 
 ***
 
-## **4.6.2 EventLog**
-- user‑szintű események
-- rövid, érthető üzenetek
+## **4.6.1 A logolás szerepe az architektúrában**
+*(meglévő rész marad — nem ismétlem)*
 
 ***
-## **Ne keverd össze a Qt eventet az alkalmazás‑eseménnyel**
 
-A CutCalculator kettő logcsatornát használ:  
-- **SystemLog** – technikai részletek  
-- **EventLog** – alkalmazás‑események (AppEvent)  
+## **4.6.2 A Logger háromrétegű modellje**
 
-A „EventLog” *nem* Qt‑eseményeket logol.  
-A Qt event rendszer (`QEvent`, `mousePressEvent`, stb.) teljesen külön világ.  
-Az EventLog kizárólag **felhasználói műveleteket és alkalmazás‑szintű eseményeket** rögzít.
+A Logger három különböző célt szolgáló logréteget valósít meg:
 
-Ez a különválasztás a konzisztencia és az auditálhatóság alapja.
+- **DebugLog** → fejlesztői diagnosztika
+- **SystemLog** → technikai + domain audit
+- **EventLog** → felhasználói események
+
+Ez a szétválasztás biztosítja:
+
+- a rendszer stabilitását
+- a logok érthetőségét
+- az auditálhatóságot
+- a hibák gyors visszakövethetőségét
+- a fejlesztői diagnosztika elkülönítését
+
+***
+
+## **4.6.3 DebugLog szerepe (TRACE, DEBUG)**
+*A DebugLog a fejlesztő eszköze — nem része a rendszer működésének.*
+
+A DebugLog kizárólag fejlesztői diagnosztikai célokat szolgál.
+Nem auditálható, nem kerül be a végfelhasználói logokba, és nem része a rendszer működésének.
+
+### **TRACE — „itt jár a kód”**
+- minimális információ
+- stack trace nélkül
+- vezérléskövetés
+- csak `QT_DEBUG` alatt aktív
+- nem állítja meg a futást
+
+### **DEBUG — „mély hibakeresés”**
+- részletes diagnosztika
+- stack trace
+- Linuxon `_isBreakOnError == true` esetén **megállítja a futást**
+- fejlesztői breakpointként működik
+
+### **Mikor használjuk?**
+- vezérlés útjának követése
+- ritka vagy időzítésfüggő hibák
+- mély diagnosztika
+
+### **Mikor nem használjuk?**
+- domain műveleteknél
+- UI workflow eseményeknél
+- audit eseményeknél
+- release buildben
+
+***
+
+## **4.6.4 SystemLog szerepe (INFO, WARNING, ERROR)**
+*A SystemLog a rendszer belső működésének auditálható rétege.*
+
+A SystemLog minden technikai és domain műveletet rögzít.
+
+### **INFO — „normál működés”**
+- domain műveletek
+- repository/registry interakciók
+- snapshot restore
+- audit események
+
+### **WARNING — „hiba történt, de tovább tudunk menni”**
+- fallback
+- részleges siker
+- invalid input
+- degradált működés
+
+**Ökölszabály:**
+> Ha a program tovább tud menni → WARNING.
+
+### **ERROR — „hiba történt, és nem tudunk tovább menni”**
+- kritikus hiba
+- nincs fallback
+- stack trace
+- exit() / abort()
+
+**Ökölszabály:**
+> Ha a program nem tud tovább menni → ERROR.
+
+***
+
+## **4.6.5 EventLog szerepe (UI workflow)**
+*A felhasználói események logja — rövid, emberi nyelvű, non‑blocking.*
+
+Az EventLog a felhasználó által kiváltott UI‑eseményeket rögzíti:
+
+- dialógus megnyitása
+- gombnyomás
+- drag & drop
+- BOMWorkbench megnyitása
+- user workflow lépések
+
+**Tiltás:**
+- EventLog WARNING → ❌
+- EventLog ERROR → ❌
+
+A user‑szintű hibák UI‑visszajelzéssel kezelendők, nem logszinten.
+
+***
+
+## **4.6.6 Időbélyegzés és ipari szabványok**
+*A determinisztikus időbélyeg az audit alapja.*
+
+A logok időbélyege **ISO 8601** formátumú, **UTC** időzónában:
+
+```
+YYYY-MM-DDTHH:MM:SS.sssZ
+```
+
+### **Miért ISO 8601?**
+- nemzetközi szabvány
+- rendezhető
+- nyelvfüggetlen
+- audit‑kompatibilis
+
+### **Miért UTC?**
+- nincs DST probléma
+- több gép között konzisztens
+- auditálásnál egyértelmű
+
+### **Követelmények**
+- minden log időbélyeges
+- determinisztikus formátum
+- locale‑független
+
+***
+
+## **4.6.7 Audit‑barát logolás**
+*A domain műveletek visszakövethetősége a rendszer stabilitásának alapja.*
+
+A CutCalculator audit‑fogalma **domain audit**:
+
+> A domain műveletek visszakövethetősége rövid, érthető, determinisztikus logbejegyzésekkel.
+
+### **Audit céljai**
+- visszakövethetőség
+- reprodukálhatóság
+- stabilitás
+- bizalom
+
+### **Audit eszközei**
+1. SystemLog INFO szint
+2. rövid, emberi nyelvű üzenetek
+3. ISO 8601 időbélyeg
+
+### **Audit megvalósítása**
+- domain művelet → Manager
+- audit esemény → SystemLog (INFO)
+- Logger → időbélyeg + routing
+
+### **Miért nem külön AuditLog?**
+- felesleges duplikáció
+- SystemLog már audit‑barát
+- egyszerűbb, stabilabb architektúra
+
+### **Audit esemény formátuma**
+```
+<timestamp> INFO <entity> <action>: <parameters>
+```
+
+---
+
+## **4.6.7.1 Audit és logolás kapcsolata az ipari szabványok szerint**
+*(ÚJ alfejezet — a Gemini‑alapú kiegészítés beépítve)*
+
+A nemzetközi szabványok (ISO/IEC 27001, ISO/IEC 27002, ISO 15489) szerint a logolás és az auditálhatóság a modern rendszerek alapkövetelménye.
+Ezek a szabványok nem írnak elő konkrét logformátumot, de meghatározzák, hogy a logoknak:
+
+- **visszakövethetőnek**,
+- **érthetőnek**,
+- **időben rekonstruálhatónak**,
+- **integritás‑védettnek**,
+- **bizonyítékként felhasználhatónak**
+
+kell lenniük.
+
+Ezért használunk:
+
+- ISO 8601 időbélyeget,
+- UTC időzónát,
+- determinisztikus formátumot,
+- rövid, emberi nyelvű audit eseményeket.
+
+A CutCalculator audit‑filozófiája teljes összhangban van ezekkel az ipari elvekkel:
+**a log nem csak napló, hanem a rendszer memóriája és bizonyítéka.**
+
+***
+
+## **4.6.8 Logger API szereptérkép**
+
+| Makró | Szint | Csatorna | Szerep |
+|------|-------|----------|--------|
+| `zTrace()` | TRACE | DebugLog | vezérléskövetés |
+| `zDebug()` | DEBUG | DebugLog | mély diagnosztika |
+| `zInfo()` | INFO | SystemLog | domain/technikai esemény |
+| `zWarning()` | WARNING | SystemLog | nem kritikus hiba |
+| `zError()` | ERROR | SystemLog | kritikus hiba |
+| `zEventINFO()` | INFO | EventLog | user workflow esemény |
+
+***
+
+## **4.6.9 Logolási döntési fa**
+
+```
+Hiba történt?
+    |
+    ├── Nem → INFO (SystemLog vagy EventLog)
+    |
+    └── Igen →
+           |
+           ├── Tudunk tovább menni? → WARNING (SystemLog)
+           |
+           └── Nem tudunk → ERROR (SystemLog)
+```
+
+***
+# **4.6.10 A logikonok színének ergonomiai szerepe**
+*A szín nem dekoráció — hanem kognitív információhordozó.*
+
+A logszintekhez tartozó ikonok **nem pusztán vizuális díszítőelemek**, hanem a szoftverergonómia egyik legfontosabb eszközei.
+A szín — mint elsődleges vizuális inger — az emberi agyban **pre‑attentív feldolgozással** működik:
+az információt **még azelőtt értelmezzük**, hogy tudatosan elolvasnánk a szöveget.
+
+Ez azt jelenti, hogy a logikonok színe:
+
+- **előemésztett információt** hordoz
+- **azonnali jelentést** közvetít
+- **csökkenti a kognitív terhelést**
+- **gyorsítja a hibák felismerését**
+- **segíti a döntéshozatalt**
+- **egységes vizuális nyelvet teremt**
+
+A CutCalculator logikonjai ezért **színkódolt jelentést** hordoznak — de fontos megérteni:
+
+> **Nincs külön SUCCESS logszint.
+> Az INFO szinten belül a jelentés határozza meg az ikon kulcsszínét.**
+
+***
+
+# **INFO — kék ℹ️ (semleges tájékoztatás)**
+A kék szín a kognitív pszichológiában:
+
+- semlegességet
+- megbízhatóságot
+- nyugalmat
+- információt
+
+jelöl.
+
+A kék ℹ️ ikon azt üzeni:
+
+> „Ez egy normál, nem sürgős, nem problémás rendszerüzenet.”
+
+**Mikor használjuk?**
+
+- normál működés
+- állapotváltozás
+- audit esemény
+- technikai információ
+
+**Kognitív szerepe:**
+a kék szín *nem igényel azonnali figyelmet*, így nem terheli túl a felhasználót.
+
+***
+
+# **INFO (sikeres művelet) — zöld ✔️ (pozitív visszaigazolás)**
+A zöld szín az emberi idegrendszerben:
+
+- sikert
+- jóváhagyást
+- pozitív eredményt
+- lezárt, rendben lévő állapotot
+
+jelent.
+
+A zöld ✔️ ikon azt üzeni:
+
+> „A művelet sikeresen befejeződött.”
+
+**Fontos:**
+Ez *nem külön logszint*, hanem **INFO szintű üzenet**, amely *pozitív tartalmú*, ezért kap zöld kulcsszínt.
+
+**Mikor használjuk?**
+
+- mentés sikeres
+- import sikeres
+- számítás sikeres
+- workflow lépés sikeresen lezárult
+
+**Kognitív szerepe:**
+a zöld ✔️ ikon **megnyugtat**, lezárja a műveletet, csökkenti a bizonytalanságot.
+
+***
+
+# **INFO (sikertelen művelet) — piros ❌ (negatív eredmény)**
+Ha egy INFO szintű üzenet **nem hiba**, de a művelet *nem sikerült*, akkor a kulcsszín piros ❌.
+
+Ez akkor fordul elő, ha:
+
+- a művelet nem kritikus
+- a rendszer tovább tud menni
+- de a művelet eredménye negatív
+
+**Példa:**
+
+- „✔️ Export completed”
+- „❌ Export failed (file locked)”
+
+Mindkettő INFO szintű, de a jelentés eltér.
+
+**Kognitív szerepe:**
+a piros ❌ ikon **azonnal jelzi**, hogy a művelet eredménye negatív, még akkor is, ha a rendszer nem hibásodott meg.
+
+***
+
+# **WARNING — sárga ⚠️ (óvatosság)**
+A sárga szín:
+
+- óvatosság
+- potenciális probléma
+- figyelmeztetés
+
+jelzésére szolgál.
+
+A sárga ⚠️ ikon:
+
+- azonnal felhívja a figyelmet
+- nem agresszív
+- nem végzetes
+
+Ez a vizuális jelzés azt üzeni:
+
+> „Valami nem ideális, de tovább tudunk menni.”
+
+***
+
+# **ERROR — piros ❌ (kritikus hiba)**
+A piros szín:
+
+- veszély
+- tiltás
+- végzetes állapot
+- azonnali cselekvési szükséglet
+
+jelzésére szolgál.
+
+A piros ❌ ikon:
+
+- erős, egyértelmű jelzés
+- nem keverhető össze a WARNING‑gal
+- azonnal kiemelkedik a vizuális térből
+
+Ez összhangban van a CutCalculator ERROR‑viselkedésével:
+
+- stack trace
+- programleállás
+- kritikus állapot
+
+**Kognitív szerepe:**
+a piros ❌ ikon *stop‑jelzés*, amelyet az agy automatikusan veszélynek értelmez.
+
+***
+
+# **Összefoglaló — ikonok és jelentésük INFO szinten belül**
+
+| Jelentés | Ikon | Szín | Logszint |
+|*********|******|******|*********-|
+| Semleges információ | ℹ️ | kék | INFO |
+| Sikeres művelet | ✔️ | zöld | INFO |
+| Sikertelen művelet (nem kritikus) | ❌ | piros | INFO |
+| Figyelmeztetés | ⚠️ | sárga | WARNING |
+| Kritikus hiba | ❌ | piros | ERROR |
 
 ***
 
@@ -1779,7 +2269,6 @@ Ez nem adminisztráció — hanem:
 A napzáró a fejlesztői kultúra egyik legerősebb eszköze.
 
 ***
-Szuper, Zoltán — akkor gördülünk tovább a könyvszerű, végleges, tiszta anyaggal.
 
 # **6. Best Practice gyűjtemény**
 
@@ -1991,31 +2480,188 @@ Használj:
 
 ***
 
-# **6.4 Logolási best practice**
+# **6.4 Logolási best practice (ikonokkal és kulcsszínekkel)**
+*A logolás célja a rendszer működésének átlátható, auditálható és ergonomikus visszajelzése.*
 
-## **6.4.1 Szétválasztott logok**
-- SystemLog → technikai
-- EventLog → felhasználói
-- AuditLog → üzleti
+A logolás nem pusztán technikai részlet — hanem a rendszer stabilitásának, auditálhatóságának és UX‑minőségének alapja.
+A CutCalculator logolási best practice‑ei a háromrétegű log‑architektúrára, a viselkedési szerződésekre és a színkódolt ikonokra épülnek.
+
+***
+
+## **6.4.1 Háromrétegű logolás**
+
+A logok három elkülönített csatornára kerülnek:
+
+- **DebugLog** → fejlesztői diagnosztika (TRACE, DEBUG)
+- **SystemLog** → technikai + domain audit (INFO, WARNING, ERROR)
+- **EventLog** → felhasználói workflow események (INFO)
+
+**Best practice:**
+
+- DebugLog csak fejlesztés alatt használható.
+- SystemLog minden domain és technikai műveletet rögzít.
+- EventLog csak user‑szintű eseményeket tartalmazhat.
+- A három csatorna nem keverhető.
 
 ***
 
 ## **6.4.2 Verbose routing**
-A logok kategóriák szerint menjenek külön csatornákra.
+
+A verbose mód részletes technikai információkat ad:
+
+- fájlnév
+- sorszám
+- metódusnév
+- stack trace (DEBUG esetén)
+
+**Best practice:**
+
+- verbose mód csak fejlesztés alatt legyen aktív
+- release buildben verbose = false
+- verbose információ soha ne kerüljön EventLog‑ba
 
 ***
 
 ## **6.4.3 Minden log legyen időbélyeges**
-Ez audit követelmény.
+
+A logok időbélyege **ISO 8601** formátumú, **UTC** időzónában.
+
+**Miért?**
+
+- audit követelmény
+- rendezhető
+- nyelvfüggetlen
+- determinisztikus
+- több gép között konzisztens
+
+**Best practice:**
+
+- minden logbejegyzés kötelezően időbélyeges
+- a timestamp formátuma nem lehet locale‑függő
+- a rendszer órája legyen szinkronizált
 
 ***
 
 ## **6.4.4 A log legyen rövid és érthető**
+
+A log célja nem a részletek túlmagyarázása, hanem a visszakövethetőség.
+
 **Jó:**
 - „Material added: RAL 9010”
+- „Mode renamed: old=Rugós, new=Rugós 2”
 
 **Rossz:**
 - „Material operation completed successfully with code 0x00000001”
+- „An unexpected condition occurred during the execution of the rename operation”
+
+**Best practice:**
+
+- rövid, emberi nyelvű üzenetek
+- determinisztikus formátum
+- paraméterek mindig ugyanabban a sorrendben
+
+***
+
+## **6.4.5 Ikonok és kulcsszínek használata INFO szinten**
+
+Az INFO szint **háromféle ikonvariánst** használhat, a jelentéstől függően:
+
+### **ℹ️ Kék INFO — semleges tájékoztatás**
+Használjuk, ha:
+
+- normál működés
+- állapotváltozás
+- audit esemény
+- technikai információ
+
+### **✔️ Zöld pipa — sikeres művelet**
+Használjuk, ha:
+
+- a művelet sikeresen befejeződött
+- mentés / import / export / számítás sikeres
+- workflow lépés pozitív eredménnyel zárult
+
+### **❌ Piros X — sikertelen művelet (nem kritikus)**
+Használjuk, ha:
+
+- a művelet nem sikerült
+- de a rendszer tovább tud menni
+- nem kritikus hiba történt
+
+**Best practice:**
+
+- INFO ikonja mindig a jelentést tükrözi
+- a kulcsszín pre‑attentív információt hordoz
+- a felhasználó szövegolvasás nélkül is érti az üzenetet
+
+***
+
+## **6.4.6 WARNING ikonhasználat — ⚠️ sárga figyelmeztetés**
+
+A WARNING szint ikonja **mindig**:
+
+```
+⚠️
+```
+
+**Best practice:**
+
+- WARNING esetén kizárólag ⚠️ ikon használható
+- ❌ ikon WARNING esetén tilos
+- WARNING = óvatosság, fallback, degradált működés
+- WARNING nem blokkolja a felhasználót
+
+***
+
+## **6.4.7 ERROR ikonhasználat — ❌ piros kritikus hiba**
+
+Az ERROR szint ikonja **mindig**:
+
+```
+❌
+```
+
+**Best practice:**
+
+- ERROR = kritikus hiba, a rendszer nem tud tovább menni
+- ERROR esetén a program leáll (break / abort)
+- ERROR ikonja nem keverhető össze WARNING‑gal
+- ERROR ikonja nem használható INFO vagy WARNING szinten
+
+***
+
+## **6.4.8 Logok védelme és integritása**
+
+A logok integritása kritikus az auditálhatóság szempontjából.
+
+**Best practice:**
+
+- logfájlok csak append‑módban írhatók
+- logfájlok nem módosíthatók utólag
+- logfájlok nem törölhetők futás közben
+- logfájlokhoz csak a rendszer férhet hozzá
+
+Ez összhangban van az ipari szabványokkal (ISO/IEC 27001 A.8.15).
+
+***
+
+## **6.4.9 Audit események (SystemLog INFO)**
+
+Az audit események a domain műveletek visszakövethetőségét szolgálják.
+
+**Best practice:**
+
+- audit esemény mindig INFO szinten
+- audit esemény mindig SystemLog‑ba kerül
+- audit esemény rövid és determinisztikus
+- audit esemény nem popup
+- audit esemény nem WARNING vagy ERROR
+
+**Példa:**
+
+```
+ℹ️ Need created: id=42, name="Rugós"
+```
 
 ***
 
@@ -2224,29 +2870,224 @@ Ez a fejezet összegyűjti a legfontosabb anti‑patternöket, CutCalculator‑p
 
 ***
 
-# **7.4 Logolási anti‑patternök**
+# **7.4 Logolási anti‑patternök (ikonokkal és kulcsszínekkel)**
+*A rossz ikonhasználat nem esztétikai hiba — hanem félrevezető kommunikáció, hibás UX és sérült audit‑logika.*
 
-- ❌ külön AuditLog csatorna létrehozása
-- ❌ audit események EventLog‑ba írása
-- ❌ audit események warning/error szinten
-- ❌ audit események popupban
+A logszintekhez tartozó ikonok és kulcsszínek **viselkedési szerződést** hordoznak.
+Ha az ikon nem a megfelelő jelentést közvetíti, akkor:
 
-## **7.4.1 Minden log egy fájlba**
-**Miért rossz?** zajos, kereshetetlen, audit‑ellenes
-**Megoldás:** log szétválasztás
+- félrevezeti a fejlesztőt,
+- félrevezeti a felhasználót,
+- sérti az auditálhatóságot,
+- rontja a hibakeresést,
+- és megtöri a rendszer vizuális nyelvét.
 
-***
-
-## **7.4.2 Túl hosszú logbejegyzések**
-**Miért rossz?** olvashatatlan, nem audit‑barát
-**Megoldás:** rövid, érthető üzenetek
+Ezért az alábbi minták **szigorúan tiltottak**.
 
 ***
 
-## **7.4.3 Log, amely UI‑t módosít**
-**Rossz:** log → popup
-**Miért rossz?** log nem UI
-**Megoldás:** log → log
+## **7.4.1 ❌ Minden log egy fájlba**
+**Miért rossz?**
+
+- zajos, kereshetetlen
+- audit‑ellenes
+- keveredik a DebugLog / SystemLog / EventLog
+- nem lehet megkülönböztetni a user‑eseményt a technikai hibától
+
+**Megoldás:**
+három csatorna → DebugLog / SystemLog / EventLog
+
+***
+
+## **7.4.2 ❌ Túl hosszú logbejegyzések**
+**Miért rossz?**
+
+- olvashatatlan
+- nem audit‑barát
+- nem ergonomikus
+- nem pre‑attentív
+
+**Megoldás:**
+rövid, emberi nyelvű üzenetek
+
+***
+
+## **7.4.3 ❌ Log, amely UI‑t módosít**
+**Miért rossz?**
+
+- a log nem UI
+- a log nem popup
+- domain/technikai információ nem jelenhet meg a felhasználónak
+
+**Megoldás:**
+log → log, UI → UI
+
+***
+
+# **7.4.4 ❌ Ikonok és kulcsszínek hibás használata (kritikus anti‑pattern)**
+*A színkódolt ikonok jelentést hordoznak. Ha rossz ikont használunk, rossz jelentést közvetítünk.*
+
+Az alábbi ikonhasználatok **szigorúan tiltottak**:
+
+***
+
+## **7.4.4.1 ❌ WARNING esetén piros ❌ ikon használata**
+**Miért rossz?**
+
+- a piros ❌ kritikus hibát jelent
+- WARNING nem kritikus
+- a felhasználó azt hiszi, hogy a rendszer megállt
+- sérti a viselkedési szerződést
+
+**Megoldás:**
+WARNING → mindig ⚠️
+
+***
+
+## **7.4.4.2 ❌ ERROR esetén sárga ⚠️ ikon használata**
+**Miért rossz?**
+
+- a sárga ⚠️ csak óvatosságot jelent
+- ERROR esetén a rendszer nem tud tovább menni
+- félrevezető UX
+- hibás audit‑jelentés
+
+**Megoldás:**
+ERROR → mindig ❌
+
+***
+
+## **7.4.4.3 ❌ INFO (sikeres művelet) esetén nem zöld ✔️ ikon használata**
+**Miért rossz?**
+
+- a zöld ✔️ a siker vizuális nyugtája
+- nélküle a felhasználó nem kap pozitív megerősítést
+- sérül a vizuális ritmus
+
+**Megoldás:**
+INFO + siker → ✔️
+
+***
+
+## **7.4.4.4 ❌ INFO (sikertelen művelet) esetén nem piros ❌ ikon használata**
+**Miért rossz?**
+
+- a piros ❌ jelzi a negatív eredményt
+- nélküle a felhasználó nem érti, hogy a művelet nem sikerült
+- félrevezető UX
+
+**Megoldás:**
+INFO + sikertelen → ❌
+
+***
+
+## **7.4.4.5 ❌ INFO (semleges) esetén nem kék ℹ️ ikon használata**
+**Miért rossz?**
+
+- a kék ℹ️ jelzi a semleges információt
+- nélküle a felhasználó nem tudja, hogy nincs teendő
+- sérül a vizuális konzisztencia
+
+**Megoldás:**
+INFO + semleges → ℹ️
+
+***
+
+## **7.4.4.6 ❌ Ikon nélküli WARNING vagy ERROR**
+**Miért rossz?**
+
+- nincs pre‑attentív jelzés
+- a felhasználó nem látja a probléma súlyát
+- auditálhatóság romlik
+
+**Megoldás:**
+WARNING → ⚠️
+ERROR → ❌
+
+***
+
+## **7.4.4.7 ❌ Zöld ✔️ ikon használata sikertelen műveletnél**
+**Miért rossz?**
+
+- a zöld ✔️ a siker szimbóluma
+- sikertelen műveletnél félrevezető
+- UX‑szinten veszélyes
+
+**Megoldás:**
+sikertelen → ❌
+
+***
+
+## **7.4.4.8 ❌ Piros ❌ ikon használata sikeres műveletnél**
+**Miért rossz?**
+
+- a piros ❌ veszélyt jelent
+- sikeres műveletnél teljesen félrevezető
+- rontja a felhasználói bizalmat
+
+**Megoldás:**
+sikeres → ✔️
+
+***
+
+# **7.4.5 ❌ EventLog WARNING vagy ERROR**
+**Miért rossz?**
+
+- EventLog user‑szintű eseményekre való
+- WARNING/ERROR domain vagy technikai hiba
+- félrevezető UX
+
+**Megoldás:**
+WARNING/ERROR → SystemLog
+
+***
+
+# **7.4.6 ❌ Audit esemény WARNING vagy ERROR szinten**
+**Miért rossz?**
+
+- audit = domain művelet
+- domain művelet nem hiba
+- audit INFO szinten értelmezhető
+
+**Megoldás:**
+audit → SystemLog INFO
+
+***
+
+# **7.4.7 ❌ Nem szabványos időbélyeg**
+**Miért rossz?**
+
+- nem rendezhető
+- nem audit‑kompatibilis
+- locale‑függő
+
+**Megoldás:**
+ISO 8601 + UTC
+
+***
+
+# **7.4.8 ❌ Log → UI keverése**
+**Miért rossz?**
+
+- domain/technikai információ a felhasználónak
+- UX‑romlás
+- biztonsági kockázat
+
+**Megoldás:**
+UI → EventLog
+domain → SystemLog
+
+***
+
+# **7.4.9 ❌ Domain log UI‑ba keverve**
+**Miért rossz?**
+
+- domain műveletek nem UI‑szintűek
+- audit esemény nem popup
+- domain log nem user‑üzenet
+
+**Megoldás:**
+audit → SystemLog INFO
 
 ***
 
@@ -2317,7 +3158,6 @@ Ez a fejezet összegyűjti a legfontosabb anti‑patternöket, CutCalculator‑p
 **Megoldás:** példák + ellenpéldák
 
 ***
-Szuper, Zoltán — akkor gördülünk tovább a könyvszerű, végleges, tiszta anyaggal.
 
 # **8. Sablonok és boilerplate minták**
 *A sablonok egységesítik a fejlesztést, csökkentik a hibákat és rögzítik a kultúrát.*
@@ -2723,6 +3563,304 @@ Anti-pattern:
 
 ***
 
+# 📘 **9.X Prompt szerkezet és ipari anti‑pattern kézikönyv**
+*A prompt nem csak szándék — hanem szerkezet. A jó prompt nem csak működik — hanem tanítható, újrahasznosítható és auditálható.*
+
+A Microsoft Copilot promptmodellje négy kulcselemre épül:
+
+- **Goal** → mit várunk
+- **Context** → miért, kinek, milyen helyzetben
+- **Expectations** → milyen formátumban, milyen stílusban
+- **Source** → milyen példák, adatok, fájlok alapján
+
+Ez a négyes keret **tökéletesen illeszkedik** a CutCalculator Prompt DSL‑hez, és megerősíti, hogy a DSL‑ünk nem csak belső workflow, hanem **ipari best practice**.
+
+***
+
+## ✅ **9.X.1 A jó prompt szerkezete (Copilot + CutCalculator)**
+
+| Prompt elem | Copilot definíció | CutCalculator megfelelője |
+|************-|******************-|***************************-|
+| **Goal** | Mit várunk az AI‑tól | Prompt célja, generált entitás típusa |
+| **Context** | Miért, kinek, milyen helyzetben | Kontextus blokk: domain, szerep, cél |
+| **Expectations** | Milyen formátumban, milyen stílusban | Szerkezet blokk: struktúra, naming, logika |
+| **Source** | Milyen példák, adatok, fájlok alapján | Példák, audit események, indexed promptok |
+
+A CutCalculator Prompt DSL tehát **nem különbözik**, hanem **kibővíti** az ipari promptmodell keretét.
+
+***
+
+## ✅ **9.X.2 Do’s — Hogyan kell jól promptolni (Microsoft Copilot alapján)**
+
+- **Strukturáld a promptot** → a fontos elemek kerüljenek a végére
+- **Használj pozitív utasításokat** → mondd meg, mit csináljon, ne azt, mit ne
+- **Ismételj a pontosságért** → az első válasz nem mindig a legjobb
+- **Légy világos és konkrét** → cél + kontextus + elvárás + példa
+- **Tartsd fenn a beszélgetést** → iterálj, pontosíts
+- **Adj példákat** → kulcsszavak, minták, stílus
+- **Ellenőrizd a válaszokat** → Copilot is tévedhet
+- **Adj részleteket** → kollégák, témák, előzmények
+- **Légy udvarias** → a nyelvezet befolyásolja a válasz minőségét
+
+***
+
+## ❌ **9.X.3 Don’ts — Hogyan lehet elrontani (Microsoft Copilot alapján)**
+
+- **Ne légy homályos** → „Írj valamit” = rossz prompt
+- **Ne kérj etikátlan tartalmat** → Copilot nem segít ilyesmiben
+- **Ne adj ellentmondó utasításokat** → „Legyen rövid, de részletes”
+- **Ne váltogasd a témát hirtelen** → új téma = új prompt
+- **Ne használj informális nyelvet** → slang, dialektus, zsargon = félreértés
+- **Ne bízz vakon a válaszban** → mindig ellenőrizd
+- **Ne kérj illegális segítséget** → Copilot etikai keretek között működik
+
+***
+
+## 🎯 **9.X.4 A CutCalculator Prompt DSL mint ipari modell**
+
+A CutCalculator Prompt DSL:
+
+- **strukturált** → négy blokk
+- **auditálható** → prompt = dokumentum
+- **determininsztikus** → példák + tiltások
+- **kultúrába illeszkedő** → naming, logolás, UI
+- **tanítható** → onboarding, review, dokumentáció
+- **skálázható** → prompt‑lánc, modularizálás, verziózás
+
+Ez a DSL nem csak működik —
+**hanem tanítható, újrahasznosítható és ipari szintű.**
+
+***
+# 📘 **9.Y Prompt DSL Standard Library (ipari sablonok és minták)**
+*(A CutCalculator fejlesztői kultúra hivatalos prompt‑könyvtára)*
+
+***
+
+# 📘 **9.Y Prompt DSL Standard Library**
+*A Prompt DSL Standard Library a CutCalculator fejlesztői kultúrájának „szerszámosládája”: előre definiált, ipari minőségű prompt‑minták, amelyek garantálják a konzisztens, auditálható és determinisztikus kódgenerálást.*
+
+A Standard Library célja:
+
+- egységesíteni a promptok szerkezetét,
+- csökkenteni a hibalehetőséget,
+- gyorsítani a fejlesztést,
+- biztosítani a projektkultúra átörökítését,
+- és kizárni a rossz mintákat (anti‑pattern).
+
+A könyvtár minden eleme a következő ipari modellekre épül:
+
+- **Microsoft Copilot promptmodell**:
+  *Goal + Context + Expectations + Source*
+- **CutCalculator Prompt DSL**:
+  *Kontextus + Naming + Szerkezet + Anti‑pattern*
+- **Prompt Engineering szakirodalom**:
+  *példák, tiltások, iteráció, szerepdefiníció, modularizáció*
+
+***
+
+# 🎯 **9.Y.1 Alap Prompt Sablon (Master Template)**
+*(Minden generált prompt alapja)*
+
+```
+# GOAL
+A feladat célja: [mit várunk a generált kódtól vagy dokumentumtól].
+
+# CONTEXT
+A domain kontextusa: [miért kell, kinek készül, milyen helyzetben használjuk].
+A modell szerepe: „Viselkedj úgy, mint egy senior C++/Qt fejlesztő.”
+
+# EXPECTATIONS
+A válasz formátuma: [struktúra, stílus, részletesség].
+A válasz korlátai: [max hossz, tiltott elemek, stílus].
+
+# SOURCE
+Példák: [1–3 releváns példa].
+Források: [audit események, indexed promptok, dokumentáció].
+
+# DSL BLOCKS
+Kontextus: [CutCalculator modul, domain fogalmak].
+Naming: [kötelező névkonvenciók].
+Szerkezet: [osztályok, metódusok, logika].
+Anti-pattern: [tiltott minták listája].
+
+# OUTPUT
+Csak a kért struktúrát add vissza, kommentekkel és logolással.
+```
+
+Ez a sablon **minden generált prompt alapja**.
+
+***
+
+# 🧱 **9.Y.2 Modul Prompt Template (Manager / Registry / Dialog)**
+
+```
+# GOAL
+Hozz létre egy [Manager/Registry/Dialog] osztályt a CutCalculator architektúrában.
+
+# CONTEXT
+A modul célja: [pl. Mode kezelés, Material kezelés].
+A modell szerepe: „Senior Qt/C++ fejlesztő vagy, aki ismeri a projektkultúrát.”
+
+# EXPECTATIONS
+A válasz tartalmazza:
+- osztálydefiníció
+- publikus API
+- privát mezők
+- logolás (ikonokkal)
+- audit események
+- UI jelzések (ha releváns)
+
+# SOURCE
+Példák: [korábbi Manager/Registry minták].
+Forrás: [audit események, naming guide].
+
+# DSL BLOCKS
+Kontextus: [modul neve, domain fogalmak].
+Naming: [CamelCase, m_ prefix, zInfo/zWarning/zError].
+Szerkezet: [kötelező metódusok].
+Anti-pattern:
+- Tilos UI‑t keverni domain logikával
+- Tilos WARNING → ❌ ikon
+- Tilos ERROR → ⚠️ ikon
+- Tilos EventLog‑ba WARNING/ERROR
+
+# OUTPUT
+Csak a kódot add vissza, magyar kommentekkel, angol technikai kifejezésekkel.
+```
+
+***
+
+# 🧩 **9.Y.3 Prompt Template — Logolás generálása**
+
+```
+# GOAL
+Generálj logolási kódot a következő művelethez: [művelet].
+
+# CONTEXT
+A logolás célja: auditálhatóság + UX visszajelzés.
+A modell szerepe: „Te vagy a projekt logolási szakértője.”
+
+# EXPECTATIONS
+Használd a megfelelő ikont:
+- ℹ️ semleges INFO
+- ✔️ sikeres INFO
+- ❌ sikertelen INFO
+- ⚠️ WARNING
+- ❌ ERROR (kritikus)
+
+# SOURCE
+Forrás: 6.4 Logolási best practice, 7.4 Anti‑pattern.
+
+# DSL BLOCKS
+Anti-pattern:
+- Tilos WARNING → ❌
+- Tilos ERROR → ⚠️
+- Tilos ikon nélküli WARNING/ERROR
+- Tilos audit eseményt WARNING/ERROR szinten írni
+
+# OUTPUT
+Adj vissza egy zInfo/zWarning/zError hívást.
+```
+
+***
+
+# 🧱 **9.Y.4 Prompt Template — UI/UX visszajelzés generálása**
+
+```
+# GOAL
+Generálj UI visszajelzést a következő művelethez: [művelet].
+
+# CONTEXT
+A felhasználó gyors, pre‑attentív információt kapjon.
+
+# EXPECTATIONS
+Használd a megfelelő ikont:
+- ℹ️ információ
+- ✔️ siker
+- ❌ sikertelen művelet
+- ⚠️ figyelmeztetés
+
+# SOURCE
+Forrás: 10.X Ikonok és kulcsszínek szerepe a UI/UX-ben.
+
+# DSL BLOCKS
+Anti-pattern:
+- Tilos ❌ ikon WARNING esetén
+- Tilos ⚠️ ikon ERROR esetén
+- Tilos ✔️ ikon sikertelen műveletnél
+
+# OUTPUT
+Adj vissza egy rövid, emberi nyelvű UI üzenetet.
+```
+
+***
+
+# 🧪 **9.Y.5 Prompt Template — Teszt generálása**
+
+```
+# GOAL
+Generálj unit tesztet a következő osztályhoz: [osztály].
+
+# CONTEXT
+A teszt célja: regresszió megelőzése, auditálhatóság.
+
+# EXPECTATIONS
+A teszt legyen:
+- determinisztikus
+- rövid
+- jól olvasható
+- logolás nélkül
+
+# SOURCE
+Példák: [korábbi tesztminták].
+
+# DSL BLOCKS
+Anti-pattern:
+- Tilos UI‑t tesztelni unit tesztben
+- Tilos random értékeket használni
+- Tilos külső függőséget mock nélkül hívni
+
+# OUTPUT
+Adj vissza egy teljes tesztfájlt.
+```
+
+***
+
+# ❌ **9.Y.6 Prompt Anti‑Pattern Library (ipari tiltások)**
+*(A „hogyan ne csináljuk” kézikönyv)*
+
+### ❌ Homályos prompt
+„Írj egy kódot.”
+
+### ❌ Ellentmondó utasítás
+„Legyen rövid, de részletes.”
+
+### ❌ Témaugrás
+„Írj egy dialogot. Ja, és a MaterialRegistry‑t is.”
+
+### ❌ Informális nyelvezet
+„Csinájjá’ egy osztályt.”
+
+### ❌ Domain‑idegen naming
+„ProfileManager” egy Mode‑alapú domainben.
+
+### ❌ Tiltások hiánya
+Ha nincs anti‑pattern blokk → rossz kód.
+
+### ❌ Példák hiánya
+A modell nem tudja, milyen stílust vársz.
+
+### ❌ Rossz ikonhasználat
+- WARNING → ❌
+- ERROR → ⚠️
+- INFO (siker) → nem ✔️
+- INFO (sikertelen) → nem ❌
+
+### ❌ Audit esemény WARNING/ERROR szinten
+Audit = mindig INFO.
+
+***
+
 # **9.3 Prompt Standard Library**
 
 A CutCalculator alatt kialakult egy „standard library” — olyan prompt‑minták, amelyek újra és újra használhatók.
@@ -2770,6 +3908,178 @@ Naming: restoreSnapshot(), restoreDeferred()
 Szerkezet: GeometryGuard + fallback baseline
 Anti-pattern: restore a konstruktorban
 ```
+
+***
+# **9.X Logolási szabályok a Prompt DSL-ben**
+*A generált kód logolási viselkedése a Prompt DSL része — nem opcionális, hanem architekturális követelmény.*
+
+A Prompt DSL célja, hogy a generált kód **determininsztikus**, **audit‑barát**, **ergonomikus** és **konzisztens** legyen.
+A logolás a rendszer egyik legfontosabb viselkedési szerződése, ezért a DSL‑ben is rögzíteni kell.
+
+A logolási szabályok biztosítják, hogy:
+
+- minden generált modul helyes logszinteket használjon,
+- a logok ikonja és kulcsszíne a jelentést tükrözze,
+- audit események mindig INFO szinten jelenjenek meg,
+- WARNING és ERROR soha ne kerüljön EventLog‑ba,
+- a DebugLog csak fejlesztés alatt legyen aktív,
+- a logok ISO 8601 + UTC időbélyeget használjanak.
+
+***
+
+# **9.X.1 Logcsatornák a Prompt DSL-ben**
+
+A generált kód kizárólag a következő csatornákat használhatja:
+
+- **DebugLog** → `zTrace()`, `zDebug()`
+- **SystemLog** → `zInfo()`, `zWarning()`, `zError()`
+- **EventLog** → `zEventINFO()`
+
+**Tiltás:**
+
+- nincs `zEventWarning()`
+- nincs `zEventError()`
+- nincs `AuditLog` külön csatorna
+
+***
+
+# **9.X.2 Logszintek és ikonok a Prompt DSL-ben**
+
+A Prompt DSL‑ben a logszint meghatározza:
+
+- a viselkedést,
+- az ikon kulcsszínét,
+- a csatornát,
+- az auditálhatóságot.
+
+A generált kódnak a következő ikonokat kell használnia:
+
+| Jelentés | Ikon | Szín | Logszint |
+|*********|******|******|*********-|
+| Semleges információ | ℹ️ | kék | INFO |
+| Sikeres művelet | ✔️ | zöld | INFO |
+| Sikertelen művelet (nem kritikus) | ❌ | piros | INFO |
+| Figyelmeztetés | ⚠️ | sárga | WARNING |
+| Kritikus hiba | ❌ | piros | ERROR |
+
+**Tiltás:**
+
+- WARNING → ❌ ikon → ❌
+- ERROR → ⚠️ ikon → ❌
+- INFO (sikeres) → nem ✔️ → ❌
+- INFO (sikertelen) → nem ❌ → ❌
+- INFO (semleges) → nem ℹ️ → ❌
+
+***
+
+# **9.X.3 Audit események generálása**
+
+A Prompt DSL‑ben minden domain művelethez audit eseményt kell generálni:
+
+- audit esemény → **SystemLog INFO**
+- ikon → ℹ️ (semleges) vagy ✔️ (sikeres)
+- formátum → rövid, determinisztikus
+- időbélyeg → ISO 8601 + UTC
+
+**Példa (helyes):**
+
+```
+zInfo("ℹ️ Need created: id=%1, name=\"%2\"", id, name);
+```
+
+**Tiltás:**
+
+- audit WARNING → ❌
+- audit ERROR → ❌
+- audit EventLog‑ban → ❌
+- audit túl hosszú vagy technikai részletekkel → ❌
+
+***
+
+# **9.X.4 WARNING és ERROR generálása**
+
+A Prompt DSL‑ben a WARNING és ERROR generálása **viselkedési szerződéshez kötött**.
+
+### **WARNING (⚠️) akkor használható, ha:**
+
+- a rendszer tovább tud menni
+- fallback vagy degradált működés történik
+- a hiba nem kritikus
+
+**Példa:**
+
+```
+zWarning("⚠️ Snapshot corrupted, using fallback baseline");
+```
+
+### **ERROR (❌) akkor használható, ha:**
+
+- a rendszer nem tud tovább menni
+- kritikus hiba történt
+- invariáns sérült
+- a program leáll
+
+**Példa:**
+
+```
+zError("❌ Cannot open settings file: %1", path);
+```
+
+**Tiltás:**
+
+- WARNING → EventLog
+- ERROR → EventLog
+- WARNING → ❌ ikon
+- ERROR → ⚠️ ikon
+
+***
+
+# **9.X.5 DebugLog használata a generált kódban**
+
+A Prompt DSL‑ben a DebugLog csak fejlesztői célra használható:
+
+- `zTrace()` → vezérléskövetés
+- `zDebug()` → mély diagnosztika
+
+**Tiltás:**
+
+- DebugLog használata release buildben
+- DebugLog keverése audit eseményekkel
+
+***
+
+# **9.X.6 Időbélyegzés a generált kódban**
+
+A generált logoknak kötelezően:
+
+- **ISO 8601** formátumot
+- **UTC** időzónát
+
+kell használniuk.
+
+Ez biztosítja:
+
+- auditálhatóságot
+- rendezhetőséget
+- több gép közötti konzisztenciát
+
+***
+
+# **9.X.7 Anti‑pattern tiltások a Prompt DSL-ben**
+
+A Prompt DSL‑ben explicit módon tiltani kell:
+
+- ❌ ikon WARNING esetén
+- ⚠️ ikon ERROR esetén
+- ✔️ ikon sikertelen műveletnél
+- ℹ️ ikon hibás műveletnél
+- WARNING/ERROR EventLog‑ban
+- audit esemény WARNING/ERROR szinten
+- nem szabványos időbélyeg
+- log → popup
+- domain log UI‑ba keverve
+
+Ezek a tiltások garantálják, hogy a generált kód **mindig konzisztens** legyen.
 
 ***
 
@@ -2832,306 +4142,1724 @@ A prompt:
 A Prompt DSL a CutCalculator fejlesztői kultúrájának egyik legfontosabb eleme.
 
 ***
-# **10. UI/UX Guidelines**
-*A jó UI nem dekoráció — hanem működő architektúra. A jó UX nem trükk — hanem következetes gondolkodás.*
+# **10. UI/UX Guidelines ikonokkal — A modern felhasználói élmény alapelvei a CutCalculatorben**
+*A felület nem dísz. A felület a rendszer arca. A jó UX pedig a felhasználó és a fejlesztő közös nyelve.*
 
-A UI/UX célja:
+A modern UI/UX célja, hogy a digitális termék:
 
-- gyors munkavégzés
-- hibamentes működés
-- stabil, kiszámítható viselkedés
-- snapshot‑kompatibilitás
-- auditálhatóság
-- fejlesztői konzisztencia
-- felhasználói bizalom
+- **könnyen használható**,
+- **érthető**,
+- **következetes**,
+- **gyorsan értelmezhető**,
+- **vizuálisan tiszta**,
+- **és élvezetes** legyen.
 
-A CutCalculator UI‑ja olyan mintákat hozott létre, amelyek projektfüggetlenül is alkalmazhatók.
-
-***
-
-# **10.1 Alapelvek**
-
-## **10.1.1 A UI legyen láthatóan logikus**
-A felhasználó mindig tudja:
-
-- hol van
-- mit csinál
-- mi történik
-- miért nem történik valami
-
-Ez a „látható logika” elve.
+A CutCalculator UI/UX‑filozófiája erre épül — de kiegészül egy egyedi elemmel:
+**az ikon‑vezérelt, színkódolt, pre‑attentív visszajelzésrendszerrel**, amely a logolási architektúrával teljes összhangban működik.
 
 ***
 
-## **10.1.2 A UI legyen snapshot‑kompatibilis**
-A modern desktop UX egyik legfontosabb követelménye:
+# 🎯 **10.1 Miért fontos a UI/UX?**
 
-**A felhasználó UI‑ja nem változhat meg újraindításkor.**
+A UI/UX nem „szépítés”.
+A UI/UX a rendszer *érzékszerve*.
 
-Ez ipari alapelv.
+- A felhasználó a felületet látja → nem a kódot.
+- A felhasználó a visszajelzést érti → nem a logot.
+- A felhasználó a színeket érzékeli → nem a stack trace‑t.
 
-***
+A jó UX:
 
-## **10.1.3 A UI legyen non‑blocking**
-A felhasználó:
+- csökkenti a hibákat,
+- csökkenti a support terhelést,
+- csökkenti a frusztrációt,
+- növeli a bizalmat,
+- növeli a hatékonyságot,
+- növeli a rendszer értékét.
 
-- ne kapjon felesleges popupot
-- ne akadjon meg a munkában
-- ne kelljen „OK”-ot nyomogatnia
-
-A modern UX: **inline feedback**.
-
-***
-
-## **10.1.4 A UI legyen audit‑barát**
-A UI‑ban történő műveletek:
-
-- legyenek logolva
-- legyenek visszakövethetők
-- legyenek érthetők
+A jó UX a fejlesztő barátja is.
+Barátom barátja a barátom.
 
 ***
 
-## **10.1.5 A UI legyen konzisztens**
-A konzisztencia:
+# 🎯 **10.2 UX alapelvek (modern, CutCalculator‑specifikus)**
 
-- gyorsít
-- csökkenti a hibát
-- növeli a bizalmat
-- csökkenti a tanulási időt
+## **1) Felhasználó‑központúság**
+A felület nem a fejlesztőnek készül.
+A felület a felhasználó számára:
 
-***
+- érthető,
+- kiszámítható,
+- következetes,
+- és biztonságos.
 
-# **10.2 Layout és elrendezés**
+A CutCalculatorben ez azt jelenti:
 
-## **10.2.1 Percent‑based layout**
-A fix pixeles layout:
-
-- DPI‑függő
-- monitorfüggő
-- snapshot‑ellenes
-
-A percent‑based layout:
-
-- stabil
-- rugalmas
-- monitorfüggetlen
-- snapshot‑kompatibilis
+- minden művelet kap vizuális visszajelzést,
+- minden hiba érthető,
+- minden figyelmeztetés látható,
+- minden siker megerősített.
 
 ***
 
-## **10.2.2 MinimumSizeHint használata**
-A widgetek mérete:
+## **2) Intuitív navigáció**
+A felhasználónak nem szabad gondolkodnia azon, hogy:
 
-- ne legyen fix
-- ne legyen túl kicsi
-- ne legyen túl nagy
+- „Hol vagyok?”
+- „Mit kell csinálnom?”
+- „Mi történik most?”
 
-A `minimumSizeHint()` a legjobb barát.
-
-***
-
-## **10.2.3 Margók és spacing**
-A jó spacing:
-
-- levegőt ad
-- olvashatóvá tesz
-- fókuszt ad
-
-**Ajánlott:**
-
-- spacing: 8–12 px
-- margin: 12–16 px
+A rendszernek *magától értetődőnek* kell lennie.
 
 ***
 
-## **10.2.4 DPI‑független méretezés**
-A UI ne legyen:
+## **3) Feladat‑orientáltság**
+A felhasználó célja nem a program használata.
+A felhasználó célja a *munka elvégzése*.
 
-- túl kicsi 4K‑n
-- túl nagy 1080p‑n
+A UI feladata:
 
-A DPI‑független layout ipari követelmény.
-
-***
-
-# **10.3 Interakciós minták**
-
-## **10.3.1 Inline validation mindenhol**
-A felhasználó gépelés közben kapjon visszajelzést.
+- segíteni,
+- nem akadályozni,
+- nem elrejteni,
+- nem túlterhelni.
 
 ***
 
-## **10.3.2 Accent frame a fókusz jelölésére**
-A fókusz vizuális jelölése:
+## **4) Azonosíthatóság és következetesség**
+A felhasználó gyorsabban tanul, ha:
 
-- kék keret
-- finom glow
-- enyhe árnyék
+- ugyanaz a szín → ugyanaz a jelentés
+- ugyanaz az ikon → ugyanaz a viselkedés
+- ugyanaz a gomb → ugyanaz a funkció
 
-***
+Ezért van a CutCalculatorben:
 
-## **10.3.3 Shake animation hibára**
-A shake:
-
-- rövid
-- horizontális
-- non‑blocking
-- egyértelmű
+- ℹ️ → információ
+- ✔️ → siker
+- ❌ → sikertelen művelet
+- ⚠️ → figyelmeztetés
+- ❌ (ERROR) → kritikus hiba
 
 ***
 
-## **10.3.4 Cursor‑based positioning**
-A dialog:
+## **5) Teljes élmény**
+A UX nem csak a gombokról szól.
 
-- ne a képernyő közepére ugorjon
-- ne takarja el a fontos részeket
-- ne legyen távol a kurzortól
+A UX része:
+
+- a töltési idő,
+- a hibaüzenetek,
+- a visszajelzések,
+- a navigáció,
+- a vizuális ritmus,
+- a konzisztencia,
+- a hibák megelőzése.
+
+A CutCalculator UX‑e audit‑tudatos:
+a felhasználó mindig tudja, mi történt.
 
 ***
 
-## **10.3.5 Double‑click = accept**
-Picker és lista esetén:
+# 🎯 **10.3 UI alapelvek (modern, CutCalculator‑specifikus)**
 
-- double‑click → accept
-- Enter → accept
-- Esc → reject
+## **1) Egyszerűség és tisztaság**
+A UI nem lehet zsúfolt.
+A UI nem lehet túlmagyarázott.
+
+A CutCalculator UI‑ja:
+
+- minimalista,
+- tiszta,
+- fókuszált.
 
 ***
 
-## **10.3.6 A gombok sorrendje legyen konzisztens**
+## **2) Vizuális hierarchia**
+A fontos dolgok legyenek:
+
+- nagyobbak,
+- erősebb színűek,
+- közelebb a fókuszhoz.
+
+A kevésbé fontosak legyenek:
+
+- halványabbak,
+- kisebbek,
+- távolabb.
+
+***
+
+## **3) Következetesség**
+A UI‑ban minden elem:
+
+- ugyanúgy néz ki,
+- ugyanúgy viselkedik,
+- ugyanazt jelenti.
+
+Ez a UX egyik legerősebb stabilizáló ereje.
+
+***
+
+## **4) Kontraszt és olvashatóság**
+A felhasználó nem fogja „kitalálni”, mi van a képernyőn.
+A szöveg legyen:
+
+- jól olvasható,
+- megfelelő kontrasztú,
+- megfelelő méretű.
+
+***
+
+## **5) Visszajelzés**
+A felhasználó minden művelet után tudni akarja:
+
+- sikerült?
+- nem sikerült?
+- mi történt?
+- mi a következő lépés?
+
+Ezért van a CutCalculatorben:
+
+- ✔️ siker
+- ❌ sikertelen művelet
+- ⚠️ figyelmeztetés
+- ℹ️ információ
+
+***
+
+# 🎯 **10.4 Modern trendek (CutCalculator‑kompatibilis)**
+
+## **Mikrointerakciók**
+Apró, de fontos visszajelzések:
+
+- gomb animáció
+- hover állapot
+- progress indikátor
+- ikon villanás
+
+Ezek segítik a felhasználót.
+
+***
+
+## **Personák és felhasználói sztorik**
+A CutCalculator UI‑ja nem „általános felhasználónak” készül.
+A célcsoport:
+
+- gyártási szakemberek,
+- mérnökök,
+- adminisztrátorok,
+- operátorok.
+
+A UI‑t az ő gondolkodásukhoz kell igazítani.
+
+***
+
+## **Adatvezérelt design**
+A UX nem vélemény.
+A UX mérhető:
+
+- hibaarány
+- idő a feladat elvégzéséhez
+- félreértések száma
+- support ticketek száma
+
+***
+
+## **Mozi‑szerű élmény**
+Nem animációk miatt —
+hanem a **zökkenőmentes folyamatok** miatt.
+
+A CutCalculatorben ez:
+
+- gyors reakció
+- egyértelmű visszajelzés
+- vizuális ritmus
+- konzisztens ikonok
+
+***
+
+# 🎯 **10.5 Ikonok és kulcsszínek — a CutCalculator vizuális nyelve**
+
+Ez a rendszer egyik legfontosabb UX‑eleme.
+
+| Ikon | Szín | Jelentés | Mikor használjuk |
+|******|******|*********-|******************|
+| ℹ️ | kék | semleges információ | normál működés |
+| ✔️ | zöld | sikeres művelet | mentés, import, számítás |
+| ❌ | piros | sikertelen művelet | nem kritikus hiba |
+| ⚠️ | sárga | figyelmeztetés | fallback, degradált működés |
+| ❌ (ERROR) | piros | kritikus hiba | programleállás |
+
+Ez a vizuális nyelv:
+
+- gyors,
+- egyértelmű,
+- kognitív,
+- pre‑attentív,
+- audit‑tudatos.
+
+***
+
+# 🎯 **10.6 Anti‑pattern — hogyan ne csináljuk**
+
+- ❌ WARNING → ❌ ikon
+- ❌ ERROR → ⚠️ ikon
+- ❌ ikon nélküli hiba
+- ❌ túl hosszú hibaüzenet
+- ❌ technikai részletek a UI‑ban
+- ❌ következetlen színek
+- ❌ túl sok információ
+- ❌ túl kevés információ
+- ❌ UI, ami nem mondja meg, mi történt
+
+***
+# **10.7 A UX mint hibamegelőző rendszer**
+*A jó UX nem csak szép — hanem biztonságos. A jó UX nem csak kényelmes — hanem megelőzi a hibákat. A jó UX nem csak élmény — hanem minőségbiztosítás.*
+
+A szoftverhibák jelentős része **nem a logikából**, hanem **a félreértett felhasználói felületből** ered.
+A modern UX egyik legfontosabb felismerése:
+
+> **A felhasználó nem hibázik — a rendszer hagyta hibázni.**
+
+A CutCalculator UX‑filozófiája ezért nem csak esztétikai, hanem **minőségbiztosítási és audit‑tudatos**.
+
+A jó UX:
+
+- megelőzi a hibát,
+- csökkenti a hibák súlyosságát,
+- gyorsítja a hibák felismerését,
+- segíti a hibák kijavítását,
+- csökkenti a support terhelést,
+- csökkenti a fejlesztői terhelést.
+
+***
+
+# 🎯 **10.7.1 A hibák 80%-a UX‑eredetű (és megelőzhető)**
+
+A hibák nagy része nem programozási hiba, hanem:
+
+- félreértett gomb
+- rosszul elhelyezett funkció
+- hiányzó visszajelzés
+- túl sok visszajelzés
+- rossz ikon
+- rossz szín
+- rossz hierarchia
+- rossz navigáció
+- hiányzó kontextus
+
+A CutCalculator UX‑e ezeket a hibákat **előre kizárja**.
+
+***
+
+# 🎯 **10.7.2 A jó UX megelőzi a hibát (prevention)**
+
+A jó UX:
+
+- nem engedi, hogy rossz adatot adj be
+- nem engedi, hogy rossz gombot nyomj meg
+- nem engedi, hogy félreértsd a visszajelzést
+- nem engedi, hogy eltévedj
+- nem engedi, hogy bizonytalan legyél
+
+Ezért van:
+
+- ✔️ siker ikon
+- ❌ sikertelen művelet ikon
+- ⚠️ figyelmeztetés ikon
+- ℹ️ információ ikon
+- konzisztens színkódolás
+- rövid, emberi nyelvű üzenetek
+- egyértelmű gombok
+- egyértelmű hierarchia
+
+A UX itt **védőháló**.
+
+***
+
+# 🎯 **10.7.3 A jó UX csökkenti a hibák súlyosságát (mitigation)**
+
+Ha mégis hiba történik, a jó UX:
+
+- azonnal jelzi
+- egyértelműen jelzi
+- nem dramatizálja
+- nem rejti el
+- nem technikai részleteket ír
+- megmondja, mi a következő lépés
+
+Példák:
+
 **Jó:**
-- OK / Cancel
-- Add / Remove
-- Rename / Delete
+❌ „A mentés nem sikerült (fájl zárolva). Próbáld újra később.”
 
 **Rossz:**
-- Cancel / OK (fordítva)
-- Execute / OK / Apply (túl sok)
+„Unhandled exception: file access violation at offset 0x00000014.”
+
+A jó UX **nem büntet**, hanem **segít**.
 
 ***
 
-# **10.4 Snapshot‑tudatos UI**
+# 🎯 **10.7.4 A jó UX gyorsítja a hibák felismerését (detection)**
 
-## **10.4.1 Deferred restore**
-A restore csak akkor történjen, amikor:
+A CutCalculator ikon‑vezérelt rendszere pre‑attentív:
 
-- a widget már látható
-- a mérete ismert
-- a layout stabil
+- a felhasználó *szöveg nélkül* is látja, hogy baj van
+- a fejlesztő *log nélkül* is látja, mi történt
+- a support *képernyőkép alapján* is érti a helyzetet
 
-***
+Ezért fontos a konzisztens ikonhasználat:
 
-## **10.4.2 Geometry guard**
-A snapshot restore előtt:
+- ❌ = hiba
+- ⚠️ = figyelmeztetés
+- ✔️ = siker
+- ℹ️ = információ
 
-- pozíció ellenőrzés
-- méret ellenőrzés
-- monitor ellenőrzés
-- DPI ellenőrzés
-
-Ha hibás → fallback.
+A vizuális nyelv **gyorsabb**, mint a szöveg.
 
 ***
 
-## **10.4.3 Fallback baseline**
-A fallback baseline:
+# 🎯 **10.7.5 A jó UX segíti a hibák kijavítását (recovery)**
 
-- stabil
-- determinisztikus
-- auditálható
+A jó UX nem csak jelzi a hibát —
+**hanem segít kijavítani**.
 
-Ez a LayoutDefaultStore szerepe.
+Példák:
 
-***
+- „A fájl nem nyitható meg. Ellenőrizd, hogy létezik‑e.”
+- „A snapshot sérült. Fallback baseline használata.”
+- „A mező nem lehet üres.”
+- „Érvénytelen számformátum.”
 
-## **10.4.4 Snapshot verziózás**
-A snapshot formátuma változhat — ezért:
-
-- legyen verziószám
-- legyen migráció
-- legyen fallback
+A jó UX *irányt ad*.
 
 ***
 
-## **10.4.5 Multi‑monitor kompatibilitás**
-A snapshot:
+# 🎯 **10.7.6 A jó UX csökkenti a support terhelést**
 
-- ne tűnjön el monitorváltáskor
-- ne legyen off‑screen
-- ne legyen túl kicsi
+A support terhelés nagy része:
 
-***
+- félreértett funkció
+- félreértett hibaüzenet
+- hiányzó visszajelzés
+- rossz ikon
+- rossz szín
+- rossz navigáció
 
-# **10.5 Vizuális ritmus és hierarchia**
+A jó UX:
 
-## **10.5.1 A fontos dolgok legyenek közel egymáshoz**
-A vizuális közelség = logikai közelség.
+- kevesebb ticket
+- kevesebb telefon
+- kevesebb magyarázat
+- kevesebb frusztráció
 
-***
-
-## **10.5.2 A címek legyenek rövidek és egyértelműek**
-**Jó:** „Material Picker”
-**Rossz:** „Please select a material from the list below”
-
-***
-
-## **10.5.3 A táblák legyenek audit‑barátok**
-- fix oszlopsorrend
-- percent‑based szélesség
-- rendezhető oszlopok
-- vizuális fókusz
+A jó UX **üzleti érték**.
 
 ***
 
-## **10.5.4 A gombok legyenek egyértelműek**
-**Jó:** Add / Rename / Delete
-**Rossz:** OK / Process / Execute
+# 🎯 **10.7.7 A jó UX csökkenti a fejlesztői terhelést**
+
+A fejlesztők idejét gyakran nem a kódolás viszi el, hanem:
+
+- hibák reprodukálása
+- félreértett funkciók tisztázása
+- rossz visszajelzések javítása
+- supporttal való egyeztetés
+
+A jó UX:
+
+- kevesebb bug
+- kevesebb félreértés
+- kevesebb visszajelzés
+- kevesebb újratervezés
+
+A jó UX **fejlesztői időt szabadít fel**.
 
 ***
 
-## **10.5.5 A vizuális zaj minimalizálása**
-Kerüld:
+# 🎉 **Összegzés — a UX mint minőségbiztosítás**
 
-- túl sok színt
-- túl sok ikont
-- túl sok animációt
-- túl sok keretet
+A jó UX:
+
+- megelőzi a hibát
+- csökkenti a hibák súlyosságát
+- gyorsítja a hibák felismerését
+- segíti a hibák kijavítását
+- csökkenti a support terhelést
+- csökkenti a fejlesztői terhelést
+
+A UX nem extra.
+A UX nem dísz.
+A UX **minőségbiztosítás**.
+
+A UX a rendszer egyik legfontosabb védelmi vonala.
+
+***
+# **10.8 A UX és a logolás kapcsolata — hogyan beszél ugyanazon a nyelven a UI és a SystemLog**
+*A CutCalculator egyik legfontosabb tervezési elve: a felhasználói felület és a logolási rendszer ugyanazt a vizuális és fogalmi nyelvet használja. Ez teszi a rendszert érthetővé, auditálhatóvá és hibabiztossá.*
+
+A legtöbb alkalmazásban a UI és a logolás két külön világ:
+
+- a UI saját ikonokat használ,
+- a log saját szinteket,
+- a kettő között nincs kapcsolat,
+- a felhasználó mást lát, mint amit a rendszer tud,
+- a fejlesztő mást lát, mint amit a felhasználó ért.
+
+A CutCalculatorben ez **nem így van**.
+
+A CutCalculatorben a UI és a logolás **egy nyelvet beszél**.
+
+Ez a nyelv:
+
+- ikon‑vezérelt,
+- színkódolt,
+- pre‑attentív,
+- audit‑tudatos,
+- és konzisztens.
 
 ***
 
-# **10.6 Hibakezelés és visszajelzés**
+# 🎯 **10.8.1 Miért fontos, hogy a UI és a logolás ugyanazt a nyelvet használja?**
 
-## **10.6.1 Hibák → inline**
-Popup csak kritikus hibára.
+Mert így:
 
-***
+- a felhasználó **ugyanazt látja**, amit a rendszer tud,
+- a fejlesztő **ugyanazt érti**, amit a felhasználó lát,
+- a support **ugyanazt értelmezi**, amit a log mutat,
+- az audit **ugyanazt a jelentést** kapja, mint a UI.
 
-## **10.6.2 Figyelmeztetések → UI‑szintű jelzés**
-- sárga keret
-- ikon
-- tooltip
+Ez egy *egységes kommunikációs rendszer*.
 
-***
-
-## **10.6.3 Információk → EventLog**
-A felhasználó lássa, mi történt — de non‑blocking módon.
+A rendszer nem beszél két nyelven.
+A rendszer **egy nyelven beszél** — ikonokkal és színekkel.
 
 ***
 
-## **10.6.4 Technikai hibák → SystemLog**
-A felhasználó ne lássa a technikai részleteket.
+# 🎯 **10.8.2 A UI ikonja = a log ikonja**
+
+A CutCalculatorben:
+
+| Jelenség | UI ikon | SystemLog ikon | Jelentés |
+|*********-|*********|***************-|*********-|
+| Semleges információ | ℹ️ | ℹ️ | normál működés |
+| Sikeres művelet | ✔️ | ✔️ | minden rendben |
+| Sikertelen művelet (nem kritikus) | ❌ | ❌ | művelet nem sikerült |
+| Figyelmeztetés | ⚠️ | ⚠️ | óvatosság, fallback |
+| Kritikus hiba | ❌ | ❌ | programleállás |
+
+Ez azt jelenti:
+
+- a felhasználó **ugyanazt az ikont látja**, mint amit a log rögzít,
+- a fejlesztő **ugyanazt az ikont látja**, mint amit a felhasználó lát,
+- a support **ugyanazt az ikont látja**, mint amit a log mutat.
+
+Ez elképesztően erős UX‑eszköz.
 
 ***
 
-## 10.6.5 Audit események → SystemLog (INFO)
-- rename
-- insert
-- delete
-- workflow lépések
-- domain műveletek
+# 🎯 **10.8.3 A UI színe = a log színe**
+
+A színkódolás:
+
+- kék → információ
+- zöld → siker
+- sárga → figyelmeztetés
+- piros → hiba
+
+Ez a színkódolás:
+
+- a UI‑ban is él,
+- a logban is él,
+- a dokumentációban is él,
+- a fejlesztői kultúrában is él.
+
+A szín **pre‑attentív információ**:
+a felhasználó *szöveg nélkül* is érti.
 
 ***
+
+# 🎯 **10.8.4 A UI visszajelzése = a log szintje**
+
+A CutCalculatorben:
+
+- UI ✔️ = SystemLog INFO (siker)
+- UI ❌ = SystemLog INFO (sikertelen művelet)
+- UI ⚠️ = SystemLog WARNING
+- UI ❌ (kritikus) = SystemLog ERROR
+
+Ez azt jelenti:
+
+- a UI nem dramatizálja túl a hibát,
+- a UI nem rejti el a hibát,
+- a UI nem keveri a szinteket,
+- a UI nem ad félrevezető visszajelzést.
+
+A felhasználó és a fejlesztő **ugyanazt a valóságot látja**.
+
+***
+
+# 🎯 **10.8.5 A UX mint log‑értelmező réteg**
+
+A UI nem csak megjelenít —
+**értelmez is**.
+
+A UI:
+
+- a log szintjét ikonra fordítja,
+- a log üzenetét emberi nyelvre fordítja,
+- a log eseményt vizuális visszajelzéssé fordítja.
+
+Példa:
+
+**SystemLog:**
+`INFO Material added: id=42, name="RAL 9010"`
+
+**UI:**
+✔️ „A RAL 9010 anyag hozzáadva.”
+
+Ez a UX egyik legerősebb funkciója:
+**a logot emberi nyelvre fordítja.**
+
+***
+
+# 🎯 **10.8.6 A logolás mint UX‑biztonsági háló**
+
+A logolás:
+
+- rögzíti a hibát,
+- rögzíti a figyelmeztetést,
+- rögzíti a sikert,
+- rögzíti a műveletet.
+
+A UX:
+
+- jelzi a hibát,
+- jelzi a figyelmeztetést,
+- jelzi a sikert,
+- jelzi a műveletet.
+
+A kettő együtt:
+
+- megelőzi a hibát,
+- segíti a hibák felismerését,
+- segíti a hibák kijavítását,
+- csökkenti a support terhelést,
+- csökkenti a fejlesztői terhelést.
+
+A UX és a logolás **együtt alkotnak hibamegelőző rendszert**.
+
+***
+
+# 🎯 **10.8.7 Anti‑pattern — hogyan ne csináljuk**
+
+- ❌ UI ✔️, de log WARNING
+- ❌ UI ⚠️, de log ERROR
+- ❌ UI ❌, de log INFO (siker)
+- ❌ UI ikon nélkül, log ikonokkal
+- ❌ UI túl hosszú hibaüzenet
+- ❌ UI technikai részletekkel
+- ❌ UI, amely nem mondja meg, mi történt
+- ❌ log, amely nem tükrözi a UI‑t
+- ❌ UI, amely nem tükrözi a logot
+
+Ezek a hibák **megtörik a vizuális nyelvet**, és növelik a hibázás esélyét.
+
+***
+
+# **10.9 A vizuális ritmus és a kognitív terhelés csökkentése**
+*A jó UI nem csak szép — hanem ritmusos. A jó UX nem csak érthető — hanem könnyű. A vizuális ritmus a felhasználó fókuszának védelme.*
+
+A modern UI/UX egyik legfontosabb célja:
+**csökkenteni a kognitív terhelést**.
+
+A kognitív terhelés az a mentális energia, amit a felhasználó arra fordít, hogy:
+
+- értse a felületet,
+- megtalálja a funkciót,
+- értelmezze a visszajelzést,
+- eldöntse, mit kell tennie,
+- felismerje, mi történt.
+
+A jó UI/UX ezt a terhelést **minimálisra csökkenti**.
+
+A CutCalculatorben ezt nevezzük:
+
+# 👉 **vizuális ritmusnak**
+
+A vizuális ritmus az a jelenség, amikor:
+
+- a felület kiszámítható,
+- a visszajelzések következetesek,
+- a színek stabilak,
+- az ikonok jelentése állandó,
+- a felhasználó „egy pillantással” érti a helyzetet.
+
+Ez a ritmus a rendszer egyik legfontosabb UX‑eszköze.
+
+***
+
+# 🎯 **10.9.1 Mi az a vizuális ritmus?**
+
+A vizuális ritmus:
+
+- ismétlődő minták,
+- következetes elrendezés,
+- stabil ikonhasználat,
+- kiszámítható színkódolás,
+- egyértelmű hierarchia.
+
+A felhasználó agya szereti a ritmust.
+A ritmus:
+
+- csökkenti a bizonytalanságot,
+- csökkenti a hibázást,
+- csökkenti a stresszt,
+- növeli a bizalmat,
+- növeli a sebességet.
+
+A ritmus = biztonság.
+
+***
+
+# 🎯 **10.9.2 A kognitív terhelés három típusa (és hogyan csökkenti a UI)**
+
+A kognitív tudomány szerint háromféle terhelés létezik:
+
+### **1) Intrinsic load — a feladat nehézsége**
+Ezt nem tudjuk csökkenteni (a feladat adott).
+
+### **2) Extraneous load — a felület okozta felesleges terhelés**
+Ezt tudjuk csökkenteni → ez a UI/UX feladata.
+
+### **3) Germane load — a tanulást segítő terhelés**
+Ezt növelhetjük → jó UX-szel.
+
+A CutCalculator UI/UX célja:
+
+- **extraneous load minimalizálása**,
+- **germane load támogatása**,
+- **intrinsic load nem növelése**.
+
+***
+
+# 🎯 **10.9.3 Hogyan csökkenti a vizuális ritmus a kognitív terhelést?**
+
+## **1) Következetes ikonok**
+A felhasználó *nem gondolkodik*, csak látja:
+
+- ✔️ = siker
+- ❌ = sikertelen művelet
+- ⚠️ = figyelmeztetés
+- ℹ️ = információ
+
+Ez azonnali értelmezés.
+
+***
+
+## **2) Következetes színek**
+A szín pre‑attentív információ:
+
+- kék → nyugalom
+- zöld → megerősítés
+- sárga → óvatosság
+- piros → veszély
+
+A felhasználó *szöveg nélkül* is érti.
+
+***
+
+## **3) Stabil elrendezés**
+A gombok, mezők, ikonok helye nem változik.
+
+Ez csökkenti:
+
+- a keresési időt,
+- a hibázást,
+- a frusztrációt.
+
+***
+
+## **4) Rövid, emberi nyelvű visszajelzések**
+A felhasználó nem akar:
+
+- stack trace‑t,
+- hexadecimális kódot,
+- technikai részleteket.
+
+A felhasználó azt akarja:
+
+- „Mi történt?”
+- „Sikerült?”
+- „Mit tegyek most?”
+
+***
+
+## **5) Vizualizált állapotváltozások**
+A felhasználó látja:
+
+- ha valami történt,
+- ha valami nem történt,
+- ha valami kész,
+- ha valami hibás.
+
+Ez csökkenti a bizonytalanságot.
+
+***
+
+# 🎯 **10.9.4 A vizuális ritmus mint UX‑biztonsági háló**
+
+A ritmus:
+
+- megelőzi a hibát,
+- csökkenti a hibák súlyosságát,
+- gyorsítja a hibák felismerését,
+- segíti a hibák kijavítását.
+
+A ritmus = hibamegelőzés.
+
+Ezért fontos, hogy:
+
+- minden ikon ugyanazt jelentse,
+- minden szín ugyanazt jelentse,
+- minden visszajelzés ugyanúgy nézzen ki.
+
+A ritmus = biztonság.
+
+***
+
+# 🎯 **10.9.5 Anti‑pattern — hogyan törjük meg a ritmust?**
+
+- ❌ különböző ikonok ugyanarra a jelentésre
+- ❌ különböző színek ugyanarra a jelentésre
+- ❌ ikon nélküli visszajelzés
+- ❌ túl hosszú hibaüzenet
+- ❌ technikai részletek a UI‑ban
+- ❌ gombok helyének változtatása
+- ❌ következetlen elrendezés
+- ❌ túl sok információ
+- ❌ túl kevés információ
+
+Ezek mind növelik a kognitív terhelést.
+
+***
+
+# 🎉 **Összegzés — a vizuális ritmus a CutCalculator egyik legnagyobb UX‑ereje**
+
+A vizuális ritmus:
+
+- csökkenti a hibákat,
+- csökkenti a stresszt,
+- csökkenti a support terhelést,
+- csökkenti a fejlesztői terhelést,
+- növeli a bizalmat,
+- növeli a sebességet,
+- növeli a rendszer értékét.
+
+A ritmus = UX.
+A UX = minőségbiztosítás.
+A minőségbiztosítás = stabil rendszer.
+
+***
+# **10.10 A vizuális identitás és a projektkultúra kapcsolata**
+*A UI nem csak eszköz — hanem identitás. A UX nem csak élmény — hanem kultúra. A vizuális nyelv a CutCalculator személyisége.*
+
+A modern szoftverek világában a vizuális identitás nem luxus, nem extra, nem „szépítés”.
+A vizuális identitás:
+
+- **bizalom**,
+- **következetesség**,
+- **egyediség**,
+- **felismerhetőség**,
+- **kultúra**,
+- **és márka**.
+
+A CutCalculator UI‑ja nem csak funkcionális —
+hanem **egyedi, következetes, ikon‑vezérelt vizuális nyelv**, amely a projekt egészének identitását hordozza.
+
+***
+
+# 🎯 **10.10.1 A vizuális identitás mint projektkultúra**
+
+A CutCalculator vizuális identitása három pillérre épül:
+
+## **1) Ikon‑vezérelt kommunikáció**
+A rendszer ikonokkal beszél:
+
+- ℹ️ → információ
+- ✔️ → siker
+- ❌ → sikertelen művelet
+- ⚠️ → figyelmeztetés
+- ❌ (ERROR) → kritikus hiba
+
+Ez a vizuális nyelv:
+
+- gyors,
+- egyértelmű,
+- kognitív,
+- pre‑attentív,
+- audit‑tudatos.
+
+Ez a projekt egyik legfontosabb kulturális eleme.
+
+***
+
+## **2) Színkódolt jelentésrendszer**
+A színek nem dekorációk —
+a színek **jelentést hordoznak**.
+
+- kék → nyugalom, információ
+- zöld → siker, megerősítés
+- sárga → óvatosság
+- piros → hiba, veszély
+
+Ez a színrendszer a projekt *DNS‑e*.
+
+***
+
+## **3) Következetes vizuális ritmus**
+A CutCalculator UI‑ja:
+
+- kiszámítható,
+- stabil,
+- ritmusos,
+- ergonomikus.
+
+A ritmus = biztonság.
+A ritmus = minőség.
+A ritmus = kultúra.
+
+***
+
+# 🎯 **10.10.2 A vizuális identitás mint márka**
+
+A CutCalculator UI‑ja nem csak egy felület —
+hanem **márkaélmény**.
+
+A márka nem logó.
+A márka nem színpaletta.
+A márka nem betűtípus.
+
+A márka:
+
+- **hogyan érzi magát a felhasználó**, amikor használja a rendszert,
+- **mennyire érti**, mi történik,
+- **mennyire bízik** a rendszerben,
+- **mennyire érzi magát biztonságban**,
+- **mennyire érzi, hogy a rendszer érte van**.
+
+A jó UI/UX = jó márka.
+
+***
+
+# 🎯 **10.10.3 A vizuális identitás mint fejlesztői kultúra**
+
+A CutCalculator UI‑ja nem csak a felhasználónak szól —
+hanem a fejlesztőknek is.
+
+A vizuális identitás:
+
+- egységesíti a gondolkodást,
+- csökkenti a félreértéseket,
+- stabilizálja a fejlesztést,
+- csökkenti a hibákat,
+- gyorsítja a review‑t,
+- támogatja az onboardingot.
+
+A vizuális identitás a fejlesztői kultúra része.
+
+***
+
+# 🎯 **10.10.4 A vizuális identitás és a logolás kapcsolata**
+
+A CutCalculator egyik legnagyobb innovációja:
+
+> **A UI és a SystemLog ugyanazt a vizuális nyelvet használja.**
+
+Ez azt jelenti:
+
+- a UI ikonja = a log ikonja
+- a UI színe = a log színe
+- a UI visszajelzése = a log szintje
+
+Ez a konzisztencia:
+
+- csökkenti a hibákat,
+- csökkenti a support terhelést,
+- csökkenti a fejlesztői terhelést,
+- növeli a bizalmat,
+- növeli az érthetőséget.
+
+Ez a vizuális identitás egyik legfontosabb eleme.
+
+***
+
+# 🎯 **10.10.5 Anti‑pattern — hogyan törjük meg a vizuális identitást?**
+
+- ❌ különböző ikonok ugyanarra a jelentésre
+- ❌ különböző színek ugyanarra a jelentésre
+- ❌ ikon nélküli visszajelzés
+- ❌ UI, amely nem tükrözi a logot
+- ❌ log, amely nem tükrözi a UI‑t
+- ❌ következetlen elrendezés
+- ❌ túl sok vizuális zaj
+- ❌ túl kevés vizuális jelzés
+- ❌ UI, amely nem mondja meg, mi történt
+
+Ezek a hibák **megtörik a márkát**.
+
+***
+
+# 🎉 **Összegzés — a UI a CutCalculator arca, a UX a CutCalculator lelke**
+
+A vizuális identitás:
+
+- nem dísz,
+- nem extra,
+- nem mellékes.
+
+A vizuális identitás:
+
+- **bizalom**,
+- **kultúra**,
+- **minőség**,
+- **következetesség**,
+- **márka**,
+- **élmény**,
+- **és rendszer‑szintű gondolkodás**.
+
+A UI a CutCalculator arca.
+A UX a CutCalculator lelke.
+A vizuális identitás pedig a CutCalculator személyisége.
+
+***
+
+# **10.11 A vizuális nyelv és a hibamegelőzés kapcsolata**
+*A jó design nem csak szép — hanem biztonságos. A vizuális nyelv a rendszer egyik legfontosabb hibamegelőző mechanizmusa.*
+
+A hibák jelentős része nem a kódból ered, hanem:
+
+- félreértett visszajelzésből,
+- félreérthető ikonból,
+- következetlen színből,
+- rossz vizuális hierarchiából,
+- hiányzó kontextusból,
+- túl sok információból,
+- túl kevés információból.
+
+A CutCalculator vizuális nyelve éppen ezért **nem dekoráció**, hanem **minőségbiztosítási eszköz**.
+
+***
+
+# 🎯 **10.11.1 A vizuális nyelv mint hibamegelőző rendszer**
+
+A vizuális nyelv három rétegben működik:
+
+## **1) Pre‑attentív réteg (ikonok, színek)**
+A felhasználó *szöveg nélkül* is érti:
+
+- ✔️ = siker
+- ❌ = sikertelen művelet
+- ⚠️ = figyelmeztetés
+- ℹ️ = információ
+
+Ez a réteg **megelőzi a félreértést**.
+
+***
+
+## **2) Kognitív réteg (hierarchia, elrendezés)**
+A felhasználó gyorsabban találja meg:
+
+- a fontos elemeket,
+- a következő lépést,
+- a hibát,
+- a megoldást.
+
+Ez a réteg **csökkenti a hibázást**.
+
+***
+
+## **3) Narratív réteg (visszajelzések, üzenetek)**
+A felhasználó érti:
+
+- mi történt,
+- miért történt,
+- mit kell tennie.
+
+Ez a réteg **segíti a hibák kijavítását**.
+
+***
+
+# 🎯 **10.11.2 Hogyan előzi meg a vizuális nyelv a hibákat?**
+
+## **1) Következetes ikonhasználat**
+A felhasználó nem téved el:
+
+- ✔️ mindig siker
+- ❌ mindig hiba
+- ⚠️ mindig figyelmeztetés
+- ℹ️ mindig információ
+
+A következetesség = hibamegelőzés.
+
+***
+
+## **2) Következetes színkódolás**
+A szín nem dekoráció —
+a szín **jelentés**.
+
+A felhasználó nem fogja:
+
+- zöldet hibának nézni,
+- pirosat sikernek nézni,
+- sárgát információnak nézni.
+
+A színkódolás = hibamegelőzés.
+
+***
+
+## **3) Rövid, emberi nyelvű visszajelzések**
+A felhasználó nem fogja félreérteni:
+
+**Jó:**
+❌ „A mentés nem sikerült (fájl zárolva).”
+
+**Rossz:**
+„Unhandled exception: file access violation.”
+
+A jó visszajelzés = hibamegelőzés.
+
+***
+
+## **4) Stabil elrendezés**
+A felhasználó nem fog:
+
+- rossz gombot nyomni,
+- rossz mezőt kitölteni,
+- rossz funkciót elindítani.
+
+A stabil elrendezés = hibamegelőzés.
+
+***
+
+## **5) Vizualizált állapotváltozások**
+A felhasználó látja:
+
+- ha valami történt,
+- ha valami nem történt,
+- ha valami kész,
+- ha valami hibás.
+
+A vizuális állapot = hibamegelőzés.
+
+***
+
+# 🎯 **10.11.3 Hogyan csökkenti a vizuális nyelv a hibák súlyosságát?**
+
+A jó vizuális nyelv:
+
+- gyorsan jelzi a hibát,
+- egyértelműen jelzi a hibát,
+- nem dramatizálja túl,
+- nem rejti el,
+- nem technikai részleteket ír,
+- megmondja, mi a következő lépés.
+
+Ez csökkenti:
+
+- a hibák hatását,
+- a hibák terjedését,
+- a hibák következményeit.
+
+A vizuális nyelv = hibacsillapítás.
+
+***
+
+# 🎯 **10.11.4 Hogyan gyorsítja a vizuális nyelv a hibák felismerését?**
+
+A felhasználó *egy pillantással* látja:
+
+- a piros ❌‑t,
+- a sárga ⚠️‑t,
+- a zöld ✔️‑t.
+
+Ez gyorsabb, mint:
+
+- szöveg olvasása,
+- log böngészése,
+- menük keresése.
+
+A vizuális nyelv = gyors hibadetektálás.
+
+***
+
+# 🎯 **10.11.5 Hogyan segíti a vizuális nyelv a hibák kijavítását?**
+
+A jó vizuális nyelv:
+
+- megmondja, mi történt,
+- megmondja, miért történt,
+- megmondja, mit kell tenni.
+
+Példa:
+
+**Jó:**
+⚠️ „A snapshot sérült. Fallback baseline használata.”
+
+**Rossz:**
+„Snapshot error code: 0x00000014.”
+
+A vizuális nyelv = hibajavítás támogatása.
+
+***
+
+# 🎯 **10.11.6 Anti‑pattern — hogyan törjük meg a vizuális nyelvet?**
+
+- ❌ különböző ikonok ugyanarra a jelentésre
+- ❌ különböző színek ugyanarra a jelentésre
+- ❌ ikon nélküli visszajelzés
+- ❌ túl hosszú hibaüzenet
+- ❌ technikai részletek a UI‑ban
+- ❌ következetlen elrendezés
+- ❌ túl sok vizuális zaj
+- ❌ túl kevés vizuális jelzés
+- ❌ UI, amely nem tükrözi a logot
+- ❌ log, amely nem tükrözi a UI‑t
+
+Ezek a hibák **megtörik a vizuális nyelvet**, és növelik a hibázás esélyét.
+
+***
+
+# 🎉 **Összegzés — a vizuális nyelv a CutCalculator egyik legfontosabb stabilitási eszköze**
+
+A vizuális nyelv:
+
+- megelőzi a hibát,
+- csökkenti a hibák súlyosságát,
+- gyorsítja a hibák felismerését,
+- segíti a hibák kijavítását,
+- csökkenti a support terhelést,
+- csökkenti a fejlesztői terhelést,
+- növeli a rendszer stabilitását.
+
+A vizuális nyelv = stabilitás.
+A stabilitás = minőség.
+A minőség = CutCalculator.
+
+***
+
+# 📘 **10.12 A vizuális nyelv és a fejlesztői onboarding kapcsolata**
+*A UI nem csak a felhasználót tanítja — hanem a fejlesztőt is. A vizuális nyelv a projektkultúra egyik legfontosabb átörökítő mechanizmusa.*
+
+A CutCalculatorben a vizuális nyelv:
+
+- ikon‑vezérelt,
+- színkódolt,
+- audit‑tudatos,
+- következetes,
+- ritmusos,
+- és stabil.
+
+Ez a vizuális nyelv nem csak a felhasználónak szól.
+Ez a vizuális nyelv **a fejlesztői onboarding egyik legfontosabb eszköze**.
+
+A UI maga tanítja meg:
+
+- hogyan gondolkodik a rendszer,
+- hogyan kommunikál a rendszer,
+- hogyan jelzi a hibákat,
+- hogyan jelzi a sikert,
+- hogyan jelzi a figyelmeztetést,
+- hogyan működik a logolás,
+- hogyan működik a UX.
+
+A UI a projektkultúra „élő példája”.
+
+***
+
+# 🎯 **10.12.1 A vizuális nyelv mint élő dokumentáció**
+
+A CutCalculator UI‑ja:
+
+- nem csak megjelenít,
+- nem csak visszajelez,
+- hanem **tanít**.
+
+A vizuális nyelv:
+
+- megmutatja, hogyan kell logolni,
+- megmutatja, hogyan kell visszajelezni,
+- megmutatja, hogyan kell hibát kezelni,
+- megmutatja, hogyan kell UX‑et tervezni.
+
+A UI maga a dokumentáció.
+A UI maga a stílusguide.
+A UI maga a best practice.
+
+***
+
+# 🎯 **10.12.2 A vizuális nyelv mint onboarding eszköz**
+
+Egy új fejlesztő számára a projektkultúra gyakran:
+
+- absztrakt,
+- elméleti,
+- dokumentumokban elrejtett,
+- nehezen megfogható.
+
+A CutCalculatorben ez másképp van.
+
+A vizuális nyelv:
+
+- azonnal látható,
+- azonnal érthető,
+- azonnal követhető.
+
+Az új fejlesztő *egy nap alatt* megtanulja:
+
+- ✔️ = siker
+- ❌ = sikertelen művelet
+- ⚠️ = figyelmeztetés
+- ℹ️ = információ
+
+És azt is:
+
+- hogyan kell logolni,
+- hogyan kell visszajelezni,
+- hogyan kell UX‑et tervezni.
+
+A UI maga az onboarding.
+
+***
+
+# 🎯 **10.12.3 A vizuális nyelv mint kód‑review eszköz**
+
+A vizuális nyelv segít a review‑ban is.
+
+Ha egy új kód:
+
+- rossz ikont használ,
+- rossz színt használ,
+- rossz visszajelzést ad,
+- túl hosszú üzenetet ír,
+- technikai részleteket ír,
+- nem tükrözi a logot,
+
+akkor a reviewer **azonnal látja**, hogy valami nem stimmel.
+
+A vizuális nyelv = review‑gyorsító.
+
+***
+
+# 🎯 **10.12.4 A vizuális nyelv mint minőségbiztosítás**
+
+A vizuális nyelv:
+
+- stabilizálja a fejlesztést,
+- csökkenti a hibákat,
+- csökkenti a félreértéseket,
+- csökkenti a support terhelést,
+- csökkenti a fejlesztői terhelést.
+
+A vizuális nyelv = minőségbiztosítás.
+
+***
+
+# 🎯 **10.12.5 A vizuális nyelv mint kulturális örökség**
+
+A CutCalculator vizuális nyelve:
+
+- ikonokkal beszél,
+- színekkel gondolkodik,
+- ritmusban kommunikál,
+- audit‑tudatos,
+- következetes,
+- emberközeli.
+
+Ez a vizuális nyelv a projektkultúra része.
+Ez a vizuális nyelv a projektkultúra öröksége.
+Ez a vizuális nyelv a projektkultúra jövője.
+
+***
+
+# 🎯 **10.12.6 Anti‑pattern — hogyan törjük meg az onboardingot?**
+
+- ❌ következetlen ikonok
+- ❌ következetlen színek
+- ❌ ikon nélküli visszajelzés
+- ❌ túl hosszú hibaüzenet
+- ❌ technikai részletek a UI‑ban
+- ❌ UI, amely nem tükrözi a logot
+- ❌ log, amely nem tükrözi a UI‑t
+- ❌ instabil elrendezés
+- ❌ vizuális zaj
+- ❌ hiányzó vizuális jelzések
+
+Ezek a hibák **megtörik a kultúrát**, és nehezítik az onboardingot.
+
+***
+
+# 🎉 **Összegzés — a UI a CutCalculator tanára**
+
+A vizuális nyelv:
+
+- tanít,
+- vezet,
+- stabilizál,
+- kultúrát ad át,
+- minőséget biztosít,
+- hibát előz meg,
+- hibát csillapít,
+- hibát javít.
+
+A UI nem csak felület.
+A UI **tanár**.
+A UI **mentor**.
+A UI **kultúrahordozó**.
+
+A CutCalculator vizuális nyelve a projekt egyik legfontosabb öröksége.
+
+***
+
+# 📘 **10.13 A vizuális nyelv és a dokumentáció kapcsolata**
+*A jó UI nem csak használható — hanem tanít. A vizuális nyelv a rendszer élő kézikönyve, amely a dokumentáció szerepét is betölti.*
+
+A dokumentáció hagyományosan:
+
+- statikus,
+- hosszú,
+- nehezen karbantartható,
+- ritkán olvasott,
+- gyakran elavult.
+
+A UI ezzel szemben:
+
+- élő,
+- mindig friss,
+- mindig jelen van,
+- mindig kontextusban van,
+- mindig a felhasználó előtt van.
+
+A CutCalculator vizuális nyelve ezért **nem csak UX**, hanem **élő dokumentáció**.
+
+***
+
+# 🎯 **10.13.1 A UI mint élő kézikönyv**
+
+A felhasználó nem fog:
+
+- PDF‑eket olvasni,
+- wiki oldalakat böngészni,
+- hosszú dokumentációt tanulmányozni.
+
+A felhasználó a UI‑t nézi.
+A UI‑ból tanul.
+A UI‑ból érti meg a rendszert.
+
+Ezért a UI:
+
+- ikonokkal tanít,
+- színekkel magyaráz,
+- visszajelzésekkel vezet,
+- ritmussal stabilizál,
+- konzisztenciával oktat.
+
+A UI maga a kézikönyv.
+
+***
+
+# 🎯 **10.13.2 A vizuális nyelv mint implicit dokumentáció**
+
+A CutCalculator vizuális nyelve:
+
+- ℹ️ → információ
+- ✔️ → siker
+- ❌ → sikertelen művelet
+- ⚠️ → figyelmeztetés
+- ❌ (ERROR) → kritikus hiba
+
+Ez a rendszer működésének **implicit dokumentációja**.
+
+A felhasználó *szöveg nélkül* is érti:
+
+- mi történt,
+- miért történt,
+- mit kell tennie.
+
+A vizuális nyelv = dokumentáció.
+
+***
+
+# 🎯 **10.13.3 A vizuális nyelv mint fejlesztői dokumentáció**
+
+A fejlesztők számára a UI:
+
+- megmutatja, hogyan kell visszajelezni,
+- megmutatja, hogyan kell logolni,
+- megmutatja, hogyan kell hibát kezelni,
+- megmutatja, hogyan kell UX‑et tervezni.
+
+A UI maga a „style guide”.
+A UI maga a „best practice”.
+A UI maga a „coding standard”.
+
+A vizuális nyelv = fejlesztői dokumentáció.
+
+***
+
+# 🎯 **10.13.4 A vizuális nyelv mint audit‑dokumentáció**
+
+A CutCalculator egyik legnagyobb innovációja:
+
+> **A UI és a SystemLog ugyanazt a vizuális nyelvet használja.**
+
+Ez azt jelenti:
+
+- a UI ikonja = a log ikonja
+- a UI színe = a log színe
+- a UI visszajelzése = a log szintje
+
+Ez a konzisztencia:
+
+- auditálható,
+- visszakereshető,
+- bizonyítható,
+- stabil.
+
+A vizuális nyelv = audit‑dokumentáció.
+
+***
+
+# 🎯 **10.13.5 A vizuális nyelv mint onboarding dokumentáció**
+
+Egy új fejlesztő vagy felhasználó számára a UI:
+
+- tanítja a rendszert,
+- tanítja a logikát,
+- tanítja a hibakezelést,
+- tanítja a visszajelzési rendszert,
+- tanítja a projektkultúrát.
+
+A UI maga az onboarding.
+A UI maga a tréning.
+A UI maga a tananyag.
+
+A vizuális nyelv = onboarding dokumentáció.
+
+***
+
+# 🎯 **10.13.6 A vizuális nyelv mint UX‑dokumentáció**
+
+A UX‑dokumentáció gyakran:
+
+- elméleti,
+- absztrakt,
+- nehezen értelmezhető.
+
+A CutCalculatorben a UX:
+
+- ikonokban él,
+- színekben él,
+- ritmusban él,
+- visszajelzésekben él.
+
+A vizuális nyelv maga a UX‑dokumentáció.
+
+***
+
+# 🎯 **10.13.7 Anti‑pattern — hogyan törjük meg a vizuális dokumentációt?**
+
+- ❌ ikon nélküli visszajelzés
+- ❌ következetlen ikonhasználat
+- ❌ következetlen színek
+- ❌ túl hosszú hibaüzenet
+- ❌ technikai részletek a UI‑ban
+- ❌ UI, amely nem tükrözi a logot
+- ❌ log, amely nem tükrözi a UI‑t
+- ❌ instabil elrendezés
+- ❌ vizuális zaj
+- ❌ hiányzó vizuális jelzések
+
+Ezek a hibák **megtörik a vizuális dokumentációt**, és növelik a hibázás esélyét.
+
+***
+
+# 🎉 **Összegzés — a UI a CutCalculator élő kézikönyve**
+
+A vizuális nyelv:
+
+- tanít,
+- magyaráz,
+- vezet,
+- stabilizál,
+- kultúrát ad át,
+- auditálhatóvá tesz,
+- csökkenti a hibákat,
+- csökkenti a terhelést.
+
+A UI nem csak felület.
+A UI **élő dokumentáció**.
+A UI **a rendszer kézikönyve**.
+A UI **a projektkultúra hordozója**.
+
+***
+
+# **10.X Ikonok és kulcsszínek szerepe a UI/UX-ben**
+*A színkódolt ikonok a modern UX egyik legfontosabb eszközei — gyorsabbak, mint a szöveg, és előemésztett információt hordoznak.*
+
+A felhasználói felület nem csak szövegből és elrendezésből áll.
+A vizuális elemek — különösen a **színkódolt ikonok** — a felhasználó számára olyan információt hordoznak, amelyet az agy **pre‑attentív módon**, azaz tudatos olvasás előtt feldolgoz.
+
+Ez azt jelenti, hogy a felhasználó:
+
+- **még a szöveg elolvasása előtt** érti az üzenet jelentését,
+- gyorsabban reagál,
+- kevesebbet téved,
+- kevesebb kognitív terhelést él meg,
+- és biztonságosabban navigál a rendszerben.
+
+A CutCalculator UI‑ja ezért **színkódolt ikonrendszert** használ, amely konzisztens a logolási architektúrával.
+
+***
+
+# **10.X.1 ℹ️ Kék INFO — semleges tájékoztatás**
+
+A kék szín a felhasználói élményben:
+
+- semleges,
+- nyugodt,
+- információs jellegű,
+- nem sürgető.
+
+A kék ℹ️ ikon azt üzeni:
+
+> „Ez egy normál, nem problémás információ.”
+
+**Használati helyek:**
+
+- táblák információs jelzései
+- import/export folyamatok állapotüzenetei
+- UI‑szintű tájékoztatások
+
+***
+
+# **10.X.2 ✔️ Zöld pipa — sikeres művelet**
+
+A zöld szín:
+
+- pozitív,
+- megerősítő,
+- lezáró,
+- bizalmat építő.
+
+A zöld ✔️ ikon a felhasználó számára:
+
+> „A művelet sikeresen befejeződött.”
+
+**Használati helyek:**
+
+- sikeres import
+- sikeres mentés
+- sikeres számítás
+- workflow lépések pozitív lezárása
+
+A zöld ✔️ ikon **megnyugtat**, csökkenti a bizonytalanságot, és lezárja a műveletet vizuálisan is.
+
+***
+
+# **10.X.3 ❌ Piros X — sikertelen művelet vagy kritikus hiba**
+
+A piros szín:
+
+- veszélyt,
+- hibát,
+- tiltást,
+- azonnali figyelmet
+
+jelöl.
+
+A piros ❌ ikon kétféle jelentést hordozhat:
+
+### **1) INFO szinten (nem kritikus sikertelenség)**
+> „A művelet nem sikerült, de a rendszer tovább tud menni.”
+
+### **2) ERROR szinten (kritikus hiba)**
+> „A rendszer nem tud tovább menni.”
+
+**Használati helyek:**
+
+- sikertelen import
+- sikertelen művelet
+- kritikus hibák UI‑szintű jelzése
+
+A piros ❌ ikon **nem keverhető össze** a sárga ⚠️ figyelmeztetéssel.
+
+***
+
+# **10.X.4 ⚠️ Sárga figyelmeztetés — óvatosság, fallback**
+
+A sárga szín:
+
+- óvatosságot,
+- potenciális problémát,
+- figyelmeztetést
+
+jelöl.
+
+A sárga ⚠️ ikon azt üzeni:
+
+> „Valami nem ideális, de tovább tudunk menni.”
+
+**Használati helyek:**
+
+- CSV import figyelmeztetések
+- snapshot fallback jelzések
+- UI‑szintű óvatossági üzenetek
+
+A sárga ⚠️ ikon **nem agresszív**, de jól látható.
+
+***
+
+# **10.X.5 A színkódolt ikonok kognitív szerepe**
+
+A színkódolt ikonok:
+
+- **pre‑attentív információt** hordoznak
+- **gyorsabbak, mint a szöveg**
+- **csökkentik a hibázás esélyét**
+- **segítik a vizuális hierarchiát**
+- **egységes vizuális nyelvet teremtenek**
+- **csökkentik a kognitív terhelést**
+
+A felhasználó a színt **azonnal értelmezi**, még mielőtt elolvasná a szöveget.
+
+Ezért a CutCalculator UI‑ja:
+
+- INFO → ℹ️ / ✔️ / ❌
+- WARNING → ⚠️
+- ERROR → ❌
+
+színkódolt ikonrendszert használ.
+
+***
+
+# **10.X.6 Ikonhasználati anti‑patternök a UI-ban**
+
+A következő minták **szigorúan tiltottak**, mert félrevezető UX‑et eredményeznek:
+
+- ❌ ikon WARNING esetén
+- ⚠️ ikon ERROR esetén
+- ✔️ ikon sikertelen műveletnél
+- ℹ️ ikon hibás műveletnél
+- ikon nélküli WARNING vagy ERROR
+- nem színkódolt ikonok
+- ikonok keverése a logszintek között
+
+Ezek a hibák megtörik a vizuális nyelvet, és csökkentik a rendszer érthetőségét.
+
+***
+
 
 # **10.7 UX anti‑patternök**
 
@@ -3148,6 +5876,406 @@ A felhasználó ne lássa a technikai részleteket.
 ### ❌ Túl sok animáció
 ### ❌ Inkonzisztens gombelrendezés
 ### ❌ Inkonzisztens spacing
+
+***
+
+# **X. Repository és Registry — a CutCalculator adat‑tápláléklánca**
+*A repository az adatforrás. A registry a valóság. A kettő együtt alkotja a rendszer adat‑architektúráját.*
+
+A CutCalculatorben a „repository” és a „registry” két külön réteg, két külön felelősséggel.
+A kettő összekeverése hibákhoz, félreértésekhez és rossz architektúrához vezetne, ezért a projektben **szigorúan elválasztjuk** őket.
+
+A registry a memória‑beli domain tároló.
+A repository az I/O réteg.
+
+A registry a valóság.
+A repository az adatforrás.
+
+***
+
+# 🎯 **X.1 A Registry szerepe — memória‑beli domain tároló + üzleti logika**
+
+A Registry a CutCalculator egyik legfontosabb építőköve.
+Ez a réteg:
+
+- **singleton**
+- **thread‑safe** (QRecursiveMutex + ScopedPerThreadLock)
+- **memóriában tárolja az entitásokat**
+- **keresést biztosít** (findById, findByBarcode, findChildren)
+- **CRUD műveleteket végez**
+- **életciklust kezel** (barcode register/retire)
+- **auditál** (zInfo)
+- **persist() hívással delegál a repository‑nak**
+
+A Registry a domain truth source.
+A rendszer minden része a Registry‑t használja:
+
+- UI
+- számítás
+- dialógusok
+- export
+- audit
+- barcode életciklus
+
+A Registry **nem olvas CSV‑t**, nem validál CSV‑t, nem konvertál.
+A Registry **nem repository**.
+
+***
+
+# 🎯 **X.2 A Repository szerepe — I/O réteg (CSV → objektumok → CSV)**
+
+A Repository a fájlkezelésért felelős réteg.
+Ez a réteg:
+
+- **CSV‑t olvas**
+- **CSV‑t ír**
+- **konvertál** (Convert fázis)
+- **validál** (RowError, audited row)
+- **objektumot épít** (Build fázis)
+- **szülő‑gyerek kapcsolatot old fel** (Assemble fázis)
+- **auditálja a hibákat**
+- **feltölti a Registry‑t**
+
+A Repository:
+
+- **nem tárol állapotot**
+- **nem singleton**
+- **nem thread‑safe**
+- **nem domain logika**
+- **nem keres**
+- **nem életciklust kezel**
+
+A Repository **adatforrás**, nem domain tároló.
+
+***
+
+# 🎯 **X.3 A tápláléklánc — hogyan áramlik az adat?**
+
+A CutCalculator adat‑tápláléklánca három lépésből áll:
+
+***
+
+## **1) Repository → Registry (betöltés)**
+
+```
+CSV → Convert → Build → Assemble → Registry.setData()
+```
+
+A repository:
+
+- beolvassa a CSV‑t
+- konvertálja sorokra
+- validálja
+- objektumot épít
+- feloldja a parent kapcsolatokat
+- átadja a Registry‑nek
+
+A Registry ettől kezdve a valóság.
+
+***
+
+## **2) Registry → Domain logika (használat)**
+
+A Registry szolgálja ki:
+
+- a UI‑t
+- a dialógusokat
+- a számításokat
+- a keresést
+- a hierarchiát
+- a barcode életciklust
+- az auditot
+
+A Registry a domain truth source.
+
+***
+
+## **3) Registry → Repository (mentés)**
+
+A Registry minden módosítás után:
+
+```
+persist() → Repository.saveToCSV()
+```
+
+A Repository visszaírja a CSV‑t.
+
+***
+
+# 🎯 **X.4 A Registry és a Repository közötti szerződés**
+
+A Registry és a Repository között **szigorú szerződés** van:
+
+| Felelősség | Registry | Repository |
+|*********--|*********-|************|
+| Memória‑beli tárolás | ✔️ | ❌ |
+| Thread‑safety | ✔️ | ❌ |
+| Singleton | ✔️ | ❌ |
+| Keresés | ✔️ | ❌ |
+| CRUD | ✔️ | ❌ |
+| Domain logika | ✔️ | ❌ |
+| Barcode életciklus | ✔️ | ❌ |
+| Audit (zInfo) | ✔️ | ❌ |
+| CSV olvasás | ❌ | ✔️ |
+| CSV írás | ❌ | ✔️ |
+| CSV konvertálás | ❌ | ✔️ |
+| CSV validálás | ❌ | ✔️ |
+| Parent feloldás | ❌ | ✔️ |
+
+Ez a szerződés garantálja:
+
+- a tiszta rétegezést,
+- a stabil architektúrát,
+- az auditálhatóságot,
+- a hibamentes működést.
+
+***
+
+# 🎯 **X.5 Miért fontos ez a szétválasztás?**
+
+## **1) Stabilitás**
+A Registry mindig konzisztens, thread‑safe, singleton.
+
+## **2) Auditálhatóság**
+A Repository minden hibát auditál.
+A Registry minden műveletet auditál.
+
+## **3) Tesztelhetőség**
+A Repository külön tesztelhető (CSV input).
+A Registry külön tesztelhető (domain logika).
+
+## **4) Hibamegelőzés**
+A Registry nem olvas fájlt.
+A Repository nem végez domain logikát.
+
+## **5) Karbantarthatóság**
+A két réteg külön fejleszthető.
+
+***
+
+# 🎯 **X.6 Anti‑pattern — hogyan NE használjuk?**
+
+- ❌ Registry olvasson CSV‑t
+- ❌ Repository tároljon memóriában
+- ❌ Registry végezzen konvertálást
+- ❌ Repository végezzen keresést
+- ❌ Registry írjon közvetlenül fájlba
+- ❌ Repository legyen singleton
+- ❌ Registry validáljon CSV‑t
+- ❌ Repository kezeljen barcode életciklust
+- ❌ Registry végezzen parent‑feloldást
+
+Ezek a hibák **megtörik a rétegezést**, és instabil rendszert eredményeznek.
+
+***
+
+# 🎉 **Összegzés — a repository és a registry szerepe a CutCalculatorben**
+
+A Repository:
+
+- adatforrás,
+- CSV I/O,
+- konvertálás,
+- validálás,
+- auditált import.
+
+A Registry:
+
+- domain tároló,
+- keresés,
+- CRUD,
+- életciklus,
+- auditált működés,
+- thread‑safe singleton.
+
+A repository az adatforrás.
+A registry a valóság.
+A kettő együtt alkotja a CutCalculator adat‑architektúráját.
+
+***
+# 📘 **10.X Valós idejű validáció és diszkrét vizuális visszajelzések**
+*A jó UX nem rázza meg a felhasználót — hanem finoman, következetesen és azonnal jelzi, ha valami nincs rendben.*
+
+A CutCalculatorben a validáció célja:
+
+- **megelőzni a hibát**,
+- **csökkenteni a hibák súlyosságát**,
+- **segíteni a felhasználót**,
+- **nem túlterhelni**,
+- **nem dramatizálni**,
+- **nem elrejteni a problémát**,
+- **és audit‑tudatos módon kommunikálni**.
+
+Ezért a validáció UX‑e:
+
+- **valós idejű**,
+- **mezőszintű**,
+- **diszkrét**,
+- **ikon‑vezérelt**,
+- **színkódolt**,
+- **összesítő üzenettel kiegészített**.
+
+***
+
+# 🎯 **10.X.1 Miért valós idejű validáció?**
+
+A felhasználó:
+
+- nem akarja megvárni a „Mentés” gombot, hogy kiderüljön, hibázott,
+- nem akarja újra kitölteni a formot,
+- nem akarja találgatni, mi a baj.
+
+A valós idejű validáció:
+
+- **megelőzi a hibát**,
+- **csökkenti a frusztrációt**,
+- **gyorsítja a munkát**,
+- **biztonságot ad**,
+- **kognitív terhelést csökkent**.
+
+Ez a modern UX egyik alapelve.
+
+***
+
+# 🎯 **10.X.2 A mezőszintű validáció vizuális nyelve**
+
+Minden mező három állapotot vehet fel:
+
+### ✔️ **Érvényes érték (zöld pipa)**
+- A mező helyes
+- A felhasználó mehet tovább
+- A rendszer megerősít
+
+### ⚠️ **Figyelmeztetés (sárga ikon)**
+- A mező értéke nem ideális
+- A rendszer jelzi, hogy érdemes ellenőrizni
+- De a felhasználó folytathatja
+
+### ❌ **Hibás érték (piros X)**
+- A mező értéke érvénytelen
+- A felhasználó nem folytathatja
+- A rendszer egyértelműen jelzi a problémát
+
+### ℹ️ **Információ (kék ikon)**
+- Kiegészítő magyarázat
+- Segítség a kitöltéshez
+
+Ez a négy ikon **ugyanazt jelenti**, mint a logolásban és a dialog‑szintű visszajelzésekben.
+Ez a konzisztencia a CutCalculator UX egyik legnagyobb ereje.
+
+***
+
+# 🎯 **10.X.3 A mező felépítése (név + érték + validációs string)**
+
+Minden mező három részből áll:
+
+### **1) Mezőnév**
+- világos, egyértelmű
+- nem technikai
+- nem rövidítés
+- nem kétértelmű
+
+### **2) Érték**
+- a felhasználó által bevitt adat
+- valós idejű validációval kiegészítve
+
+### **3) Validációs string**
+- rövid, emberi nyelvű
+- nem technikai
+- nem dramatikus
+- nem hosszú
+- nem rejt el információt
+
+Példák:
+
+- ❌ „A név nem lehet üres.”
+- ⚠️ „Ez a név már létezik, de felülírható.”
+- ✔️ „A név érvényes.”
+- ℹ️ „A név 3–50 karakter lehet.”
+
+***
+
+# 🎯 **10.X.4 Dialog‑szintű összesítő validáció**
+
+A dialog alján megjelenik egy **összesítő validációs sáv**, amely:
+
+- összegzi a hibákat,
+- összegzi a figyelmeztetéseket,
+- megmutatja, hogy a dialog menthető‑e,
+- ikonokkal jelzi az állapotot.
+
+### Példa:
+
+- ❌ „3 mező hibás. A mentés nem lehetséges.”
+- ⚠️ „1 figyelmeztetés. A mentés lehetséges, de ellenőrizd az adatokat.”
+- ✔️ „Minden mező érvényes. A mentés lehetséges.”
+
+Ez a sáv **nem ráz**, **nem villog**, **nem ugrál** —
+csak stabil, diszkrét, következetes visszajelzést ad.
+
+***
+
+# 🎯 **10.X.5 Miért nem kell snapshot‑verzió vagy shake‑animáció?**
+
+Mert:
+
+- a shake animáció drámai,
+- a shake animáció büntető jellegű,
+- a shake animáció felesleges stresszt okoz,
+- a shake animáció nem illik a CutCalculator kultúrájába.
+
+A mi UX‑ünk:
+
+- diszkrét,
+- professzionális,
+- audit‑tudatos,
+- ikon‑vezérelt,
+- színkódolt,
+- stabil.
+
+A shake animáció **nem része** ennek a kultúrának.
+
+***
+
+# 🎯 **10.X.6 Anti‑pattern — hogyan NE validáljunk?**
+
+- ❌ csak mentéskor validálni
+- ❌ shake animációval büntetni
+- ❌ túl hosszú hibaüzenetek
+- ❌ technikai hibaüzenetek
+- ❌ ikon nélküli visszajelzés
+- ❌ következetlen ikonhasználat
+- ❌ figyelmeztetés → piros ikon
+- ❌ hiba → sárga ikon
+- ❌ mezőszintű validáció nélkül dialog‑szintű hibát mutatni
+- ❌ validációs üzenetek ugrálása
+
+Ezek mind növelik a kognitív terhelést.
+
+***
+
+# 🎉 **Összegzés — a valós idejű validáció a CutCalculator UX egyik legfontosabb eszköze**
+
+A valós idejű validáció:
+
+- megelőzi a hibát,
+- csökkenti a hibák súlyosságát,
+- segíti a felhasználót,
+- csökkenti a support terhelést,
+- csökkenti a fejlesztői terhelést,
+- stabilizálja a rendszert,
+- és illeszkedik a CutCalculator ikon‑vezérelt vizuális nyelvéhez.
+
+A validáció UX‑e:
+
+- diszkrét,
+- következetes,
+- ikon‑vezérelt,
+- színkódolt,
+- valós idejű,
+- dialog‑szintű összesítéssel kiegészített.
+
+Ez a modern, professzionális, audit‑tudatos UX.
 
 ***
 

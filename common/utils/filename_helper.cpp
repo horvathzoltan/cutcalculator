@@ -14,7 +14,7 @@ bool FileNameHelper::init(const char* file) {
     return true;
 #else
     if (!file || !*file) {
-        zWarning() << "❌ init() hívás érvénytelen fájlparaméterrel.";
+        zWarning() << "⚠️ init() hívás érvénytelen fájlparaméterrel.";
         //_initialized_testDataPath = false;
         //_initSource_testdataPath = None;
         return false;

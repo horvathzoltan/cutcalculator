@@ -121,7 +121,7 @@ ProductRepository::loadProductRows(CsvImporter::FileContext& ctx) {
 bool ProductRepository::loadFromCSV(ProductRegistry& registry) {
     const auto& fileNameHelper_instance = FileNameHelper::instance();
     if (!fileNameHelper_instance.isInitialized()) {
-        zWarning("❌ A FileNameHelper nincs inicializálva.");
+        zWarning("⚠️ A FileNameHelper nincs inicializálva.");
         return false;
     }
 
@@ -271,7 +271,7 @@ void ProductRepository::resolveParents(QVector<ProductMaster>& defs,
 bool ProductRepository::saveToCSV(const QVector<ProductMaster>& data, const QString& path) {
     QFile file(path);
     if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
-        zWarning(QString("❌ Nem sikerült megnyitni a fájlt írásra: %1").arg(path));
+        zWarning(QString("⚠️ Nem sikerült megnyitni a fájlt írásra: %1").arg(path));
         return false;
     }
 

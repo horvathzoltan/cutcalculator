@@ -39,7 +39,7 @@ public:
         QFile file(path);
         if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
             ctx.setFileError("Nem sikerült megnyitni beolvasásra");
-            zWarning(QString("❌ Nem sikerült megnyitni beolvasásra: %1").arg(path));
+            zWarning(QString("⚠️ Nem sikerült megnyitni beolvasásra: %1").arg(path));
             return false;
         }
 
@@ -142,7 +142,7 @@ public:
     static bool save(const QVector<ConnectionType>& data) {
         QFile file(Traits::filePath());
         if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
-            zWarning(QString("❌ Nem sikerült megnyitni írásra: %1").arg(Traits::filePath()));
+            zWarning(QString("⚠️ Nem sikerült megnyitni írásra: %1").arg(Traits::filePath()));
             return false;
         }
 
@@ -179,7 +179,7 @@ public:
     // static bool save(const QVector<ConnectionType>& data) {
     //     QFile file(Traits::filePath());
     //     if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
-    //         zWarning(QString("❌ Nem sikerült megnyitni írásra: %1").arg(Traits::filePath()));
+    //         zWarning(QString("⚠️ Nem sikerült megnyitni írásra: %1").arg(Traits::filePath()));
     //         return false;
     //     }
 

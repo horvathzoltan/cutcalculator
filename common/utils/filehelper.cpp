@@ -270,6 +270,6 @@ QChar FileHelper::detectSeparatorSmart(QTextStream* st) {
         }
     }
 
-    zWarning("❌ Nem sikerült szeparátort detektálni a fejléc alapján.");
+    zWarning("⚠️ Nem sikerült szeparátort detektálni a fejléc alapján.");
     return QChar(); // ❌ Nem sikerült detektálni
 }

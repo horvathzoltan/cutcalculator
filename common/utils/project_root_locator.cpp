@@ -51,7 +51,7 @@ ProjectRootLocator::Outcome ProjectRootLocator::locateFrom(const QString& source
 
     outcome.result = NotFound;
     if(_verbose){
-        zWarning() << "❌ Nem találtunk projektgyökeret marker alapján.";
+        zWarning() << "⚠️ Nem találtunk projektgyökeret marker alapján.";
     }
     return outcome;
 }

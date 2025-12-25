@@ -182,7 +182,7 @@ MaterialRepository::loadMaterialRows(CsvImporter::FileContext& ctx) {
 bool MaterialRepository::loadFromCSV(MaterialRegistry& registry) {
     auto& helper = FileNameHelper::instance();
     if (!helper.isInitialized()) {
-        zWarning("❌ A FileNameHelper nincs inicializálva.");
+        zWarning("⚠️ A FileNameHelper nincs inicializálva.");
         return false;
     }
 

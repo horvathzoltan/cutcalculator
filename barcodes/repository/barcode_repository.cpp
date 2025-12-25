@@ -122,7 +122,7 @@ bool BarcodeRepository::loadFromCSV(BarcodeRegistry& registry)
 {
     auto& helper = FileNameHelper::instance();
     if (!helper.isInitialized()) {
-        zWarning("❌ A FileNameHelper nincs inicializálva.");
+        zWarning("⚠️ A FileNameHelper nincs inicializálva.");
         return false;
     }
 
@@ -166,7 +166,7 @@ bool BarcodeRepository::loadFromCSV(BarcodeRegistry& registry)
             }
         } else {
             // CSV-ben validnak tűnt, de a registryben már szerepel – audit WARN
-            zWarning(QString("❌ Barcode duplikált a registryben is: %1").arg(rec.code));
+            zWarning(QString("⚠️ Barcode duplikált a registryben is: %1").arg(rec.code));
         }
     }
 
@@ -182,7 +182,7 @@ bool BarcodeRepository::saveToCSV(const BarcodeRegistry& registry, const QString
 {
     QFile f(path);
     if (!f.open(QIODevice::WriteOnly | QIODevice::Text)) {
-        zWarning(QString("❌ Nem sikerült megnyitni a fájlt írásra: %1").arg(path));
+        zWarning(QString("⚠️ Nem sikerült megnyitni a fájlt írásra: %1").arg(path));
         return false;
     }
 

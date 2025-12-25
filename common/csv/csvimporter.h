@@ -16,7 +16,7 @@ namespace CsvImporter{
 inline QList<CsvRawLine> read(const QString& filepath, QChar separator = QChar()) {
     QFile file(filepath);
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        QString msg = L("❌ Nem sikerült megnyitni a csv fájlt: %1").arg(filepath);
+        QString msg = L("⚠️ Nem sikerült megnyitni a csv fájlt: %1").arg(filepath);
         zWarning(msg);
         return {};
     }
@@ -29,7 +29,7 @@ inline QList<CsvRawLine> read(const QString& filepath, QChar separator = QChar()
      //   zInfo("🔍 Automatikus szeparátor keresés...");
         separator = FileHelper::detectSeparatorSmart(&in);
         if (separator.isNull()) {
-            zWarning(L("❌ Nem sikerült szeparátort detektálni a fájlban: %1").arg(filepath));
+            zWarning(L("⚠️ Nem sikerült szeparátort detektálni a fájlban: %1").arg(filepath));
             return {};
         }
         file.seek(0); // 🔁 Vissza az elejére, újraolvasáshoz

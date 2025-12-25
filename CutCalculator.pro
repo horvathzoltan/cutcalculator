@@ -185,6 +185,7 @@ DISTFILES += \
     run_4_BOMWorkbench.txt \
     run_4_ColorRegistry.txt \
     run_4_GenerikusKapcsolotabla.txt \
+    run_4_LogDoc.txt \
     run_4_RegistryManager.txt \
     run_4_ThreePhaseImport.txt \
     run_4_ValidationRules.txt \

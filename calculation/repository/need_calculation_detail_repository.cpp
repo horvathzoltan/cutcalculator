@@ -45,7 +45,7 @@ bool NeedCalculationDetailRepository::load(QVector<NeedCalculationDetail>& out) 
 bool NeedCalculationDetailRepository::save(const QVector<NeedCalculationDetail>& data) {
     QFile file(ncd_path());
     if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
-        zWarning("❌ NeedCalculationDetail save: nem nyitható meg írásra");
+        zWarning("⚠️ NeedCalculationDetail save: nem nyitható meg írásra");
         return false;
     }
     QTextStream out(&file);

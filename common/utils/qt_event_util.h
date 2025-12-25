@@ -25,7 +25,7 @@ public:
                                         ? m_receiver->metaObject()->superClass()->className()
                                         : "QObject";
 
-            zWarning() << "❌ LambdaEvent sosem futott le!"
+            zWarning() << "⚠️ LambdaEvent sosem futott le!"
                        << "\n📋 Megoldási terv:"
                        << "\n   → Nyisd meg: " << targetClass <<".cpp (objectName=" << targetName << ")"
                        << "\n   → Írd bele az event(QEvent*) override-ot:"
