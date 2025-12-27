@@ -15,6 +15,8 @@ CalculationModesView::CalculationModesView(QWidget* parent)
     connect(_table, &QTableWidget::itemSelectionChanged, this, [this]() {
         on_selection_changed();
     });
+
+    //updateOverlayState();
 }
 
 void CalculationModesView::setup_table() {
@@ -41,6 +43,8 @@ void CalculationModesView::set_modes(const QVector<ModeRow>& rows) {
         _table->setItem(i,0,modeItem);
         _table->setItem(i,1,cntItem);
     }
+
+    updateOverlayState(); // <<< itt
 }
 
 void CalculationModesView::on_selection_changed() {
@@ -58,7 +62,9 @@ void CalculationModesView::on_selection_changed() {
 void CalculationModesView::set_current_product(const QUuid& productId, const QString&, const QString&) {
     _current_productId = productId;
     // Jelzés a toolbar felé (add mode engedhető)
-    emit request_add_mode(_current_productId);
+    // NE indítsunk automatikus mód-hozzáadást
+    // emit request_add_mode(_current_productId);
+
 }
 
 std::optional<QUuid> CalculationModesView::currentModeId() const {
@@ -69,3 +75,45 @@ std::optional<QUuid> CalculationModesView::currentModeId() const {
     if (!item) return std::nullopt;
     return item->data(Qt::UserRole).toUuid();
 }
+
+void CalculationModesView::updateOverlayState()
+{
+    if (!_statusWidget)
+        return;
+
+    const int totalCount = _table->rowCount();
+    int visibleCount = 0;
+
+    for (int r = 0; r < totalCount; ++r) {
+        if (!_table->isRowHidden(r))
+            visibleCount++;
+    }
+
+    ModeListState state;
+
+    if (totalCount == 0)
+        state = ModeListState::NoData;
+    else if (visibleCount == 0)
+        state = ModeListState::NoFilteredData;
+    else
+        state = ModeListState::Ok;
+
+    // Base emoji mindig dokumentum
+    _statusWidget->setBaseEmoji("📄");
+
+    // Overlay állapot beállítása
+    switch (state) {
+    case ModeListState::NoData:
+        _statusWidget->setOverlay(OverlayIconWidget::BottomRight, "❌" );
+        break;
+
+    case ModeListState::NoFilteredData:
+        _statusWidget->setOverlay(OverlayIconWidget::BottomRight, "🔍",Qt::red);
+        break;
+
+    case ModeListState::Ok:
+        _statusWidget->setOverlay(OverlayIconWidget::BottomRight, "🟢");
+        break;
+    }
+}
+

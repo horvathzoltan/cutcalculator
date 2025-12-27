@@ -50,30 +50,34 @@ BOMWorkbench::BOMWorkbench(QWidget* parent)
     zEventINFO("BOMWorkbench initialized");
 }
 
-bool BOMWorkbench::event(QEvent* e)
-{
-    //🎯 Ha ez egy LambdaEvent, akkor futtatjuk a benne levő lambdát
-    if (e->type() == QEvent::User) {
-        auto* le = static_cast<LambdaEvent*>(e);
-        le->execute();
-        return true; // jelezzük, hogy kezeltük
-    }
-    // 🔄 Egyéb események átadása az alapkezelésnek
-    return QWidget::event(e); // minden más esemény átadva az alapnak
-}
+// bool BOMWorkbench::event(QEvent* e)
+// {
+//     //🎯 Ha ez egy LambdaEvent, akkor futtatjuk a benne levő lambdát
+//     if (e->type() == QEvent::User) {
+//         auto* le = static_cast<LambdaEvent*>(e);
+//         le->execute();
+//         return true; // jelezzük, hogy kezeltük
+//     }
+//     // 🔄 Egyéb események átadása az alapkezelésnek
+//     return QWidget::event(e); // minden más esemény átadva az alapnak
+// }
 
 void BOMWorkbench::showEvent(QShowEvent* event) {
     QWidget::showEvent(event);
     if (_restoredOnce) return;
 
     // Biztosítsuk, hogy a layout már kiosztotta a méreteket
-    QtEventUtil::post(this, [this]() {
+    QTimer::singleShot(0, this, [this]() {
          restoreState();
          _restoredOnce = true;
          zEventINFO("🧩 BOMWorkbench state restored (showEvent + queued)");
     });
 
     _isFullyShown = true;
+
+    if (!this->isWindow()) {
+        zInfo("⚠️ BOMWorkbench is NOT a top-level window → closeEvent() will NEVER fire");
+    }
 }
 
 QToolBar* BOMWorkbench::buildTreeToolbar(QWidget* parent) {
@@ -134,6 +138,16 @@ QToolBar* BOMWorkbench::buildMaterialToolbar(QWidget* parent, MaterialRequiremen
 
 QToolBar* BOMWorkbench::buildModesToolbar(QWidget* parent, CalculationModesView* modes_view) {
     QToolBar* modesToolbar = new QToolBar("Számítási mód műveletek", parent);
+
+    // 1) Dokumentum ikon widget
+    auto* status = new OverlayIconWidget();
+    //status->setFixedSize(40, 40);
+    status->setBaseEmoji("📄");
+
+    modesToolbar->addWidget(status);
+    modes_view->setStatusWidget(status);
+
+    modes_view->updateOverlayState();   // <<< EZ KELL
 
     QAction* addModeAction    = modesToolbar->addAction("➕ Új számítási mód");
     QAction* removeModeAction = modesToolbar->addAction("🗑️ Mód törlése");
@@ -450,8 +464,9 @@ void BOMWorkbench::saveState()
     zEventINFO("BOMWorkbench state saved (percent-based + snapshot-aware)");
 }
 
-void BOMWorkbench::closeEvent(QCloseEvent* e) {
-    saveState();
-    QWidget::closeEvent(e);
-}
+// void BOMWorkbench::closeEvent(QCloseEvent* e) {
+//     saveState();
+//     QWidget::closeEvent(e);
+// }
+
 

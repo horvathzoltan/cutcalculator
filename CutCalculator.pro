@@ -21,6 +21,8 @@ SOURCES += \
     common/snapshot/snapshot_manager.cpp \
     common/system/verbose_manager.cpp \
     common/system/verbose_registry_initializer.cpp \
+    common/utils/attention_blinker.cpp \
+    common/utils/cursor_aware_placement.cpp \
     common/utils/geometry_helper.cpp \
     common/utils/table_formatter.cpp \
     mainwindow.cpp \
@@ -38,6 +40,7 @@ SOURCES += \
     calculation/service/need_calculator.cpp \
     calculation/view/calculation_mode_detail_view.cpp \
     calcmodes/view/calculation_modes_view.cpp \
+    ui/widgets/overlay_icon_widget.cpp \
     workbench/view/bom_workbench.cpp \
     colors/model/named_color.cpp \
     colors/registry/color_registry.cpp \
@@ -84,6 +87,8 @@ HEADERS += \
     common/snapshot/workbench_snapshot.h \
     common/system/nameof.hpp \
     common/system/verbose_manager.h \
+    common/utils/attention_blinker.h \
+    common/utils/cursor_aware_placement.h \
     common/utils/font_utils.h \
     common/utils/geometry_helper.h \
     common/utils/optional_utils.h \
@@ -111,6 +116,7 @@ HEADERS += \
     calculation/service/need_calculator.h \
     calculation/view/calculation_mode_detail_view.h \
     calcmodes/view/calculation_modes_view.h \
+    ui/widgets/overlay_icon_widget.h \
     workbench/view/bom_workbench.h \
     colors/model/named_color.h \
     colors/registry/color_registry.h \
@@ -193,6 +199,7 @@ DISTFILES += \
     run_4_WordcodeTranslation.txt \
     run_5_0.md \
     run_5_1.md \
+    run_5_2.md \
     testdata/barcodes.csv \
     testdata/products.csv \
     testdata/needrules.csv \

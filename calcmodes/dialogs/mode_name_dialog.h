@@ -10,6 +10,7 @@
 #include <QPropertyAnimation>
 #include <QScreen>
 #include <QGuiApplication>
+#include "common/utils/attention_blinker.h"
 
 /**
  * @brief ModeNameDialog – számítási mód nevének bekérése.
@@ -38,15 +39,22 @@ private slots:
     void onTextChanged(const QString& text);
 
 private:
-    void applyAccentFrame();
-    void positionNearCursor();
-    void shake();
-
-private:
     QLineEdit* _edit = nullptr;
     QLabel* _label = nullptr;
     QDialogButtonBox* _buttons = nullptr;
     QPushButton* _ok = nullptr;
 
     std::function<bool(const QString&)> _duplicateCheck;
+    AttentionBlinker* _blinker = nullptr;
+
+private:
+    void removeAttentionStyling();
+    void onUserFoundDialog();
+
+    bool _attentionRemoved = false;
+
+protected:
+    bool event(QEvent* e) override;
+    void mousePressEvent(QMouseEvent* event) override;
+
 };

@@ -35,7 +35,7 @@ private:
     void moveEvent(QMoveEvent* e) override;
     void changeEvent(QEvent* e) override;
 
-    bool event(QEvent *e) override;
+    //bool event(QEvent *e) override;
 
 /*material*/
     MaterialTableWidget* _materialsTable = nullptr;
@@ -51,5 +51,6 @@ private:
     //void loadProductDefinitions(); // CSV → registry
 
     bool _windowRestoredOnce = false;
+    void BOMWorkbenchSaveState();
 };
 #endif // MAINWINDOW_H

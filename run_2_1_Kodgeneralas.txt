@@ -16,53 +16,176 @@ Mindegyik:
 
 ------------------------------------------------------------------------
 
-Kérlek, adj egy átgondolt, fejlesztőbarát fájllistát a következő komponensek
-megvalósításához (C++20, Qt 6.10, Clazy‑tiszta, biztonságos, olvasható, hatékony).
+Kérlek, készíts olyan kódcseréhez használható snippleteket, amelyek a következő formátumot követik:
 
-Fontos szabályok:
+1) Minden módosítás előtt add meg:
+   - a fájl nevét (relatív path-tal)
+   - a függvény nevét vagy a kódrészlet környezetét
+   - opcionálisan 1–2 sor-szintű támpontot (pl. a módosítandó sor előtti vagy utáni sor tartalma)
 
-1) Először **csak a fájllistát** add meg, soronként egy fájlt, files.txt‑be másolható formában.
-2) A fájllista lehet kreatív, javasolhatsz új modulokat vagy fájlokat is —
-   de **ne generálj még kódot**, csak beszéljük meg.
-3) A projektstruktúrát (common/, workbench/, mainwindow/, stb.)
-   **mindig vedd figyelembe**, és a fájlokat oda javasold, ahol logikailag a helyük van.
-4) A kódgenerálás **csak akkor indulhat el**, ha megkapod a projekt .pro fájlját.
-   Amíg nincs .pro, addig csak tervezünk.
-5) Ha a feladat túl nagy, a kontextus szétesne, vagy túl sok fájl lenne egyszerre,
-   **jelezd**, és javasolj moduláris bontást.
-6) A fájllista legyen teljes, de fókuszált: csak azok a fájlok szerepeljenek,
-   amelyek ténylegesen szükségesek az implementációhoz.
-7) A kódgenerálás második lépésben történik, miután jóváhagytam a fájllistát.
+2) Ezután add meg a módosítást a következő formában:
 
-A kódgeneráláskor (második lépés):
-- magyar kommenteket kérek, angol terminológiával (class, method, Qt API)
-- ne írj Hunglish megjegyzést
-- javasolj elnevezéseket és integrációs pontokat
-- a fájlnevek legyenek snake_case formátumban
+--- RÉGI (old)
+<régi kódrészlet pontosan>
+--- ÚJ (new)
+<új kódrészlet pontosan>
 
-/* ============================================================
- * 🧩 Blokkfejlécek használata
- * ============================================================ */
+3) A snippetek legyenek diff-szerűek, de ne teljes diff-ek:
+   - csak a ténylegesen érintett sorokat tartalmazzák
+   - ne legyen bennük felesleges környezeti kód
+   - ne legyen bennük kommentár, csak a csere
+   A kódrészleteket mindig ```cpp kódblokkokban add meg.
 
-Minden generált C++ fájlban használd a következő blokkfejléces stílust:
+4) A helymeghatározás legyen egyértelmű:
+   - fájlnév: pl. common/utils/attention_blinker.cpp
+   - függvénynév: pl. AttentionBlinker::start()
+   - támpont: pl. “a setInterval(300) sor alatt”, vagy “a return előtt”
+
+5) A snippetek legyenek egymástól jól elkülönítve, több módosítás esetén külön blokkokban.
+
+6) Ne írj semmilyen magyarázatot, csak a fenti formátumú snippeteket.
+
+
+------------------------------------------------------------------------
+
+Kérlek, a kódgenerálást a következő folyamat szerint végezd:
+
+============================================================ ## 1) ÚJ
+KOMPONENS FÁJLLISTA (csak megbeszéljük, NEM input)
+============================================================
+
+Először add meg a létrejövő új fájlok listáját, soronként egy fájlt.
+Ez csak tervezési célra szolgál, NEM kerül be a files.txt-be, és NEM
+indul el tőle a kódgenerálás.
+
+A fájllista:
+
+-   snake_case formátumú legyen
+-   a projektstruktúrába illeszkedjen (common/, workbench/, mainwindow/,
+    stb.)
+-   csak az újonnan létrejövő fájlokat tartalmazza
+-   ne generálj még kódot, csak a fájlneveket
+
+A kódgenerálás csak akkor indulhat el, ha:
+
+1.  jóváhagytam a fájllistát
+2.  megkaptad a fejlesztési kontextus fájljait chunkokra bontva
+3.  és én külön utasítom, hogy indulhat a generálás
+
+------------------------------------------------------------------------
+
+============================================================ ## 2)
+FEJLESZTÉSI KONTEXTUS FÁJLLISTA (files.txt)
+============================================================
+
+Miután jóváhagytam az új komponens fájllistát,
+te megadod, hogy milyen meglévő fájlokra van szükséged a generáláshoz.
+
+Én ezeket a fájlokat egy files.txt fájlba gyűjtöm, soronként egy relatív
+path formában.
+
+A files.txt-be:
+
+-   csak meglévő fájlok kerülhetnek
+-   ezek lesznek a kódgenerálás inputjai
+-   a fájlok tartalmát a script chunkokra bontva fogja feltölteni neked
+
+A .pro fájl is ide kerül, de nem indít el semmit automatikusan.
+
+------------------------------------------------------------------------
+
+============================================================ ## 3)
+CHUNK-HANDSHAKE (adatvesztés ellen)
+============================================================
+
+A script chunkokra bontva tölti fel a fájlokat.
+
+Minden chunk érkezése után jelezd vissza:
+
+“X chunk érkezett. Ez volt az összes?”
+
+Én pedig válaszolok:
+
+-   “Igen, ez volt az összes.” → a kontextus teljes
+-   “Nem, jön még.” → várj a további chunkokra
+
+A kódgenerálás még ekkor sem indul el automatikusan.
+
+------------------------------------------------------------------------
+
+============================================================ ## 4)
+KÓDGENERÁLÁS (csak explicit utasításra)
+============================================================
+
+A kódgenerálás csak akkor indul, ha én külön utasítom:
+
+„Indulhat a generálás.”
+
+A generált kód:
+
+-   C++20 + Qt 6.10
+-   Clazy-tiszta
+-   magyar kommentek, angol terminológiával
+-   snake_case fájlnevek
+-   blokkfejlécek:
 
     /* ============================================================
      * 🧩 <Blokk neve>
      * ============================================================ */
 
-A blokkfejléceket ott használd, ahol a kód logikailag több fejezetre bontható.
-UI, manager, repository, service osztályokban kötelező.
-Model és helper osztályokban opcionális, de bármikor használható.
+-   ne legyen Hunglish
+-   javasolj elnevezéseket és integrációs pontokat
 
-Tematikus emojik:
-- 🧩 általános komponens
-- 🖱️ pozicionálás
-- 🎛️ beállítások
-- 🧪 validáció
-- 🎨 UI elemek
-- 🔧 segédfüggvények
-- ⚙️ inicializálás
-- 📦 adatkezelés
+------------------------------------------------------------------------
+
+============================================================ ## 5)
+SNIPPETEK (diff-szerű módosítások)
+============================================================
+
+Ha meglévő fájlokat kell módosítani, a snippetek formátuma:
+
+-   fájlnév (relatív path)
+-   függvénynév vagy környezet
+-   opcionális sor-támpont
+
+A kódrészleteket MINDIG ```cpp kódblokkokban add meg.
+
+Formátum:
+
+— RÉGI (old)
+
+    <régi kódrészlet>
+
+— ÚJ (new)
+
+    <új kódrészlet>
+
+A snippet:
+
+-   diff-szerű legyen
+-   csak a módosított sorokat tartalmazza
+-   ne legyen benne magyarázat
+-   ne legyen benne felesleges környezeti kód
+
+------------------------------------------------------------------------
+
+============================================================ ## 6) NINCS
+KÓDGENERÁLÁS .pro NÉLKÜL
+============================================================
+
+A .pro fájl szükséges a kontextushoz,
+de nem indítja el automatikusan a generálást.
+
+A generálás csak akkor indul, ha külön utasítom:
+
+„Indulhat a generálás.”
+
+------------------------------------------------------------------------
+
+
+
+
+
 
 
 ------------------------------------------------------------------------

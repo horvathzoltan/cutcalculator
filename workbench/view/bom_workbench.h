@@ -75,13 +75,13 @@ private:
     QToolBar* buildModesToolbar(QWidget* parent, CalculationModesView* modes_view);
     QToolBar* buildDetailsToolbar(QWidget* parent, CalculationModeDetailView* detail_view);
 
-    bool event(QEvent *e) override;
+    //bool event(QEvent *e) override;
     void showEvent(QShowEvent* event) override;
 
     bool _restoredOnce = false;
     bool _isFullyShown = false;
 
 
-    void closeEvent(QCloseEvent *event) override;
+   // void closeEvent(QCloseEvent *event) override;
 
 };

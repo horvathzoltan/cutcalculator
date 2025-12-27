@@ -4,7 +4,7 @@
 #include "common/logger/event_logger.h"
 #include "ui/adapters/log_view_adapter.h"
 #include "common/settings/settings_manager.h"
-#include "common/utils/qt_event_util.h"
+//#include "common/utils/qt_event_util.h"
 
 #include "materials/view/material_table_widget.h"
 #include "materials/view/material_table_manager.h"
@@ -12,6 +12,7 @@
 #include "workbench/view/bom_workbench.h"
 
 #include <QHeaderView>
+#include <QTimer>
 #include <QToolBar>
 
 #include "common/utils/geometry_helper.h"
@@ -29,7 +30,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     // — Ablak geometria visszaállítása —
     // ablakméret - az esemény időzítve (Qt event queue-ban)
-    QtEventUtil::post(this, [this]() {
+    QTimer::singleShot(0, this, [this]() {
         // 1) Window restore snapshotból (per monitor profil)
         bool restoredFromSnapshot = SnapshotManager::instance().restoreWindowSnapshot(this);
 
@@ -118,12 +119,7 @@ void MainWindow::closeEvent(QCloseEvent* event)
     const QString split = GeometryHelper::saveSplitterState(ui->splitter);
     LayoutDefaultStore::instance().setMainSplitterPercent(split);
 
-    // BOMWorkbench állapot mentés (ez belül maga is hívja a SnapshotManager-t + UiDefaultStore-t)
-    // ezt a BOMWorkbench closeEvent-je kezeli
-
-    // if (auto* bom = ui->tabWidget->findChild<BOMWorkbench*>()) {
-    //     bom->saveState();
-    // }
+    BOMWorkbenchSaveState();
 
     // Aktív tab mentése – ez továbbra is klasszikus setting
     SettingsManager::instance().setCurrentTabIndex(ui->tabWidget->currentIndex());
@@ -132,6 +128,17 @@ void MainWindow::closeEvent(QCloseEvent* event)
     LayoutDefaultStore::instance().flush();
 
     event->accept();
+}
+
+// Ha a BOMWorkbench nem top-level widget, akkor NEM kap closeEvent-et,
+// ezért a MainWindow-nak kell meghívnia a saveState()-et.
+
+void MainWindow::BOMWorkbenchSaveState(){
+    BOMWorkbench* bom = ui->tabWidget->findChild<BOMWorkbench*>();
+    if(!bom) return;
+    if(bom->isWindow()) return; // van sajátja majd menti magának ahogy megtanulta
+
+    bom->saveState();
 }
 
 void MainWindow::initEventLogWidget() {
@@ -149,17 +156,17 @@ void MainWindow::initEventLogWidget() {
     _logAdapter->appendLines(recent);
 }
 
-bool MainWindow::event(QEvent* e)
-{
-    // 🎯 Ha ez egy LambdaEvent, akkor futtatjuk a benne levő lambdát
-    if (e->type() == QEvent::User) {
-        auto* lambdaEvent = static_cast<LambdaEvent*>(e);
-        lambdaEvent->execute();
-        return true; // jelezzük, hogy kezeltük
-    }
-    // 🔄 Egyéb események átadása az alapkezelésnek
-    return QMainWindow::event(e); // minden más esemény átadva az alapnak
-}
+// bool MainWindow::event(QEvent* e)
+// {
+//     // 🎯 Ha ez egy LambdaEvent, akkor futtatjuk a benne levő lambdát
+//     if (e->type() == QEvent::User) {
+//         auto* lambdaEvent = static_cast<LambdaEvent*>(e);
+//         lambdaEvent->execute();
+//         return true; // jelezzük, hogy kezeltük
+//     }
+//     // 🔄 Egyéb események átadása az alapkezelésnek
+//     return QMainWindow::event(e); // minden más esemény átadva az alapnak
+// }
 
 void MainWindow::initMaterialsTab() {
     // Keressünk egy tabot, vagy hozzunk létre egyet programból

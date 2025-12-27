@@ -1,210 +1,190 @@
-------------------------------------------------------------------------
 
-🌙 Mai nap összefoglalója (tömör, fejlesztőbarát)
+Optimalizált, új állapottábla‑frissítő prompt
 
-A mai nap a CutCalculator log‑architektúrájának és UI‑snapshot
-rendszerének teljes konszolidációjáról szólt.
-A GeometryHelper, SnapshotManager, BOMWorkbench és a teljes UI‑restore
-pipeline audit‑szinten is átvilágításra került, és minden modul tiszta,
-konzisztens és stabil módon illeszkedik a SystemLog / EventLog kettős
-architektúrába.
+-------------------------------------------------------------------------------------------------------------
 
-A NeedRule, Product, Material és BOM‑workflow logjai egységesítve
-lettek, a Presenter/Manager réteg logikai szerepei letisztultak, és a
-snapshot‑restore minden komponensnél audit‑barát módon működik.
-A BOMWorkbench wiring, state‑restore és splitter/header kezelés most
-először 100%-ban megfelel a projekt log‑szabályainak.
+Kérlek, két lépésben dolgozzunk:
 
-A nap végére a teljes UI‑snapshot architektúra, a BOMWorkbench workflow
-és a NeedRule/Presenter logika ipari minőségben áll, a CSV warning
-ikonváltás és a SystemLog/EventLog szétválasztás pedig előkészítve.
+1) Először készíts egy minden részletre kiterjedő, ám mégis tömör, fejlesztőbarát összefoglalót a mai napról
+   az alapján, amit leírok vagy amit a fájlok/diff mutatnak.
+   Ez legyen a "Mai nap összefoglalója" blokk.
 
-------------------------------------------------------------------------
+2) A második lépésben frissítsd az állapottáblát és a roadmapet
+   a következő szabályok szerint:
 
-📊 Állapottábla – frissítve
+- ami elkészült → ✅ Kész
+- ami haladt → 🚧 Folyamatban
+- ami tervezés alatt → 📐 Tervezés
+- ami SOS volt → 🔥 SOS
+- ami új ötlet → 💡 Új ötlet
+- semmit ne törölj és ne vonj össze
+- minden státuszváltozást vezess át
 
-(A státuszok átvezetve a mai haladás alapján.)
+Emoji‑készlet:
+📐 = Tervezés
+🚧 = Folyamatban
+✅ = Kész
+🔥 = SOS / Tűzoltás
+💡 = Új ötlet
 
-      -----------------------------------------------------------------------
-      Modul / Feladat                 Állapot          Megjegyzés
-      ------------------------------- ---------------- ----------------------
-      Material pipeline               ✅ Kész          Stage2.5 validátor stabil
-      Product pipeline                ✅ Kész          Export/import formátum végleges
-      Logger subsystem                ✅ Kész          Auditálható logolás
-      Startup subsystem               ✅ Kész          Snapshot-aware inicializáció
-      Settings subsystem              ✅ Kész          Percent-based layout + fallback
-      FileNameHelper                  ✅ Kész          ui_snapshots path integrálva
-      CsvReader utility               ⚠️ Függőség      Importerhez szétválasztva
-      RalImporter modul               ✅ Kész          ColorRepository-ba migrálva
-      OrderManager                    📐 Tervezés      Modellek, státuszkezelés
-      CustomerMaster                  📐 Tervezés      Ügyféltörzs, autocomplete
-      CutCalculator                   🚧 Folyamatban   Preview előkészítve
-      NeedsPresenter + NeedsView      ✅ Kész          MVP működik
-      UI réteg (Qt)                   📐 Tervezés      Order entry dialog
-      Audit funkció (üzleti)          📐 Tervezés      AuditEntry + AuditService
-      Test framework                  ✅ Kész          EventLogger tests
-      NamedColor / Color registry     ✅ Kész          Pantone-ready
-      NeedRule                        ✅ Kész          Kapcsolótábla teljes pipeline
-      NeedCalculation                 🚧 Folyamatban   Domain-szétválasztás kész; UX finomítás kell
-      NeedCalculationDetail           🚧 Folyamatban   DetailManager skeleton; MaterialPicker integráció hiányzik
-      Formula értelmezés              📐 Tervezés      cparse integráció
-      SOS / Tűzoltás                  🔥 SOS           Material import hibák megoldva
-      Generikus kapcsolótábla         ✅ Kész          CSV IO tesztelve
-      BarcodeValidator subsystem      ✅ Kész          Ütközéskezelés
-      BarcodeTable refaktor           ✅ Kész          Model/repo/registry
-      DataStateReporter               ✅ Kész          Repo-listázás, audit riport
-      MVP logika                      🚧 Folyamatban   Presenter/Manager tisztítása
-      VerboseManager                  ✅ Kész          Verbosity routing stabil
-      MaterialPickerDialog            ✅ Kész          Debounce + audit
-      RegistryAuditReporter           ✅ Kész          Audit összefoglaló
-      Screen-change detector          ✅ Kész          Snapshot architektúrával integrálva
-      GeometryHelper finomítás        ✅ Kész          Deferred restore + guard logika
-      SnapshotManager                 ✅ Kész          Monitorprofil alapú snapshot
-      LayoutDefaultStore              ✅ Kész          Fallback baseline
-      UI Snapshot Architecture        ✅ Kész          Teljes architektúra kész
-      EventLog tisztítása             💡 Új ötlet      SystemLog + EventLog szétválasztása
-      CSV warning UX                  💡 Új ötlet      ❌ → ⚠️ ikonváltás
-      -----------------------------------------------------------------------
+A frissítés során készítsd el a következő blokkokat:
 
-------------------------------------------------------------------------
-
-📊 Idővonalas roadmap – frissítve
-
-✅ Elkészült (Done Zone)
-
--   SnapshotManager
--   LayoutDefaultStore
--   GeometryHelper (guard + deferred restore)
--   UI Snapshot Architecture
--   Material pipeline
--   Product pipeline
--   NeedRule pipeline
--   ColorRegistry + RAL import
--   BarcodeTable refaktor
--   Settings subsystem
--   Startup subsystem
--   VerboseManager
--   RegistryAuditReporter
--   MaterialPickerDialog
--   Test framework
--   Logger subsystem
--   Screen-change detector
--   BOMWorkbench snapshot + restore pipeline
--   Presenter/Manager log‑architektúra tisztázása
-
-------------------------------------------------------------------------
-
-🚧 Folyamatban (Active Zone)
-
--   NeedCalculation domain
--   NeedCalculationDetail domain
--   CutCalculator preview
--   MVP logika tisztítása
--   EventLog tisztítása (SystemLog bevezetése)
--   BOMWorkbench UX finomítások
-
-------------------------------------------------------------------------
-
-📐 Tervezés (Design Zone)
-
--   Formula parser (cparse)
--   AuditEntry + AuditService
--   OrderManager
--   CustomerMaster
--   Order entry UI
--   Real‑time preview UI
-
-------------------------------------------------------------------------
-
-💡 Új ötletek (Idea Zone)
-
--   EventLog / SystemLog szétválasztása
--   CSV warning ikonváltás
--   ModeNameDialog UX kiemelés
--   UI‑log kategorizálás
-
-------------------------------------------------------------------------
-
+📊 Állapottábla
+📊 Idővonalas roadmap
 ✨ Röviden – stratégiai összefoglaló
-
-A mai nap a CutCalculator UI‑snapshot és log‑architektúrájának teljes
-konszolidációját hozta.
-A BOMWorkbench workflow, a splitter/header restore, a Presenter/Manager
-logika és a SnapshotManager integráció most először áll teljesen stabil,
-audit‑barát állapotban.
-
-A projekt ezzel belépett abba a fázisba, ahol a számítási módok, a
-formula‑motor és a preview modul már akadály nélkül építhetők.
-
-------------------------------------------------------------------------
-
 📌 Mai eredmények – részletes taktikai napzáró
-
--   BOMWorkbench state‑restore auditálva → ✅
--   GeometryHelper restore logika validálva → ✅
--   SnapshotManager + LayoutDefaultStore együttműködés stabil → ✅
--   Presenter/Manager logcsatornák tisztázva → ✅
--   ProductTreeView dropEvent logika auditálva → ✅
--   NeedRule pipeline logjai egységesítve → ✅
--   EventLog túlterhelés azonosítva → 💡
--   SystemLog + EventLog szétválasztás előkészítve → 🚧
--   BOMWorkbench UX finomítási pontok feltárva → 💡
-
-------------------------------------------------------------------------
-
 🎯 Prioritási sorrend – fókuszpont lista
+🚀 Sprint fókusz (🔥 SOS pontokkal) és 👉 Holnap fókusz
 
-1.  NeedCalculation UX
+Végül adj egy git commit subjectet (max 55 karakter).
 
-    -   ModeNameDialog UX finomítás
-    -   Rename dialog
-    -   Duplikáció‑kezelés
+-------------------------------------------------------------------------------------------------------------
 
-2.  NeedCalculationDetail UX
 
-    -   MaterialPicker integráció
-    -   FormulaEditorDialog
-    -   Validáció vizuális jelzése
+Zoltán, akkor jöjjön mind a négy professzionális sablon, szépen
+összerendezve, egységes stílusban, hogy a CutCalculator fejlesztési
+kultúrája teljes legyen a workflow minden pontján.
 
-3.  EventLog tisztítása
+Ezeket akár külön .md fájlokba is kiteheted a projekt
+docs/prompt_library/ mappájába.
 
-    -   SystemLog + EventLog szétválasztása
-    -   UI‑log kategorizálás
+A négy sablon:
 
-4.  CutCalculator preview
+1.  ✅ Daily Sync – Napi összefoglaló sablon
+2.  ✅ Diff‑alapú állapottábla frissítés sablon
+3.  ✅ Sprint Review sablon
+4.  ✅ Release Notes generáló sablon
 
-5.  Formula parser (cparse)
-
-------------------------------------------------------------------------
-
-🚀 Sprint fókusz + 👉 Holnap fókusz
-
-🚀 Sprint fókusz
-
--   NeedCalculation modul befejezése
--   NeedCalculationDetail workflow működőképessé tétele
--   EventLog / SystemLog szétválasztása
--   ModeNameDialog UX upgrade
--   CSV warning ikonváltás
--   BOMWorkbench UX finomítások
+Mindegyik ipari szintű, fejlesztőbarát, Copilot‑optimalizált.
 
 ------------------------------------------------------------------------
 
-👉 Holnap fókusz
+✅ 1) Daily Sync – Napi összefoglaló sablon
 
-1.  ModeNameDialog UX upgrade
-2.  EventLog tisztítás – kategorizálás
-3.  CSV warning ikonváltás
-4.  NeedCalculationDetail – MaterialPicker integráció előkészítése
-5.  BOMWorkbench splitter/header UX finomítás
+Ez a sablon arra való, hogy minden nap végén egy tiszta, tömör,
+fejlesztőbarát összefoglalót készíts, amit aztán a Copilot a következő
+lépésben beépít az állapottáblába.
+
+    Kérlek, készíts egy tömör, fejlesztőbarát napi összefoglalót a mai munkáról.
+
+    A következő blokkokat kérem:
+
+    📝 Mai nap összefoglalója
+    - mi készült el
+    - mi haladt
+    - milyen ötletek születtek
+    - milyen problémák merültek fel
+    - milyen döntések születtek
+
+    📁 Érintett fájlok / modulok
+    - felsorolás
+    - ha van diff, azt is figyelembe veheted
+
+    💡 Új ötletek / megfigyelések
+    - röviden, bulletpontokban
+
+    Ez még NEM az állapottábla frissítése.
+    Ez csak a napi input, amit a következő lépésben használunk.
 
 ------------------------------------------------------------------------
 
-📝 Git commit subject (≤55 karakter)
+✅ 2) Diff‑alapú állapottábla frissítés sablon
 
-    Refine snapshot logs; update roadmap & UX tasks
+Ez a sablon a Daily Sync után fut.
+Ez frissíti az állapottáblát, roadmapet, fókuszpontokat, sprint fókuszt,
+commit üzenetet.
+
+    A következő input alapján frissítsük az állapottáblát:
+
+    - Mai nap összefoglalója
+    - Érintett fájlok
+    - Új ötletek
+
+    Kérlek, a következő szabályok szerint dolgozz:
+
+    ✅ ami elkészült → jelöld ✅ Kész státuszra
+    🚧 ami haladt → maradjon vagy váltson 🚧 Folyamatban státuszra
+    📐 ami tervezés alatt → maradjon 📐 Tervezés
+    🔥 ami SOS volt → jelöld 🔥-ra
+    💡 új ötletek → add hozzá a megfelelő blokkhoz
+
+    Semmit ne törölj és ne vonj össze.
+
+    A következő blokkokat kérem:
+
+    📊 Állapottábla (frissítve)
+    📊 Idővonalas roadmap
+    ✨ Röviden – stratégiai összefoglaló
+    📌 Mai eredmények – részletes taktikai napzáró
+    🎯 Prioritási sorrend – fókuszpont lista
+    🚀 Sprint fókusz (🔥 SOS pontokkal) és 👉 Holnap fókusz
+
+    Végül adj egy git commit subjectet (max 55 karakter).
 
 ------------------------------------------------------------------------
 
-Ha szeretnéd, megcsinálom a holnapi nap előrejelzését is, vagy a
-következő sprint backlogját — csak szólj.
+✅ 3) Sprint Review sablon (heti vagy kétheti retrospektív)
+
+Ez a sablon a sprint végén fut, és egy teljes retrospektívet készít.
+
+    Kérlek, készíts egy professzionális Sprint Review dokumentumot a következő szempontok alapján:
+
+    ✅ Sprint célok – mi volt a kitűzött irány
+    ✅ Mi készült el – modulonként
+    ✅ Mi haladt – részletesen
+    ✅ Mi csúszott – okokkal
+    ✅ Mi volt a legnagyobb technikai eredmény
+    ✅ Mi volt a legnagyobb tanulság
+    ✅ Mi volt a legnagyobb akadály
+    ✅ Mit kell javítani a következő sprintben
+    ✅ Új ötletek, új modulok, új irányok
+    ✅ Snapshot a projekt aktuális állapotáról
+
+    A dokumentum végén kérek:
+
+    🎯 Következő sprint fókuszpontjai
+    📌 Kockázatok és mitigáció
+    🚀 Ajánlott sprint backlog
+
+------------------------------------------------------------------------
+
+✅ 4) Release Notes generáló sablon (verziókhoz, milestone‑okhoz)
+
+Ez a sablon akkor kell, amikor egy nagyobb modul vagy verzió elkészül.
+
+    Kérlek, készíts professzionális Release Notes dokumentumot a következő verzióhoz:
+
+    📦 Verziószám: X.Y.Z
+    📅 Dátum: YYYY-MM-DD
+
+    A dokumentum tartalmazza:
+
+    ✅ Újdonságok (New Features)
+    ✅ Fejlesztések (Improvements)
+    ✅ Hibajavítások (Fixes)
+    ✅ Architektúra változások
+    ✅ API változások (ha vannak)
+    ✅ Migrációs lépések (ha szükséges)
+    ✅ Snapshot a projekt aktuális állapotáról
+    ✅ Kiemelt modulok részletes leírása
+    ✅ Teljesítményjavítások
+    ✅ Stabilitási fejlesztések
+    ✅ UI változások
+    ✅ Dokumentáció frissítések
+
+    A végén kérek:
+
+    📌 Upgrade Guide (ha szükséges)
+    📁 Érintett fájlok listája
+    🔧 Build / deploy megjegyzések
+
+------------------------------------------------------------------------
+
+✅ Összegzés – most már teljes a CutCalculator fejlesztési kultúrája
+
+A négy sablon együtt:
+
+-   lefedi a napi munkát
+-   lefedi a stratégiai frissítést
+-   lefedi a sprint lezárást
+-   lefedi a verziók kiadását

@@ -84,28 +84,121 @@ nincs szükség semmi másra.
 
 ---------------------------------------------------------------------------------------
 
+Zoltán, ez a kis „Hogyan működik” blokk nagyon jó irány, de ha
+audit‑szemmel nézzük, akkor néhány pontot érdemes finomítani, hogy:
 
-✨ Hogyan működik - sourcetotxt.sh
-Gyökérrel:
-----------
-./sourcetotxt.sh -d ~/source/repos/CutCalculator files.txt
+-   egyértelmű legyen, mit csinál a script,
+-   ne legyen félreérthető, mikor kell -d,
+-   világos legyen, hogy a globok a ROOT alatt oldódnak fel,
+-   és ne legyen olyan példa, ami félrevezető vagy hibás működéshez
+    vezethet.
 
-→ minden sorhoz hozzáfűzi a ~/source/repos/CutCalculator előtagot.
+Az alábbiakban átnézem, majd adok egy auditált, tiszta, véglegesített
+verziót.
 
-Gyökér nélkül:
---------------
-./sourcetotxt.sh files.txt
+------------------------------------------------------------------------
 
-→ a fájllistában lévő útvonalakat közvetlenül kezeli.
+🔍 Audit – részletes értékelés
 
-Könyvtár dumpolás:
-------------------
-./sourcetotxt.sh -d ~/source/repos/CutCalculator products
+1) Teljes projekt dumpolása
 
-→ rekurzívan kiírja a products könyvtár tartalmát.
+    ./sourcetotxt.sh ~/source/repos/CutCalculator/ > masi2.txt
 
-zoli@pif:~$ ./sourcetotxt.sh ~/source/repos/CutCalculator/ > masi2.txt
+✔️ Ez jó.
+A script felismeri, hogy az argumentum könyvtár → rekurzívan dumpol.
+
+Megjegyzés:
+Itt nem kell -d, mert a teljes pathot adod meg.
+
+------------------------------------------------------------------------
+
+2) Specifikus könyvtár dumpolása
+
+    ./sourcetotxt.sh -d ~/source/repos/CutCalculator products
+
+✔️ Ez is jó.
+A script a products könyvtárat a ROOT alatt keresi.
+
+------------------------------------------------------------------------
+
+3) Fájllista használata
+
+    ./sourcetotxt.sh -d ~/source/repos/CutCalculator files.txt
+
+✔️ Ez is helyes.
+A script felismeri, hogy files.txt létező fájl → fájllista mód.
+
+Megjegyzés:
+A fájllistában lévő globok is működnek, ha * van bennük.
+
+------------------------------------------------------------------------
+
+4) Mintás fájlok – run_5*
+
+✨ Hogyan működik – sourcetotxt.sh
+
+A script képes:
+
+-   teljes könyvtárakat dumpolni,
+-   konkrét fájlokat kiírni,
+-   fájllistát feldolgozni,
+-   glob mintákat (pl. run_5*, *repo*, *reg*) a ROOT alatt rekurzívan
+    feloldani.
+
+A a *repo* és *reg* minták a projekt teljes fáfa‑struktúrájában
+működnek.
+
+------------------------------------------------------------------------
+
+📁 Könyvtár dumpolása
+
+Teljes projekt:
+
+    ./sourcetotxt.sh ~/source/repos/CutCalculator/ > masi2.txt
+
+Specifikus könyvtár:
+
+    ./sourcetotxt.sh -d ~/source/repos/CutCalculator products
+
+------------------------------------------------------------------------
+
+📄 Fájlok listából
+
+A files.txt tartalmazhat:
+
+-   konkrét fájlokat
+-   könyvtárakat
+-   glob mintákat (*repo*, *reg*, run_5*)
+
+Parancs:
+
+    ./sourcetotxt.sh -d ~/source/repos/CutCalculator files.txt
+
+------------------------------------------------------------------------
+
+🔍 Mintás fájlok (globok)
+
+run_5* mintázat:
+
+    ./sourcetotxt.sh -d ~/source/repos/CutCalculator "run_5*" > masi2.txt
+
+repository + registry mintázatok:
+
+    ./sourcetotxt.sh -d ~/source/repos/CutCalculator "*repo*" "*reg*" > masi2.txt
+
+A script ezeket rekurzívan oldja fel:
+
+    $ROOT/**/$INPUT
+
+Így minden repository és registry fájl bekerül a dumpba.
+
+------------------------------------------------------------------------
+
+Splitting large files:
+----
+
 zoli@pif:~$ split -l 2500 masi2.txt masi2_part_ --additional-suffix=.txt
+
 
 -----
 

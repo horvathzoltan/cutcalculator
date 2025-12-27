@@ -1,8 +1,10 @@
 #pragma once
+#include "ui/widgets/overlay_icon_widget.h"
 #include <QWidget>
 #include <QTableWidget>
 #include <QVBoxLayout>
 #include <QUuid>
+#include <QWidget>
 
 /**
  * @class CalculationModesView
@@ -24,9 +26,17 @@ public:
         int detailsCount = 0;
     };
 
+ enum class ModeListState {
+         NoData, // nincs semmilyen adat
+         NoFilteredData, // van adat, de a szűrő miatt egy sem látszik
+         Ok // van releváns adat
+     };
+
     void set_modes(const QVector<ModeRow>& rows);
     std::optional<QUuid> currentModeId() const;
 
+    void setStatusWidget(OverlayIconWidget* w) { _statusWidget = w; }
+    void updateOverlayState();
 signals:
     void selection_changed(std::optional<QUuid> modeId);
     void request_add_mode(const QUuid& productId);
@@ -39,6 +49,8 @@ public slots:
 private:
     QTableWidget* _table = nullptr;
     QUuid _current_productId;
+
+    OverlayIconWidget* _statusWidget = nullptr;
 
     void setup_table();
     void on_selection_changed();

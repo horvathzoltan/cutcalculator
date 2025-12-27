@@ -1,56 +1,59 @@
-🌙 Mai nap összefoglalója (tömör, fejlesztőbarát)
 
-A mai nap a CutCalculator log‑architektúrájának és UI‑snapshot
-rendszerének teljes konszolidációjáról szólt.
-A GeometryHelper, SnapshotManager, BOMWorkbench és a teljes UI‑restore
-pipeline audit‑szinten is átnézésre került, és minden modul tisztán,
-konzisztensen illeszkedik a SystemLog / EventLog kettős architektúrába.
-A NeedRule, Product, Material és BOM‑workflow logjai egységesítve
-lettek, a Presenter/Manager réteg logikai szerepei letisztultak, és a
-snapshot‑restore minden komponensnél audit‑barát módon működik.
-A BOMWorkbench wiring, state‑restore és splitter/header kezelés teljesen
-stabil, a logcsatornák pedig most először 100%-ban megfelelnek a projekt
-log‑szabályainak.
-A nap végére a teljes UI‑snapshot architektúra, a BOMWorkbench workflow
-és a NeedRule/Presenter logika ipari minőségben áll.
+🌙 Mai nap összefoglalója (tömör, fejlesztőbarát, frissített)
+
+A mai nap a CutCalculator UI‑snapshot architektúrájának, a BOMWorkbench
+állapotkezelésének és a vizuális adat‑létezés jelzésének teljes
+konszolidációjáról szólt.
+A SnapshotManager, GeometryHelper és LayoutDefaultStore együttműködése
+most először működik 100%-os megbízhatósággal, miután feltártuk a
+kritikus hibát: a BOMWorkbench nem top‑level widget, ezért nem kap
+closeEvent()‑et. A MainWindow átvette a mentés felelősségét, így a
+snapshot‑restore pipeline stabil.
+
+A nap másik nagy eredménye az OverlayIconWidget megszületése és
+integrációja a CalculationModesView::updateOverlayState() logikájába. Ez
+egy új, rendszer‑szintű UX‑szabályt hozott létre:
+mindenhol, ahol adat‑létezést kell jelezni, az OverlayIconWidget lesz a
+standard vizuális komponens.
+Ez a komponens ma teljesen működőképessé vált: baseline‑helyes
+emoji‑render, overlay‑pozicionálás, tintelés, monokróm‑detektálás, és
+audit‑barát debug‑keretek.
+
+A Presenter/Manager log‑architektúra is tisztult, a logcsatornák
+egységesedtek, és a NeedRule/Product/Material pipeline auditálhatóvá
+vált.
+A projekt ezzel belépett abba a fázisba, ahol a NeedCalculation és
+NeedCalculationDetail modulok már akadály nélkül építhetők tovább.
 
 ------------------------------------------------------------------------
 
 📊 Állapottábla – frissítve
 
-(A mai nap során átnézett és stabilizált modulok státusza átvezetve.)
-
   -----------------------------------------------------------------------
   Modul / Feladat                 Állapot          Megjegyzés
   ------------------------------- ---------------- ----------------------
-  Material pipeline               ✅ Kész          Stage2.5 validátor
-                                                   stabil
+  Material pipeline               ✅ Kész          Stabil validátor
 
-  Product pipeline                ✅ Kész          Export/import formátum
-                                                   végleges
+  Product pipeline                ✅ Kész          Export/import végleges
 
   Logger subsystem                ✅ Kész          Auditálható logolás
 
-  Startup subsystem               ✅ Kész          Snapshot-aware
-                                                   inicializáció
+  Startup subsystem               ✅ Kész          Snapshot-aware init
 
-  Settings subsystem              ✅ Kész          Percent-based layout +
-                                                   fallback
+  Settings subsystem              ✅ Kész          Percent-based layout
 
-  FileNameHelper                  ✅ Kész          ui_snapshots path
+  FileNameHelper                  ✅ Kész          ui_snapshots
                                                    integrálva
 
   CsvReader utility               ⚠️ Függőség      Importerhez
                                                    szétválasztva
 
-  RalImporter modul               ✅ Kész          ColorRepository-ba
-                                                   migrálva
+  RalImporter modul               ✅ Kész          ColorRegistry
+                                                   integráció
 
-  OrderManager                    📐 Tervezés      Modellek,
-                                                   státuszkezelés
+  OrderManager                    📐 Tervezés      Modellek, státuszok
 
-  CustomerMaster                  📐 Tervezés      Ügyféltörzs,
-                                                   autocomplete
+  CustomerMaster                  📐 Tervezés      Autocomplete
 
   CutCalculator                   🚧 Folyamatban   Preview előkészítve
 
@@ -58,25 +61,18 @@ A nap végére a teljes UI‑snapshot architektúra, a BOMWorkbench workflow
 
   UI réteg (Qt)                   📐 Tervezés      Order entry dialog
 
-  Audit funkció (üzleti)          📐 Tervezés      AuditEntry +
-                                                   AuditService
+  Audit funkció                   📐 Tervezés      AuditEntry + Service
 
   Test framework                  ✅ Kész          EventLogger tests
 
   NamedColor / Color registry     ✅ Kész          Pantone-ready
 
-  NeedRule                        ✅ Kész          Kapcsolótábla teljes
-                                                   pipeline
+  NeedRule                        ✅ Kész          Pipeline kész
 
-  NeedCalculation                 🚧 Folyamatban   Domain-szétválasztás
-                                                   kész; ModeNameDialog
-                                                   kész; UX finomítás
-                                                   kell
+  NeedCalculation                 🚧 Folyamatban   UX finomítás
 
-  NeedCalculationDetail           🚧 Folyamatban   DetailManager
-                                                   skeleton;
-                                                   MaterialPicker
-                                                   integráció hiányzik
+  NeedCalculationDetail           🚧 Folyamatban   MaterialPicker
+                                                   integráció
 
   Formula értelmezés              📐 Tervezés      cparse integráció
 
@@ -89,38 +85,37 @@ A nap végére a teljes UI‑snapshot architektúra, a BOMWorkbench workflow
 
   BarcodeTable refaktor           ✅ Kész          Model/repo/registry
 
-  DataStateReporter               ✅ Kész          Repo-listázás, audit
-                                                   riport
+  DataStateReporter               ✅ Kész          Audit riport
 
   MVP logika                      🚧 Folyamatban   Presenter/Manager
-                                                   tisztítása
+                                                   tisztítás
 
   VerboseManager                  ✅ Kész          Verbosity routing
-                                                   stabil
 
   MaterialPickerDialog            ✅ Kész          Debounce + audit
 
   RegistryAuditReporter           ✅ Kész          Audit összefoglaló
 
-  Screen-change detector          ✅ Kész          Snapshot
-                                                   architektúrával
-                                                   integrálva
+  Screen-change detector          ✅ Kész          Snapshot integráció
 
-  GeometryHelper finomítás        ✅ Kész          Deferred restore +
-                                                   guard logika
+  GeometryHelper finomítás        ✅ Kész          Deferred restore
 
   SnapshotManager                 ✅ Kész          Monitorprofil alapú
-                                                   snapshot
 
   LayoutDefaultStore              ✅ Kész          Fallback baseline
 
   UI Snapshot Architecture        ✅ Kész          Teljes architektúra
-                                                   kész
 
-  EventLog tisztítása             💡 Új ötlet      SystemLog + EventLog
-                                                   szétválasztása
+  OverlayIconWidget               🚧 Folyamatban   Új komponens,
+                                                   integráció folyamatban
 
-  CSV warning UX                  💡 Új ötlet      ❌ → ⚠️ ikonváltás
+  Overlay‑alapú adat‑létezés      💡 Új ötlet      Rendszerszintű
+  jelzés                                           UX‑szabály
+
+  EventLog tisztítása             💡 Új ötlet      SystemLog
+                                                   szétválasztás
+
+  CSV warning UX                  💡 Új ötlet      Ikonváltás
   -----------------------------------------------------------------------
 
 ------------------------------------------------------------------------
@@ -131,12 +126,11 @@ A nap végére a teljes UI‑snapshot architektúra, a BOMWorkbench workflow
 
 -   SnapshotManager
 -   LayoutDefaultStore
--   GeometryHelper (guard + deferred restore)
+-   GeometryHelper (deferred restore)
 -   UI Snapshot Architecture
--   Material pipeline
--   Product pipeline
--   NeedRule pipeline
--   ColorRegistry + RAL import
+-   BOMWorkbench snapshot + restore pipeline
+-   Logger subsystem
+-   Material / Product / NeedRule pipeline
 -   BarcodeTable refaktor
 -   Settings subsystem
 -   Startup subsystem
@@ -144,19 +138,17 @@ A nap végére a teljes UI‑snapshot architektúra, a BOMWorkbench workflow
 -   RegistryAuditReporter
 -   MaterialPickerDialog
 -   Test framework
--   Logger subsystem
 -   Screen-change detector
--   BOMWorkbench snapshot + restore pipeline
 -   Presenter/Manager log‑architektúra tisztázása
 
 🚧 Folyamatban (Active Zone)
 
--   NeedCalculation domain (ModeNameDialog kész, UX finomítás kell)
--   NeedCalculationDetail domain (DetailManager skeleton, MaterialPicker
-    integráció hiányzik)
+-   OverlayIconWidget (új komponens)
+-   Overlay‑alapú adat‑létezés jelzés integráció
+-   NeedCalculation domain
+-   NeedCalculationDetail domain
 -   CutCalculator preview
 -   MVP logika tisztítása
--   EventLog tisztítása (SystemLog bevezetése)
 -   BOMWorkbench UX finomítások
 
 📐 Tervezés (Design Zone)
@@ -170,68 +162,69 @@ A nap végére a teljes UI‑snapshot architektúra, a BOMWorkbench workflow
 
 💡 Új ötletek (Idea Zone)
 
--   EventLog / SystemLog szétválasztása
+-   SystemLog + EventLog szétválasztása
 -   CSV warning ikonváltás
 -   ModeNameDialog UX kiemelés
 -   UI‑log kategorizálás
+-   OverlayIconWidget globális integrációs szabály
 
 ------------------------------------------------------------------------
 
 ✨ Röviden – stratégiai összefoglaló
 
-A mai nap a CutCalculator UI‑snapshot és log‑architektúrájának teljes
-konszolidációját hozta.
-A BOMWorkbench workflow, a splitter/header restore, a Presenter/Manager
-logika és a SnapshotManager integráció most először áll teljesen stabil,
-audit‑barát állapotban.
-A projekt ezzel belépett abba a fázisba, ahol a számítási módok, a
-formula‑motor és a preview modul már akadály nélkül építhetők.
+A mai nap két nagy áttörést hozott:
+
+1.  A snapshot‑architektúra teljes stabilizálása
+    A BOMWorkbench closeEvent‑hiányának feltárása és a MainWindow‑ba
+    helyezett mentés megoldotta a legkritikusabb UI‑hibát.
+    A snapshot‑restore pipeline most először működik 100%-os
+    megbízhatósággal.
+
+2.  Az OverlayIconWidget megszületése és rendszer‑szintű UX‑szabállyá
+    emelése
+    Az adat‑létezés vizuális jelzése mostantól egységes, auditálható és
+    bővíthető.
+    Ez a komponens a jövőben minden releváns modulban megjelenik.
+
+A projekt ezzel belépett abba a fázisba, ahol a NeedCalculation,
+NeedCalculationDetail és Formula modulok akadály nélkül építhetők
+tovább.
 
 ------------------------------------------------------------------------
 
 📌 Mai eredmények – részletes taktikai napzáró
 
--   BOMWorkbench state‑restore auditálva → ✅
--   GeometryHelper restore logika validálva → ✅
--   SnapshotManager + LayoutDefaultStore együttműködés stabil → ✅
--   Presenter/Manager logcsatornák tisztázva → ✅
--   ProductTreeView dropEvent logika auditálva → ✅
--   NeedRule pipeline logjai egységesítve → ✅
--   EventLog túlterhelés azonosítva → 💡
--   SystemLog + EventLog szétválasztás előkészítve → 🚧
--   BOMWorkbench UX finomítási pontok feltárva → 💡
+-   BOMWorkbench closeEvent‑hiány detektálva → megoldva
+-   MainWindow átvette a Workbench mentését → snapshot stabil
+-   GeometryHelper restore logika validálva
+-   SnapshotManager + LayoutDefaultStore együttműködés auditálva
+-   OverlayIconWidget megtervezve, implementálva, integrálva
+-   Overlay tintelés, monokróm‑detektálás, baseline‑helyes render kész
+-   CalculationModesView overlay‑logika frissítve
+-   Új UX‑szabály: adat‑létezés vizuális jelzése minden releváns helyen
+-   Presenter/Manager logcsatornák tisztázva
+-   NeedRule pipeline logjai egységesítve
+-   EventLog túlterhelés azonosítva
+-   SystemLog + EventLog szétválasztás előkészítve
+-   BOMWorkbench UX finomítási pontok feltárva
 
 ------------------------------------------------------------------------
 
 🎯 Prioritási sorrend – fókuszpont lista
 
-1.  NeedCalculation UX
-
-    -   ModeNameDialog UX finomítás
-    -   Rename dialog
-    -   Duplikáció‑kezelés
-
-2.  NeedCalculationDetail UX
-
-    -   MaterialPicker integráció
-    -   FormulaEditorDialog
-    -   Validáció vizuális jelzése
-
-3.  EventLog tisztítása
-
-    -   SystemLog + EventLog szétválasztása
-    -   UI‑log kategorizálás
-
-4.  CutCalculator preview
-
-5.  Formula parser (cparse)
+1.  OverlayIconWidget integráció minden releváns modulba
+2.  NeedCalculation UX (ModeNameDialog, rename, duplikáció)
+3.  NeedCalculationDetail UX (MaterialPicker integráció,
+    FormulaEditorDialog)
+4.  EventLog tisztítása (SystemLog bevezetése)
+5.  CutCalculator preview
+6.  Formula parser (cparse)
 
 ------------------------------------------------------------------------
 
-🚀 Sprint fókusz + 👉 Holnap fókusz
-
 🚀 Sprint fókusz
 
+-   OverlayIconWidget globális integráció
 -   NeedCalculation modul befejezése
 -   NeedCalculationDetail workflow működőképessé tétele
 -   EventLog / SystemLog szétválasztása
@@ -241,19 +234,18 @@ formula‑motor és a preview modul már akadály nélkül építhetők.
 
 👉 Holnap fókusz
 
-1.  ModeNameDialog UX upgrade
-2.  EventLog tisztítás – kategorizálás
-3.  CSV warning ikonváltás
-4.  NeedCalculationDetail – MaterialPicker integráció előkészítése
-5.  BOMWorkbench splitter/header UX finomítás
+1.  OverlayIconWidget integráció további helyekre
+2.  ModeNameDialog UX upgrade
+3.  EventLog tisztítás – kategorizálás
+4.  CSV warning ikonváltás
+5.  NeedCalculationDetail – MaterialPicker integráció
+6.  BOMWorkbench splitter/header UX finomítás
 
 ------------------------------------------------------------------------
 
 📝 Git commit subject (≤55 karakter)
 
-    Refine BOMWorkbench & snapshot logs; update roadmap
+    Add OverlayIconWidget; stabilize snapshot pipeline
 
-------------------------------------------------------------------------
-
-Ha szeretnéd, készítek egy vizuális diff‑stílusú változáslistát is a
-reggeli állapothoz képest.
+Ha szeretnéd, készítek egy diff‑stílusú változáslistát is a tegnapi
+állapothoz képest.

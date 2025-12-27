@@ -9,6 +9,7 @@
 #include "barcodes/helpers/barcode_collision_helper.h"
 #include "common/registry/registry_manager.h"
 #include "common/utils/table_formatter.h"
+#include "ui/widgets/overlay_icon_widget.h"
 
 // 🧠 Kowalski: központi regisztrációs stratégia
 void registerAllVerbose() {
@@ -23,6 +24,8 @@ void registerAllVerbose() {
     vm.registerClass(QString::fromStdString(std::string(nameof::nameof_type<BarcodeCollisionHelper>())), false);
     vm.registerClass(QString::fromStdString(std::string(nameof::nameof_type<RegistryManager>())), false);
     vm.registerClass(QString::fromStdString(std::string(nameof::nameof_type<TableFormatter>())), false);
+    vm.registerClass(QString::fromStdString(std::string(nameof::nameof_type<OverlayIconWidget>())), false);
+
 
     // 🔍 Audit összefoglaló
     vm.dumpRegistry();
