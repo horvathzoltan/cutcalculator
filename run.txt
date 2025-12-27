@@ -1,33 +1,6 @@
-
-🌙 Mai nap összefoglalója (tömör, fejlesztőbarát, frissített)
-
-A mai nap a CutCalculator UI‑snapshot architektúrájának, a BOMWorkbench
-állapotkezelésének és a vizuális adat‑létezés jelzésének teljes
-konszolidációjáról szólt.
-A SnapshotManager, GeometryHelper és LayoutDefaultStore együttműködése
-most először működik 100%-os megbízhatósággal, miután feltártuk a
-kritikus hibát: a BOMWorkbench nem top‑level widget, ezért nem kap
-closeEvent()‑et. A MainWindow átvette a mentés felelősségét, így a
-snapshot‑restore pipeline stabil.
-
-A nap másik nagy eredménye az OverlayIconWidget megszületése és
-integrációja a CalculationModesView::updateOverlayState() logikájába. Ez
-egy új, rendszer‑szintű UX‑szabályt hozott létre:
-mindenhol, ahol adat‑létezést kell jelezni, az OverlayIconWidget lesz a
-standard vizuális komponens.
-Ez a komponens ma teljesen működőképessé vált: baseline‑helyes
-emoji‑render, overlay‑pozicionálás, tintelés, monokróm‑detektálás, és
-audit‑barát debug‑keretek.
-
-A Presenter/Manager log‑architektúra is tisztult, a logcsatornák
-egységesedtek, és a NeedRule/Product/Material pipeline auditálhatóvá
-vált.
-A projekt ezzel belépett abba a fázisba, ahol a NeedCalculation és
-NeedCalculationDetail modulok már akadály nélkül építhetők tovább.
-
 ------------------------------------------------------------------------
 
-📊 Állapottábla – frissítve
+📊 Állapottábla – teljes, frissített
 
   -----------------------------------------------------------------------
   Modul / Feladat                 Állapot          Megjegyzés
@@ -69,7 +42,8 @@ NeedCalculationDetail modulok már akadály nélkül építhetők tovább.
 
   NeedRule                        ✅ Kész          Pipeline kész
 
-  NeedCalculation                 🚧 Folyamatban   UX finomítás
+  NeedCalculation                 🚧 Folyamatban   ModeNameDialog UX
+                                                   upgrade megtörtént
 
   NeedCalculationDetail           🚧 Folyamatban   MaterialPicker
                                                    integráció
@@ -140,12 +114,13 @@ NeedCalculationDetail modulok már akadály nélkül építhetők tovább.
 -   Test framework
 -   Screen-change detector
 -   Presenter/Manager log‑architektúra tisztázása
+-   ModeNameDialog UX upgrade (mai nap eredménye)
 
 🚧 Folyamatban (Active Zone)
 
 -   OverlayIconWidget (új komponens)
 -   Overlay‑alapú adat‑létezés jelzés integráció
--   NeedCalculation domain
+-   NeedCalculation domain (UX finomítások folytatása)
 -   NeedCalculationDetail domain
 -   CutCalculator preview
 -   MVP logika tisztítása
@@ -164,7 +139,7 @@ NeedCalculationDetail modulok már akadály nélkül építhetők tovább.
 
 -   SystemLog + EventLog szétválasztása
 -   CSV warning ikonváltás
--   ModeNameDialog UX kiemelés
+-   ModeNameDialog további UX finomítás
 -   UI‑log kategorizálás
 -   OverlayIconWidget globális integrációs szabály
 
@@ -172,23 +147,29 @@ NeedCalculationDetail modulok már akadály nélkül építhetők tovább.
 
 ✨ Röviden – stratégiai összefoglaló
 
-A mai nap két nagy áttörést hozott:
+A mai nap három nagy stratégiai eredményt hozott:
 
 1.  A snapshot‑architektúra teljes stabilizálása
     A BOMWorkbench closeEvent‑hiányának feltárása és a MainWindow‑ba
-    helyezett mentés megoldotta a legkritikusabb UI‑hibát.
-    A snapshot‑restore pipeline most először működik 100%-os
+    helyezett mentés megoldotta a legkritikusabb UI‑hibát. A
+    snapshot‑restore pipeline most először működik 100%-os
     megbízhatósággal.
 
-2.  Az OverlayIconWidget megszületése és rendszer‑szintű UX‑szabállyá
+2.  OverlayIconWidget megszületése és rendszer‑szintű UX‑szabállyá
     emelése
     Az adat‑létezés vizuális jelzése mostantól egységes, auditálható és
     bővíthető.
-    Ez a komponens a jövőben minden releváns modulban megjelenik.
+    A komponens integrációja elindult, és a CalculationModesView már
+    használja.
 
-A projekt ezzel belépett abba a fázisba, ahol a NeedCalculation,
-NeedCalculationDetail és Formula modulok akadály nélkül építhetők
-tovább.
+3.  ModeNameDialog UX upgrade (zöld keretes epizód)
+    A számítási mód elnevezésének UX‑e tisztult, fókuszkezelés és
+    visszajelzés javult.
+    A NeedCalculation workflow most sokkal természetesebb és
+    hibabiztosabb.
+
+A projekt ezzel belépett abba a fázisba, ahol a NeedCalculationDetail,
+Formula és Preview modulok akadály nélkül építhetők tovább.
 
 ------------------------------------------------------------------------
 
@@ -202,6 +183,7 @@ tovább.
 -   Overlay tintelés, monokróm‑detektálás, baseline‑helyes render kész
 -   CalculationModesView overlay‑logika frissítve
 -   Új UX‑szabály: adat‑létezés vizuális jelzése minden releváns helyen
+-   ModeNameDialog UX upgrade (zöld keretes flow)
 -   Presenter/Manager logcsatornák tisztázva
 -   NeedRule pipeline logjai egységesítve
 -   EventLog túlterhelés azonosítva
@@ -213,9 +195,12 @@ tovább.
 🎯 Prioritási sorrend – fókuszpont lista
 
 1.  OverlayIconWidget integráció minden releváns modulba
-2.  NeedCalculation UX (ModeNameDialog, rename, duplikáció)
-3.  NeedCalculationDetail UX (MaterialPicker integráció,
-    FormulaEditorDialog)
+2.  NeedCalculation UX
+    -   ModeNameDialog finomhangolás
+    -   duplikáció UX
+3.  NeedCalculationDetail UX
+    -   MaterialPicker integráció
+    -   FormulaEditorDialog
 4.  EventLog tisztítása (SystemLog bevezetése)
 5.  CutCalculator preview
 6.  Formula parser (cparse)
@@ -228,14 +213,14 @@ tovább.
 -   NeedCalculation modul befejezése
 -   NeedCalculationDetail workflow működőképessé tétele
 -   EventLog / SystemLog szétválasztása
--   ModeNameDialog UX upgrade
+-   ModeNameDialog UX upgrade folytatása
 -   CSV warning ikonváltás
 -   BOMWorkbench UX finomítások
 
 👉 Holnap fókusz
 
 1.  OverlayIconWidget integráció további helyekre
-2.  ModeNameDialog UX upgrade
+2.  ModeNameDialog UX finomhangolás
 3.  EventLog tisztítás – kategorizálás
 4.  CSV warning ikonváltás
 5.  NeedCalculationDetail – MaterialPicker integráció
@@ -245,7 +230,7 @@ tovább.
 
 📝 Git commit subject (≤55 karakter)
 
-    Add OverlayIconWidget; stabilize snapshot pipeline
+    OverlayIconWidget + snapshot fix + ModeNameDialog UX
 
 Ha szeretnéd, készítek egy diff‑stílusú változáslistát is a tegnapi
 állapothoz képest.
