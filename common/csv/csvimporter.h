@@ -15,9 +15,9 @@ namespace CsvImporter{
 
 inline QList<CsvRawLine> read(const QString& filepath, QChar separator = QChar()) {
     QFile file(filepath);
-    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        QString msg = L("⚠️ Nem sikerült megnyitni a csv fájlt: %1").arg(filepath);
-        zWarning(msg);
+    QIODevice::OpenMode mode = QIODevice::ReadOnly | QIODevice::Text;
+    if (!file.open(mode)) {
+        FileHelper::logFileError(file, "CSV READ", mode);
         return {};
     }
 

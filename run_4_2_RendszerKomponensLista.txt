@@ -1,0 +1,421 @@
+🔵 A) FŐ KOMPONENS SZINT
+
+(Top‑level modulok, mindegyikhez 1 mondatos projektbeli szerep)
+
+🧩 Common / Core Infrastructure
+
+-   Utils – Alapvető segédletek: fájlkezelés, geometry helper, event
+    util, optional utils.
+-   Layout – Alapértelmezett UI‑layoutok tárolása és visszaállítása.
+-   Snapshot – Munkaterület és UI‑állapotok mentése/visszatöltése.
+-   Settings – INI‑alapú beállításkezelés.
+-   System – Életciklus, verbose logolás, window‑figyelés, buildinfo.
+-   Registry Infrastructure – A domain‑modellek alapja: registry,
+    traits, lookup.
+
+🧩 Registry‑Driven Domain Model
+
+-   Registry Base – Absztrakció minden domain‑entitás számára.
+-   Registry Manager – Betöltés, validálás, lookup,
+    repository‑integráció.
+-   Registry Traits – Típus‑specifikus metaadatok.
+
+🧩 Materials
+
+-   Material Model – Anyagok, keresztmetszetek, vágási/festési módok.
+-   Material Registry – Anyagok betöltése és validálása.
+-   Material Repository – Anyagadatok tárolása, CSV/DB források.
+-   Material Views – Anyagtáblák, színjelvények, UI‑kezelők.
+
+🧩 Products
+
+-   Product Model – Termékek, termékfa, hierarchikus struktúra.
+-   Product Registry – Termékadatok betöltése és lookup.
+-   Product Repository – Termékadatok tárolása.
+-   Product Views – Termékfa UI, kezelők, nézetlogika.
+
+🧩 Needs / Need Rules
+
+-   Need Rule Model – Anyagszükséglet‑szabályok.
+-   Need Rule Registry – Szabályok betöltése, validálása.
+-   Need Rule Repository – Szabályadatok tárolása.
+-   Material Requirements Manager – Anyagszükséglet számítási pipeline.
+-   Needs Views – Picker dialogok, requirements nézetek.
+
+🧩 Calculation / CalcModes
+
+-   Calculation Mode Model – Számítási módok definíciói.
+-   Calculation Detail Model – Részletes számítási lépések.
+-   Calculation Registries – Módok és részletek regisztere.
+-   Calculation Repositories – Adatforrások a számítási módokhoz.
+-   Need Calculator Service – A tényleges számítási motor.
+-   Calculation Managers – Módok és részletek kezelése.
+-   Calculation Views – Módválasztó és részletnézet UI.
+
+🧩 Barcodes
+
+-   Barcode Model – Vonalkód entitások.
+-   Barcode Registry – Vonalkódok betöltése és lookup.
+-   Barcode Repository – Vonalkódadatok tárolása.
+-   Barcode Collision Helper – Ütközésvizsgálat.
+-   Barcode Validator – Validálási logika.
+
+🧩 CSV Import / FileContext
+
+-   FileContext Pipeline – Import kontextus, hibagyűjtés.
+-   CSV Helper – CSV‑feldolgozás segédletei.
+-   CSV Importer – Teljes importfolyamat.
+-   RowError – Sor‑szintű hibamodellek.
+
+🧩 Logger
+
+-   Logger Core – Alap logolási infrastruktúra.
+-   Log Manager – Logfolyamok kezelése.
+-   Event Logger – Eseményalapú logolás.
+-   Error Bucketizer – Hibák csoportosítása.
+-   Log View Adapter – Logok UI‑ba kötése.
+
+🧩 Startup / Lifecycle
+
+-   Startup Manager – Indítási pipeline, fázisok.
+-   Startup Status – Státuszmodellek.
+-   Lifecycle Manager – Alkalmazás életciklusának kezelése.
+
+🧩 UI / Widgets
+
+-   Overlay Icon Widget – Emoji/ikon overlay rendszer.
+-   MainWindow – Főablak, docking, menük, integráció.
+
+🧩 Workbench
+
+-   BOM Workbench – Központi munkaterület, snapshot‑képes.
+
+🧩 Test Framework
+
+-   Test Manager – Tesztfuttató infrastruktúra.
+-   Logger Tests – Logrendszer tesztjei.
+
+------------------------------------------------------------------------
+
+🟣 B) Mikro‑komponensek / Rejtett infrastruktúra‑elemek
+
+(azok a kis, de kritikus modulok, amelyek nem önálló alrendszerek, mégis
+nélkülözhetetlenek)
+
+🟣 attention_blinker
+→ UI‑figyelemfelhívó animációk, villogás, fókusz‑irányítás.
+
+🟣 cursor_aware_placement
+→ Tooltip / dialog pozicionálás a kurzorhoz igazítva.
+
+🟣 geometry_helper
+→ Widget‑geometria mentése, százalékos pozíciók, monitor‑profil kezelés.
+
+🟣 filehelper
+→ Fájlműveletek, path‑kezelés, biztonságos írás/olvasás.
+
+🟣 filename_helper
+→ Fájlnév‑normalizálás, generálás, ütközés‑elkerülés.
+
+🟣 project_root_locator
+→ Projekt gyökérkönyvtárának automatikus felderítése.
+
+🟣 table_formatter
+→ Táblázatos szövegformázás logokhoz, riportokhoz.
+
+🟣 optional_utils
+→ Optional‑kezelés, segédmakrók, ergonomikus API.
+
+🟣 qt_event_util
+→ Qt event‑kezelési helper funkciók.
+
+🟣 scoped_per_thread_lock
+→ Thread‑lokális RAII lockolás.
+
+🟣 layout_default_store
+→ Alapértelmezett layout‑konfigurációk tárolása.
+
+🟣 snapshot_manager
+→ Snapshot mentés/visszaállítás, UI állapotok.
+
+🟣 workbench_snapshot
+→ Workbench‑specifikus snapshot struktúra.
+
+🟣 settings_manager
+→ INI‑alapú beállításkezelés.
+
+🟣 verbose_manager
+→ Verbose logolás futásidőben kapcsolható módon.
+
+🟣 verbose_registry_initializer
+→ Verbose csatornák automatikus regisztrálása.
+
+🟣 lifecycle_manager
+→ Alkalmazás életciklusának kezelése (startup → shutdown).
+
+🟣 window_observer
+→ Ablak‑figyelés, fókuszváltás, láthatóság.
+
+🟣 signal_helper
+→ Qt signal/slot segédletek.
+
+🟣 sysinfo_helper
+→ Rendszerinformációk lekérdezése.
+
+🟣 buildnumber
+→ Build‑szám generálás / beégetés.
+
+🟣 registry_base
+→ Registry‑alap interfész.
+
+🟣 registry_manager
+→ Registry‑k életciklus‑kezelése.
+
+🟣 registry_lookup
+→ Lookup API, gyorskeresés.
+
+🟣 registry_traits
+→ Típus‑specifikus registry viselkedések.
+
+🟣 color_badge
+→ Színes jelvény widget (anyagokhoz).
+
+🟣 barcode_collision_helper
+→ Vonalkód‑ütközés vizsgálat.
+
+🟣 barcode_validator
+→ Vonalkód‑validálás.
+
+🟣 filecontext
+→ CSV import kontextus.
+
+🟣 filecontext_collector
+→ CSV import hibák és kontextusok gyűjtése.
+
+🟣 csvhelper
+→ CSV‑feldolgozó segédletek.
+
+🟣 csvimporter
+→ CSV import pipeline.
+
+🟣 rowerror
+→ Sor‑szintű CSV hibák reprezentációja.
+
+🟣 event_logger
+→ Eseménylogolás.
+
+🟣 error_bucketizer
+→ Hibák csoportosítása.
+
+🟣 log_view_adapter
+→ Logok UI‑ba kötése.
+
+🟣 startup_manager
+→ Indítási pipeline.
+
+🟣 startup_status
+→ Indítási státusz objektum.
+
+🟣 startup_status_manager
+→ Státuszok kezelése, UI‑szinkron.
+
+🟣 overlay_icon_widget
+→ Emoji‑/ikon‑overlay widget (a te ikon‑nyelvi játszótered).
+
+🟣 test_manager
+→ Tesztfuttató keretrendszer.
+
+🟣 eventlogger_tests
+→ Logger‑tesztek.
+
+------------------------------------------------------------------------
+
+👉 C) A teljes projekt ikon‑nyelvi táblázata
+
+(Fő komponensek + minden alkomponens, ikon‑nyelvvel, projekt‑path‑tal,
+szereppel, megjegyzéssel)
+
+Az ikonok követik a te vizuális nyelvedet:
+- 🔵 fő modul
+- 🟦 almodul / domain
+- 🟩 model
+- 🟧 registry
+- 🟨 repository
+- 🟪 view / UI
+- ⬜ helper / utils
+- 🟫 service / manager
+- ⚙️ rendszer / lifecycle
+- 📦 workbench
+- 🧪 test
+
+------------------------------------------------------------------------
+
+🔵 COMMON / CORE
+
+  ------------------------------------------------------------------------------------------------------
+  Ikon       Projekt‑path                                   Szerep                                 Megjegyzés
+  ---------- ---------------------------------------------- ---------------------- ---------------------
+  ⬜         common/utils/attention_blinker.*               UI figyelemfelhívás                    Dialog‑attention alap
+  ⬜         common/utils/cursor_aware_placement.*          Kurzorhoz igazított pozicionálás       Tooltip/Popup UX
+  ⬜         common/utils/geometry_helper.*                 Widget‑geometria mentés/visszaállítás  Snapshot‑alap
+  ⬜         common/utils/filehelper.*                      Fájlkezelés                            —
+  ⬜         common/utils/filename_helper.*                 Fájlnév‑normalizálás                   —
+  ⬜         common/utils/project_root_locator.*            Projekt gyökér felderítése             —
+  ⬜         common/utils/table_formatter.*                 Táblázatos szövegformázás              Log/riport
+  ⬜         common/utils/optional_utils.h                  Optional helper                        —
+  ⬜         common/utils/qt_event_util.h                   Qt event segédletek                    —
+  ⬜         common/utils/scoped_per_thread_lock.h          Thread‑lokális lock                    —
+  🟦         common/layout/layout_default_store.*           Alapértelmezett layoutok               —
+  🟦         common/snapshot/snapshot_manager.*             Snapshot kezelés                       Workbench alap
+  🟦         common/snapshot/workbench_snapshot.h           Workbench snapshot modell              —
+  🟦         common/settings/settings_manager.*             INI settings                           —
+  ⚙️         common/system/verbose_manager.*                Verbose log vezérlés                   —
+  ⚙️         common/system/verbose_registry_initializer.*   Verbose registry init                  —
+  ⚙️         common/system/lifecycle_manager.*              Életciklus‑kezelés                     —
+  ⚙️         common/system/window_observer.*                Ablakfigyelés                          —
+  ⚙️         common/system/signal_helper.h                  Signal helper                          —
+  ⚙️         common/system/sysinfo_helper.h                 Rendszerinfó                           —
+  ⚙️         common/system/buildnumber.h                    Build szám                             —
+  🟧         common/registry/registry_base.*                Registry infrastruktúra                Domain‑alap
+  🟧         common/registry/registry_manager.h             Registry manager                       —
+  🟧         common/registry/registry_lookup.h              Lookup helper                          —
+  🟧         common/registry/registry_traits.h              Traits rendszer                        —
+  ------------------------------------------------------------------------------------------------------
+
+🔵 MATERIALS
+
+  -------------------------------------------------------------------------------------------------------
+  Ikon          Path                                         Szerep                               Megjegyzés
+  ------------- -------------------------------------------- ----------------- --------------------------
+  🟩            materials/model/material_type.*              Anyagtípus modell                    —
+  🟩            materials/model/material_master.h            Anyag master                         —
+  🟩            materials/model/crosssectionshape.*          Keresztmetszet modell                —
+  🟩            materials/model/cutting_mode.h               Vágási mód                           —
+  🟩            materials/model/painting_mode.h              Festési mód                          —
+  🟧            materials/registry/material_registry.*       Anyag registry                       —
+  🟨            materials/repository/material_repository.*   Anyag repository                     —
+  🟪            materials/view/material_table_widget.*       Anyagtábla UI                        —
+  🟪            materials/view/material_table_manager.*      Anyagtábla manager                   —
+  🟪            materials/view/color_badge.*                 Színes jelvény                       —
+  -------------------------------------------------------------------------------------------------------
+
+------------------------------------------------------------------------
+
+🔵 PRODUCTS
+
+  Ikon   Path                                       Szerep
+  ------ ------------------------------------------ -------------------
+  🟩     products/model/product_master.h            Termékmodell
+  🟧     products/registry/product_registry.*       Termék registry
+  🟨     products/repository/product_repository.*   Termék repository
+  🟪     products/view/product_tree_view.*          Termékfa UI
+  🟪     products/view/product_tree_manager.*       Termékfa manager
+
+------------------------------------------------------------------------
+
+🔵 NEEDS / NEED RULES
+
+  --------------------------------------------------------------------------------------------------
+  Ikon                  Path                                            Szerep
+  --------------------- ----------------------------------------------- ----------------------------
+  🟩                    needs/model/need_rule.h                         Szabálymodell
+  🟨                    needs/repository/need_rule_repository.*         Szabály repository
+  🟨                    needs/repository/need_rule_traits.h             Traits
+  🟧                    needs/registry/need_rule_registry.*             Registry
+  🟫                    needs/manager/material_requirements_manager.*   Anyagszükséglet számítás
+  🟫                    needs/presenter/need_rule_presenter.h           Presenter
+  🟪                    needs/view/material_picker_dialog.*             Anyagválasztó dialog
+  🟪                    needs/view/material_requirements_view.*         Szükséglet nézet
+  --------------------------------------------------------------------------------------------------
+
+🔵 CALCULATION / CALCMODES
+
+  ----------------------------------------------------------------------------------------------------------------
+  Ikon                  Path                                                          Szerep
+  --------------------- ------------------------------------------------------------- ----------------------------
+  🟩                    calcmodes/model/need_calculation.h                            Számítási mód modell
+  🟩                    calculation/model/need_calculation_detail.h                   Részletek modell
+  🟧                    calcmodes/registry/need_calculation_registry.*                Registry
+  🟧                    calculation/registry/need_calculation_detail_registry.*       Registry
+  🟨                    calcmodes/repository/need_calculation_repository.*            Repo
+  🟨                    calculation/repository/need_calculation_detail_repository.*   Repo
+  🟫                    calculation/service/need_calculator.*                         Számítási szolgáltatás
+  🟫                    calcmodes/manager/calculation_modes_manager.*                 Mód manager
+  🟫                    calculation/manager/calculation_mode_detail_manager.*         Részlet manager
+  🟪                    calcmodes/view/calculation_modes_view.*                       Módok UI
+  🟪                    calculation/view/calculation_mode_detail_view.*               Részletek UI
+  ----------------------------------------------------------------------------------------------------------------
+
+
+🔵 BARCODES
+
+  Ikon   Path                                          Szerep
+  ------ --------------------------------------------- ------------------
+  🟩     barcodes/model/barcode_record.h               Vonalkód modell
+  🟨     barcodes/repository/barcode_repository.*      Repo
+  🟧     barcodes/registry/barcode_registry.*          Registry
+  ⬜     barcodes/helpers/barcode_collision_helper.*   Ütközésvizsgálat
+  ⬜     barcodes/validator/barcode_validator.*        Validálás
+
+------------------------------------------------------------------------
+
+🔵 CSV IMPORT / FILECONTEXT
+
+  Ikon   Path                                 Szerep
+  ------ ------------------------------------ ------------------
+  ⬜     common/csv/filecontext.*             Kontextus
+  ⬜     common/csv/filecontext_collector.*   Kontextus gyűjtő
+  ⬜     common/csv/csvhelper.h               CSV helper
+  ⬜     common/csv/csvimporter.h             Import pipeline
+  ⬜     common/csv/rowerror.h                Hibamodel
+
+------------------------------------------------------------------------
+
+🔵 LOGGER
+
+  Ikon   Path                               Szerep
+  ------ ---------------------------------- ------------------
+  ⬜     common/logger/logger.*             Logger
+  ⬜     common/logger/log_manager.*        Log manager
+  ⬜     common/logger/event_logger.*       Eseménylog
+  ⬜     common/logger/error_bucketizer.h   Hibacsoportosító
+  🟪     ui/adapters/log_view_adapter.*     Log UI adapter
+
+------------------------------------------------------------------------
+
+🔵 STARTUP / LIFECYCLE
+
+  Ikon   Path                                      Szerep
+  ------ ----------------------------------------- -------------------
+  ⚙️     common/startup/startup_manager.*          Indítási pipeline
+  ⚙️     common/startup/startup_status.*           Státuszmodell
+  ⚙️     common/startup/startup_status_manager.*   Státuszkezelő
+  ⚙️     common/system/lifecycle_manager.*         Életciklus
+
+------------------------------------------------------------------------
+
+🔵 UI / WIDGETS
+
+  Ikon   Path                               Szerep
+  ------ ---------------------------------- ---------------------------
+  🟪     ui/widgets/overlay_icon_widget.*   Emoji/ikon overlay widget
+  🟪     mainwindow.*                       Főablak
+
+------------------------------------------------------------------------
+
+🔵 WORKBENCH
+
+  Ikon   Path                             Szerep
+  ------ -------------------------------- -----------------------
+  📦     workbench/view/bom_workbench.*   Központi munkaterület
+
+------------------------------------------------------------------------
+
+🔵 TEST FRAMEWORK
+
+  Ikon   Path                       Szerep
+  ------ -------------------------- ----------------
+  🧪     test/test_manager.*        Tesztfuttató
+  🧪     test/eventlogger_tests.h   Logger tesztek
+
+------------------------------------------------------------------------

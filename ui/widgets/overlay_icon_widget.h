@@ -61,6 +61,10 @@ private:
     int _iconSize = 16;
     int _logicalSize =0;
 
+    mutable QHash<QString, QPixmap> _emojiCache;      // memória-cache
+    mutable bool _cacheDirInitialized = false;
+    mutable QString _cacheDirPath;
+
 //    QRect cornerRect(Corner c, int size, const QFontMetrics& fm) const;
     QRect cornerRect(Corner c, int size) const;
 
@@ -70,5 +74,9 @@ private:
     QPixmap tintedEmoji(const QString &emoji, const QSize& size, const QColor &color) const;
     QRect cornerRectRelativeToBase(Corner c, const QRect& baseRect, const QRect& overlayBounds) const;
     QRect computeBaseRect(const QFontMetrics &fm) const;
+    QPixmap renderEmoji(const QString &emoji, const QSize &targetSize, const std::optional<QColor>& tint) const;
+    QString ensureCacheDir() const;
+    QString emojiCacheKey(const QString &emoji, const QSize &targetSize, const std::optional<QColor> &tint) const;
+    QString emojiCacheFileName(const QString& key) const;
 };
 

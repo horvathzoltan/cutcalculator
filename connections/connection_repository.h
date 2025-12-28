@@ -3,6 +3,7 @@
 #include <QTextStream>
 #include <QUuid>
 #include <QStringList>
+#include "common/utils/filehelper.h"
 #include "common/csv/filecontext.h"
 #include "common/logger/logger.h"
 #include "common/registry/registry_traits.h"
@@ -37,9 +38,11 @@ public:
         CsvImporter::FileContext ctx(opName, path);
 
         QFile file(path);
-        if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+            QIODevice::OpenMode mode = QIODevice::ReadOnly | QIODevice::Text;
+        if (!file.open(mode)) {
             ctx.setFileError("Nem sikerült megnyitni beolvasásra");
-            zWarning(QString("⚠️ Nem sikerült megnyitni beolvasásra: %1").arg(path));
+            //zWarning(QString("⚠️ Nem sikerült megnyitni beolvasásra: %1").arg(path));
+            FileHelper::logFileError(file, "CSV CONNECTION_READ", mode);
             return false;
         }
 
@@ -141,8 +144,10 @@ public:
 
     static bool save(const QVector<ConnectionType>& data) {
         QFile file(Traits::filePath());
-        if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
-            zWarning(QString("⚠️ Nem sikerült megnyitni írásra: %1").arg(Traits::filePath()));
+         QIODevice::OpenMode mode = QIODevice::WriteOnly | QIODevice::Text;
+        if (!file.open(mode)) {
+            //zWarning(QString("⚠️ Nem sikerült megnyitni írásra: %1").arg(Traits::filePath()));
+            FileHelper::logFileError(file, "CSV CONNECTION_SAVE", mode);
             return false;
         }
 

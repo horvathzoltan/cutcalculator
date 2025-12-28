@@ -2,7 +2,7 @@
 #include <QFileInfo>
 #include <QCoreApplication>
 #include "project_root_locator.h"
-
+#include <QStandardPaths>
 
 FileNameHelper::RootPathContainer FileNameHelper::_brc;
 
@@ -220,3 +220,16 @@ QString FileNameHelper::uiSnapshotFilePath(const QString& profile) const {
 }
 
 
+QString FileNameHelper::getCacheDirectory(const QString& subfolder) const
+{
+    QString root = dataRootPath();
+    if (root.isEmpty())
+        root = QStandardPaths::writableLocation(QStandardPaths::CacheLocation);
+
+    QDir dir(root);
+    if (!dir.exists(subfolder))
+        dir.mkpath(subfolder);
+
+    dir.cd(subfolder);
+    return dir.absolutePath();
+}

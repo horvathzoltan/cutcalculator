@@ -5,6 +5,7 @@
 #include <QList>
 #include <QVector>
 #include <QString>
+#include <QFile>
 
 
 struct CsvRawLine {
@@ -19,6 +20,8 @@ public:
 
     static bool isCsvWithOnlyHeader(const QString &filePath);
     static QChar detectSeparatorSmart(QTextStream *st);
+    static void logFileError(const QFile& file, const QString& operation, QIODevice::OpenMode mode);
+    static QString getFileError(const QFile &file, const QString &operation, QIODevice::OpenMode mode);
 private:
     // Egyetlen cella értelmezése: escape karakterek feldolgozása
     static QString parseCell(const QString& rawCell);

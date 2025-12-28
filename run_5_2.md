@@ -41,8 +41,8 @@ Ami igazán számít:
 - **hogyan adjuk át a tudást**,
 - **hogyan teremtünk ritmust**.
 
-A CutCalculator projekt nem csak egy alkalmazás volt.
-Egy **laboratórium**, ahol kialakult egy fejlesztői kultúra:
+A CutCalculator projekt egy olyan alkalmazás, ami 
+egy **laboratórium**, ahol kialakult egy fejlesztői kultúra:
 
 - tiszta architektúrával,
 - auditálható workflow‑val,
@@ -77,7 +77,6 @@ Induljunk.
 ***
 
 # ⭐ **TARTALOMJEGYZÉK**
-*(A végleges PDF‑ben automatikusan generálható, itt a logikai szerkezet látható.)*
 
 ***
 
@@ -307,8 +306,35 @@ Nem:
 - `CalculationTypeDialog`
 - `ProfileManager`
 
-### **Kerüld a rövidítéseket**
-Kivéve: **GPS, DPI, CPU, RAM, UUID** — ezek *köznyelvi fogalmak*, nem rövidítések.
+***
+
+### **Kerüld a rövidítéseket — kivéve, ha köznyelvi vagy projekt‑szintű fogalom**
+
+A rövidítések általában rontják az olvashatóságot, ezért alapértelmezés szerint kerülendők.
+
+**Kivétel: köznyelvi, széles körben ismert technikai rövidítések**, amelyeknek saját Wikipédia‑oldaluk van, és a fejlesztők természetes módon így használják őket:
+
+- **GPS, DPI, CPU, RAM, UUID, API, HTTP, JSON, XML, UTF‑8**, stb.
+
+Ezeket nem kell kifejteni, mert a kifejtett forma *kevésbé természetes*, és nem növeli az érthetőséget.
+
+**Kivétel: a projekt saját, dokumentált terminológiája**, amely:
+
+- konzisztensen jelenik meg a kódban,
+- egyértelmű a csapat számára,
+- domain‑szinten stabil.
+
+Ilyenek lehetnek például a CutCalculator‑specifikus rövidítések (pl. `NR`, `MRV`, `PTV`), ha a projekt szótárában szerepelnek.
+
+**Kerülendő rövidítések:**
+
+- amelyek nem közismert fogalmak,
+- amelyek többféleképpen értelmezhetők,
+- amelyek csak egy fejlesztő fejében egyértelműek.
+
+Ha egy rövidítés nem közismert és nincs dokumentálva → **nem használjuk**.
+
+***
 
 ### **A név legyen stabil**
 A domain‑név nem sprintenként változik.
@@ -1581,7 +1607,7 @@ public:
 ```
 
 ## ✔️ **Repository szabályok**
-
+****
 - csak load/save
 - nincs find
 - nincs state

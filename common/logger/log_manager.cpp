@@ -1,5 +1,6 @@
 #include "log_manager.h"
 #include "common/logger/logger.h"
+#include "common/utils/filehelper.h"
 
 LogManager& LogManager::instance() {
     static LogManager inst;
@@ -62,9 +63,13 @@ void LogManager::write(Channel ch, const QString& line) {
         }
         if (!path.isEmpty()) {
             QFile f(path);
-            if (f.open(QIODevice::Append | QIODevice::Text)) {
+            QIODevice::OpenMode mode =  QIODevice::Append | QIODevice::Text;
+            if (f.open(mode)) {
                 QTextStream out(&f);
                 out << tsLine;
+            } else{
+                QString msg01 = FileHelper::getFileError(f, "LOG WRITE", mode);
+                zMessage(msg01);
             }
         }
     } else {
@@ -92,9 +97,13 @@ void LogManager::flush(Channel ch) {
     if (buf.isEmpty() || path.isEmpty()) return;
 
     QFile f(path);
-    if (f.open(QIODevice::Append | QIODevice::Text)) {
+    QIODevice::OpenMode mode =  QIODevice::Append | QIODevice::Text;
+    if (f.open(mode)) {
         QTextStream out(&f);
         out << buf;
+    } else{
+        QString msg01 = FileHelper::getFileError(f, "LOG FLUSH", mode);
+        zMessage(msg01);
     }
 }
 
@@ -118,9 +127,13 @@ void LogManager::flushAll() {
     }
     for (auto it = toWrite.begin(); it != toWrite.end(); ++it) {
         QFile f(paths[it.key()]);
-        if (f.open(QIODevice::Append | QIODevice::Text)) {
+        QIODevice::OpenMode mode =  QIODevice::Append | QIODevice::Text;
+        if (f.open(mode)) {
             QTextStream out(&f);
             out << it.value();
+        } else{
+            QString msg01 = FileHelper::getFileError(f, "LOG FLUSH_ALL", mode);
+            zMessage(msg01);
         }
     }
 }
@@ -162,6 +175,8 @@ QString LogManager::channelPrefix(Channel ch) {
 }
 
 #include <QTextStream>
+
+#include <common/utils/filehelper.h>
 
 QStringList LogManager::readChannel(Channel ch, int maxLines) {
     flush(ch);

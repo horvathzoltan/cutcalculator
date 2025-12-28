@@ -181,8 +181,9 @@ bool BarcodeRepository::loadFromCSV(BarcodeRegistry& registry)
 bool BarcodeRepository::saveToCSV(const BarcodeRegistry& registry, const QString& path)
 {
     QFile f(path);
-    if (!f.open(QIODevice::WriteOnly | QIODevice::Text)) {
-        zWarning(QString("⚠️ Nem sikerült megnyitni a fájlt írásra: %1").arg(path));
+    QIODevice::OpenMode mode = QIODevice::WriteOnly | QIODevice::Text;
+    if (!f.open(mode)) {
+        FileHelper::logFileError(f, "CSV SAVE", mode);
         return false;
     }
 

@@ -45,10 +45,12 @@ bool NeedCalculationRepository::load(QVector<NeedCalculation>& out) {
 
 bool NeedCalculationRepository::save(const QVector<NeedCalculation>& data) {
     QFile file(nc_path());
-    if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
-        zWarning("⚠️ NeedCalculation save: nem nyitható meg írásra");
+    QIODevice::OpenMode mode = QIODevice::WriteOnly | QIODevice::Text;
+    if (!file.open(mode)) {
+        FileHelper::logFileError(file, "CSV SAVE", mode);
         return false;
     }
+
     QTextStream out(&file);
     out.setEncoding(QStringConverter::Utf8);
     out << "productDefinitionId;modeName\n";

@@ -211,3 +211,57 @@ A jó prompttal:
 Ez a prompt‑vezérelt fejlesztés valódi ereje.
 
 ------------------------------------------------------------------------
+
+
+
+
+Készíts egy teljes, ikon‑nyelvű, moduláris projekt‑komponens dokumentációt a következő elvek szerint:
+
+1) A projekt egy Qt alapú, registry‑vezérelt, domain‑orientált alkalmazás.
+2) A komponenseket három szinten kell bemutatni:
+   A) Fő komponens szint (30–40 sor, minden nagy alrendszer külön ikon alatt)
+   B) Részletes komponens szint (minden alrendszer fájl‑ és szerep‑szintű bontása)
+   C) Ikon‑nyelvi táblázat (4 oszlop: Ikon‑nyelvi szerep, Projekt‑path, Rövid leírás, Megjegyzés)
+
+3) A dokumentáció legyen:
+   – moduláris
+   – audit‑barát
+   – baseline‑igazított
+   – ikon‑nyelvvel jelölt
+   – jól áttekinthető
+   – hierarchikusan tagolt
+
+4) A felsorolásban szerepeljen minden komponens, többek között:
+   – common/utils
+   – common/layout
+   – common/snapshot
+   – common/settings
+   – common/system
+   – common/registry
+   – materials (model, registry, repository, view)
+   – products (model, registry, repository, view)
+   – needs / needrules (model, registry, repository, manager, presenter, view)
+   – calculation / calcmodes (model, registry, repository, service, manager, view)
+   – barcodes (model, registry, repository, helpers, validator)
+   – csv import / filecontext
+   – logger (logger, log_manager, event_logger, error_bucketizer, log_view_adapter)
+   – startup / lifecycle
+   – ui/widgets (overlay_icon_widget)
+   – mainwindow
+   – workbench/view (bom_workbench)
+   – test framework
+
+5) Minden komponenshez adj:
+   – ikon‑nyelvi jelölést
+   – projektbeli szerepet
+   – rövid, tömör leírást
+   – ha kell: megjegyzést
+
+6) A végeredmény legyen:
+   – strukturált
+   – jól tagolt
+   – vizuálisan navigálható
+   – konzisztens ikon‑nyelvvel
+   – a projekt teljes térképe
+
+A válaszod legyen teljes, hiánytalan, és tartalmazza mindhárom szintet (A, B, C).

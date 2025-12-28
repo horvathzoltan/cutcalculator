@@ -115,4 +115,5 @@ public:
     // Új: snapshot file path monitorprofil alapján
     QString uiSnapshotFilePath(const QString& profile) const;
     QString dataRootPath() const;
+    QString getCacheDirectory(const QString &subfolder) const;
 };

@@ -4,6 +4,9 @@
 #include <QToolBar>
 #include "common/logger/logger.h"
 #include "common/system/verbose_manager.h"
+#include "common/utils/filename_helper.h"
+#include <QCryptographicHash>
+#include <QDir>
 
 // ------------------------------------------------------------
 // Konstruktor
@@ -195,29 +198,18 @@ void OverlayIconWidget::paintEvent(QPaintEvent*)
                     << "  " << overlayBounds.width() << "x" << overlayBounds.height();
         }
 
-        bool wantTint = ov.color.has_value();
-        bool mono = wantTint && isMonochromeEmoji(*ov.emoji, overlay_Size);
+        QPixmap px = renderEmoji(*ov.emoji, overlay_Size, ov.color);
+        painter.drawPixmap(r, px);
 
-         if (!wantTint || mono) {
-             if (mono && wantTint)
-                 painter.setPen(*ov.color);
 
-             painter.drawText(r, Qt::AlignBottom | Qt::AlignHCenter, *ov.emoji);
-         }
-         else {
-             QPixmap px = tintedEmoji(*ov.emoji, overlay_Size, *ov.color);
-             //painter.drawPixmap(r.topLeft(), px);
-             painter.drawPixmap(r, px);
-         }
+        if(isVerbose)
+        {
+            painter.setPen(Qt::red);
+            painter.drawRect(baseRect);
 
-         if(isVerbose)
-         {
-             painter.setPen(Qt::red);
-             painter.drawRect(baseRect);
-
-             painter.setPen(Qt::blue);
-             painter.drawRect(r); // ez a cornerRectRelativeToBase eredménye
-         }
+            painter.setPen(Qt::blue);
+            painter.drawRect(r); // ez a cornerRectRelativeToBase eredménye
+        }
     }
 }
 
@@ -320,4 +312,232 @@ QPixmap OverlayIconWidget::tintedEmoji(const QString& emoji, const QSize& size, 
     }
 
     return QPixmap::fromImage(dst);
+}
+
+
+QPixmap OverlayIconWidget::renderEmoji(const QString& emoji,
+                                       const QSize& targetSize,
+                                       const std::optional<QColor>& tint) const
+{
+    if (emoji.isEmpty() || targetSize.isEmpty())
+        return QPixmap();
+
+    // ------------------------------------------------------------
+    // 0) Cache kulcs + fájlnév
+    // ------------------------------------------------------------
+    const QString key = emojiCacheKey(emoji, targetSize, tint);
+    const QString fileName = emojiCacheFileName(key);
+
+    // ------------------------------------------------------------
+    // 1) Memória-cache
+    // ------------------------------------------------------------
+    if (auto it = _emojiCache.constFind(key); it != _emojiCache.constEnd()) {
+        if (IS_VERBOSE_THIS()) {
+            zInfo() << "renderEmoji: hit MEMORY cache"
+                    << "key=" << key
+                    << "size=" << targetSize;
+        }
+        return it.value();
+    }
+
+    // ------------------------------------------------------------
+    // 2) Fájl-cache
+    // ------------------------------------------------------------
+    {
+        QPixmap px;
+        if (px.load(fileName)) {
+            _emojiCache.insert(key, px);
+
+            if (IS_VERBOSE_THIS()) {
+                zInfo() << "renderEmoji: hit FILE cache"
+                        << "key=" << key
+                        << "size=" << targetSize
+                        << "file=" << fileName;
+            }
+
+            return px;
+        }
+    }
+
+    // ------------------------------------------------------------
+    // 3) Super-sampling render (2× méret)
+    // ------------------------------------------------------------
+    const int scale = 2;
+    const QSize bigSize = targetSize * scale;
+
+    QPixmap base(bigSize);
+    base.fill(Qt::transparent);
+
+    {
+        QPainter p(&base);
+        QFont f = p.font();
+        f.setPixelSize(bigSize.height());
+        p.setFont(f);
+        p.setRenderHint(QPainter::Antialiasing, true);
+        p.setRenderHint(QPainter::TextAntialiasing, true);
+        p.drawText(QRect({0, 0}, bigSize), Qt::AlignBottom | Qt::AlignHCenter, emoji);
+    }
+
+    QImage src = base.toImage().convertToFormat(QImage::Format_ARGB32);
+
+    // ------------------------------------------------------------
+    // 4) Tight bounding box meghatározása
+    // ------------------------------------------------------------
+    int minX = bigSize.width();
+    int minY = bigSize.height();
+    int maxX = -1;
+    int maxY = -1;
+
+    for (int y = 0; y < src.height(); ++y) {
+        const QRgb* line = reinterpret_cast<const QRgb*>(src.scanLine(y));
+        for (int x = 0; x < src.width(); ++x) {
+            const QColor c = QColor::fromRgba(line[x]);
+            if (c.alpha() == 0)
+                continue;
+
+            minX = qMin(minX, x);
+            minY = qMin(minY, y);
+            maxX = qMax(maxX, x);
+            maxY = qMax(maxY, y);
+        }
+    }
+
+    if (minX > maxX || minY > maxY) {
+        // semmi látható pixel – extrém fallback
+        QPixmap empty(targetSize);
+        empty.fill(Qt::transparent);
+        return empty;
+    }
+
+    const QRect tight(minX, minY, maxX - minX + 1, maxY - minY + 1);
+    QImage cropped = src.copy(tight);
+
+    // ------------------------------------------------------------
+    // 5) Tintelés (opcionális)
+    // ------------------------------------------------------------
+    if (tint.has_value()) {
+
+        // Monokróm detektálás
+        bool mono = true;
+        QColor first;
+        bool firstSet = false;
+
+        for (int y = 0; y < cropped.height() && mono; ++y) {
+            const QRgb* line = reinterpret_cast<const QRgb*>(cropped.scanLine(y));
+            for (int x = 0; x < cropped.width(); ++x) {
+                const QColor c = QColor::fromRgba(line[x]);
+                if (c.alpha() == 0)
+                    continue;
+
+                if (!firstSet) {
+                    first = c;
+                    firstSet = true;
+                } else if (c != first) {
+                    mono = false;
+                    break;
+                }
+            }
+        }
+
+        // Tintelés
+        QImage tintedImg(cropped.size(), QImage::Format_ARGB32);
+        tintedImg.fill(Qt::transparent);
+
+        for (int y = 0; y < cropped.height(); ++y) {
+            const QRgb* srcLine = reinterpret_cast<const QRgb*>(cropped.scanLine(y));
+            QRgb* dstLine = reinterpret_cast<QRgb*>(tintedImg.scanLine(y));
+
+            for (int x = 0; x < cropped.width(); ++x) {
+                QColor c = QColor::fromRgba(srcLine[x]);
+                int alpha = c.alpha();
+                if (alpha == 0) {
+                    dstLine[x] = qRgba(0, 0, 0, 0);
+                    continue;
+                }
+
+                QColor tc;
+                if (mono) {
+                    tc = *tint;
+                    tc.setAlpha(alpha);
+                } else {
+                    int gray = qGray(c.red(), c.green(), c.blue());
+                    tc.setRed(  tint->red()   * gray / 255);
+                    tc.setGreen(tint->green() * gray / 255);
+                    tc.setBlue( tint->blue()  * gray / 255);
+                    tc.setAlpha(alpha);
+                }
+
+                dstLine[x] = tc.rgba();
+            }
+        }
+
+        cropped = tintedImg;
+    }
+
+    // ------------------------------------------------------------
+    // 6) Visszakicsinyítés a targetSize-re
+    // ------------------------------------------------------------
+    QPixmap finalPx = QPixmap::fromImage(cropped)
+                          .scaled(targetSize,
+                                  Qt::KeepAspectRatio,
+                                  Qt::SmoothTransformation);
+
+    finalPx.setDevicePixelRatio(devicePixelRatioF());
+
+    // ------------------------------------------------------------
+    // 7) Cache-be mentés (memória + fájl)
+    // ------------------------------------------------------------
+    _emojiCache.insert(key, finalPx);
+    finalPx.save(fileName, "PNG");
+
+    if (IS_VERBOSE_THIS()) {
+        zInfo() << "renderEmoji: MISS → rendered & saved"
+                << "key=" << key
+                << "size=" << targetSize
+                << "file=" << fileName;
+    }
+
+    return finalPx;
+}
+
+
+QString OverlayIconWidget::ensureCacheDir() const
+{
+    if (_cacheDirInitialized)
+        return _cacheDirPath;
+
+    // FileNameHelper adja meg a cache gyökérkönyvtárat
+    _cacheDirPath = FileNameHelper::instance().getCacheDirectory("emoji_overlay_cache");
+    _cacheDirInitialized = true;
+    return _cacheDirPath;
+}
+
+
+
+QString OverlayIconWidget::emojiCacheKey(const QString& emoji,
+                                         const QSize& targetSize,
+                                         const std::optional<QColor>& tint) const
+{
+    const QString tintPart = tint ? tint->name(QColor::HexArgb)
+                                  : QStringLiteral("none");
+    const qreal dpr = devicePixelRatioF();
+
+    return QStringLiteral("%1|%2x%3|%4|dpr=%5")
+        .arg(emoji)
+        .arg(targetSize.width())
+        .arg(targetSize.height())
+        .arg(tintPart)
+        .arg(dpr, 0, 'f', 2);
+}
+
+
+
+QString OverlayIconWidget::emojiCacheFileName(const QString& key) const
+{
+    const QString dir = ensureCacheDir();
+
+    const QByteArray hash =
+        QCryptographicHash::hash(key.toUtf8(), QCryptographicHash::Sha1).toHex();
+
+    return QDir(dir).filePath(QString::fromLatin1(hash) + ".png");
 }

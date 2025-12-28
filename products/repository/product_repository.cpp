@@ -270,8 +270,10 @@ void ProductRepository::resolveParents(QVector<ProductMaster>& defs,
 
 bool ProductRepository::saveToCSV(const QVector<ProductMaster>& data, const QString& path) {
     QFile file(path);
-    if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
-        zWarning(QString("⚠️ Nem sikerült megnyitni a fájlt írásra: %1").arg(path));
+    QIODevice::OpenMode mode = QIODevice::WriteOnly | QIODevice::Text;
+    if (!file.open(mode)) {
+        //zWarning(QString("⚠️ Nem sikerült megnyitni a fájlt írásra: %1").arg(path));
+        FileHelper::logFileError(file, "CSV SAVE", mode);
         return false;
     }
 

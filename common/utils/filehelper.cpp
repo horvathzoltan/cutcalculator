@@ -2,6 +2,7 @@
 #include "common/logger/logger.h"
 
 #include <QFile>
+#include <QFileInfo>
 
 // Megjegyzés: a parser automatikusan kihagyja az üres sorokat a fájl feldolgozása során.
 /*
@@ -216,7 +217,11 @@ QString FileHelper::parseCell(const QString& rawCell) {
 
 bool FileHelper::isCsvWithOnlyHeader(const QString& filePath) {
     QFile file(filePath);
-    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) return false;
+    QIODevice::OpenMode mode = QIODevice::ReadOnly | QIODevice::Text;
+    if (!file.open(mode)){
+        FileHelper::logFileError(file, "CSV HEADER_CHECK", mode);
+        return false;
+    }
 
     QTextStream in(&file);
     in.setEncoding(QStringConverter::Utf8);
@@ -273,3 +278,44 @@ QChar FileHelper::detectSeparatorSmart(QTextStream* st) {
     zWarning("⚠️ Nem sikerült szeparátort detektálni a fejléc alapján.");
     return QChar(); // ❌ Nem sikerült detektálni
 }
+
+
+QString FileHelper::getFileError(const QFile& file,
+                              const QString& operation,
+                              QIODevice::OpenMode mode)
+{
+    QFileInfo info(file);
+
+    QString modeStr;
+    if (mode & QIODevice::ReadOnly)  modeStr += "ReadOnly ";
+    if (mode & QIODevice::WriteOnly) modeStr += "WriteOnly ";
+    if (mode & QIODevice::Append)    modeStr += "Append ";
+    if (mode & QIODevice::Text)      modeStr += "Text ";
+    if (mode & QIODevice::Truncate)  modeStr += "Truncate ";
+
+    QString msg =
+        QStringLiteral("⚠️ File error during %1\n"
+                       "  Path: %2\n"
+                       "  Absolute: %3\n"
+                       "  Exists: %4\n"
+                       "  Mode: %5\n"
+                       "  Error: %6 (%7)")
+            .arg(operation)
+            .arg(info.filePath())
+            .arg(info.absoluteFilePath())
+            .arg(info.exists() ? "yes" : "no")
+            .arg(modeStr.trimmed())
+            .arg(file.errorString())
+            .arg(file.error());
+
+    return msg;
+}
+
+void FileHelper::logFileError(const QFile& file,
+                         const QString& operation,
+                         QIODevice::OpenMode mode)
+{
+    QString msg = getFileError(file, operation, mode);
+    zWarning().noquote() << msg;
+}
+

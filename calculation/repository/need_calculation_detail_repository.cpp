@@ -44,10 +44,12 @@ bool NeedCalculationDetailRepository::load(QVector<NeedCalculationDetail>& out) 
 
 bool NeedCalculationDetailRepository::save(const QVector<NeedCalculationDetail>& data) {
     QFile file(ncd_path());
-    if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
-        zWarning("⚠️ NeedCalculationDetail save: nem nyitható meg írásra");
+    QIODevice::OpenMode mode = QIODevice::WriteOnly | QIODevice::Text;
+    if (!file.open(mode)) {
+        FileHelper::logFileError(file, "CSV SAVE", mode);
         return false;
     }
+
     QTextStream out(&file);
     out.setEncoding(QStringConverter::Utf8);
     out << "needCalculationId;materialId;formula\n";
