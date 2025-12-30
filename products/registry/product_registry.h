@@ -55,7 +55,7 @@ public:
 
     void persist() const;
 
-    const IdentifiableEntity* findEntityById(const QUuid& id) const override;
+    const BarcodeIdentifiableEntity* findEntityById(const QUuid& id) const override;
 
 
 };

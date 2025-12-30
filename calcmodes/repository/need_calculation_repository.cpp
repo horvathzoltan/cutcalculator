@@ -33,7 +33,7 @@ bool NeedCalculationRepository::load(QVector<NeedCalculation>& out) {
         NeedCalculation c;
         c.id = QUuid::createUuid();
         c.productDefinitionId = QUuid(f[0].trimmed());
-        c.modeName = f[1].trimmed();
+        c.name = f[1].trimmed();
         tmp.append(c);
     }
 
@@ -56,7 +56,7 @@ bool NeedCalculationRepository::save(const QVector<NeedCalculation>& data) {
     out << "productDefinitionId;modeName\n";
     for (const auto& c : data) {
         out << c.productDefinitionId.toString(QUuid::WithoutBraces) << ";"
-            << c.modeName << "\n";
+            << c.name << "\n";
     }
     zInfo(QString("💾 NeedCalculation saved: %1 sor").arg(data.size()));
     return true;

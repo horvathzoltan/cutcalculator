@@ -320,7 +320,7 @@ void BOMWorkbench::buildRightPanel() {
                     return;
                 }
                 auto modeOpt = NeedCalculationRegistry::instance().findById(*modeId);
-                QString modeName = modeOpt.has_value() ? modeOpt->modeName : QString("mode");
+                QString modeName = modeOpt.has_value() ? modeOpt->name : QString("mode");
                 _detailManager->refreshForCalculation(*modeId, modeName);
             });
 

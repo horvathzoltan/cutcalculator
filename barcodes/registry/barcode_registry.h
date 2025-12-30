@@ -45,7 +45,7 @@ public:
     bool isEmpty() const { return _data.isEmpty(); }
 
     // 🔍 Azonosító alapján keresés (audit kompatibilis)
-    const IdentifiableEntity* findEntityById(const QUuid& id) const override;
+    const BarcodeIdentifiableEntity* findEntityById(const QUuid& id) const override;
     bool registerNew(const QString &code, const QString &entityType, const QUuid &id, const QString& name);
     bool retire(const QString &code, const QString &reason);
 

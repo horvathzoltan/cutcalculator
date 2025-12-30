@@ -3,24 +3,28 @@
 
 bool NeedCalculationRegistry::exists(const QUuid& productId, const QString& modeName) const {
     for (const auto& c : _data) {
-        if (c.productDefinitionId == productId && c.modeName.compare(modeName, Qt::CaseInsensitive) == 0)
+        if (c.productDefinitionId == productId && c.name.compare(modeName, Qt::CaseInsensitive) == 0)
             return true;
     }
     return false;
 }
 
 bool NeedCalculationRegistry::insert(const NeedCalculation& calc) {
-    if (calc.modeName.trimmed().isEmpty()) {
+    if (calc.name.trimmed().isEmpty()) {
         zWarning("⚠️ NeedCalculation insert: üres modeName nem engedélyezett");
         return false;
     }
-    if (exists(calc.productDefinitionId, calc.modeName)) {
-        zWarning(QString("⚠️ NeedCalculation insert: duplikált mód a terméken: %1").arg(calc.modeName));
+    if (exists(calc.productDefinitionId, calc.name)) {
+        zWarning("Duplicate NeedCalculation");
         return false;
     }
+
     _data.append(calc);
     persist();
-    zInfo(QString("➕ NeedCalculation: %1").arg(calc.modeName));
+
+    logEntityAction("INSERT", calc,
+                    QString("productId=%1").arg(calc.productDefinitionId.toString()));
+
     return true;
 }
 
@@ -46,7 +50,7 @@ bool NeedCalculationRegistry::rename(const QUuid& id, const QString& newName) {
                 zWarning(QString("⚠️ NeedCalculation rename: duplikáció %1").arg(newName));
                 return false;
             }
-            c.modeName = newName;
+            c.name = newName;
             persist();
             zInfo(QString("✏️ NeedCalculation renamed: %1 → %2").arg(id.toString(), newName));
             return true;
@@ -68,7 +72,7 @@ QVector<NeedCalculation> NeedCalculationRegistry::findByProduct(const QUuid& pro
 
 std::optional<NeedCalculation> NeedCalculationRegistry::findByProductAndName(const QUuid& productId, const QString& modeName) const {
     for (const auto& c : _data) {
-        if (c.productDefinitionId == productId && c.modeName.compare(modeName, Qt::CaseInsensitive) == 0)
+        if (c.productDefinitionId == productId && c.name.compare(modeName, Qt::CaseInsensitive) == 0)
             return c;
     }
     return std::nullopt;

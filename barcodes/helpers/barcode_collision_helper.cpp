@@ -53,7 +53,7 @@ BarcodeCollisionHelper::makeBarcodeCollisionError(const QString& myTypeName,
                           .arg(myTypeName)
                           .arg(formatRowDisplay(row))
                           .arg(rec->entityType)
-                          .arg(otherEntity->toDisplay())
+                          .arg(otherEntity->displayName())
                           .arg(status);
             } else {
                 msg = QString("Barcode collision: %1[%2] ütközik %3{%4}(%5)")

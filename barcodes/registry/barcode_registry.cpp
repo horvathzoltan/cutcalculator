@@ -26,7 +26,7 @@ bool BarcodeRegistry::isBarcodeUnique(const QString& code) const {
     return true;
 }
 
-const IdentifiableEntity* BarcodeRegistry::findEntityById(const QUuid& id) const {
+const BarcodeIdentifiableEntity* BarcodeRegistry::findEntityById(const QUuid& id) const {
     Q_UNUSED(id);
     // for (const auto& r : _data) {
     //     if (r.entityId == id) {

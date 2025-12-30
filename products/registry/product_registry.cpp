@@ -160,7 +160,7 @@ void ProductRegistry::persist() const {
     ProductRepository::saveToCSV(toWrite, path);
 }
 
-const IdentifiableEntity* ProductRegistry::findEntityById(const QUuid &id) const
+const BarcodeIdentifiableEntity* ProductRegistry::findEntityById(const QUuid &id) const
 {
     if (auto* pm = findById(id)) {
         return pm; // implicit upcast ProductMaster* → IdentifiableEntity*

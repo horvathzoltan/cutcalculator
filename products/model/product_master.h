@@ -1,6 +1,6 @@
 // products/model/product_master.h
 #pragma once
-#include "common/model/hierarchical_entity.h"
+#include "common/model/barcode_hierarchical_entity.h"
 
 /**
  * ProductMaster
@@ -9,7 +9,7 @@
  * - Örökli az IdentifiableEntity és HierarchicalEntity mezőit (id, name, barcode, parentId).
  * - Később bővíthető CalculationRule listával (mérési módok, levonások, fix darabok).
  */
-struct ProductMaster : public HierarchicalEntity {
+struct ProductMaster : public BarcodeHierarchicalEntity {
     // Később: QVector<CalculationRule> rules;
     // Most a fa felépítéséhez elég az ős által biztosított mezők.
 };

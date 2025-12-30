@@ -29,7 +29,7 @@ bool MaterialRegistry::isBarcodeUnique(const QString& barcode) const {
     return true;
 }
 
-const IdentifiableEntity* MaterialRegistry::findEntityById(const QUuid& id) const {
+const BarcodeIdentifiableEntity* MaterialRegistry::findEntityById(const QUuid& id) const {
     if (auto* mat = findById(id)) {
         return mat; // implicit upcast MaterialMaster* → IdentifiableEntity*
     }

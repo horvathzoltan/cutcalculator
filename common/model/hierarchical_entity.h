@@ -1,25 +1,26 @@
 #pragma once
 
 #include "identifiable_entity.h"
+#include "hierarchical_base.h"
 //#include <QList>
 #include <QUuid>
 
 // 🔷 Hierarchikus törzselem – pl. terméktípus, kategória, fa-szerkezetű entitás
-// - Örököl az IdentifiableEntity-ből (id, name, barcode)
+// - Örököl az BarcodeIdentifiableEntity-ből (id, name, barcode)
 // - Tartalmaz szülő-gyerek viszonyokat
 // - Alkalmas QTreeView megjelenítéshez, auditálható struktúrához
 
-struct HierarchicalEntity : public IdentifiableEntity {
-    QUuid parentId;              // 🌲 Szülő elem technikai azonosítója (GUID)
-    //QList<QUuid> childrenIds;    // 🌿 Gyerekek azonosítói (GUID lista)
+struct HierarchicalEntity : public IdentifiableEntity, public HierarchicalBase {
+    // QUuid parentId;              // 🌲 Szülő elem technikai azonosítója (GUID)
+    // //QList<QUuid> childrenIds;    // 🌿 Gyerekek azonosítói (GUID lista)
 
-    // 🔍 Jelzi, hogy gyökérelem-e
-    bool isRoot() const {
-        return parentId.isNull();
-    }
+    // // 🔍 Jelzi, hogy gyökérelem-e
+    // bool isRoot() const {
+    //     return parentId.isNull();
+    // }
 
     // 🧭 Hierarchikus útvonal szövegesen (pl. "Roletta → Rugós → Tetőtéri")
-    QString hierarchyPath() const {
+    QString hierarchyPath() const override {
         return isRoot() ? name : parentId.toString(QUuid::WithoutBraces) + " → " + name;
     }
 

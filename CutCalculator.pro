@@ -81,6 +81,13 @@ HEADERS += \
     barcodes/validator/barcode_validator.h \
     calcmodes/dialogs/mode_name_dialog.h \
     common/layout/layout_default_store.h \
+    common/model/barcode_base.h \
+    common/model/barcode_hierarchical_entity.h \
+    common/model/barcode_identifiable_entity.h \
+    common/model/entity.h \
+    common/model/hierarchical_base.h \
+    common/model/identifiable_entity.h \
+    common/model/iregistry_entity.h \
     common/registry/registry_lookup.h \
     common/registry/registry_traits.h \
     common/snapshot/snapshot_manager.h \
@@ -133,7 +140,6 @@ HEADERS += \
     common/logger/logger.h \
     common/csv/rowerror.h \
     common/model/hierarchical_entity.h \
-    common/model/identifiable_entity.h \
     common/registry/registry_base.h \
     common/registry/registry_manager.h \
     common/settings/settings_manager.h \

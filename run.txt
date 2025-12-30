@@ -1,104 +1,170 @@
-📝 Mai nap összefoglalója
 
-A mai nap a CutCalculator egyik legmélyebb és legproduktívabb
-fejlesztési napja volt: egyszerre stabilizáltuk a fájlkezelési réteget,
-feltártunk egy kritikus adatvesztési hibát, és befejeztük az
-OverlayIconWidget teljes architektúráját. A rendszer több ponton
-minőségi ugrást tett.
+📝 Mai nap összefoglalója (tömör, fejlesztőbarát, teljes)
 
-Elkészült
+A mai nap a CutCalculator egyik legfontosabb stabilizációs és
+UX‑minőségi napja volt. Három nagy területet zártunk le:
+(1) fájlkezelési réteg auditálása,
+(2) OverlayIconWidget teljes architektúrája,
+(3) NeedCalculation adatvesztési hiba feltárása.
+Mindhárom terület közvetlenül növeli a rendszer megbízhatóságát,
+diagnosztikáját és fejlesztői élményét.
 
--   Egységes, kontextusos fájlhiba‑logger
-    -   READ/WRITE műveletek megkülönböztetése
-    -   OpenMode explicit logolása
-    -   abszolút path + létezés + hibakód + hibaszöveg
-    -   minden .open() köré egységes auditálható keret
--   OverlayIconWidget teljes átalakítása és stabilizálása
-    -   kétlépcsős cache (memory + file)
-    -   determinisztikus kulcsgenerálás
-    -   baseline‑helyes overlay pozicionálás
-    -   crop + tint pipeline véglegesítve
-    -   paintEvent teljesítmény optimalizálva
-    -   verbose logok auditálhatók, nem zajosak
--   NeedCalculation mentési hiba okának feltárása
-    -   SAVE hiba → automatikus reload → registry törlődik
-    -   a „mókus” eltűnésének oka 100%-osan beazonosítva
--   CSV‑importer hibakezelésének egységesítése
-    -   READ hibák kontextussal
-    -   szeparátor‑detektálás fallback auditálva
+🔧 1. Fájlkezelési réteg stabilizálása
 
-Haladt
+Bevezettünk egy egységes, kontextusos fájlhiba‑loggert, amely minden
+.open() hívást auditál:
 
--   Fájlrendszer audit: .open(, implicit Qt fájlműveletek, repository
-    minták feltérképezése
--   NeedCalculation workflow: UX és adatkezelés tisztázása
--   OverlayIconWidget integráció első lépései (CalculationModesView)
--   Snapshot‑restore pipeline validálása a logok alapján
+-   READ/WRITE mód külön logolva
+-   OpenMode explicit megjelenítve
+-   abszolút path + létezés + hibakód + hibaszöveg
+-   minden repository és CSV művelet mostantól átlátható
 
-Ötletek születtek
+Ez a lépés megszüntette a korábbi „néma hibákat”, és lehetővé tette a
+NeedCalculation adatvesztési hiba teljes feltárását.
 
--   Egységes FileOpLogger vagy FileAccessContext réteg a teljes
-    projektre
--   Mentési hiba utáni újratöltés teljes tiltása repository‑szinten
--   OverlayIconWidget statisztika (hit/miss) fejlesztői mód
--   CSV warning ikonváltás
+🎨 2. OverlayIconWidget — teljes rendszerkomponenssé vált
+
+A widget ma elérte a végleges architektúrát:
+
+-   kétlépcsős cache (RAM + file)
+-   determinisztikus kulcsgenerálás
+-   baseline‑helyes overlay pozicionálás
+-   crop → tint → scale → cache pipeline stabil
+-   paintEvent optimalizálva, toolbar redraw nem okoz terhelést
+-   verbose logok auditálhatók, nem zajosak
+
+Ez a komponens mostantól a projekt egyik legfontosabb UX‑eleme, és
+alapot ad a „létezés overlay” rendszer-szintű bevezetéséhez.
+
+🐿️ 3. NeedCalculation adatvesztési hiba feltárása
+
+A „mókus” eltűnésének oka 100%-osan beazonosítva:
+
+-   a NeedCalculation CSV‑k hiánya miatt a SAVE hibázott
+-   a repository automatikusan újratöltött
+-   a reload törölte a memóriában lévő adatot
+-   ezért tűnt el a mókus a UI‑ból
+
+A hiba gyökere: SAVE→RELOAD minta.
+Döntés: mentési hiba után nem lesz többé reload.
+
+📦 4. CSV‑importer hibakezelés egységesítése
+
+-   READ hibák kontextusos loggal
+-   szeparátor‑detektálás fallback auditálva
+-   importer viselkedése kiszámíthatóbbá vált
+
+🧭 5. Snapshot‑restore pipeline validálása
+
+A logok alapján a snapshot rendszer:
+
+-   DPI‑profil alapján működik
+-   splitter/header állapotok helyesen állnak vissza
+-   deferred restore működik
+
+💡 6. Új ötletek és architekturális irányok
+
+-   FileOpLogger / FileAccessContext mint egységes réteg
 -   SystemLog + EventLog szétválasztása
-
-Problémák, amik előkerültek
-
--   NeedCalculation CSV‑k hiánya → SAVE hiba → reload → adatvesztés
--   Qt nem tárolja a sikertelen open OpenMode‑ját → nekünk kell átadni
--   Fájlréteg logjai korábban nem voltak kontextusosak
--   OverlayIconWidget paintEvent sokszor hívódik (toolbar redraw), de a
-    cache miatt ez már nem gond
-
-Döntések
-
--   Mentési hiba után nem lesz többé reload → registry nem törlődhet
--   Minden .open() köré egységes kontextusos logolás kerül
--   OverlayIconWidget jelenlegi állapota késznek tekinthető
--   NeedCalculation domain folytatódik, de a fájlréteg stabilizálása
-    elsődleges volt
+-   CSV warning ikonváltás
+-   OverlayIconWidget globális integrációs szabály
+-   ModeNameDialog további UX finomítás
 
 ------------------------------------------------------------------------
 
 📊 Állapottábla – frissítve
 
-Modul / Feladat | Állapot | Megjegyzés |
+  -----------------------------------------------------------------------
+  Modul / Feladat                  Állapot          Megjegyzés
+  -------------------------------- ---------------- ---------------------
+  Material pipeline                ✅ Kész          Stabil validátor
 
-|***************–|*********|************| | Material pipeline | ✅ Kész
-| Stabil validátor | | Product pipeline | ✅ Kész | Export/import
-végleges | | Logger subsystem | ✅ Kész | Auditálható logolás | |
-Startup subsystem | ✅ Kész | Snapshot-aware init | | Settings subsystem
-| ✅ Kész | Percent-based layout | | FileNameHelper | ✅ Kész |
-ui_snapshots integrálva | | CsvReader utility | ⚠️ Függőség |
-Importerhez szétválasztva | | RalImporter modul | ✅ Kész |
-ColorRegistry integráció | | OrderManager | 📐 Tervezés | Modellek,
-státuszok | | CustomerMaster | 📐 Tervezés | Autocomplete | |
-CutCalculator | 🚧 Folyamatban | Preview előkészítve | |
-NeedsPresenter + NeedsView | ✅ Kész | MVP működik | | UI réteg (Qt) |
-📐 Tervezés | Order entry dialog | | Audit funkció | 📐 Tervezés |
-AuditEntry + Service | | Test framework | ✅ Kész | EventLogger tests |
-| NamedColor / Color registry | ✅ Kész | Pantone-ready | | NeedRule |
-✅ Kész | Pipeline kész | | NeedCalculation | 🚧 Folyamatban |
-ModeNameDialog UX + fájlhiba feltárva | | NeedCalculationDetail | 🚧
-Folyamatban | MaterialPicker integráció | | Formula értelmezés | 📐
-Tervezés | cparse integráció | | SOS / Tűzoltás | 🔥 SOS |
-NeedCalculation SAVE→RELOAD hiba feltárva | | Generikus kapcsolótábla |
-✅ Kész | CSV IO tesztelve | | BarcodeValidator subsystem | ✅ Kész |
-Ütközéskezelés | | BarcodeTable refaktor | ✅ Kész | Model/repo/registry
-| | DataStateReporter | ✅ Kész | Audit riport | | MVP logika | 🚧
-Folyamatban | Presenter/Manager tisztítás | | VerboseManager | ✅ Kész |
-Verbosity routing | | MaterialPickerDialog | ✅ Kész | Debounce + audit
-| | RegistryAuditReporter | ✅ Kész | Audit összefoglaló | |
-Screen-change detector | ✅ Kész | Snapshot integráció | |
-GeometryHelper finomítás | ✅ Kész | Deferred restore | |
-SnapshotManager | ✅ Kész | Monitorprofil alapú | | LayoutDefaultStore |
-✅ Kész | Fallback baseline | | UI Snapshot Architecture | ✅ Kész |
-Teljes architektúra | | OverlayIconWidget | ✅ Kész | Cache + render
-pipeline kész | | Overlay‑alapú adat‑létezés jelzés | 💡 Új ötlet |
-Rendszerszintű UX-szabály | | EventLog tisztítása | 💡 Új ötlet |
-SystemLog szétválasztás | | CSV warning UX | 💡 Új ötlet | Ikonváltás |
+  Product pipeline                 ✅ Kész          Export/import
+                                                    végleges
+
+  Logger subsystem                 ✅ Kész          Auditálható logolás
+
+  Startup subsystem                ✅ Kész          Snapshot-aware init
+
+  Settings subsystem               ✅ Kész          Percent-based layout
+
+  FileNameHelper                   ✅ Kész          ui_snapshots
+                                                    integrálva
+
+  CsvReader utility                ⚠️ Függőség      Importerhez
+                                                    szétválasztva
+
+  RalImporter modul                ✅ Kész          ColorRegistry
+                                                    integráció
+
+  OrderManager                     📐 Tervezés      Modellek, státuszok
+
+  CustomerMaster                   📐 Tervezés      Autocomplete
+
+  CutCalculator                    🚧 Folyamatban   Preview előkészítve
+
+  NeedsPresenter + NeedsView       ✅ Kész          MVP működik
+
+  UI réteg (Qt)                    📐 Tervezés      Order entry dialog
+
+  Audit funkció                    📐 Tervezés      AuditEntry + Service
+
+  Test framework                   ✅ Kész          EventLogger tests
+
+  NamedColor / Color registry      ✅ Kész          Pantone-ready
+
+  NeedRule                         ✅ Kész          Pipeline kész
+
+  NeedCalculation                  🚧 Folyamatban   ModeNameDialog UX +
+                                                    fájlhiba feltárva
+
+  NeedCalculationDetail            🚧 Folyamatban   MaterialPicker
+                                                    integráció
+
+  Formula értelmezés               📐 Tervezés      cparse integráció
+
+  SOS / Tűzoltás                   🔥 SOS           NeedCalculation
+                                                    SAVE→RELOAD hiba
+                                                    feltárva
+
+  Generikus kapcsolótábla          ✅ Kész          CSV IO tesztelve
+
+  BarcodeValidator subsystem       ✅ Kész          Ütközéskezelés
+
+  BarcodeTable refaktor            ✅ Kész          Model/repo/registry
+
+  DataStateReporter                ✅ Kész          Audit riport
+
+  MVP logika                       🚧 Folyamatban   Presenter/Manager
+                                                    tisztítás
+
+  VerboseManager                   ✅ Kész          Verbosity routing
+
+  MaterialPickerDialog             ✅ Kész          Debounce + audit
+
+  RegistryAuditReporter            ✅ Kész          Audit összefoglaló
+
+  Screen-change detector           ✅ Kész          Snapshot integráció
+
+  GeometryHelper finomítás         ✅ Kész          Deferred restore
+
+  SnapshotManager                  ✅ Kész          Monitorprofil alapú
+
+  LayoutDefaultStore               ✅ Kész          Fallback baseline
+
+  UI Snapshot Architecture         ✅ Kész          Teljes architektúra
+
+  OverlayIconWidget                ✅ Kész          Cache + render
+                                                    pipeline kész
+
+  Overlay‑alapú adat‑létezés       💡 Új ötlet      Rendszerszintű
+  jelzés                                            UX-szabály
+
+  EventLog tisztítása              💡 Új ötlet      SystemLog
+                                                    szétválasztás
+
+  CSV warning UX                   💡 Új ötlet      Ikonváltás
+  -----------------------------------------------------------------------
 
 ------------------------------------------------------------------------
 
@@ -156,34 +222,22 @@ SystemLog szétválasztás | | CSV warning UX | 💡 Új ötlet | Ikonváltás |
 
 ✨ Röviden – stratégiai összefoglaló
 
-A mai nap három stratégiai áttörést hozott:
+1.  A fájlkezelési réteg auditálhatóvá vált
+    A kontextusos fájlhiba‑loggerrel a CSV‑alapú IO teljesen átlátható,
+    diagnosztizálható és fejlesztőbarát lett.
 
-1. A fájlkezelési réteg auditálhatóvá vált
+2.  Az OverlayIconWidget rendszerkomponenssé vált
+    A cache‑elt, baseline‑helyes, optimalizált overlay pipeline
+    mostantól a projekt egyik legfontosabb UX‑eleme.
 
-A kontextusos fájlhiba‑logger bevezetésével a teljes CSV‑alapú IO
-átlátható, diagnosztizálható és fejlesztőbarát lett.
-Ez a projekt egyik legfontosabb stabilizációs lépése.
-
-2. Az OverlayIconWidget elkészült és rendszerkomponenssé vált
-
-A komponens mostantól: - gyors,
-- cache‑elt,
-- baseline‑helyes,
-- auditálható,
-- és UX‑szabályt teremt a „létezés” vizuális jelzésére.
-
-Ez a projekt egyik legszebb és legmodernebb UI‑eleme lett.
-
-3. A NeedCalculation adatvesztési hiba teljes feltárása
-
-A SAVE→RELOAD minta hibája beazonosítva.
-A következő lépés a javítás, de a probléma gyökere már ismert.
+3.  A NeedCalculation adatvesztési hiba gyökere feltárva
+    A SAVE→RELOAD minta hibája beazonosítva; a javítás következik.
 
 ------------------------------------------------------------------------
 
 📌 Mai eredmények – részletes taktikai napzáró
 
--   Fájlhiba‑logger implementálva (READ/WRITE kontextus)
+-   Fájlhiba‑logger implementálva
 -   NeedCalculation SAVE→RELOAD hiba feltárva
 -   CSV importer hibakezelés egységesítve
 -   OverlayIconWidget teljes pipeline kész
@@ -200,7 +254,7 @@ A következő lépés a javítás, de a probléma gyökere már ismert.
 
 🎯 Prioritási sorrend – fókuszpont lista
 
-1.  NeedCalculation SAVE→RELOAD hiba javítása (kritikus)
+1.  NeedCalculation SAVE→RELOAD hiba javítása
 2.  OverlayIconWidget integráció további modulokba
 3.  NeedCalculation UX finomítás
 4.  NeedCalculationDetail – MaterialPicker integráció
@@ -237,3 +291,4 @@ A következő lépés a javítás, de a probléma gyökere már ismert.
 OverlayIconWidget + file‑error logger + NC fix prep
 
 ------------------------------------------------------------------------
+

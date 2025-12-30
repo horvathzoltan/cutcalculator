@@ -2,7 +2,7 @@
 
 #include <QString>
 #include <QSizeF>
-#include "common/model/identifiable_entity.h"
+#include "common/model/barcode_identifiable_entity.h"
 #include "colors/model/named_color.h"
 #include "materials/model/material_type.h"
 #include "materials/model/crosssectionshape.h"
@@ -11,7 +11,7 @@
 
 
 // 📦 Anyagdefiníció: szálhossz, forma, méret, szín, típus, súly, gép
-struct MaterialMaster : public IdentifiableEntity {
+struct MaterialMaster : public BarcodeIdentifiableEntity {
     MaterialMaster(){}; // 🔧 Default konstruktor deklaráció
 
     double stockLength_mm = 0.0;       // 📏 Teljes szálhossz mm-ben (pl. 6000)

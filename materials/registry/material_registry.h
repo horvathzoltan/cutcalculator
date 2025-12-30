@@ -42,7 +42,7 @@ public:
 
     bool isEmpty() const { return _data.isEmpty(); }
 
-    const IdentifiableEntity* findEntityById(const QUuid& id) const override;
+    const BarcodeIdentifiableEntity* findEntityById(const QUuid& id) const override;
 
     //int size() const { return _data.size(); }
 };

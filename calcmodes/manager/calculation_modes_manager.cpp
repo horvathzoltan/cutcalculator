@@ -45,7 +45,7 @@ void CalculationModesManager::connectSignals() {
                 NeedCalculation c;
                 c.id = QUuid::createUuid();
                 c.productDefinitionId = productId;
-                c.modeName = name;
+                c.name = name;
 
                 if (NeedCalculationRegistry::instance().insert(c)) {
                     zEventINFO(QString("➕ New mode added: %1").arg(name));
@@ -78,7 +78,7 @@ void CalculationModesManager::connectSignals() {
                     return NeedCalculationRegistry::instance().exists(old->productDefinitionId, name);
                 };
 
-                ModeNameDialog dlg(_view, old->modeName, duplicateCheck);
+                ModeNameDialog dlg(_view, old->name, duplicateCheck);
                 if (dlg.exec() != QDialog::Accepted)
                     return;
 
@@ -87,7 +87,7 @@ void CalculationModesManager::connectSignals() {
                     return;
 
                 if (NeedCalculationRegistry::instance().rename(id, newName)) {
-                    zEventINFO(QString("✏️ Mode renamed: %1 → %2").arg(old->modeName, newName));
+                    zEventINFO(QString("✏️ Mode renamed: %1 → %2").arg(old->name, newName));
                     reloadAll();
                 }
             });
@@ -122,7 +122,7 @@ void CalculationModesManager::refreshForProduct(const QUuid& productId,
         int detailCount =
             NeedCalculationDetailRegistry::instance().findByCalculation(m.id).size();
 
-        rows.append({ m.id, productId, m.modeName, detailCount });
+        rows.append({ m.id, productId, m.name, detailCount });
     }
 
     _view->set_current_product(productId, productName, productBarcode);

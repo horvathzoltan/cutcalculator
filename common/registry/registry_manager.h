@@ -2,7 +2,7 @@
 #pragma once
 #include "common/logger/event_logger.h"
 #include "common/logger/logger.h"
-#include "common/model/identifiable_entity.h"
+#include "common/model/barcode_identifiable_entity.h"
 #include "registry_base.h"
 
 #include <QVector>
@@ -56,7 +56,7 @@ public:
         }
 
         // --- Táblázat formázása ---
-        auto lines = TableFormatter::format(header, rows);
+        const auto lines = TableFormatter::format(header, rows);
 
         for (const auto& line : lines)
             zInfo().noquote() << line;
@@ -88,7 +88,7 @@ public:
         return repos;
     }
 
-    const IdentifiableEntity* findEntity(const QString& typeName, const QUuid& id) const {
+    const BarcodeIdentifiableEntity* findEntity(const QString& typeName, const QUuid& id) const {
         IdentifiableRegistryBase* repo = findByTypeName(typeName);
         if (repo) {
             return repo->findEntityById(id); // minden registry implementálja → IdentifiableEntity*
