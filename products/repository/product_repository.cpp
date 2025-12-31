@@ -150,7 +150,11 @@ bool ProductRepository::loadFromCSV(ProductRegistry& registry) {
         zWarning(QString("⚠️ Hibák a Product import során (%1)").arg(ctx.errorsSize()));
     }
 
-    registry.setData(defs);
+    // 🔵 ÚJ: minden terméket egyenként regisztrálunk
+    for (const auto& p : defs) {
+        registry.registerData(p);
+    }
+
     zInfo(QString("📊 ProductRepository: %1 terméktípus betöltve").arg(defs.size()));
     return !defs.isEmpty();
 }

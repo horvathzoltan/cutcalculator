@@ -1,0 +1,49 @@
+Kérlek, refaktoráld a következő kódrészletet ipari szintű minőségre.
+
+============================================================
+## STRICT MODE
+============================================================
+A refaktor NEM indulhat el automatikusan.
+Először csak a tervezési fázis fut.
+
+============================================================
+## 1) PROBLÉMÁK LISTÁJA
+============================================================
+Add meg a kódban található problémákat, kategóriák szerint:
+
+- safety
+- readability
+- performance
+- modularity / SRP
+- testability
+- API consistency
+- memory / ownership
+- Qt best practices
+- Clazy best practices
+
+============================================================
+## 2) REFAKTORÁLÁSI JAVASLATOK
+============================================================
+Add meg a javasolt megoldásokat, de még NE adj kódot.
+
+A javaslatok legyenek:
+- konkrétak
+- modulárisak
+- determinisztikusak
+- viselkedésváltoztatás nélküliek (no semantic drift)
+
+============================================================
+## 3) ÚJ FÁJLOK LISTÁJA (ha szükséges)
+============================================================
+Ha új fájlok jönnek létre, add meg őket:
+
+- snake_case
+- projektstruktúrába illeszkedő
+- csak a tervezett új fájlok
+
+============================================================
+## 4) NINCS KÓD, AMÍG NEM HAGYOM JÓVÁ
+============================================================
+A kódgenerálás csak akkor indulhat el, ha külön utasítom:
+
+    „Indulhat a refaktor.”

@@ -1,0 +1,39 @@
+✅ 1) Felhasználói kézikönyv prompt (User Manual Prompt)
+
+Ez a prompt végfelhasználóknak szóló dokumentációt generál — egyszerű,
+érthető, képernyőképekre felkészített, lépésről lépésre vezető
+stílusban.
+
+Másolható:
+
+    Kérlek, készíts egy teljes, professzionális felhasználói kézikönyvet
+    a következő funkcióhoz / modulhoz / alkalmazáshoz:
+
+    [NÉV / FUNKCIÓ LEÍRÁSA]
+
+    A kézikönyv legyen:
+    - érthető nem fejlesztők számára is
+    - lépésről lépésre vezető
+    - képernyőképekre felkészített (ahol releváns)
+    - magyar nyelvű
+    - barátságos, de professzionális hangvételű
+    - jól strukturált, Markdown formátumban
+
+    A dokumentum tartalmazza:
+
+    📘 Bevezetés
+    🎯 A funkció célja
+    🖥️ Rendszerkövetelmények
+    🚀 Első lépések
+    🧭 Navigáció és felület
+    ✅ Alapműveletek
+    ⚙️ Haladó funkciók
+    💡 Tippek és trükkök
+    ❗ Gyakori hibák és megoldások
+    🔐 Adatkezelés és biztonság
+    📁 Fájlkezelés (ha releváns)
+    🧩 Integráció más modulokkal
+    ❓ GYIK
+    📞 Támogatás / Kapcsolat
+
+    A kézikönyv legyen teljes, önállóan érthető, és ne tartalmazzon fejlesztői szintű részleteket.

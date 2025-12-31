@@ -5,6 +5,7 @@
 #include <QStandardItem>
 #include "products/registry/product_registry.h"
 #include "products/view/product_tree_view.h"
+#include "barcodes/registry/barcode_registry.h"
 
 /**
  * Konstruktor: létrehozza a modellt és beállítja a QTreeView-hoz.
@@ -130,7 +131,13 @@ void ProductTreeManager::addRootProduct() {
     pm.parentId = QUuid(); // gyökér
     pm.name = "Új gyökérelem";
     pm.barcode = "NEW";
-    ProductRegistry::instance().insert(pm);
+
+    //ProductRegistry::instance().insert(pm);
+    if (!ProductRegistry::instance().registerData(pm)) {
+        zWarning("⚠️ Nem sikerült regisztrálni az új gyökérelemet (barcode ütközés?)");
+        return;
+    }
+
     populate();
 }
 
@@ -146,7 +153,14 @@ void ProductTreeManager::addChildProduct() {
     pm.parentId = parentId;
     pm.name = "Új gyermek";
     pm.barcode = "NEWCHILD";
-   ProductRegistry::instance().insert(pm);
+   //ProductRegistry::instance().insert(pm);
+
+    //ProductRegistry::instance().insert(pm);
+    if (!ProductRegistry::instance().registerData(pm)) {
+        zWarning("⚠️ Nem sikerült regisztrálni az új gyermeket (barcode ütközés?)");
+        return;
+    }
+
     populate();
 }
 
@@ -190,11 +204,17 @@ void ProductTreeManager::onItemChanged(QStandardItem* item) {
             }
 
             // Validálás: egyediség
-            if (!ProductRegistry::instance().isBarcodeUnique(newCode, pm->id)) {
-                zEvent("⚠️ Barcode nem egyedi");
-                item->setText(pm->barcode);
-                return;
+            // Validálás: egyediség
+            if (auto* rec = BarcodeRegistry::instance().findByCode(newCode)) {
+
+                // Ha létezik, de nem ehhez az entitáshoz tartozik → ütközés
+                if (rec->entityId.has_value() && rec->entityId.value() != pm->id) {
+                    zEvent("⚠️ Barcode nem egyedi");
+                    item->setText(pm->barcode);
+                    return;
+                }
             }
+
 
             // Ha minden rendben → registry frissítése
             updated.barcode = newCode;

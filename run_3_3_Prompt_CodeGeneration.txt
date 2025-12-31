@@ -1,0 +1,115 @@
+Kérlek, a kódgenerálást a következő, szigorúan betartandó
+ipari folyamat szerint végezd.
+
+============================================================
+## 0) STRICT MODE
+============================================================
+A generálás NEM indulhat el automatikusan.
+A generálás CSAK akkor indulhat el, ha explicit utasítást adok:
+
+    „Indulhat a generálás.”
+
+A tervezési fázisban improvizálhatsz.
+Az implementációs fázisban NEM improvizálhatsz.
+
+============================================================
+## 1) ÚJ KOMPONENS FÁJLLISTA (csak tervezés)
+============================================================
+Először add meg a létrejövő új fájlok listáját, soronként egy fájlt.
+
+A fájllista:
+- snake_case formátumú legyen
+- illeszkedjen a projektstruktúrába (common/, workbench/, stb.)
+- CSAK új fájlokat tartalmazzon
+- NE generálj még kódot
+- NE induljon el a generálás
+
+A fájllistát jóvá kell hagynom.
+
+============================================================
+## 2) FEJLESZTÉSI KONTEXTUS FÁJLLISTA (files.txt)
+============================================================
+Miután jóváhagytam az új fájlok listáját,
+add meg, hogy milyen meglévő fájlokra van szükséged.
+
+A files.txt-be:
+- csak meglévő fájlok kerülhetnek
+- relatív path formában
+- ezek lesznek a generálás inputjai
+- a fájlok tartalmát a script chunkokra bontva fogja feltölteni
+
+A .pro fájl is ide kerül, de NEM indít el semmit.
+
+============================================================
+## 3) CHUNK-HANDSHAKE (adatvesztés ellen)
+============================================================
+A script chunkokra bontva tölti fel a fájlokat.
+
+Minden chunk érkezése után jelezd vissza:
+
+    „X chunk érkezett. Ez volt az összes?”
+
+Én válaszolok:
+- „Igen, ez volt az összes.” → a kontextus teljes
+- „Nem, jön még.” → várj a további chunkokra
+
+A chunkok sorrendje NEM garantált.
+A chunkok sorrendje a fájlnévből kikövetkeztethető.
+
+A generálás még ekkor sem indul el.
+
+============================================================
+## 4) KÓDGENERÁLÁS (csak explicit utasításra)
+============================================================
+A generálás csak akkor indulhat el, ha külön utasítom:
+
+    „Indulhat a generálás.”
+
+A generált kód:
+- C++20 + Qt 6.10
+- Clazy-tiszta
+- magyar kommentek, angol terminológiával
+- snake_case fájlnevek
+- blokkfejlécek:
+
+    /* ============================================================
+     * 🧩 <Blokk neve>
+     * ============================================================ */
+
+- ne legyen Hunglish
+- ne térj el a tervtől
+- ne generálj extra fájlokat
+- ne módosíts nem kért részeket
+
+============================================================
+## 5) SNIPPETEK (diff-szerű módosítások)
+============================================================
+Ha meglévő fájlokat kell módosítani, a snippet formátuma:
+
+- fájlnév (relatív path)
+- függvénynév vagy környezet
+- opcionális sor-támpont
+
+Formátum:
+
+--- RÉGI (old)
+<régi kódrészlet>
+--- ÚJ (new)
+<új kódrészlet>
+
+A snippet:
+- diff-szerű legyen
+- csak a módosított sorokat tartalmazza
+- ne legyen benne magyarázat
+- ne legyen benne felesleges környezeti kód
+- mindig ```cpp kódblokkokban legyen
+
+============================================================
+## 6) NINCS KÓDGENERÁLÁS .pro NÉLKÜL
+============================================================
+A .pro fájl szükséges a kontextushoz,
+de NEM indítja el automatikusan a generálást.
+
+A generálás csak akkor indulhat el, ha külön utasítom:
+
+    „Indulhat a generálás.”

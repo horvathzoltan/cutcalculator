@@ -1,0 +1,75 @@
+Kérlek, készíts egy részletes, ipari szintű architektúra dokumentumot a következő alrendszerhez vagy funkcióhoz.
+
+A dokumentum tartalmazza:
+
+============================================================
+## 1) Probléma leírása és kontextus
+============================================================
+- Miért létezik a modul?
+- Milyen domain-problémát old meg?
+- Hol helyezkedik el a rendszerben?
+
+============================================================
+## 2) Követelményspecifikáció
+============================================================
+- Funkcionális követelmények
+- Nem-funkcionális követelmények (performance, safety, audit)
+- Határok és tiltások
+
+============================================================
+## 3) Architektúra áttekintés
+============================================================
+- Fő komponensek
+- Felelősségi körök
+- Modulhatárok
+- Adatáramlás
+- Interakciók más alrendszerekkel
+
+============================================================
+## 4) Adatmodellek
+============================================================
+- Entitások
+- Value objectek
+- Kapcsolatok
+- Persistencia és registry-használat
+
+============================================================
+## 5) Folyamatok (lifecycle)
+============================================================
+- Startup
+- Shutdown
+- Restore
+- Save
+- Deferred logika
+- Guardok és edge case-ek
+
+============================================================
+## 6) Audit logika
+============================================================
+- Mely műveletek auditálandók?
+- Milyen formátumban?
+- Hol történik a logolás?
+
+============================================================
+## 7) Bővíthetőség és jövőbeli irányok
+============================================================
+- Moduláris növekedési pontok
+- API stabilitás
+- Lehetséges refaktorok
+
+============================================================
+## 8) Gyakorlati példák
+============================================================
+- Példafolyamatok
+- Példa entitás-életút
+- Példa audit esemény
+
+============================================================
+## 9) Formátum és stílus
+============================================================
+- Markdown
+- Emojik, ahol segítik a megértést
+- Fejlesztőbarát, olvasmányos stílus
+- Ipari szintű részletezettség
+
+A cél: új fejlesztők gyors onboardingja és Copilot számára teljes kontextus biztosítása.

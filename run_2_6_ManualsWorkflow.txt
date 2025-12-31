@@ -1,0 +1,295 @@
+
+🏭 Kézikönyv‑generálási Workflow v2.0 (Ipari Szabvány)
+
+A CutCalculator AI‑Development Handbook v1.2 szellemében
+
+------------------------------------------------------------------------
+
+0. Dokumentum státusza
+
+-   Verzió: 2.0
+-   Típus: Documentation Production Standard
+-   Cél: User Manual és Developer Manual generálásának ipari szintű
+    szabványosítása
+-   Közönség: fejlesztők, dokumentációs felelősök, maintainerek
+
+------------------------------------------------------------------------
+
+1. Alapelv: A dokumentáció is szoftver
+
+A dokumentáció:
+
+-   verziózott
+-   auditálható
+-   moduláris
+-   pipeline‑alapú
+-   minőségbiztosított
+
+A dokumentáció generálása ugyanolyan ipari folyamat, mint a kódé.
+
+Ezért a workflow:
+
+-   determinisztikus
+-   lépésenként ellenőrizhető
+-   Copilot‑optimalizált
+-   ember‑optimalizált
+
+------------------------------------------------------------------------
+
+2. Ipari minták, amelyekre a workflow épül
+
+A v2.0 workflow a következő ipari mintákat használja:
+
+🧩 Dual‑Audience Pattern
+
+User Manual ≠ Developer Manual
+Külön célcsoport, külön struktúra, külön nyelvezet.
+
+🧩 Input‑Driven Generation Pattern
+
+A Copilot csak abból tud dolgozni, amit lát → explicit inputgyűjtés.
+
+🧩 Iterative Refinement Pattern
+
+v1 → review → v2 → final.
+
+🧩 Structured Publishing Pattern
+
+docs/ mappa, verziózás, changelog.
+
+🧩 Deterministic Export Pattern
+
+Pandoc‑alapú PDF generálás, egységes template‑tel.
+
+------------------------------------------------------------------------
+
+3. A workflow 6 lépése (ipari szintű, formalizált)
+
+✅ 1. lépés — Cél meghatározása (User vagy Developer Manual?)
+
+🎯 Döntési pontok:
+
+-   Ki a célközönség?
+-   Mi a dokumentum fókusza?
+-   Milyen mélység szükséges?
+
+🧩 Ipari minta: Audience‑First Planning
+
+Output:
+
+-   „User Manual” vagy „Developer Manual”
+-   fókusz (funkció / modul / alrendszer / teljes alkalmazás)
+
+------------------------------------------------------------------------
+
+✅ 2. lépés — Input összegyűjtése (a dokumentum alapja)
+
+🧩 Ipari minta: Input‑Driven Generation
+
+A Copilot csak abból tud dolgozni, amit lát → explicit inputlista.
+
+User Manual inputok:
+
+-   UI screenshotok
+-   user flow
+-   edge case-ek
+-   hibák
+-   ikonok, menük
+
+Developer Manual inputok:
+
+-   architektúra dokumentum (kettes)
+-   modulok listája
+-   fájlstruktúra
+-   API-k
+-   folyamatok
+-   snapshot/fallback logika
+-   audit logika
+-   diff/commit lista
+
+Output:
+
+-   összegyűjtött inputok listája
+-   releváns fájlok / modulok
+
+------------------------------------------------------------------------
+
+✅ 3. lépés — Prompt kiválasztása és futtatása
+
+🧩 Ipari minta: Prompt‑Driven Documentation
+
+Két prompt létezik:
+
+-   User Manual Prompt
+-   Developer Manual Prompt
+
+Mindkettő ipari szintű, formalizált, determinisztikus.
+
+Output:
+
+-   v1 dokumentum (draft)
+
+------------------------------------------------------------------------
+
+✅ 4. lépés — Review és finomhangolás
+
+🧩 Ipari minta: Iterative Refinement
+
+A dokumentumot közösen átnézzük:
+
+-   pontos?
+-   érthető?
+-   hiányzik valami?
+-   túl hosszú?
+-   túl technikai?
+-   kell screenshot hely?
+-   kell példakód?
+
+Output:
+
+-   v2 dokumentum (finomított)
+
+------------------------------------------------------------------------
+
+✅ 5. lépés — Véglegesítés és formázás
+
+🧩 Ipari minta: Structured Publishing
+
+A dokumentumot:
+
+-   formázzuk
+-   tagoljuk
+-   tartalomjegyzéket adunk hozzá
+-   egységesítjük a stílust
+-   ellenőrizzük a hangnemet
+-   ellenőrizzük a konzisztenciát
+
+Output:
+
+-   v3 dokumentum (kiadható, Markdown)
+
+------------------------------------------------------------------------
+
+✅ 6. lépés — Publikálás és verziózás
+
+🧩 Ipari minta: Versioned Documentation Lifecycle
+
+A dokumentumot:
+
+-   docs/ mappába tesszük
+-   verziózzuk
+-   README‑ben hivatkozzuk
+-   opcionálisan changelogot vezetünk
+
+Output:
+
+-   verziózott, visszakereshető dokumentum
+
+------------------------------------------------------------------------
+
+4. Anti‑patternök (tiltott minták)
+
+❌ 1. Input nélküli dokumentumgenerálás
+
+❌ 2. User Manual és Developer Manual összemosása
+
+❌ 3. Túlbeszélt, redundáns szöveg
+
+❌ 4. Screenshot nélküli UI‑leírás
+
+❌ 5. Nem verziózott dokumentum
+
+❌ 6. Nem egységes stílus
+
+❌ 7. Prompt futtatása input nélkül
+
+❌ 8. Kézikönyv generálása architektúra nélkül
+
+------------------------------------------------------------------------
+
+5. Ipari szintű Pandoc export (v2.0)
+
+Deterministic Export Pattern
+
+A PDF generálásnak is szabványa van.
+
+Kötelező paraméterek:
+
+-   --pdf-engine=lualatex
+-   --template=emoji-template.tex
+-   --toc
+-   --toc-depth=3
+-   -V compact-lists=true
+-   -V geometry:margin=2.5cm
+-   -V papersize=a4
+-   -V pagestyle=plain
+-   --metadata linkcolor=blue
+
+Ajánlott paraméterek:
+
+-   -V fontsize=11pt
+-   -V mainfont="DejaVu Sans"
+-   -V monofont="DejaVu Sans Mono"
+-   -V colorlinks=true
+-   -V urlcolor=blue
+
+Ipari szintű parancs:
+
+    pandoc handbook.md \
+      -o handbook.pdf \
+      --pdf-engine=lualatex \
+      --template=emoji-template.tex \
+      --toc \
+      --toc-depth=3 \
+      -V compact-lists=true \
+      -V author="Zoltán" \
+      -V date="2025" \
+      -V geometry:margin=2.5cm \
+      -V papersize=a4 \
+      -V pagestyle=plain \
+      -V fontsize=11pt \
+      -V mainfont="DejaVu Sans" \
+      -V monofont="DejaVu Sans Mono" \
+      -V colorlinks=true \
+      --metadata linkcolor=blue
+
+Ez már kiadói minőségű PDF‑et eredményez.
+
+------------------------------------------------------------------------
+
+6. Workflow‑diagram (ASCII)
+
+    🎯 Cél meghatározása
+            ↓
+    📥 Inputok összegyűjtése
+            ↓
+    🤖 Prompt futtatása (v1)
+            ↓
+    🔍 Review + iteráció (v2)
+            ↓
+    🧽 Véglegesítés (v3)
+            ↓
+    📦 Publikálás + verziózás
+
+------------------------------------------------------------------------
+
+7. Miért ipari szintű a v2.0?
+
+Mert:
+
+-   külön kezeli a célcsoportokat
+-   formalizált
+-   auditálható
+-   verziózott
+-   iteratív
+-   input‑vezérelt
+-   prompt‑vezérelt
+-   Copilot‑optimalizált
+-   ember‑optimalizált
+-   hosszú távon fenntartható
+-   integrálódik a CutCalculator AI‑Development Handbook v1.2‑be
+
+Ez már tényleg olyan, mint amit egy professzionális dokumentációs csapat
+használna.
+
+------------------------------------------------------------------------

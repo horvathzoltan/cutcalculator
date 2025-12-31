@@ -9,6 +9,7 @@
 
 BarcodeRegistry& BarcodeRegistry::instance() {
     static BarcodeRegistry reg;
+    reg.guardInstanceUsage();
     return reg;
 }
 

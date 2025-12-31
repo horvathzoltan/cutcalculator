@@ -3,6 +3,7 @@
 // Singleton implementáció
 ColorRegistry& ColorRegistry::instance() {
     static ColorRegistry reg;
+    reg.guardInstanceUsage();
     return reg;
 }
 

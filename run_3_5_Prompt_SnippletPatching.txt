@@ -1,0 +1,49 @@
+Kérlek, készíts diff-szerű snippeteket a következő szabályok szerint.
+
+============================================================
+## 1) HELYMEGHATÁROZÁS
+============================================================
+Minden snippet előtt add meg:
+
+- fájlnév (relatív path)
+- függvénynév vagy környezet
+- opcionális sor-támpont
+
+============================================================
+## 2) SNIPPET FORMÁTUM
+============================================================
+A snippetet mindig ```cpp kódblokkon belül add meg.
+
+A formátum:
+
+```cpp
+--- RÉGI (old)
+<régi kódrészlet pontosan>
+--- ÚJ (new)
+<új kódrészlet pontosan>
+```
+
+A snippet:
+- csak a módosított sorokat tartalmazza
+- ne legyen benne felesleges környezeti kód
+- ne legyen benne kommentár
+- ne legyen benne magyarázat
+- ne legyen benne extra whitespace
+
+============================================================
+## 3) ATOMIKUS PATCH-EK
+============================================================
+Minden snippet egyetlen logikai változtatást tartalmazzon.
+Ha több változtatás van:
+- külön snippet blokk
+- egyértelmű sorrend:
+
+    #1 – apply first
+    #2 – apply second
+    ...
+
+============================================================
+## 4) STRICT MODE
+============================================================
+A snippetek NEM tartalmazhatnak improvizációt.
+A snippetek NEM térhetnek el a tervtől.

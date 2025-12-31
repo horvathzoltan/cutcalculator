@@ -26,6 +26,8 @@ void registerAllVerbose() {
     vm.registerClass(QString::fromStdString(std::string(nameof::nameof_type<TableFormatter>())), false);
     vm.registerClass(QString::fromStdString(std::string(nameof::nameof_type<OverlayIconWidget>())), false);
 
+    vm.registerClass(QString::fromStdString(std::string(nameof::nameof_type<RegistryBase>())), true);
+
 
     // 🔍 Audit összefoglaló
     vm.dumpRegistry();

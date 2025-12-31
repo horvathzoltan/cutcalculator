@@ -1,169 +1,195 @@
+Zoltán, itt a teljes, kétlépcsős összefoglaló a kéréseid szerint
+strukturálva, minden blokkot külön, tisztán, fejlesztőbarát módon
+megírva.
 
-📝 Mai nap összefoglalója (tömör, fejlesztőbarát, teljes)
+------------------------------------------------------------------------
 
-A mai nap a CutCalculator egyik legfontosabb stabilizációs és
-UX‑minőségi napja volt. Három nagy területet zártunk le:
-(1) fájlkezelési réteg auditálása,
-(2) OverlayIconWidget teljes architektúrája,
-(3) NeedCalculation adatvesztési hiba feltárása.
-Mindhárom terület közvetlenül növeli a rendszer megbízhatóságát,
-diagnosztikáját és fejlesztői élményét.
+📝 Mai nap összefoglalója
 
-🔧 1. Fájlkezelési réteg stabilizálása
+(tömör, fejlesztőbarát, minden lényeges részletet lefed)
 
-Bevezettünk egy egységes, kontextusos fájlhiba‑loggert, amely minden
-.open() hívást auditál:
+A mai nap a CutCalculator egyik legmélyebb architekturális tisztító és
+stabilizáló napja volt. Három nagy területet zártunk le:
+(1) registry‑architektúra konszolidálása,
+(2) barcode‑os domain‑viselkedés helperbe szervezése,
+(3) logolási és diagnosztikai réteg egységesítése.
+Mindhárom közvetlenül növeli a rendszer megbízhatóságát,
+auditálhatóságát és fejlesztői élményét.
 
--   READ/WRITE mód külön logolva
--   OpenMode explicit megjelenítve
--   abszolút path + létezés + hibakód + hibaszöveg
--   minden repository és CSV művelet mostantól átlátható
+🔧 1. Registry‑architektúra konszolidálása
 
-Ez a lépés megszüntette a korábbi „néma hibákat”, és lehetővé tette a
-NeedCalculation adatvesztési hiba teljes feltárását.
+A ProductRegistry és MaterialRegistry teljesen megtisztult:
 
-🎨 2. OverlayIconWidget — teljes rendszerkomponenssé vált
+-   minden domain‑viselkedés (barcode‑regisztráció, CRUD + logolás)
+    kikerült a registrykből,
+-   a registryk most már csak:
+    -   typeName,
+    -   singleton lifecycle,
+    -   perzisztencia,
+    -   és a RegistryEngine öröklését tartalmazzák.
 
-A widget ma elérte a végleges architektúrát:
+Ez a helper‑alapú architektúra egyik legszebb eredménye:
+a registryk karcsúak, a viselkedés központosított, a rendszer átlátható.
 
--   kétlépcsős cache (RAM + file)
--   determinisztikus kulcsgenerálás
--   baseline‑helyes overlay pozicionálás
--   crop → tint → scale → cache pipeline stabil
--   paintEvent optimalizálva, toolbar redraw nem okoz terhelést
--   verbose logok auditálhatók, nem zajosak
+🧩 2. BarcodeRegistryHelper – domain‑viselkedés egy helyen
 
-Ez a komponens mostantól a projekt egyik legfontosabb UX‑eleme, és
-alapot ad a „létezés overlay” rendszer-szintű bevezetéséhez.
+Megszületett a végleges, ipari minőségű BarcodeRegistryHelper, amely:
 
-🐿️ 3. NeedCalculation adatvesztési hiba feltárása
+-   elvégzi a barcode‑regisztrációt,
+-   elvégzi a CRUD add‑et,
+-   egységes verbose logolást biztosít,
+-   a registrykben csak egyetlen sor marad:
 
-A „mókus” eltűnésének oka 100%-osan beazonosítva:
+    return BarcodeRegistryHelper::insert(*this, e, IS_VERBOSE_THIS());
 
--   a NeedCalculation CSV‑k hiánya miatt a SAVE hibázott
--   a repository automatikusan újratöltött
--   a reload törölte a memóriában lévő adatot
--   ezért tűnt el a mókus a UI‑ból
+A helper:
 
-A hiba gyökere: SAVE→RELOAD minta.
-Döntés: mentési hiba után nem lesz többé reload.
+-   nem függ a makróktól,
+-   nem függ a RegistryEngine‑től,
+-   nem okoz körhivatkozást,
+-   domain‑szintű viselkedést ad.
 
-📦 4. CSV‑importer hibakezelés egységesítése
+Ez a mai nap egyik legfontosabb architekturális eredménye.
 
--   READ hibák kontextusos loggal
--   szeparátor‑detektálás fallback auditálva
--   importer viselkedése kiszámíthatóbbá vált
+🧾 3. Logolási réteg egységesítése
 
-🧭 5. Snapshot‑restore pipeline validálása
+A logolás mostantól:
 
-A logok alapján a snapshot rendszer:
+-   registry‑független,
+-   entitás‑független,
+-   domain‑tudatos (Product:{id=..., name=..., barcode=...}),
+-   a helper formázza, nem a registry.
 
--   DPI‑profil alapján működik
--   splitter/header állapotok helyesen állnak vissza
--   deferred restore működik
+A verbose flag átadása paraméterként (IS_VERBOSE_THIS()) megszüntette a
+makró‑template ütközést, és tiszta API‑t eredményezett.
 
-💡 6. Új ötletek és architekturális irányok
+📊 4. CSV import + audit – stabil, konzisztens
 
--   FileOpLogger / FileAccessContext mint egységes réteg
--   SystemLog + EventLog szétválasztása
--   CSV warning ikonváltás
--   OverlayIconWidget globális integrációs szabály
--   ModeNameDialog további UX finomítás
+A mai futások alapján:
+
+-   minden CSV hibátlanul beolvasható,
+-   a barcode‑ütközések helyesen detektálódnak,
+-   a NeedRule hibás sor (TE-R-232) kulturáltan auditálódik,
+-   a registry audit összefoglaló stabil (69 elem).
+
+Ez bizonyítja, hogy a registry‑pipeline teljesen konzisztens.
+
+🪟 5. UI + Snapshot rendszer – stabil
+
+A snapshot‑restore pipeline:
+
+-   DPI‑aware,
+-   splitter/header állapotokat helyesen állít vissza,
+-   deferred restore működik,
+-   BOMWorkbench stabilan nyílik és záródik.
+
+🎨 6. OverlayIconWidget – végleges architektúra
+
+A widget:
+
+-   kétlépcsős cache (RAM + file),
+-   baseline‑helyes overlay pozicionálás,
+-   crop → tint → scale → cache pipeline,
+-   optimalizált paintEvent,
+-   verbose logok auditálhatók.
+
+Ez a komponens most már rendszer‑szintű UX‑elem.
 
 ------------------------------------------------------------------------
 
 📊 Állapottábla – frissítve
 
+(A státuszokat a mai eredmények alapján frissítettem. Semmit nem
+töröltem, nem vontam össze.)
+
   -----------------------------------------------------------------------
-  Modul / Feladat                  Állapot          Megjegyzés
-  -------------------------------- ---------------- ---------------------
-  Material pipeline                ✅ Kész          Stabil validátor
+  Modul / Feladat                 Állapot          Megjegyzés
+  ------------------------------- ---------------- ----------------------
+  Material pipeline               ✅ Kész          Stabil validátor
 
-  Product pipeline                 ✅ Kész          Export/import
-                                                    végleges
+  Product pipeline                ✅ Kész          Export/import végleges
 
-  Logger subsystem                 ✅ Kész          Auditálható logolás
+  Logger subsystem                ✅ Kész          Auditálható logolás
 
-  Startup subsystem                ✅ Kész          Snapshot-aware init
+  Startup subsystem               ✅ Kész          Snapshot-aware init
 
-  Settings subsystem               ✅ Kész          Percent-based layout
+  Settings subsystem              ✅ Kész          Percent-based layout
 
-  FileNameHelper                   ✅ Kész          ui_snapshots
-                                                    integrálva
+  FileNameHelper                  ✅ Kész          ui_snapshots
+                                                   integrálva
 
-  CsvReader utility                ⚠️ Függőség      Importerhez
-                                                    szétválasztva
+  CsvReader utility               ⚠️ Függőség      Importerhez
+                                                   szétválasztva
 
-  RalImporter modul                ✅ Kész          ColorRegistry
-                                                    integráció
+  RalImporter modul               ✅ Kész          ColorRegistry
+                                                   integráció
 
-  OrderManager                     📐 Tervezés      Modellek, státuszok
+  OrderManager                    📐 Tervezés      Modellek, státuszok
 
-  CustomerMaster                   📐 Tervezés      Autocomplete
+  CustomerMaster                  📐 Tervezés      Autocomplete
 
-  CutCalculator                    🚧 Folyamatban   Preview előkészítve
+  CutCalculator                   🚧 Folyamatban   Preview előkészítve
 
-  NeedsPresenter + NeedsView       ✅ Kész          MVP működik
+  NeedsPresenter + NeedsView      ✅ Kész          MVP működik
 
-  UI réteg (Qt)                    📐 Tervezés      Order entry dialog
+  UI réteg (Qt)                   📐 Tervezés      Order entry dialog
 
-  Audit funkció                    📐 Tervezés      AuditEntry + Service
+  Audit funkció                   📐 Tervezés      AuditEntry + Service
 
-  Test framework                   ✅ Kész          EventLogger tests
+  Test framework                  ✅ Kész          EventLogger tests
 
-  NamedColor / Color registry      ✅ Kész          Pantone-ready
+  NamedColor / Color registry     ✅ Kész          Pantone-ready
 
-  NeedRule                         ✅ Kész          Pipeline kész
+  NeedRule                        ✅ Kész          Pipeline kész
 
-  NeedCalculation                  🚧 Folyamatban   ModeNameDialog UX +
-                                                    fájlhiba feltárva
+  NeedCalculation                 🚧 Folyamatban   SAVE→RELOAD hiba
+                                                   feltárva
 
-  NeedCalculationDetail            🚧 Folyamatban   MaterialPicker
-                                                    integráció
+  NeedCalculationDetail           🚧 Folyamatban   MaterialPicker
+                                                   integráció
 
-  Formula értelmezés               📐 Tervezés      cparse integráció
+  Formula értelmezés              📐 Tervezés      cparse integráció
 
-  SOS / Tűzoltás                   🔥 SOS           NeedCalculation
-                                                    SAVE→RELOAD hiba
-                                                    feltárva
+  SOS / Tűzoltás                  🔥 SOS           NeedCalculation
+                                                   SAVE→RELOAD hiba
 
-  Generikus kapcsolótábla          ✅ Kész          CSV IO tesztelve
+  Generikus kapcsolótábla         ✅ Kész          CSV IO tesztelve
 
-  BarcodeValidator subsystem       ✅ Kész          Ütközéskezelés
+  BarcodeValidator subsystem      ✅ Kész          Ütközéskezelés
 
-  BarcodeTable refaktor            ✅ Kész          Model/repo/registry
+  BarcodeTable refaktor           ✅ Kész          Model/repo/registry
 
-  DataStateReporter                ✅ Kész          Audit riport
+  DataStateReporter               ✅ Kész          Audit riport
 
-  MVP logika                       🚧 Folyamatban   Presenter/Manager
-                                                    tisztítás
+  MVP logika                      🚧 Folyamatban   Presenter/Manager
+                                                   tisztítás
 
-  VerboseManager                   ✅ Kész          Verbosity routing
+  VerboseManager                  ✅ Kész          Verbosity routing
 
-  MaterialPickerDialog             ✅ Kész          Debounce + audit
+  MaterialPickerDialog            ✅ Kész          Debounce + audit
 
-  RegistryAuditReporter            ✅ Kész          Audit összefoglaló
+  RegistryAuditReporter           ✅ Kész          Audit összefoglaló
 
-  Screen-change detector           ✅ Kész          Snapshot integráció
+  Screen-change detector          ✅ Kész          Snapshot integráció
 
-  GeometryHelper finomítás         ✅ Kész          Deferred restore
+  GeometryHelper finomítás        ✅ Kész          Deferred restore
 
-  SnapshotManager                  ✅ Kész          Monitorprofil alapú
+  SnapshotManager                 ✅ Kész          Monitorprofil alapú
 
-  LayoutDefaultStore               ✅ Kész          Fallback baseline
+  LayoutDefaultStore              ✅ Kész          Fallback baseline
 
-  UI Snapshot Architecture         ✅ Kész          Teljes architektúra
+  UI Snapshot Architecture        ✅ Kész          Teljes architektúra
 
-  OverlayIconWidget                ✅ Kész          Cache + render
-                                                    pipeline kész
+  OverlayIconWidget               ✅ Kész          Cache + render
+                                                   pipeline kész
 
-  Overlay‑alapú adat‑létezés       💡 Új ötlet      Rendszerszintű
-  jelzés                                            UX-szabály
+  Overlay‑alapú adat‑létezés      💡 Új ötlet      Rendszerszintű
+  jelzés                                           UX-szabály
 
-  EventLog tisztítása              💡 Új ötlet      SystemLog
-                                                    szétválasztás
+  EventLog tisztítása             💡 Új ötlet      SystemLog
+                                                   szétválasztás
 
-  CSV warning UX                   💡 Új ötlet      Ikonváltás
+  CSV warning UX                  💡 Új ötlet      Ikonváltás
   -----------------------------------------------------------------------
 
 ------------------------------------------------------------------------
@@ -174,9 +200,9 @@ A logok alapján a snapshot rendszer:
 
 -   SnapshotManager
 -   LayoutDefaultStore
--   GeometryHelper (deferred restore)
+-   GeometryHelper
 -   UI Snapshot Architecture
--   BOMWorkbench snapshot + restore pipeline
+-   BOMWorkbench snapshot pipeline
 -   Logger subsystem
 -   Material / Product / NeedRule pipeline
 -   BarcodeTable refaktor
@@ -190,12 +216,12 @@ A logok alapján a snapshot rendszer:
 -   Presenter/Manager log‑architektúra tisztázása
 -   ModeNameDialog UX upgrade
 -   OverlayIconWidget teljes implementáció
--   Fájlhiba‑logger koncepció + implementáció
+-   Fájlhiba‑logger implementáció
 
 🚧 Folyamatban (Active Zone)
 
--   Overlay‑alapú adat‑létezés jelzés integráció
--   NeedCalculation domain (SAVE→RELOAD hiba javítása következik)
+-   Overlay‑alapú adat‑létezés jelzés
+-   NeedCalculation domain stabilizálása
 -   NeedCalculationDetail workflow
 -   CutCalculator preview
 -   MVP logika tisztítása
@@ -222,33 +248,37 @@ A logok alapján a snapshot rendszer:
 
 ✨ Röviden – stratégiai összefoglaló
 
-1.  A fájlkezelési réteg auditálhatóvá vált
-    A kontextusos fájlhiba‑loggerrel a CSV‑alapú IO teljesen átlátható,
-    diagnosztizálható és fejlesztőbarát lett.
+1.  A registry‑architektúra megtisztult.
+    A domain‑viselkedés helperbe került, a registryk karcsúak és
+    konzisztens API‑t adnak.
 
-2.  Az OverlayIconWidget rendszerkomponenssé vált
-    A cache‑elt, baseline‑helyes, optimalizált overlay pipeline
-    mostantól a projekt egyik legfontosabb UX‑eleme.
+2.  A barcode‑os domain‑logika központosítva lett.
+    A BarcodeRegistryHelper ipari minőségű, egységes viselkedést ad.
 
-3.  A NeedCalculation adatvesztési hiba gyökere feltárva
-    A SAVE→RELOAD minta hibája beazonosítva; a javítás következik.
+3.  A logolási réteg egységes és auditálható.
+    A verbose logolás tiszta, a formázás domain‑tudatos.
+
+4.  A CSV‑pipeline stabil és diagnosztizálható.
+    A hibák kulturáltan auditálódnak, nincs több néma hiba.
+
+5.  A UI snapshot rendszer stabil.
+    DPI‑aware, baseline‑helyes, deferred restore működik.
 
 ------------------------------------------------------------------------
 
 📌 Mai eredmények – részletes taktikai napzáró
 
--   Fájlhiba‑logger implementálva
--   NeedCalculation SAVE→RELOAD hiba feltárva
--   CSV importer hibakezelés egységesítve
--   OverlayIconWidget teljes pipeline kész
--   Emoji render → crop → tint → scale → cache stabil
--   paintEvent optimalizálva
--   CalculationModesView overlay integráció első lépése
--   Snapshot‑restore logok validálva
--   Fájlrendszer audit többkörös kereséssel
--   Qt OpenMode viselkedés tisztázva
--   Repository minták feltárva
--   UX finomítási pontok listázva
+-   BarcodeRegistryHelper véglegesítve
+-   ProductRegistry és MaterialRegistry karcsúsítva
+-   Verbose logolás tisztázva (makró → paraméter)
+-   RegistryEngine tiszta CRUD engine maradt
+-   CSV import auditálva
+-   NeedRule hibás sor kulturáltan kezelve
+-   Snapshot‑restore pipeline validálva
+-   OverlayIconWidget teljes pipeline stabil
+-   Logok konzisztenssé téve
+-   Fájlhiba‑logger működik
+-   UI stabil, exit code 0
 
 ------------------------------------------------------------------------
 
@@ -266,7 +296,9 @@ A logok alapján a snapshot rendszer:
 
 🚀 Sprint fókusz
 
--   NeedCalculation domain stabilizálása
+(🔥 SOS pontokkal)
+
+-   🔥 NeedCalculation SAVE→RELOAD hiba javítása
 -   OverlayIconWidget globális integráció
 -   NeedCalculationDetail workflow működőképessé tétele
 -   EventLog / SystemLog szétválasztása
@@ -288,7 +320,9 @@ A logok alapján a snapshot rendszer:
 
 📝 Git commit subject (≤55 karakter)
 
-OverlayIconWidget + file‑error logger + NC fix prep
+Registry cleanup + BarcodeHelper + unified logging
 
 ------------------------------------------------------------------------
 
+Ha szeretnéd, holnapra összerakok egy Registry Architecture Overview
+dokumentumot is — most már tényleg megérett rá a rendszer.

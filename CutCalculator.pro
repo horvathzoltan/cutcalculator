@@ -19,8 +19,9 @@ SOURCES += \
     calcmodes/dialogs/mode_name_dialog.cpp \
     common/layout/layout_default_store.cpp \
     common/snapshot/snapshot_manager.cpp \
+    common/system/registry_initializer.cpp \
+    common/system/verbose_class_initializer.cpp \
     common/system/verbose_manager.cpp \
-    common/system/verbose_registry_initializer.cpp \
     common/utils/attention_blinker.cpp \
     common/utils/cursor_aware_placement.cpp \
     common/utils/geometry_helper.cpp \
@@ -85,14 +86,22 @@ HEADERS += \
     common/model/barcode_hierarchical_entity.h \
     common/model/barcode_identifiable_entity.h \
     common/model/entity.h \
+    common/model/entity_log_helper.h \
     common/model/hierarchical_base.h \
     common/model/identifiable_entity.h \
     common/model/iregistry_entity.h \
+    common/registry/barcode_helper.h \
+    common/registry/barcode_registry_helper.h \
+    common/registry/combined_helper.h \
+    common/registry/hierarchy_helper.h \
+    common/registry/registry_engine.h \
     common/registry/registry_lookup.h \
     common/registry/registry_traits.h \
     common/snapshot/snapshot_manager.h \
     common/snapshot/workbench_snapshot.h \
     common/system/nameof.hpp \
+    common/system/registry_initializer.h \
+    common/system/verbose_class_initializer.h \
     common/system/verbose_manager.h \
     common/utils/attention_blinker.h \
     common/utils/cursor_aware_placement.h \
@@ -187,11 +196,17 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 DISTFILES += \
     README.md \
     run.txt \
-    run_2_1_Kodgeneralas.txt \
+    run_2_1_AIDevelopmentHandbook.txt \
     run_2_2_Dokumentacio.txt \
     run_2_3_Allapottabla.txt \
+    run_2_5_Prompt_DeveloperManual.txt \
+    run_2_6_ManualsWorkflow.txt \
     run_3_1_Manifest.txt \
-    run_3_2_Prompt.txt \
+    run_3_1_Prompt_ArchitectureSpec.txt \
+    run_3_2_Prompt_FeatureSpec.txt \
+    run_3_3_Prompt_CodeGeneration.txt \
+    run_3_4_Prompt_Refactor.txt \
+    run_3_5_Prompt_SnippletPatching.txt \
     run_4_1_Rendszerterv.txt \
     run_4_2_RendszerKomponensLista.txt \
     run_4_AnyagszuksegletSzamitas.txt \

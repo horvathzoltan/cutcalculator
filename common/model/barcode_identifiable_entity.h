@@ -21,7 +21,7 @@ struct BarcodeIdentifiableEntity : public IdentifiableEntity, public BarcodeBase
 
     // 🧾 Teljes technikai szöveges reprezentáció – log, export, debug célra
     QString toString() const override {
-        return QString("BarcodeIdentifiableEntity{id=%1, name=%2, barcode=%3}")
+        return QString("{id=%1, name=%2, barcode=%3}")
         .arg(id.toString(), name, barcode);
     }
 

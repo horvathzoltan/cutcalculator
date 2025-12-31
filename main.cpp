@@ -16,7 +16,9 @@
 #include "common/utils/geometry_helper.h"
 #include "common/snapshot/snapshot_manager.h"
 
-extern void registerAllVerbose();
+#include "common/system/verbose_class_initializer.h"
+#include "common/system/registry_initializer.h"
+//extern void registerAllVerbose();
 
 int main(int argc, char *argv[])
 {
@@ -68,9 +70,14 @@ int main(int argc, char *argv[])
 
     QApplication a(argc, argv);
     // 3. QApplication bekötése
-    LifecycleManager::instance().setPhase_3(&a);   
+    LifecycleManager::instance().setPhase_3(&a);
 
     StartupManager manager;
+
+    // 🔵 1) Registryk explicit inicializálása
+    initializeAllRegistries();
+
+    // 🔵 2) Startup pipeline futtatása
     StartupStatus status = manager.runStartupSequence();
 
     // Opcionális finomhangolás a dialógusokra:
@@ -79,6 +86,9 @@ int main(int argc, char *argv[])
     StartupStatusManager::setHumanLogPath("errors.txt");// emberbarát fájlnév (ha van)
     bool startupOk = StartupStatusManager::handle(status);
 
+    // 🔵 3) Audit
+    // 1. már minden registry regisztrálva van
+    // 2. és lefutott rajtuk a startup sequence is
     RegistryManager::instance().auditReport();
 
     if (!startupOk) {

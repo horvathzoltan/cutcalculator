@@ -1,0 +1,43 @@
+✅ 2) Fejlesztői kézikönyv prompt (Developer Manual Prompt)
+
+Ez a prompt a fejlesztőknek szóló, mély technikai dokumentációt generál
+— architektúra, modulok, API-k, folyamatok, snapshot/fallback logika,
+audit, stb.
+
+Másolható:
+
+    Kérlek, készíts egy teljes, ipari szintű fejlesztői kézikönyvet
+    a következő modulhoz / alrendszerhez / funkcióhoz:
+
+    [NÉV / FUNKCIÓ LEÍRÁSA]
+
+    A kézikönyv legyen:
+    - fejlesztőknek szóló
+    - részletes, technikai
+    - architektúra-központú
+    - moduláris
+    - auditálható
+    - Markdown formátumú
+    - a CutCalculator projekt stílusához igazodó
+
+    A dokumentum tartalmazza:
+
+    📘 Bevezetés
+    🎯 Cél és kontextus
+    🏗️ Architektúra áttekintés
+    📦 Modulok és felelősségi körök
+    🧩 Adatmodellek
+    🔄 Folyamatok (startup, shutdown, restore, save, event flow)
+    🧠 Guardok, edge case-ek, deferred logika
+    📁 Fájlszerkezet és projektstruktúra
+    🔌 API-k és interfészek
+    🛠️ Implementációs részletek
+    🧪 Tesztelési stratégia
+    📊 Audit logika
+    🧱 Bővíthetőség és jövőbeli irányok
+    🚧 Ismert korlátok
+    📚 Kapcsolódó modulok
+    🧭 Integrációs útmutató
+    📌 Példák és best practice-ek
+
+    A dokumentum legyen teljes, önállóan érthető, és alkalmas új fejlesztők onboardingjára.

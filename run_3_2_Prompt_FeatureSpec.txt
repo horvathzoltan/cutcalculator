@@ -1,0 +1,43 @@
+Kérlek, készíts egy tömör, fejlesztőbarát specifikációt a következő funkcióhoz.
+
+A specifikáció tartalmazza:
+
+============================================================
+## 1) Követelményspecifikáció (Requirements)
+============================================================
+- A funkció célja
+- Felhasználói érték (user value)
+- Rendszerhatások (UI, modell, registry, repository)
+- Edge case-ek
+- Tiltások (mi NEM része a feladatnak)
+
+============================================================
+## 2) Funkcionális specifikáció (Functional Spec)
+============================================================
+- Fő folyamatok
+- Alfolyamatok
+- Validációs szabályok
+- Állapotváltozások
+- Audit log követelmények
+- Snapshot/restore hatások (ha releváns)
+
+============================================================
+## 3) Implementációs terv (Implementation Plan)
+============================================================
+- Moduláris bontás
+- Érintett fájlok
+- API-hatások
+- Integrációs pontok
+- Tesztelési szempontok
+- Kockázatok és guardok
+
+============================================================
+## 4) Formátum és stílus
+============================================================
+- Markdown
+- Emojik a szerkezet támogatására
+- Rövid, lényegre törő, Copilot-barát
+- Ne legyen túlbeszélt
+- Csak a megvalósítandó funkcióra fókuszáljon
+
+A cél: gyors, végrehajtható fejlesztési terv.

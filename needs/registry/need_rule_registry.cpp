@@ -3,6 +3,7 @@
 
 NeedRuleRegistry& NeedRuleRegistry::instance() {
     static NeedRuleRegistry inst;
+    inst.guardInstanceUsage();
     return inst;
 }
 

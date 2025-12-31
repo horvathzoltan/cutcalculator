@@ -5,7 +5,10 @@
 #include <QString>
 #include <optional>
 #include "barcodes/model/barcode_record.h"
-#include "common/registry/registry_base.h"
+//#include "common/registry/barcode_identifiable_registry_base.h"
+#include "common/model/barcode_identifiable_entity.h"
+#include "common/registry/registry_engine.h"
+//#include "common/registry/registry_base.h"
 
 /**
  * @brief BarcodeRegistry – globális könyvelés a barcode-okhoz.
@@ -15,9 +18,9 @@
  * - Singleton, auditbarát elemszám riportot ad.
  * - Globális uniqueness: egy kód soha nem adható ki újra.
  */
-class BarcodeRegistry : public IdentifiableRegistryBase {
+class BarcodeRegistry : public RegistryEngine<BarcodeRecord> {
 private:
-    BarcodeRegistry() : IdentifiableRegistryBase("BarcodeRegistry", "Barcode") {}
+    BarcodeRegistry() : RegistryEngine<BarcodeRecord>("BarcodeRegistry", "Barcode") {}
     BarcodeRegistry(const BarcodeRegistry&) = delete;
 
     QVector<BarcodeRecord> _data;  ///< 📦 Globális barcode lista
@@ -45,7 +48,7 @@ public:
     bool isEmpty() const { return _data.isEmpty(); }
 
     // 🔍 Azonosító alapján keresés (audit kompatibilis)
-    const BarcodeIdentifiableEntity* findEntityById(const QUuid& id) const override;
+    const BarcodeIdentifiableEntity* findEntityById(const QUuid& id) const;
     bool registerNew(const QString &code, const QString &entityType, const QUuid &id, const QString& name);
     bool retire(const QString &code, const QString &reason);
 

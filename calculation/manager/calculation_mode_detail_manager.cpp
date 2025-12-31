@@ -78,15 +78,17 @@ void CalculationModeDetailManager::refreshForCalculation(const QUuid& calcId, co
  * @brief Material név és barcode feloldása. Ha nem található, jelöljük ismeretlenként.
  */
 std::pair<QString, QString> CalculationModeDetailManager::materialLabel(const QUuid& materialId) {
-    auto* idRepo = RegistryManager::instance().findByTypeName("MaterialMaster");
-    auto* materialIdent = dynamic_cast<IdentifiableRegistryBase*>(idRepo);
-    if (!materialIdent) return { "(unknown)", "" };
+    auto* repo = RegistryManager::instance().findByTypeName("MaterialMaster");
+    if (!repo)
+        return { "(unknown)", "" };
 
-    if (const auto* ent = materialIdent->findEntityById(materialId)) {
+    if (const auto* ent = repo->findEntityById(materialId)) {
         return { ent->name, ent->barcode };
     }
+
     return { "(unknown)", "" };
 }
+
 
 /**
  * @brief NeedCalculationDetail → DetailRow konverzió.

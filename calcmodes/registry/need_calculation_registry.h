@@ -18,6 +18,7 @@ class NeedCalculationRegistry : public RegistryBase {
 public:
     static NeedCalculationRegistry& instance() {
         static NeedCalculationRegistry inst;
+        inst.guardInstanceUsage();
         return inst;
     }
 

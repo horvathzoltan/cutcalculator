@@ -1,0 +1,676 @@
+
+🏭 CutCalculator AI‑Development Handbook v1.2
+
+Ipari szintű módszertan, szabványok, workflow‑elvek és minőségbiztosítás
+
+------------------------------------------------------------------------
+
+0. Dokumentum státusza
+
+-   Verzió: 1.2
+-   Típus: Engineering Handbook / Development Standard
+-   Cél: AI‑asszisztált fejlesztés ipari szintű szabványosítása
+-   Közönség: fejlesztők, architektek, reviewerek, maintainerek
+
+------------------------------------------------------------------------
+
+1. Bevezetés – A rendszer filozófiája
+
+A CutCalculator fejlesztése során a Copilot:
+
+-   architekturális partner,
+-   refaktor‑motor,
+-   minőségbiztosítási eszköz,
+-   dokumentációs segéd,
+-   teszttervező,
+-   kódelemző.
+
+A cél:
+egy determinisztikus, auditálható, moduláris, drift‑biztos
+AI‑fejlesztési pipeline.
+
+A módszertan alapelve:
+
+  A kreatív tervezés és a determinisztikus implementáció szigorú
+  szétválasztása.
+
+Ez ipari szinten a legfontosabb minőségbiztosítási elv.
+
+------------------------------------------------------------------------
+
+2. Alapelvek (Core Principles)
+
+2.1 Determinisztikus működés
+
+A Copilot csak akkor generálhat kódot, ha:
+
+-   a fájllista jóváhagyva,
+-   a kontextus teljes,
+-   explicit utasítás érkezett.
+
+Ez a Controlled Code Synthesis minta.
+
+2.2 Kontextusvédelem
+
+A chunk‑kezelés és a handshake megakadályozza:
+
+-   a hiányos inputot,
+-   a driftet,
+-   a hibás generálást.
+
+Ez a Deterministic Context Loading minta.
+
+2.3 Moduláris workflow
+
+A fejlesztés 10 lépésre bontva, mindegyik külön prompt‑típussal.
+
+Ez a Separation of Concerns minta.
+
+2.4 Emberi jóváhagyás minden kritikus ponton
+
+A Copilot nem dönthet:
+
+-   modulokról,
+-   API‑król,
+-   architektúráról,
+-   viselkedésváltozásról.
+
+Ez a Human‑Approved Change minta.
+
+2.5 Snippet‑alapú módosítás
+
+A Copilot csak diff‑szerű snippeteket adhat meglévő fájlokhoz.
+
+Ez a Minimal Change Set minta.
+
+------------------------------------------------------------------------
+
+3. Szerepkörök és felelősségek
+
+3.1 Fejlesztő
+
+-   promptokat futtat
+-   jóváhagy
+-   integrál
+-   dokumentál
+-   tesztel
+
+3.2 Reviewer
+
+-   ellenőrzi a generált kódot
+-   minőségi hibákat keres
+-   refaktor irányokat javasol
+
+3.3 Architect
+
+-   modulhatárokat definiál
+-   API‑kat felügyel
+-   architektúrát karbantart
+
+3.4 Maintainer
+
+-   verzióz
+-   dokumentál
+-   snapshotokat kezel
+
+3.5 AI Assistant (Copilot)
+
+-   tervez
+-   javasol
+-   generál
+-   refaktorál
+-   tesztet készít
+-   de csak explicit engedéllyel módosít
+
+------------------------------------------------------------------------
+
+🔵  3/A. – Feature‑Spec Prompt (Egyes Dokumentum)
+
+Ipari minta: Rapid Requirement Modeling
+
+Ez a dokumentum minden új funkció első és kötelező lépése.
+
+🎯 Cél
+
+-   gyors, tömör, fejlesztőbarát specifikáció
+-   Copilot‑optimalizált input
+-   fejlesztői task lista alapja
+
+📘 Tartalom
+
+A Feature Spec mindig tartalmazza:
+
+1.  Követelményspecifikáció
+2.  Funkcionális specifikáció
+3.  Implementációs terv
+4.  Edge case‑ek
+5.  Emojikkal támogatott vizuális struktúra
+6.  Markdown formátum
+
+🧩 Ipari minták
+
+-   Rapid Requirement Modeling
+-   Task‑Oriented Decomposition
+-   Context‑Aware Planning
+
+🛑 Anti‑patternök
+
+-   túlbeszélt specifikáció
+-   implicit követelmények
+-   kevert architektúra + funkció
+-   implementációs részletek idő előtt
+
+✔ Példa (rövidített)
+
+-   🎯 Cél
+-   🧩 Funkciók
+-   🔧 API‑hatások
+-   🧪 Edge case‑ek
+-   🛠 Implementációs terv
+
+------------------------------------------------------------------------
+
+🔵 3/B. – Architecture‑Spec Prompt (Kettes Dokumentum)
+
+Ipari minta: High‑Level System Blueprinting
+
+Ez a projekt állandó architektúra dokumentuma.
+
+🎯 Cél
+
+-   a rendszer működésének teljes leírása
+-   új fejlesztők onboardingja
+-   Copilot számára stabil kontextus
+
+📘 Tartalom
+
+Az Architecture Spec mindig tartalmazza:
+
+1.  Probléma leírása
+2.  Követelményspecifikáció
+3.  Architektúra áttekintés
+4.  Modulok és felelősségi körök
+5.  Adatmodellek
+6.  Folyamatok (startup, shutdown, restore, save)
+7.  Guardok, edge case‑ek
+8.  Audit logika
+9.  Bővíthetőség
+10. Jövőbeli irányok
+11. Gyakorlati példák
+
+🧩 Ipari minták
+
+-   High‑Level Design Pattern
+-   Domain‑Driven Decomposition
+-   Registry‑Centric Architecture
+-   Lifecycle‑Aware Modeling
+
+🛑 Anti‑patternök
+
+-   túl részletes implementáció
+-   kevert modulhatárok
+-   snapshot/restore logika kihagyása
+-   audit logika kihagyása
+
+------------------------------------------------------------------------
+
+🔵 4/A. – A két tervezési dokumentum helye a pipeline‑ban
+
+A pipeline elején két dokumentum dolgozik együtt:
+
+    Feature Spec (Egyes)
+            ↓
+    Architecture Spec (Kettes)
+            ↓
+    Codegen: Filelist
+            ↓
+    Chunk-Handshake
+            ↓
+    Implementáció
+
+Miért így?
+
+-   A Feature Spec → a konkrét feladat
+-   Az Architecture Spec → az állandó kontextus
+-   A kettő együtt → teljes, stabil input a Copilot számára
+
+Ez ipari szinten a Dual‑Layer Planning Pattern.
+
+------------------------------------------------------------------------
+
+🔵 4/B. – Miért kell két külön tervezési dokumentum?
+
+1) Különböző időskálán változnak
+
+-   Feature Spec → minden új funkciónál
+-   Architecture Spec → ritkán, csak nagy változásnál
+
+2) Különböző célközönség
+
+-   Feature Spec → fejlesztő
+-   Architecture Spec → architect + Copilot
+
+3) Különböző granularitás
+
+-   Feature Spec → konkrét
+-   Architecture Spec → absztrakt
+
+4) Különböző stabilitási követelmények
+
+-   Feature Spec → gyors
+-   Architecture Spec → stabil
+
+------------------------------------------------------------------------
+
+5. Prompt‑típusok és ipari minták
+
+5.1 Feature Spec Prompt
+
+Ipari minta: Requirements‑First Pattern
+
+-   funkciók
+-   edge case‑ek
+-   user flow
+-   API hatások
+-   integrációs pontok
+
+5.2 Architecture Spec Prompt
+
+Ipari minta: High‑Level Design Pattern
+
+-   modulok
+-   interfészek
+-   adatfolyamok
+-   audit logika
+-   snapshot/fallback filozófia
+
+5.3 Code Generation Prompt
+
+Ipari minta: Two‑Phase Generation
+
+1.  Fájllista (design)
+2.  Kontextus betöltés (chunk‑handshake)
+3.  Implementáció (strict mode)
+
+5.4 Refactor Prompt
+
+Ipari minta: Safe Refactor Protocol
+
+-   problémák listája
+-   javaslatok
+-   új fájlok
+-   jóváhagyás
+-   snippetek
+
+5.5 Snippet Prompt
+
+Ipari minta: Atomic Patch Protocol
+
+-   diff‑szerű
+-   atomikus
+-   auditálható
+-   determinisztikus
+
+5.6 Unit Test Prompt
+
+Ipari minta: Test‑First Specification
+
+-   tesztterv
+-   mock/stub igény
+-   coverage célok
+-   fájlstruktúra
+
+5.7 Code Review Prompt
+
+Ipari minta: Structured Review Protocol
+
+-   problémák
+-   javaslatok
+-   refaktor irányok
+
+------------------------------------------------------------------------
+
+6. Chunk‑kezelés – Ipari szintű protokoll
+
+6.1 Miért szükséges?
+
+A transformer modellek:
+
+-   nem tudják, hogy hiányzik‑e input
+-   nem tudják, hogy egy fájl több chunkból áll
+-   nem tudják, hogy a chunkok sorrendje helyes‑e
+
+Ez driftet és hibás generálást okozna.
+
+6.2 A protokoll
+
+1.  A script chunkokra bontja a fájlokat
+2.  Minden chunk végén jelölés:
+    --- EndOfChunk: <filename> ---
+3.  A Copilot minden chunk után megkérdezi:
+    „X chunk érkezett. Ez volt az összes?”
+4.  A user válaszol:
+    -   „Igen, ez volt az összes.” → kontextus teljes
+    -   „Nem, jön még.” → várakozás
+5.  A Copilot csak teljes kontextus után dolgozhat
+
+6.3 Sorrend
+
+A chunkok sorrendje lexikálisan rendezhető:
+
+    *_part_aa.txt
+    *_part_ab.txt
+    *_part_ac.txt
+
+Ez determinisztikus.
+
+------------------------------------------------------------------------
+
+7. Anti‑patternök (tiltott minták)
+
+❌ 7.1 Idő előtti kódgenerálás
+
+❌ 7.2 Kontextus nélküli generálás
+
+❌ 7.3 Fájllista nélküli generálás
+
+❌ 7.4 Drift (viselkedésváltozás)
+
+❌ 7.5 Extra fájlok generálása
+
+❌ 7.6 Nem kért API‑módosítás
+
+❌ 7.7 Nem atomikus snippet
+
+❌ 7.8 Teljes diff generálása
+
+❌ 7.9 Nem determinisztikus output
+
+❌ 7.10 Prompt‑összemosás
+
+------------------------------------------------------------------------
+
+8. Workflow‑diagram (ASCII)
+
+    Feature Spec
+         ↓
+    Architecture Spec
+         ↓
+    Codegen: Filelist
+         ↓
+    Filelist Review
+         ↓
+    Chunk-Handshake
+         ↓
+    Code Generation (strict)
+         ↓
+    Code Review
+         ↓
+    Refactor (strict)
+         ↓
+    Unit Tests
+         ↓
+    Integration → Build → Snapshot
+         ↓
+    Documentation Update
+
+------------------------------------------------------------------------
+
+9. Integráció a CutCalculator architektúrával
+
+A workflow illeszkedik:
+
+-   a registry‑rendszerhez
+-   a snapshot/fallback logikához
+-   a CSV‑import pipeline‑hoz
+-   a logging subsystemhez
+-   a moduláris projektstruktúrához
+
+Minden generált kód:
+
+-   snake_case
+-   auditálható
+-   Clazy‑tiszta
+-   Qt 6.10 kompatibilis
+-   magyar komment + angol terminológia
+
+------------------------------------------------------------------------
+
+Természetesen, Zoltán — és most jön az a fajta elegáns,
+jelentésteret‑tágító integráció, amitől a CutCalculator‑dokumentumok
+tényleg élnek.
+
+A kérésed lényege:
+
+-   meg akarod tartani a v1.0 eredeti 10. pontjának szellemiségét,
+-   be akarod építeni a v1.2 Appendix A‑jába,
+-   úgy, hogy:
+    -   ne töröljük a régit,
+    -   ne írjuk felül,
+    -   ne csorbítsuk a jelentésteret,
+    -   hanem gazdagítsuk,
+    -   és a modern, ipari v1.2 rendszeréhez igazítsuk.
+
+Pontosan ezt fogom most megcsinálni.
+
+A végeredmény:
+
+🔵 Appendix A – A Prompt‑vezérelt fejlesztés filozófiai alapjai (Integrált v1.2 Edition)
+
+(A „Prompt‑vezérelt kódgenerálás Tudománya v1.0” modernizált, kibővített, ipari szintre emelt változata)
+
+------------------------------------------------------------------------
+
+🧩 Bevezetés – Miért van szükség filozófiai alapokra?
+
+A CutCalculator AI‑Development Handbook technikai szabvány.
+De minden szabvány mögött ott a gondolkodásmód, a kultúra, a
+szellemiség, amely életre kelti.
+
+Ez az Appendix A ezt a szellemiséget írja le.
+
+Ez a fejezet:
+
+-   nem törli a régi dokumentumot,
+-   nem írja felül,
+-   hanem átalakítja inspirációs mellékletté,
+-   és a v1.2 ipari rendszeréhez igazítja.
+
+Ez a dokumentum lelke.
+
+------------------------------------------------------------------------
+
+🎯 1) A prompt mint szerződés
+
+A gyenge prompt: „írj egy dialogot”.
+
+A jó prompt:
+
+-   definiálja a kontextust
+-   definiálja a stílust
+-   definiálja a minőséget
+-   definiálja a tiltásokat
+-   definiálja a workflow‑t
+-   definiálja a kódgenerálás lépéseit
+-   definiálja a projekt nyelvét
+
+A prompt nem kérés, hanem szerződés a fejlesztő és az AI között.
+
+Ez a szerződés garantálja:
+
+-   a determinisztikus működést
+-   a driftmentességet
+-   a minőséget
+-   a konzisztenciát
+
+------------------------------------------------------------------------
+
+🎯 2) A prompt mint DSL (Domain‑Specific Language)
+
+A CutCalculator promptjai már nem „szövegek”.
+
+Ez egy CutCalculator Prompt DSL:
+
+-   saját szókészlettel
+-   saját szabályokkal
+-   saját ritmussal
+-   saját architektúrával
+-   saját vizuális identitással
+
+Ezért tudunk:
+
+-   konzisztens
+-   audit‑barát
+-   stílusos
+-   gyors
+-   hibamentes
+
+kódot generálni.
+
+A prompt a projekt nyelve.
+
+------------------------------------------------------------------------
+
+🎯 3) A prompt mint fejlesztési kultúra
+
+A prompt:
+
+-   szabvány
+-   dokumentáció
+-   minőségbiztosítás
+-   onboarding eszköz
+-   fejlesztői nyelv
+-   architektúra‑leírás
+-   workflow‑motor
+
+A prompt nem a kódot írja —
+a prompt a fejlesztőt szaporítja.
+
+------------------------------------------------------------------------
+
+🎯 4) A kétlépcsős tervezés filozófiája
+
+Ez a CutCalculator egyik legfontosabb alapelve:
+
+1) Tervezés (Design Phase)
+
+-   fájllista
+-   API‑terv
+-   architektúra
+-   naming
+-   validáció
+-   snapshot‑szabályok
+
+2) Generálás (Implementation Phase)
+
+-   csak jóváhagyott terv alapján
+-   csak jóváhagyott API‑val
+-   csak jóváhagyott fájlokra
+-   improvizáció nélkül
+
+Ezért nem omlik össze a kontextus.
+Ezért determinisztikus a rendszer.
+Ezért ipari szintű a minőség.
+
+------------------------------------------------------------------------
+
+🎯 5) A tiltások szerepe (Negative Constraints)
+
+A tiltások adják a keretet.
+
+Tiltások:
+
+-   „ne generálj még kódot”
+-   „ne írj Hunglish megjegyzést”
+-   „ne keverd a tervezést és a generálást”
+-   „ne írj snapshot‑mentést a dialogba”
+-   „ne írj túl hosszú változóneveket”
+-   „ne írj imperatív promptot”
+
+A tiltás nem korlátozás, hanem minőségbiztosítás.
+
+------------------------------------------------------------------------
+
+🎯 6) A pozitív minták szerepe (Positive Constraints)
+
+A CutCalculator‑íz:
+
+-   accent frame
+-   inline validation
+-   shake animation
+-   egér alá pozicionálás
+-   snapshot‑kompatibilis layout
+-   audit log minden CRUD‑nál
+-   blokkfejléces tagolás
+-   emoji‑fókusz
+
+A pozitív minták adják a ritmust.
+A projekt stílusa így lesz egyedi és konzisztens.
+
+------------------------------------------------------------------------
+
+🎯 7) A prompt mint fejlesztőszorzó
+
+A jó prompttal:
+
+-   1 fejlesztő = 10 fejlesztő
+-   1 óra = 1 nap
+-   1 modul = 1 délután
+-   1 refaktor = 1 perc
+
+A prompt a fejlesztés multiplikátora.
+
+Ez a CutCalculator fejlesztési kultúra egyik legfontosabb felismerése.
+
+------------------------------------------------------------------------
+
+🎯 8) A prompt mint architektúra
+
+A prompt:
+
+-   modulhatárokat definiál
+-   API‑kat rögzít
+-   naming conventiont szab
+-   validációs mintákat ír elő
+-   snapshot‑logikát határoz meg
+-   audit‑folyamatokat rögzít
+
+A prompt nem csak kódot generál,
+hanem rendszert épít.
+
+------------------------------------------------------------------------
+
+🎯 9) A prompt mint minőségbiztosítás
+
+A prompt:
+
+-   tiltásokkal védi a minőséget
+-   pozitív mintákkal biztosítja a stílust
+-   kétlépcsős workflow‑val védi a kontextust
+-   snippet‑protokollal védi a kódot
+-   chunk‑handshake‑kel védi az inputot
+
+A prompt a QA része.
+
+------------------------------------------------------------------------
+
+🎯 10) A prompt mint fejlesztési paradigma
+
+A prompt‑vezérelt fejlesztés:
+
+-   nem trükk
+-   nem hack
+-   nem varázslat
+
+Ez egy új mérnöki paradigma, ahol:
+
+-   a prompt = specifikáció
+-   a prompt = architektúra
+-   a prompt = minőségbiztosítás
+-   a prompt = fejlesztési kultúra
+-   a prompt = DSL
+
+Ezért működik a CutCalculator fejlesztése olyan gördülékenyen.
+
+------------------------------------------------------------------------
+

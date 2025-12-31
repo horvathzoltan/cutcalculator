@@ -31,11 +31,18 @@ bool NeedCalculationDetailRegistry::insert(const NeedCalculationDetail& det) {
         zWarning("⚠️ NeedCalculationDetail insert: Material registry hiányzik");
         return false;
     }
-    auto* matRepo = dynamic_cast<IdentifiableRegistryBase*>(matRepoBase);
-    if (!matRepo || !matRepo->findEntityById(det.materialId)) {
-        zWarning(QString("⚠️ NeedCalculationDetail insert: material not found: %1").arg(det.materialId.toString()));
+    auto* matRepo = RegistryManager::instance().findByTypeName("MaterialMaster");
+    if (!matRepo) {
+        zWarning("⚠️ NeedCalculationDetail insert: Material registry hiányzik");
         return false;
     }
+
+    if (!matRepo->findEntityById(det.materialId)) {
+        zWarning(QString("⚠️ NeedCalculationDetail insert: material not found: %1")
+                     .arg(det.materialId.toString()));
+        return false;
+    }
+
 
     _data.append(det);
     persist();
