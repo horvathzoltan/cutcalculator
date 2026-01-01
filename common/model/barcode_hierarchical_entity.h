@@ -5,7 +5,8 @@
 #include "hierarchical_entity.h"
 //#include "barcode_identifiable_entity.h"
 
-struct BarcodeHierarchicalEntity: public BarcodeIdentifiableEntity, public HierarchicalBase
+struct BarcodeHierarchicalEntity: public BarcodeIdentifiableEntity,
+                                  public HierarchicalBase
 {
 // NINCS új mező
     // NINCS duplikált logika

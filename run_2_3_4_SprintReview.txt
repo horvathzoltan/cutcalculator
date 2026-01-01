@@ -1,0 +1,18 @@
+Kérlek, készíts egy professzionális Sprint Review dokumentumot a következő szempontok alapján:
+
+✅ Sprint célok – mi volt a kitűzött irány
+✅ Mi készült el – modulonként
+✅ Mi haladt – részletesen
+✅ Mi csúszott – okokkal
+✅ Mi volt a legnagyobb technikai eredmény
+✅ Mi volt a legnagyobb tanulság
+✅ Mi volt a legnagyobb akadály
+✅ Mit kell javítani a következő sprintben
+✅ Új ötletek, új modulok, új irányok
+✅ Snapshot a projekt aktuális állapotáról
+
+A dokumentum végén kérek:
+
+🎯 Következő sprint fókuszpontjai
+📌 Kockázatok és mitigáció
+🚀 Ajánlott sprint backlog

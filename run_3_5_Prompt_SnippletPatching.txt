@@ -12,16 +12,30 @@ Minden snippet előtt add meg:
 ============================================================
 ## 2) SNIPPET FORMÁTUM
 ============================================================
-A snippetet mindig ```cpp kódblokkon belül add meg.
+A snippetet mindig két külön ```cpp kódblokkon belül add meg:
 
-A formátum:
+RÉGI (old) blokk
+ÚJ (new) blokk
 
+Formátum:
+
+RÉGI:
 ```cpp
---- RÉGI (old)
 <régi kódrészlet pontosan>
---- ÚJ (new)
+
+ÚJ:
+```cpp
 <új kódrészlet pontosan>
 ```
+
+Ha teljesen új kódrészletet javasolsz (nem módosítás, hanem új függvény, új blokk vagy új beszúrás),
+akkor NEM kérek RÉGI blokkot. Ilyenkor csak egyetlen ```cpp kódblokkot adj,
+amely kizárólag az ÚJ kódot tartalmazza, és előtte egyértelműen írd le,
+hogy pontosan hova kell beszúrni (fájlnév, függvénynév vagy környezet, opcionális sor-támpont).
+
+Ha egy kódrészletet teljes egészében törölni kell, akkor NEM kérek RÉGI–ÚJ diffet.
+Ilyenkor csak egyetlen rövid jelzést adj, hogy a megadott helyen a kódrészletet teljesen el kell távolítani,
+és ne adj hozzá semmilyen új kódot.
 
 A snippet:
 - csak a módosított sorokat tartalmazza

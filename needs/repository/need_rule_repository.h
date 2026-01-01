@@ -13,7 +13,7 @@ ROL-RR,ROL-P
 /**
  * 📂 NeedRuleRepository – CSV import/export a NeedRule-hoz
  *
- * Hunglish: generikus repo sablonra épül, traits-ből kapja a pathot és headert.
+ * generikus repo sablonra épül, traits-ből kapja a pathot és headert.
  */
 class NeedRuleRepository {
 public:

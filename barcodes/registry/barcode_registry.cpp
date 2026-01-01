@@ -9,33 +9,44 @@
 
 BarcodeRegistry& BarcodeRegistry::instance() {
     static BarcodeRegistry reg;
-    reg.guardInstanceUsage();
     return reg;
 }
 
 const BarcodeRecord* BarcodeRegistry::findByCode(const QString& code) const {
-    for (const auto& r : _data)
+    for (const auto& r : _items) {
         if (r.code == code)
             return &r;
+    }
     return nullptr;
 }
 
 bool BarcodeRegistry::isBarcodeUnique(const QString& code) const {
-    for (const auto& r : _data)
+    for (const auto& r : _items) {
         if (r.code == code)
             return false;
+    }
     return true;
 }
 
-const BarcodeIdentifiableEntity* BarcodeRegistry::findEntityById(const QUuid& id) const {
-    Q_UNUSED(id);
-    // for (const auto& r : _data) {
-    //     if (r.entityId == id) {
-    //         // implicit upcast BarcodeRecord → IdentifiableEntity (ha szükséges)
-    //         return reinterpret_cast<const IdentifiableEntity*>(&r);
-    //     }
-    // }
-    return nullptr;
+// const BarcodeIdentifiableEntity* BarcodeRegistry::findEntityById(const QUuid& id) const {
+//     // for (const auto& r : _items) {
+//     //     if (r.entityId.has_value() && r.entityId == id)
+//     //         return reinterpret_cast<const BarcodeIdentifiableEntity*>(&r);
+//     // }
+//     return nullptr;
+// }
+
+
+bool BarcodeRegistry::add(const BarcodeRecord& r) {
+    if (!isBarcodeUnique(r.code)) {
+        zWarning(QString("Barcode collision: %1 (%2)")
+                     .arg(r.code, r.entityType));
+        zEventWARN(QString("Barcode ütközés: %1 (%2)")
+                       .arg(r.code, r.entityType));
+        return false;
+    }
+    _items.append(r);
+    return true;
 }
 
 bool BarcodeRegistry::registerNew(const QString& code,
@@ -72,72 +83,95 @@ bool BarcodeRegistry::registerNew(const QString& code,
     rec.entityType   = entityType;
     rec.entityId     = id;
     rec.introducedAt = QDateTime::currentDateTime();
-    _data.append(rec);
+    if (!add(rec)) return false;
 
     persist();
     return true;
 }
 
 
-// 🔐 Privát belső függvény – kötelező persistFlag
-bool BarcodeRegistry::registerData_private(const BarcodeRecord& record, bool persistFlag) {
-    if (!isBarcodeUnique(record.code)) {
-        zWarning(QString("Barcode collision: %1 (%2)")
-                     .arg(record.code, record.entityType));
-        zEventWARN(QString("Barcode ütközés: %1 (%2)")
-                       .arg(record.code, record.entityType));
-        return false;
-    }
+// // 🔐 Privát belső függvény – kötelező persistFlag
+// bool BarcodeRegistry::registerData_private(const BarcodeRecord& record, bool persistFlag) {
+//     if (!isBarcodeUnique(record.code)) {
+//         zWarning(QString("Barcode collision: %1 (%2)")
+//                      .arg(record.code, record.entityType));
+//         zEventWARN(QString("Barcode ütközés: %1 (%2)")
+//                        .arg(record.code, record.entityType));
+//         return false;
+//     }
 
-    _data.append(record);
+//     if (!add(record)) return false;
 
-    if (IS_VERBOSE_THIS()) {
-        zInfo(QString("Barcode registered: %1 [%2] {%3}")
-                  .arg(record.entityType)
-                  .arg(record.code)
-                  .arg(OptionalUtils::toString(record.entityId)));
-    }
+//     if (IS_VERBOSE_THIS()) {
+//         zInfo(QString("Barcode registered: %1 [%2] {%3}")
+//                   .arg(record.entityType)
+//                   .arg(record.code)
+//                   .arg(OptionalUtils::toString(record.entityId)));
+//     }
 
-    if (persistFlag) {
-        persist(); // 🔧 csak ha kell
-    }
+//     if (persistFlag) {
+//         persist(); // 🔧 csak ha kell
+//     }
 
-    return true;
-}
+//     return true;
+// }
 
 // Publikus API – azonnali perzisztálás
 bool BarcodeRegistry::registerData(const BarcodeRecord& record) {
-    return registerData_private(record, true);
+    if (!add(record)) return false;
+    persist();
+    return true;
+
 }
 
 // Publikus API – volatile, nem perzisztál
 bool BarcodeRegistry::registerData_volatile(const BarcodeRecord& record) {
-    return registerData_private(record, false);
+    //return registerData_private(record, false);
+    return add(record);
 }
 
-
 bool BarcodeRegistry::retire(const QString& code, const QString& reason) {
-    // 🔍 Keresd meg a rekordot
-    for (auto& r : _data) {
-        if (r.code != code) continue;
+    for (auto& r : _items) {
+        if (r.code == code) {
+            if (r.retiredAt.has_value()) {
+                zInfo(QString("Retire requested for already retired code: %1").arg(code));
+                return false;
+            }
 
-        if (r.retiredAt.has_value()){
-            zInfo(QString("Retire requested for already retired code: %1").arg(code));
-            return false;
+            r.retiredAt = QDateTime::currentDateTime();
+            zInfo(QString("Barcode retired: %1 (reason=%2)").arg(code, reason));
+
+            persist();
+            return true;
         }
-
-        r.retiredAt = QDateTime::currentDateTime();
-
-        zInfo(QString("Barcode retired: %1 (reason=%2)").arg(code, reason));
-
-        persist();
-        return true;
     }
 
-    // ⚠️ Nem találtuk → audit warning
     zWarning(QString("Retire requested for unknown code: %1").arg(code));
     return false;
 }
+
+// bool BarcodeRegistry::retire(const QString& code, const QString& reason) {
+//     // 🔍 Keresd meg a rekordot
+//     for (auto& r : _items) {
+//         if (r.code != code) continue;
+
+//         if (r.retiredAt.has_value()){
+//             zInfo(QString("Retire requested for already retired code: %1").arg(code));
+//             return false;
+//         }
+
+//         r.retiredAt = QDateTime::currentDateTime();
+
+//         zInfo(QString("Barcode retired: %1 (reason=%2)").arg(code, reason));
+
+//         persist();
+//         return true;
+//     }
+
+//     // ⚠️ Nem találtuk → audit warning
+//     zWarning(QString("Retire requested for unknown code: %1").arg(code));
+//     return false;
+// }
 
 void BarcodeRegistry::persist() const {
     const QString path = FileNameHelper::instance().getBarcodeCsvFile();

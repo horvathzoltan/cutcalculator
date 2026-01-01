@@ -1,0 +1,25 @@
+Kérlek, készíts professzionális Release Notes dokumentumot a következő verzióhoz:
+
+📦 Verziószám: X.Y.Z
+📅 Dátum: YYYY-MM-DD
+
+A dokumentum tartalmazza:
+
+✅ Újdonságok (New Features)
+✅ Fejlesztések (Improvements)
+✅ Hibajavítások (Fixes)
+✅ Architektúra változások
+✅ API változások (ha vannak)
+✅ Migrációs lépések (ha szükséges)
+✅ Snapshot a projekt aktuális állapotáról
+✅ Kiemelt modulok részletes leírása
+✅ Teljesítményjavítások
+✅ Stabilitási fejlesztések
+✅ UI változások
+✅ Dokumentáció frissítések
+
+A végén kérek:
+
+📌 Upgrade Guide (ha szükséges)
+📁 Érintett fájlok listája
+🔧 Build / deploy megjegyzések

@@ -1,6 +1,6 @@
 #pragma once
 #include "barcodes/registry/barcode_registry.h"
-//#include "common/model/entity_format_helper.h"
+#include "common/model/barcode_identifiable_entity.h"
 
 struct BarcodeRegistryHelper {
     template<typename T>

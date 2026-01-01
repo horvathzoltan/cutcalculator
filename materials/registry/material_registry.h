@@ -3,74 +3,22 @@
 #include <QVector>
 #include <QUuid>
 #include <QString>
-//#include <optional>
-#include "common/registry/registry_engine.h"
+#include "common/registry/barcode/barcode_identifiable_registry_engine.h"
+#include "common/system/verbose_manager.h"
 #include "materials/model/material_master.h"
-//#include "common/registry/barcode_identifiable_registry_base.h"
-//#include "common/registry/barcode_validator.h"
-//#include "common/logger/event_logger.h"
-#include "common/registry/barcode_helper.h"
 
-/**
- * @brief MaterialRegistry – a betöltött anyagok törzsadata.
- *
- * A BarcodeIdentifiableRegistryBase-ből öröklődik, így automatikusan regisztrálja magát
- * a RegistryManager-be. Auditbarát elemszám riportot ad.
- */
-
-// class MaterialRegistry: public BarcodeIdentifiableRegistryBase {
-// private:
-//     MaterialRegistry() : BarcodeIdentifiableRegistryBase("MaterialRegistry", "Material") {}//    MaterialRegistry() = default;  // 🔐 Privát konstruktor a singletonhoz
-//     MaterialRegistry(const MaterialRegistry&) = delete;
-
-//     QVector<MaterialMaster> _data;  // 📦 Betöltött anyagtörzs lista
-// public:
-
-//     // 🔁 Singleton elérés
-//     static MaterialRegistry& instance();
-
-//     //QString typeName() const override { return "Material"; }
-//     int size() const override { return _data.size(); }
-
-//     //void setData(const QVector<MaterialMaster>& v);
-//     // ➕ Új anyag hozzáadása, csak ha code egyedi
-//     bool registerData(const MaterialMaster& material);
-
-//     const QVector<MaterialMaster>& readAll() const { return _data;}
-//     const MaterialMaster* findById(const QUuid& id) const;
-//     const MaterialMaster* findByBarcode(const QString& barcode) const;
-
-//     bool isBarcodeUnique(const QString& barcode) const;
-
-//     bool isEmpty() const { return _data.isEmpty(); }
-
-//     const BarcodeIdentifiableEntity* findEntityById(const QUuid& id) const override;
-
-//     //int size() const { return _data.size(); }
-// };
-class MaterialRegistry : public RegistryEngine<MaterialMaster> {
+class MaterialRegistry : public BarcodeIdentifiableRegistryEngine<MaterialMaster> {
 public:
     static MaterialRegistry& instance();
-    static void initializeSingleton();
+    //static void initializeSingleton();
 
 private:
     MaterialRegistry(); // <-- saját ctor
-    friend void initializeAllRegistries();
+    //friend void initializeAllRegistries();
 
 public:
-    // const BarcodeIdentifiableEntity* findEntityById(const QUuid& id) const {
-    //     return BarcodeHelper::findEntityById(_items, id);
-    // }
-
-    MaterialMaster* findByBarcode(const QString& barcode) {
-        return BarcodeHelper::findByBarcode(_items, barcode);
-    }
 
     bool registerData(const MaterialMaster& e);
-
-    const BarcodeIdentifiableEntity* findEntityById(const QUuid& id) const override {
-        return BarcodeHelper::findEntityById(_items, id);
-    }
 
     bool verbose() const { return IS_VERBOSE_THIS(); }
 };

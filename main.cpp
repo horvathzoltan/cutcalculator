@@ -12,7 +12,7 @@
 #include "common/startup/startup_manager.h"
 #include "common/system/lifecycle_manager.h"
 #include "common/startup/startup_status_manager.h"
-#include "common/registry/registry_manager.h"
+#include "common/registry/manager/registry_manager.h"
 #include "common/utils/geometry_helper.h"
 #include "common/snapshot/snapshot_manager.h"
 

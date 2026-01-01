@@ -51,7 +51,7 @@ SOURCES += \
     common/logger/event_logger.cpp \
     common/logger/log_manager.cpp \
     common/logger/logger.cpp \
-    common/registry/registry_base.cpp \
+    common/registry/base/registry_base.cpp \
     common/settings/settings_manager.cpp \
     common/startup/startup_manager.cpp \
     common/startup/startup_status_manager.cpp \
@@ -90,13 +90,15 @@ HEADERS += \
     common/model/hierarchical_base.h \
     common/model/identifiable_entity.h \
     common/model/iregistry_entity.h \
-    common/registry/barcode_helper.h \
-    common/registry/barcode_registry_helper.h \
-    common/registry/combined_helper.h \
-    common/registry/hierarchy_helper.h \
-    common/registry/registry_engine.h \
-    common/registry/registry_lookup.h \
-    common/registry/registry_traits.h \
+    common/registry/barcode/barcode_hierarchical_registry_engine.h \
+    common/registry/barcode/barcode_identifiable_registry_engine.h \
+    common/registry/barcode/barcode_registry_helper.h \
+    common/registry/base/hierarchical_registry_engine.h \
+    common/registry/barcode/ibarcode_identifiable_registry_base.h \
+    common/registry/base/identifiable_registry_engine.h \
+    common/registry/base/registry_engine_base.h \
+    common/registry/manager/registry_lookup.h \
+    common/registry/manager/registry_traits.h \
     common/snapshot/snapshot_manager.h \
     common/snapshot/workbench_snapshot.h \
     common/system/nameof.hpp \
@@ -111,6 +113,7 @@ HEADERS += \
     common/utils/table_formatter.h \
     connections/connection_entity.h \
     connections/connection_registry.h \
+    connections/connection_registry_engine.h \
     connections/connection_repository.h \
     materials/view/color_badge.h \
     needs/manager/material_requirements_manager.h \
@@ -149,8 +152,8 @@ HEADERS += \
     common/logger/logger.h \
     common/csv/rowerror.h \
     common/model/hierarchical_entity.h \
-    common/registry/registry_base.h \
-    common/registry/registry_manager.h \
+    common/registry/base/registry_base.h \
+    common/registry/manager/registry_manager.h \
     common/settings/settings_manager.h \
     common/startup/startup_manager.h \
     common/startup/startup_status.h \
@@ -198,7 +201,10 @@ DISTFILES += \
     run.txt \
     run_2_1_AIDevelopmentHandbook.txt \
     run_2_2_Dokumentacio.txt \
-    run_2_3_Allapottabla.txt \
+    run_2_3_1_Allapottabla.txt \
+    run_2_3_2_DailySync.txt \
+    run_2_3_3_ReleaseNotes.txt \
+    run_2_3_4_SprintReview.txt \
     run_2_5_Prompt_DeveloperManual.txt \
     run_2_6_ManualsWorkflow.txt \
     run_3_1_Manifest.txt \

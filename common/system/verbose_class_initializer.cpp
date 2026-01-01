@@ -7,7 +7,7 @@
 #include "products/registry/product_registry.h"
 #include "barcodes/validator/barcode_validator.h"
 #include "barcodes/helpers/barcode_collision_helper.h"
-#include "common/registry/registry_manager.h"
+#include "common/registry/manager/registry_manager.h"
 #include "common/utils/table_formatter.h"
 #include "ui/widgets/overlay_icon_widget.h"
 

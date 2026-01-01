@@ -1,10 +1,10 @@
 #pragma once
-#include "common/registry/registry_traits.h"
+#include "common/registry/manager/registry_traits.h"
 //#include "connection_registry.h"
 
 #include <QUuid>
 #include <optional>
-#include "common/registry/registry_lookup.h"
+#include "common/registry/manager/registry_lookup.h"
 
 /**
  * 🧩 ConnectionEntity – generikus kapcsolótábla sor

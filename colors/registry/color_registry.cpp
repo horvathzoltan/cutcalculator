@@ -3,45 +3,64 @@
 // Singleton implementáció
 ColorRegistry& ColorRegistry::instance() {
     static ColorRegistry reg;
-    reg.guardInstanceUsage();
     return reg;
 }
 
 void ColorRegistry::clear() {
-    _data.clear();
+    _items.clear();
     _byCode.clear();
 }
 
 void ColorRegistry::setData(const QVector<NamedColor>& v) {
     clear();
-    _data = v;
-    for (int i = 0; i < _data.size(); ++i) {
-        _byCode.insert(_data[i].code(), i);
-    }
+    for (const auto& nc : v)
+        insert(nc);
 }
 
 void ColorRegistry::insert(const NamedColor& nc) {
-    int idx = _data.size();
-    _data.append(nc);
+    Base::guardInstanceUsage();
+    int idx = _items.size();
+    _items.append(nc);
     _byCode.insert(nc.code(), idx);
 }
 
+// const NamedColor* ColorRegistry::findByCode(const QString& code) const {
+//     auto it = _byCode.find(code);
+//     if (it == _byCode.end())
+//         return nullptr;
+
+//     return findIf([&](const NamedColor& nc){
+//         return &nc == &_items[it.value()];
+//     });
+// }
+
 const NamedColor* ColorRegistry::findByCode(const QString& code) const {
+    Base::guardInstanceUsage();
     auto it = _byCode.find(code);
     if (it != _byCode.end()) {
-        return &_data[it.value()];
+        return &_items[it.value()];
     }
     return nullptr;
 }
 
+
+// QVector<NamedColor> findBySystem(RalSystem sys) const {
+//     Base::guardInstanceUsage();
+//     QVector<NamedColor> result;
+//     for (const auto& nc : _items)
+//         if (nc.system() == sys)
+//             result.append(nc);
+//     return result;
+// }
+
 QVector<NamedColor> ColorRegistry::findBySystem(RalSystem sys) const {
     QVector<NamedColor> result;
-    for (const auto& nc : _data) {
-        if (nc.system() == sys) {
+    forEach([&](const NamedColor& nc){
+        if (nc.system() == sys)
             result.append(nc);
-        }
-    }
+    });
     return result;
 }
+
 
 

@@ -6,9 +6,9 @@
 #include "common/utils/filehelper.h"
 #include "common/csv/filecontext.h"
 #include "common/logger/logger.h"
-#include "common/registry/registry_traits.h"
+#include "common/registry/manager/registry_traits.h"
 #include "connection_registry.h"
-#include "common/registry/registry_lookup.h"
+#include "common/registry/manager/registry_lookup.h"
 
 
 struct ConnectionRow {
@@ -27,7 +27,8 @@ struct ConnectionRow {
 template<typename ConnectionType, typename Traits>
 class ConnectionRepository {
 public:
-    static bool load(class ConnectionRegistry<ConnectionType>& registry) {
+    template<typename RegistryEngine>
+    static bool load(RegistryEngine& registry) {
         const QString path = Traits::filePath();
 
         using RegistryType = typename Traits::RegistryType;

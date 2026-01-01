@@ -1,6 +1,6 @@
 #include "barcodes/helpers/barcode_collision_helper.h"
 #include "common/logger/event_logger.h"
-#include "common/registry/registry_manager.h"
+#include "common/registry/manager/registry_manager.h"
 #include "common/utils/optional_utils.h"
 
 QString BarcodeCollisionHelper::formatRowDisplay(const RowInfo& row) {

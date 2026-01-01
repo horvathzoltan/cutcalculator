@@ -4,7 +4,7 @@
 #include <QVector>
 #include "calculation/view/calculation_mode_detail_view.h"
 #include "calculation/registry/need_calculation_detail_registry.h"
-#include "common/registry/registry_manager.h"
+#include "common/registry/manager/registry_manager.h"
 #include "common/logger/event_logger.h"
 
 /**

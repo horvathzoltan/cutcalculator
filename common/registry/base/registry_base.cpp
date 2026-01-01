@@ -1,6 +1,6 @@
 #include "registry_base.h"
 #include "common/system/verbose_manager.h"
-#include "registry_manager.h"
+#include "common/registry/manager/registry_manager.h"
 
 RegistryBase::RegistryBase(const QString& registryName,
                            const QString& entityTypeName)

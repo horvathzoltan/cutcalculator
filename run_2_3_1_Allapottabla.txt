@@ -1,0 +1,34 @@
+Kérlek, két lépésben dolgozzunk:
+
+1) Először készíts egy minden részletre kiterjedő, ám mégis tömör, fejlesztőbarát összefoglalót a mai napról
+   az alapján, amit leírok vagy amit a fájlok/diff mutatnak.
+   Ez legyen a "Mai nap összefoglalója" blokk.
+
+2) A második lépésben frissítsd az állapottáblát és a roadmapet
+   a következő szabályok szerint:
+
+- ami elkészült → ✅ Kész
+- ami haladt → 🚧 Folyamatban
+- ami tervezés alatt → 📐 Tervezés
+- ami SOS volt → 🔥 SOS
+- ami új ötlet → 💡 Új ötlet
+- semmit ne törölj és ne vonj össze
+- minden státuszváltozást vezess át
+
+Emoji‑készlet:
+📐 = Tervezés
+🚧 = Folyamatban
+✅ = Kész
+🔥 = SOS / Tűzoltás
+💡 = Új ötlet
+
+A frissítés során készítsd el a következő blokkokat:
+
+📊 Állapottábla
+📊 Idővonalas roadmap
+✨ Röviden – stratégiai összefoglaló
+📌 Mai eredmények – részletes taktikai napzáró
+🎯 Prioritási sorrend – fókuszpont lista
+🚀 Sprint fókusz (🔥 SOS pontokkal) és 👉 Holnap fókusz
+
+Végül adj egy git commit subjectet (max 55 karakter).

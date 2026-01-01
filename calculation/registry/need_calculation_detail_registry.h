@@ -1,9 +1,9 @@
 #pragma once
 #include <QVector>
 #include <optional>
-#include "common/registry/registry_base.h"
-#include "common/registry/registry_manager.h"
-#include "common/logger/event_logger.h"
+#include "common/registry/base/registry_base.h"
+#include "common/registry/manager/registry_manager.h"
+//#include "common/logger/event_logger.h"
 #include "calculation/model/need_calculation_detail.h"
 
 /**
