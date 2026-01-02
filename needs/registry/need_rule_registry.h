@@ -3,8 +3,10 @@
 #include "connections/connection_registry_engine.h"
 #include "needs/model/need_rule.h"
 
-class NeedRuleRegistry : public ConnectionRegistryEngine<NeedRule>
+class NeedRuleRegistry : public ConnectionRegistryEngine<NeedRule>,
+                         public RegisterMe<NeedRuleRegistry>
 {
+    AUTO_REGISTER_REGISTRY(NeedRuleRegistry);
 public:
     static NeedRuleRegistry& instance();
 

@@ -19,7 +19,6 @@ SOURCES += \
     calcmodes/dialogs/mode_name_dialog.cpp \
     common/layout/layout_default_store.cpp \
     common/snapshot/snapshot_manager.cpp \
-    common/system/registry_initializer.cpp \
     common/system/verbose_class_initializer.cpp \
     common/system/verbose_manager.cpp \
     common/utils/attention_blinker.cpp \
@@ -102,7 +101,7 @@ HEADERS += \
     common/snapshot/snapshot_manager.h \
     common/snapshot/workbench_snapshot.h \
     common/system/nameof.hpp \
-    common/system/registry_initializer.h \
+    common/system/registry_catalog.h \
     common/system/verbose_class_initializer.h \
     common/system/verbose_manager.h \
     common/utils/attention_blinker.h \

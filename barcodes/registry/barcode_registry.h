@@ -18,7 +18,10 @@
  * - Singleton, auditbarát elemszám riportot ad.
  * - Globális uniqueness: egy kód soha nem adható ki újra.
  */
-class BarcodeRegistry : public RegistryEngineBase<BarcodeRecord> {
+class BarcodeRegistry : public RegistryEngineBase<BarcodeRecord>,
+                        public RegisterMe<BarcodeRegistry>
+{
+    AUTO_REGISTER_REGISTRY(BarcodeRegistry);
 private:
     BarcodeRegistry() : RegistryEngineBase<BarcodeRecord>("BarcodeRegistry", "Barcode") {}
     BarcodeRegistry(const BarcodeRegistry&) = delete;
@@ -50,5 +53,7 @@ public:
     bool retire(const QString &code, const QString &reason);
 
     void persist() const;   // 🔧 Új: on-the-fly perzisztálás
-    bool registerData_volatile(const BarcodeRecord &record);    
+    bool registerData_volatile(const BarcodeRecord &record);
 };
+
+

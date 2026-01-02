@@ -1,19 +1,85 @@
 Kérlek, két lépésben dolgozzunk:
 
-1) Először készíts egy minden részletre kiterjedő, ám mégis tömör, fejlesztőbarát összefoglalót a mai napról
-   az alapján, amit leírok vagy amit a fájlok/diff mutatnak.
-   Ez legyen a "Mai nap összefoglalója" blokk.
+1)  Először készíts egy minden részletre kiterjedő, ám mégis tömör,
+    fejlesztőbarát összefoglalót a mai napról
+    az alapján, amit leírok vagy amit a fájlok/diff mutatnak.
+    Ez legyen a “Mai nap összefoglalója” blokk.
 
-2) A második lépésben frissítsd az állapottáblát és a roadmapet
-   a következő szabályok szerint:
+------------------------------------------------------------------------
 
-- ami elkészült → ✅ Kész
-- ami haladt → 🚧 Folyamatban
-- ami tervezés alatt → 📐 Tervezés
-- ami SOS volt → 🔥 SOS
-- ami új ötlet → 💡 Új ötlet
-- semmit ne törölj és ne vonj össze
-- minden státuszváltozást vezess át
+🔒 Állapottábla integritás‑ellenőrzése (új szabály)
+
+Mielőtt bármilyen állapottábla‑frissítést végrehajtanál, ellenőrizd a
+felhasználó által megadott állapottábla szerkezetét.
+
+A korábban használt formátum három oszlopból áll:
+
+-   Modul / Feladat
+-   Állapot
+-   Megjegyzés
+
+Ha a felhasználó által megadott táblázat ettől eltér (hiányzik oszlop,
+új oszlop jelent meg, vagy a formátum sérült), akkor:
+
+1.  Ne frissítsd automatikusan a táblázatot.
+2.  Jelezd, hogy a táblázat szerkezete sérült vagy hiányos.
+3.  Kérdezd meg a felhasználótól:
+    -   szeretné, hogy rekonstruáld a hiányzó oszlopokat a korábbi
+        ismert állapot alapján, vagy
+    -   új táblastruktúrát szeretne bevezetni.
+4.  Csak a felhasználó megerősítése után folytasd a frissítést.
+
+Ez a szabály megakadályozza, hogy egy sérült vagy hiányos táblázat
+csendben tönkretegye a roadmapet vagy az állapotkezelést.
+
+------------------------------------------------------------------------
+Állapottábla formátumkövetelmény
+
+Az állapottábla kimenetét minden esetben a következő formátumban kell
+előállítani:
+
+1.  Három kötelező oszlop:
+    -   Modul / Feladat
+    -   Állapot
+    -   Megjegyzés
+2.  A táblázatnak tartalmaznia kell:
+    -   felső és alsó vízszintes elválasztó vonalat
+    -   oszlopfejlécet
+    -   fejléc alatti elválasztó vonalat
+    -   minden sor egyetlen sorblokk legyen (nincs üres sor két sor
+        között)
+    -   a Megjegyzés oszlop több sorra törhet, de a sorok között nem
+        lehet üres sor
+3.  A táblázat szerkezete így nézzen ki:
+
+      -------------------------------------------------------------------------------
+      Modul / Feladat                     Állapot            Megjegyzés
+      ----------------------------------- ------------------ -------------------------
+      <sor1-modul>                        <állapot>          <megjegyzés>
+      <sor2-modul>                        <állapot>          <megjegyzés>
+      ...
+      -------------------------------------------------------------------------------
+
+4.  A sorhossz nincs limitálva, a Megjegyzés oszlop tartalma
+    tetszőlegesen hosszú lehet.
+
+5.  Nem lehet üres sor két táblázatsor között.
+
+6.  A táblázatnak vizuálisan egységesnek, monospaced‑kompatibilisnek
+    kell lennie.
+
+------------------------------------------------------------------------
+
+2)  A második lépésben frissítsd az állapottáblát és a roadmapet
+    a következő szabályok szerint:
+
+-   ami elkészült → ✅ Kész
+-   ami haladt → 🚧 Folyamatban
+-   ami tervezés alatt → 📐 Tervezés
+-   ami SOS volt → 🔥 SOS
+-   ami új ötlet → 💡 Új ötlet
+-   semmit ne törölj és ne vonj össze
+-   minden státuszváltozást vezess át
 
 Emoji‑készlet:
 📐 = Tervezés
@@ -31,4 +97,6 @@ A frissítés során készítsd el a következő blokkokat:
 🎯 Prioritási sorrend – fókuszpont lista
 🚀 Sprint fókusz (🔥 SOS pontokkal) és 👉 Holnap fókusz
 
-Végül adj egy git commit subjectet (max 55 karakter).
+Végül adj egy git commit subjectet (max 55 karakter). ***
+<git‑commit‑subject‑ide>
+***

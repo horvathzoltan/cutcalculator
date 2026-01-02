@@ -1,34 +1,35 @@
 #pragma once
 #include "registry_base.h"
 #include <QList>
+#include "common/system/registry_catalog.h"
 
-template<typename T>
+template<typename TEntity>//, typename TDerived>
 class RegistryEngineBase : public RegistryBase {
 public:
     using Base = RegistryBase;
-    using EntityType = T;
+    using EntityType = TEntity;
 
     RegistryEngineBase(const QString& registryName,
                        const QString& entityTypeName)
         : RegistryBase(registryName, entityTypeName)
     {}
 
-    bool add(const T& e) {
+    bool add(const TEntity& e) {
         guardInstanceUsage();
         _items.append(e);
         return true;
     }
 
-    QList<const T*> all() const {
+    QList<const TEntity*> all() const {
         guardInstanceUsage();
-        QList<const T*> out;
+        QList<const TEntity*> out;
         out.reserve(_items.size());
         for (const auto& item : _items)
             out.append(&item);
         return out;
     }
 
-    QList<T> readAll() const {
+    QList<TEntity> readAll() const {
         guardInstanceUsage();
         return _items;
     }
@@ -58,7 +59,7 @@ public:
     }
 
     template<typename Predicate>
-    const T* findIf(Predicate&& pred) const {
+    const TEntity* findIf(Predicate&& pred) const {
         guardInstanceUsage();
         for (const auto& item : _items) {
             if (pred(item))
@@ -66,7 +67,8 @@ public:
         }
         return nullptr;
     }
-
+//private:
+    //inline static bool _autoRegister = (RegistryCatalog::add<TDerived>(), true);
 protected:
-    QList<T> _items;
+    QList<TEntity> _items;
 };

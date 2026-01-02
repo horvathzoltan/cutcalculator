@@ -1,206 +1,115 @@
-1) Mai nap összefoglalója
-
-(tömör, mégis minden lényeges részletet lefedő, fejlesztőbarát
-összefoglaló)
-
-A mai nap a CutCalculator egyik legmélyebb és legtermékenyebb
-architekturális napja volt.
-A fókusz a kapcsolótáblák egységes, engine‑alapú architektúrájának
-megteremtése volt — és ez maradéktalanul sikerült.
-
-🔧 1. Megszületett a ConnectionEntity‑alapú kapcsolótábla‑modell
-
-A felismerés, hogy bármely kapcsolótábla leképezhető egy
-ConnectionEntity<Left,Right> struktúrára, új korszakot nyitott:
-
--   két GUID (leftId, rightId)
--   registry_traits alapján visszafejthető entitások
--   barcode‑alapú CSV import/export
--   auditbarát, domain‑tiszta modell
-
-Ez mostantól a kapcsolótáblák univerzális alapja.
+Zoltán, itt a kétlépcsős feldolgozás a kérésed szerint.
+A mellékelt dokumentum alapján dolgoztam, minden részletet beépítve,
+mégis tömören és fejlesztőbarát módon.
 
 ------------------------------------------------------------------------
 
-🧩 2. Megszületett a ConnectionRegistryEngine
+📝 1) Mai nap összefoglalója
 
-A régi ConnectionRegistry teljesen kiváltásra került.
-Az új engine:
+A mai nap a CutCalculator és a teljes registry‑architektúra egyik
+legmélyebb, legproduktívabb és legátfogóbb fejlesztési napja volt.
+A fókusz a generikus kapcsolótábla‑framework megalkotása, az
+engine‑alapú registry‑rendszer egységesítése és a CSV‑pipeline
+modernizálása volt.
 
--   a RegistryEngineBase‑re épül
--   guardolt
--   auditbarát
--   RegistryManager‑integrált
--   támogatja:
+🔧 1. ConnectionEntity – a kapcsolótáblák új univerzális modellje
+
+-   Megszületett a ConnectionEntity<Left,Right> alapstruktúra.
+-   Két GUID‑dal (leftId, rightId) reprezentál minden kapcsolatot.
+-   registry_traits alapján visszafejthető entitások.
+-   Támogatja a barcode‑alapú CSV import/exportot.
+-   Domain‑tiszta, auditbarát, engine‑független.
+-   Ez lett minden kapcsolótábla új alapja.
+
+🧩 2. ConnectionRegistryEngine – a régi ConnectionRegistry teljes kiváltása
+
+-   A RegistryEngineBase‑re épülő új engine elkészült.
+-   Guardolt, auditbarát, RegistryManager‑integrált.
+-   Támogatott műveletek:
     -   insert
     -   remove(left,right)
     -   findByLeft / findByRight
     -   setData / readAll
--   domainfüggetlen, bármely kapcsolótáblára alkalmazható
-
-Ez a mai nap egyik legfontosabb eredménye.
-
-------------------------------------------------------------------------
+-   Teljesen domainfüggetlen → bármely kapcsolótáblára alkalmazható.
+-   A nap egyik legfontosabb eredménye.
 
 📚 3. NeedRuleRegistry teljes újraírása engine‑alapon
 
-A NeedRuleRegistry:
-
--   már nem örököl a régi ConnectionRegistry‑ből
--   teljesen engine‑alapú
--   Q_GLOBAL_STATIC nélkül is illeszkedik az életciklusba
--   CSV load/save működik
--   auditban megjelenik
--   stabil, tiszta, domain‑helyes
-
-A logban látszik:
-
-    NeedRuleRegistry | NeedRule | 4
-
-Ez az új architektúra első éles bizonyítéka.
-
-------------------------------------------------------------------------
+-   Már nem örököl a régi ConnectionRegistry‑ből.
+-   Teljesen engine‑alapú, tiszta, stabil.
+-   CSV load/save működik.
+-   Auditban megjelenik.
+-   Q_GLOBAL_STATIC nélkül is illeszkedik az életciklusba.
+-   Logban: NeedRuleRegistry | NeedRule | 4 → bizonyítottan működik.
 
 📂 4. ConnectionRepository modernizálása
 
-A load() és save() mostantól:
+-   load() / save() mostantól bármilyen engine‑nel működik.
+-   Barcode‑ból feloldja a bal/jobb entitást.
+-   ConnectionEntity‑t épít.
+-   Auditált hibakezelést ad.
+-   A CSV‑pipeline teljesen modernizálva lett.
 
--   bármilyen engine‑t elfogad (setData + readAll alapján)
--   barcode‑ból feloldja a bal/jobb entitást
--   ConnectionEntity‑t épít
--   auditálható hibakezelést ad
-
-Ez a CSV‑pipeline teljes modernizációja.
-
-------------------------------------------------------------------------
-
-🧱 5. A teljes rendszer stabilan futott az új kapcsolótáblával
-
-A log alapján:
+🧱 5. A teljes rendszer stabilan futott az új architektúrával
 
 -   NeedRuleRepository → ConnectionRepository → NeedRuleRegistry
-    pipeline hibátlan
--   Registry audit összesen: 1529 elem
--   UI stabil, snapshot rendszer működik
--   semmilyen regresszió nem jelent meg
+    pipeline hibátlan.
+-   Registry audit: 1529 elem.
+-   UI stabil, snapshot rendszer működik.
+-   Nincs regresszió.
 
-Ez bizonyítja, hogy az új architektúra stabil, tiszta és skálázható.
-
-------------------------------------------------------------------------
-
-🚀 6. A következő lépés: NeedCalc / NeedCalcDetail
-
-A mai nap eredményei megnyitották az utat a következő nagy modulhoz:
+🚀 6. Következő modulok előkészítve
 
 -   NeedCalc = ConnectionEntity<ProductMaster, MaterialMaster>
 -   NeedCalcDetail = ConnectionEntity<NeedCalc, MaterialMaster>
-
-Mindkettő tökéletesen illeszkedik az új frameworkbe.
-
-------------------------------------------------------------------------
-
-2) Állapottábla és roadmap frissítése
-
-Az alábbi frissítés a mai eredmények alapján készült, a szabályaid
-szerint.
+-   Mindkettő tökéletesen illeszkedik az új frameworkbe.
 
 ------------------------------------------------------------------------
 
-📊 Állapottábla – frissítve
+📊 2) Állapottábla – frissítve
 
-  -----------------------------------------------------------------------
-  Modul / Feladat                 Állapot          Megjegyzés
-  ------------------------------- ---------------- ----------------------
-  Material pipeline               ✅ Kész          Stabil validátor
-
-  Product pipeline                ✅ Kész          Export/import végleges
-
-  Logger subsystem                ✅ Kész          Auditálható logolás
-
-  Startup subsystem               ✅ Kész          Snapshot-aware init
-
-  Settings subsystem              ✅ Kész          Percent-based layout
-
-  FileNameHelper                  ✅ Kész          ui_snapshots
-                                                   integrálva
-
-  CsvReader utility               ⚠️ Függőség      Importerhez
-                                                   szétválasztva
-
-  RalImporter modul               ✅ Kész          ColorRegistry
-                                                   integráció
-
-  OrderManager                    📐 Tervezés      Modellek, státuszok
-
-  CustomerMaster                  📐 Tervezés      Autocomplete
-
-  CutCalculator                   🚧 Folyamatban   Preview előkészítve
-
-  NeedsPresenter + NeedsView      ✅ Kész          MVP működik
-
-  UI réteg (Qt)                   📐 Tervezés      Order entry dialog
-
-  Audit funkció                   📐 Tervezés      AuditEntry + Service
-
-  Test framework                  ✅ Kész          EventLogger tests
-
-  NamedColor / Color registry     ✅ Kész          Pantone-ready
-
-  NeedRule                        ✅ Kész          Új engine‑alapú
-                                                   pipeline
-
-  NeedCalculation                 🚧 Folyamatban   Következő
-                                                   kapcsolótábla
-
-  NeedCalculationDetail           🚧 Folyamatban   MaterialPicker
-                                                   integráció
-
-  Formula értelmezés              📐 Tervezés      cparse integráció
-
-  SOS / Tűzoltás                  🔥 SOS           NeedCalculation
-                                                   SAVE→RELOAD
-
-  Generikus kapcsolótábla         ✅ Kész          ConnectionEntity +
-                                                   Engine
-
-  BarcodeValidator subsystem      ✅ Kész          Ütközéskezelés
-
-  BarcodeTable refaktor           ✅ Kész          Model/repo/registry
-
-  DataStateReporter               ✅ Kész          Audit riport
-
-  MVP logika                      🚧 Folyamatban   Presenter/Manager
-                                                   tisztítás
-
-  VerboseManager                  ✅ Kész          Verbosity routing
-
-  MaterialPickerDialog            ✅ Kész          Debounce + audit
-
-  RegistryAuditReporter           ✅ Kész          Audit összefoglaló
-
-  Screen-change detector          ✅ Kész          Snapshot integráció
-
-  GeometryHelper finomítás        ✅ Kész          Deferred restore
-
-  SnapshotManager                 ✅ Kész          Monitorprofil alapú
-
-  LayoutDefaultStore              ✅ Kész          Fallback baseline
-
-  UI Snapshot Architecture        ✅ Kész          Teljes architektúra
-
-  OverlayIconWidget               ✅ Kész          Cache + render
-                                                   pipeline
-
-  Overlay‑alapú adat‑létezés      💡 Új ötlet      UX-szabály
-  jelzés
-
-  EventLog tisztítása             💡 Új ötlet      SystemLog
-                                                   szétválasztás
-
-  CSV warning UX                  💡 Új ötlet      Ikonváltás
-  -----------------------------------------------------------------------
-
-------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+Modul / Feladat                     Állapot            Megjegyzés
+----------------------------------- ------------------ -------------------------
+Material pipeline                   ✅ Kész            Stabil validátor
+Product pipeline                    ✅ Kész            Export/import végleges
+Logger subsystem                    ✅ Kész            Auditálható logolás
+Startup subsystem                   ✅ Kész            Snapshot-aware init
+Settings subsystem                  ✅ Kész            Percent-based layout
+FileNameHelper                      ✅ Kész            ui_snapshots integrálva
+CsvReader utility                   ⚠️ Függőség        Importerhez szétválasztva
+RalImporter modul                   ✅ Kész            ColorRegistry integráció
+OrderManager                        📐 Tervezés        Modellek, státuszok
+CustomerMaster                      📐 Tervezés        Autocomplete
+CutCalculator                       🚧 Folyamatban     Preview előkészítve
+NeedsPresenter + NeedsView          ✅ Kész            MVP működik
+UI réteg (Qt)                       📐 Tervezés        Order entry dialog
+Audit funkció                       📐 Tervezés        AuditEntry + Service
+Test framework                      ✅ Kész            EventLogger tests
+NamedColor / Color registry         ✅ Kész            Pantone-ready
+NeedRule                            ✅ Kész            Új engine‑alapú pipeline
+NeedCalculation                     🚧 Folyamatban     Következő kapcsolótábla
+NeedCalculationDetail               🚧 Folyamatban     MaterialPicker integráció
+Formula értelmezés                  📐 Tervezés        cparse integráció
+SOS / Tűzoltás                      🔥 SOS             NeedCalculation SAVE→RELOAD
+Generikus kapcsolótábla             ✅ Kész            ConnectionEntity + Engine
+BarcodeValidator subsystem          ✅ Kész            Ütközéskezelés
+BarcodeTable refaktor               ✅ Kész            Model/repo/registry
+DataStateReporter                   ✅ Kész            Audit riport
+MVP logika                          🚧 Folyamatban     Presenter/Manager tisztítás
+VerboseManager                      ✅ Kész            Verbosity routing
+MaterialPickerDialog                ✅ Kész            Debounce + audit
+RegistryAuditReporter               ✅ Kész            Audit összefoglaló
+Screen-change detector              ✅ Kész            Snapshot integráció
+GeometryHelper finomítás            ✅ Kész            Deferred restore
+SnapshotManager                     ✅ Kész            Monitorprofil alapú
+LayoutDefaultStore                  ✅ Kész            Fallback baseline
+UI Snapshot Architecture            ✅ Kész            Teljes architektúra
+OverlayIconWidget                   ✅ Kész            Cache + render pipeline
+Overlay‑alapú adat‑létezés jelzés   💡 Új ötlet        UX-szabály
+EventLog tisztítása                 💡 Új ötlet        SystemLog szétválasztás
+CSV warning UX                      💡 Új ötlet        Ikonváltás
+-------------------------------------------------------------------------------
 
 📊 Idővonalas roadmap – frissítve
 
@@ -256,7 +165,7 @@ szerint.
 
 1.  Megszületett a kapcsolótábla‑framework
     ConnectionEntity + ConnectionRegistryEngine → bármennyi
-    kapcsolótábla kezelhető.
+    kapcsolótábla egységesen kezelhető.
 
 2.  NeedRuleRegistry engine‑alapúvá vált
     Auditált, guardolt, CSV‑kompatibilis, stabil.
@@ -290,7 +199,7 @@ szerint.
 
 🎯 Prioritási sorrend – fókuszpont lista
 
-1.  NeedCalculation SAVE→RELOAD hiba (🔥)
+1.  🔥 NeedCalculation SAVE→RELOAD hiba
 2.  NeedCalculation pipeline engine‑alapra hozása
 3.  NeedCalculationDetail workflow
 4.  MaterialPicker integráció NeedCalcDetail‑hez
@@ -299,8 +208,6 @@ szerint.
 7.  BOMWorkbench UX finomítások
 
 ------------------------------------------------------------------------
-
-🚀 Sprint fókusz + 👉 Holnap fókusz
 
 🚀 Sprint fókusz
 
@@ -315,6 +222,8 @@ szerint.
 
 1.  NeedCalculation engine‑alapú újraírás
 2.  NeedCalcDetail modell + registry + repository
+    2.5 Registry engine audit
+    2.6 Registry engine logolás finomhangolása – „mókus hadművelet”
 3.  MaterialPicker integráció NeedCalcDetail‑hez
 4.  ModeNameDialog UX finomítás
 5.  EventLog kategorizálás
@@ -324,5 +233,9 @@ szerint.
 
 📝 Git commit subject (≤55 karakter)
 
-    ConnectionEntity + RegistryEngine: NeedRule pipeline kész
+ConnectionEntity + Engine: NeedRule pipeline kész
 
+------------------------------------------------------------------------
+
+Ha szeretnéd, holnapra előkészítem a Mókus hadművelet audit‑API tervét
+is.

@@ -55,5 +55,3 @@ QString RegistryBase::logEntityAction(const QString& action,
 
     return lines.join("\n");
 }
-
-

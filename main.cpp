@@ -17,7 +17,7 @@
 #include "common/snapshot/snapshot_manager.h"
 
 #include "common/system/verbose_class_initializer.h"
-#include "common/system/registry_initializer.h"
+#include "common/system/registry_catalog.h"
 //extern void registerAllVerbose();
 
 int main(int argc, char *argv[])
@@ -75,7 +75,7 @@ int main(int argc, char *argv[])
     StartupManager manager;
 
     // 🔵 1) Registryk explicit inicializálása
-    initializeAllRegistries();
+    RegistryCatalog::initializeAll();//initializeAllRegistries();
 
     // 🔵 2) Startup pipeline futtatása
     StartupStatus status = manager.runStartupSequence();

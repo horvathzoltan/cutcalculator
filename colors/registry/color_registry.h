@@ -18,7 +18,10 @@
  *  - Keresés kód és rendszer szerint
  *  - Audit riporthoz elemszám biztosítása
  */
-class ColorRegistry : public RegistryEngineBase<NamedColor> {
+class ColorRegistry : public RegistryEngineBase<NamedColor>,
+                      public RegisterMe<ColorRegistry>
+{
+    AUTO_REGISTER_REGISTRY(ColorRegistry);
 private:
     /// Privát konstruktor – singleton
     ColorRegistry() : RegistryEngineBase<NamedColor>("ColorRegistry","NamedColor") {}

@@ -7,7 +7,10 @@
 #include "common/system/verbose_manager.h"
 #include "materials/model/material_master.h"
 
-class MaterialRegistry : public BarcodeIdentifiableRegistryEngine<MaterialMaster> {
+class MaterialRegistry : public BarcodeIdentifiableRegistryEngine<MaterialMaster>,
+                         public RegisterMe<MaterialRegistry>
+{
+    AUTO_REGISTER_REGISTRY(MaterialRegistry);
 public:
     static MaterialRegistry& instance();
     //static void initializeSingleton();
