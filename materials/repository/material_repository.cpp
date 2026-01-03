@@ -202,9 +202,7 @@ bool MaterialRepository::loadFromCSV(MaterialRegistry& registry) {
         zWarning(QString("⚠️ Hibák az anyag import során (%1)").arg(ctx.errorsSize()));
     }
 
-    for (const auto& m : defs) {
-        registry.registerData(m); // ez már bejegyzi a BarcodeTable-be
-    }
+    registry.setAll(defs);
 
     zInfo(QString("📊 MaterialRepository: %1 anyag betöltve").arg(defs.size()));
     return !defs.isEmpty();

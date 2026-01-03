@@ -46,7 +46,7 @@ void MaterialRequirementsView::setup_table() {
 }
 
 void MaterialRequirementsView::set_requirements(const QVector<RequirementRow>& rows) {
-    // Teljes refresh – hunglish: a manager adja a valós adatot
+    // Teljes refresh – * a manager adja a valós adatot
     _table->clearContents();
     _table->setRowCount(rows.size());
 
@@ -118,7 +118,7 @@ void MaterialRequirementsView::remove_selected() {
 
     emit request_remove_requirement(product_id, product_barcode, material_id, material_barcode);
 
-    // Hunglish: a view optimista törlést végez, a manager visszatölt, ha kell
+    // * a view optimista törlést végez, a manager visszatölt, ha kell
     _table->removeRow(row);
 }
 
@@ -133,7 +133,7 @@ void MaterialRequirementsView::set_current_product(const QUuid& product_id,
     // UX: clipboard friendly – egy kattintás, és a barcode copyzható (spacebar trükk nélkül)
     QGuiApplication::clipboard()->setText(product_barcode);
 
-    // Hunglish: jelezzük, hogy add gomb engedélyezhető
+    // * jelezzük, hogy add gomb engedélyezhető
     emit request_add_requirement(_current_product_id, _current_product_barcode);
 }
 

@@ -7,7 +7,7 @@
  * @class NeedCalculator
  * @brief Megrendelésből (OrderLine) vágási és kitting listát készít a NeedRule + NeedCalculationDetail alapján.
  *
- * Hunglish:
+ * *
  * - Input: productId, w, h, qty
  * - a modeName kiválasztása UI-ból vagy szabályból; itt paraméter
  */

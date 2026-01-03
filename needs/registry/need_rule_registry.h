@@ -2,6 +2,7 @@
 
 #include "connections/connection_registry_engine.h"
 #include "needs/model/need_rule.h"
+#include "common/registry/feature/register_me.h"
 
 class NeedRuleRegistry : public ConnectionRegistryEngine<NeedRule>,
                          public RegisterMe<NeedRuleRegistry>

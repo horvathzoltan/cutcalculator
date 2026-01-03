@@ -95,13 +95,15 @@ HEADERS += \
     common/registry/base/hierarchical_registry_engine.h \
     common/registry/barcode/ibarcode_identifiable_registry_base.h \
     common/registry/base/identifiable_registry_engine.h \
+    common/registry/base/identifiable_registry_helper.h \
     common/registry/base/registry_engine_base.h \
+    common/registry/feature/register_me.h \
     common/registry/manager/registry_lookup.h \
     common/registry/manager/registry_traits.h \
     common/snapshot/snapshot_manager.h \
     common/snapshot/workbench_snapshot.h \
     common/system/nameof.hpp \
-    common/system/registry_catalog.h \
+    common/registry/feature/registry_catalog.h \
     common/system/verbose_class_initializer.h \
     common/system/verbose_manager.h \
     common/utils/attention_blinker.h \
@@ -111,7 +113,6 @@ HEADERS += \
     common/utils/optional_utils.h \
     common/utils/table_formatter.h \
     connections/connection_entity.h \
-    connections/connection_registry.h \
     connections/connection_registry_engine.h \
     connections/connection_repository.h \
     materials/view/color_badge.h \
@@ -151,7 +152,7 @@ HEADERS += \
     common/logger/logger.h \
     common/csv/rowerror.h \
     common/model/hierarchical_entity.h \
-    common/registry/base/registry_base.h \
+    common/registry/feature/registry_base.h \
     common/registry/manager/registry_manager.h \
     common/settings/settings_manager.h \
     common/startup/startup_manager.h \
@@ -197,13 +198,15 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 
 DISTFILES += \
     README.md \
-    run.txt \
+    run_1_1_AllapotTabla.txt \
+    run_1_2_RegistryAllapot.txt \
+    run_1_3_RegistryCheckList.txt \
     run_2_1_AIDevelopmentHandbook.txt \
-    run_2_2_Dokumentacio.txt \
-    run_2_3_1_Allapottabla.txt \
-    run_2_3_2_DailySync.txt \
-    run_2_3_3_ReleaseNotes.txt \
-    run_2_3_4_SprintReview.txt \
+    run_2_2_JEGYZET.txt \
+    run_2_3_1_Prompt_Allapottabla.txt \
+    run_2_3_2_Prompt_DailySync.txt \
+    run_2_3_3_Prompt_ReleaseNotes.txt \
+    run_2_3_4_Prompt_SprintReview.txt \
     run_2_5_Prompt_DeveloperManual.txt \
     run_2_6_ManualsWorkflow.txt \
     run_3_1_Manifest.txt \

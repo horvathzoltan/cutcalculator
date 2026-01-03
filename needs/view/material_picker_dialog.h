@@ -7,7 +7,7 @@
 
 /**
  * @class MaterialPickerDialog
- * @brief Hunglish: egyszerű dialog, ahol a user kiválasztja a hozzárendelendő anyagot.
+ * @brief * egyszerű dialog, ahol a user kiválasztja a hozzárendelendő anyagot.
  */
 class MaterialPickerDialog : public QDialog {
     Q_OBJECT

@@ -5,7 +5,7 @@
 
 /**
  * @class fTableFormatter
- * @brief Hunglish: auditbarát táblázat formázó – fejléc + sorokból szép log táblázatot csinál.
+ * @brief * auditbarát táblázat formázó – fejléc + sorokból szép log táblázatot csinál.
  *
  * 📚 Koncepció:
  * - Input: fejléc (QVector<QString>) + sorok (QVector<QVector<QString>>).
@@ -22,7 +22,7 @@
  */
 class TableFormatter {
 public:
-    /// Hunglish: statikus helper – visszaadja a táblázat sorait QString listában
+    /// * statikus helper – visszaadja a táblázat sorait QString listában
     static QVector<QString> format(const QVector<QString>& header,
                                    const QVector<QVector<QString>>& rows);
 };

@@ -319,8 +319,9 @@ void BOMWorkbench::buildRightPanel() {
                     _detailView->set_details({});
                     return;
                 }
-                auto modeOpt = NeedCalculationRegistry::instance().findById(*modeId);
-                QString modeName = modeOpt.has_value() ? modeOpt->name : QString("mode");
+                const NeedCalculation *mode =
+                    NeedCalculationRegistry::instance().findById(*modeId);
+                QString modeName = mode ? mode->name : QString("unknown");
                 _detailManager->refreshForCalculation(*modeId, modeName);
             });
 

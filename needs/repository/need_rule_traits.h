@@ -7,7 +7,7 @@
 /**
  * 🧩 NeedRuleTraits – path és header policy
  *
- * Hunglish: explicit előírjuk, hova perzisztáljon a NeedRule repo, és milyen legyen a fejléc.
+ * * explicit előírjuk, hova perzisztáljon a NeedRule repo, és milyen legyen a fejléc.
  */
 struct NeedRuleTraits {
     using LeftEntity = ProductMaster;

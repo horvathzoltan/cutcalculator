@@ -7,20 +7,18 @@ ProductRegistry::ProductRegistry()
     : BarcodeHierarchicalRegistryEngine<ProductMaster>("ProductRegistry", "Product")
 {}
 
-ProductRegistry& ProductRegistry::instance() {
-    static ProductRegistry inst;
-    return inst; // NINCS guard
-}
 
-// void ProductRegistry::initializeSingleton() {
-//     auto& inst = instance();
-//     inst.initialize();
-// }
-
-bool ProductRegistry::registerData(const ProductMaster& e) {
+bool ProductRegistry::insert(const ProductMaster& e) {
     return BarcodeRegistryHelper::insert(*this, e);
 }
 
+bool ProductRegistry::remove(const QUuid& id) {
+    return IdentifiableRegistryHelper::remove(*this, id);
+}
+
+bool ProductRegistry::update(const ProductMaster& e) {
+    return IdentifiableRegistryHelper::update(*this, e);
+}
 
 void ProductRegistry::persist() const {
     const QString path = FileNameHelper::instance().getProductCsvFile();

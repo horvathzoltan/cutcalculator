@@ -1,83 +1,101 @@
 #include "calcmodes/registry/need_calculation_registry.h"
 #include "calcmodes/repository/need_calculation_repository.h"
+#include "common/logger/logger.h"
+#include "common/registry/base/identifiable_registry_helper.h"
+
+
+NeedCalculationRegistry::NeedCalculationRegistry()
+    : IdentifiableRegistryEngine<NeedCalculation>("NeedCalculationRegistry", "NeedCalculation")
+{}
 
 bool NeedCalculationRegistry::exists(const QUuid& productId, const QString& modeName) const {
-    for (const auto& c : _data) {
-        if (c.productDefinitionId == productId && c.name.compare(modeName, Qt::CaseInsensitive) == 0)
-            return true;
+    return existsBy([&](const NeedCalculation& c){
+        return c.productId == productId &&
+               c.name.compare(modeName, Qt::CaseInsensitive) == 0;
+    });
+
+}
+
+bool NeedCalculationRegistry::validateDomain(const NeedCalculation& c) const {
+    if (c.name.trimmed().isEmpty()) {
+        zWarning("NeedCalculation: üres név tiltva");
+        return false;
     }
-    return false;
+    return true;
+}
+
+bool NeedCalculationRegistry::validateDuplicate(const NeedCalculation& c) const {
+    return !existsBy([&](const NeedCalculation& x){
+        return x.productId == c.productId &&
+               x.name.compare(c.name, Qt::CaseInsensitive) == 0;
+    });
+}
+
+void NeedCalculationRegistry::onInsertLog(const NeedCalculation& c) {
+    logEntityAction("INSERT", c,
+                    QString("productId=%1").arg(c.productId.toString()));
 }
 
 bool NeedCalculationRegistry::insert(const NeedCalculation& calc) {
-    if (calc.name.trimmed().isEmpty()) {
-        zWarning("⚠️ NeedCalculation insert: üres modeName nem engedélyezett");
-        return false;
-    }
-    if (exists(calc.productDefinitionId, calc.name)) {
-        zWarning("Duplicate NeedCalculation");
+    return IdentifiableRegistryHelper::insert(*this, calc);
+}
+
+bool NeedCalculationRegistry::remove(const QUuid& id) {
+    return IdentifiableRegistryHelper::remove(*this, id);
+}
+
+
+bool NeedCalculationRegistry::beforeUpdate(const NeedCalculation& c) {
+    if (c.name.trimmed().isEmpty()) {
+        zWarning("NeedCalculation: üres név tiltva");
         return false;
     }
 
-    _data.append(calc);
-    persist();
-
-    logEntityAction("INSERT", calc,
-                    QString("productId=%1").arg(calc.productDefinitionId.toString()));
+    if (exists(c.productId, c.name)) {
+        zWarning(QString("NeedCalculation: duplikáció %1").arg(c.name));
+        return false;
+    }
 
     return true;
 }
 
-bool NeedCalculationRegistry::remove(const QUuid& id) {
-    auto it = std::remove_if(_data.begin(), _data.end(), [&](const NeedCalculation& c){ return c.id == id; });
-    if (it != _data.end()) {
-        _data.erase(it, _data.end());
-        persist();
-        zInfo(QString("🗑️ NeedCalculation removed: %1").arg(id.toString()));
-        return true;
-    }
-    return false;
+
+void NeedCalculationRegistry::onUpdateLog(const NeedCalculation& c) {
+    logEntityAction("UPDATE", c,
+                    QString("productId=%1").arg(c.productId.toString()));
 }
+
+bool NeedCalculationRegistry::update(const NeedCalculation& c) {
+    return IdentifiableRegistryHelper::update(*this, c);
+}
+
 
 bool NeedCalculationRegistry::rename(const QUuid& id, const QString& newName) {
-    if (newName.trimmed().isEmpty()) {
-        zWarning("⚠️ NeedCalculation rename: üres új név tiltva");
+    auto opt = findById(id);
+    if (!opt)
         return false;
-    }
-    for (auto& c : _data) {
-        if (c.id == id) {
-            if (exists(c.productDefinitionId, newName)) {
-                zWarning(QString("⚠️ NeedCalculation rename: duplikáció %1").arg(newName));
-                return false;
-            }
-            c.name = newName;
-            persist();
-            zInfo(QString("✏️ NeedCalculation renamed: %1 → %2").arg(id.toString(), newName));
-            return true;
-        }
-    }
-    return false;
-}
 
-std::optional<NeedCalculation> NeedCalculationRegistry::findById(const QUuid& id) const {
-    for (const auto& c : _data) if (c.id == id) return c;
-    return std::nullopt;
+    NeedCalculation updated = *opt;
+    updated.name = newName;
+
+    return update(updated);   // <-- workflow indul
 }
 
 QVector<NeedCalculation> NeedCalculationRegistry::findByProduct(const QUuid& productId) const {
-    QVector<NeedCalculation> out;
-    for (const auto& c : _data) if (c.productDefinitionId == productId) out.append(c);
-    return out;
+    return findAll([&](const auto& c){
+        return c.productId == productId;
+    });
 }
 
-std::optional<NeedCalculation> NeedCalculationRegistry::findByProductAndName(const QUuid& productId, const QString& modeName) const {
-    for (const auto& c : _data) {
-        if (c.productDefinitionId == productId && c.name.compare(modeName, Qt::CaseInsensitive) == 0)
-            return c;
-    }
-    return std::nullopt;
+const NeedCalculation* NeedCalculationRegistry::findByProductAndName(
+    const QUuid& productId,
+    const QString& modeName) const
+{
+    return findIf([&](const NeedCalculation& c){
+        return c.productId == productId && c.name.compare(modeName, Qt::CaseInsensitive) == 0;
+    });
 }
 
 void NeedCalculationRegistry::persist() const {
-    NeedCalculationRepository::save(_data);
+    NeedCalculationRepository::save(_items);
 }

@@ -44,7 +44,7 @@ ProductRepository::convertRowToProductRow(const QVector<QString>& parts,
 //     }
 
 //     ProductMaster def;
-//     def.id = QUuid::createUuid();  // Hunglish: belső GUID generálás
+//     def.id = QUuid::createUuid();  // * belső GUID generálás
 //     def.name = row.name;
 //     def.barcode = row.barcode;
 
@@ -150,10 +150,7 @@ bool ProductRepository::loadFromCSV(ProductRegistry& registry) {
         zWarning(QString("⚠️ Hibák a Product import során (%1)").arg(ctx.errorsSize()));
     }
 
-    // 🔵 ÚJ: minden terméket egyenként regisztrálunk
-    for (const auto& p : defs) {
-        registry.registerData(p);
-    }
+    registry.setAll(defs);
 
     zInfo(QString("📊 ProductRepository: %1 terméktípus betöltve").arg(defs.size()));
     return !defs.isEmpty();

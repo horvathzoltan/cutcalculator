@@ -6,6 +6,8 @@
 #include "products/registry/product_registry.h"
 #include "products/view/product_tree_view.h"
 #include "barcodes/registry/barcode_registry.h"
+#include "common/logger/logger.h"
+#include "common/registry/feature/register_me.h"
 
 /**
  * Konstruktor: létrehozza a modellt és beállítja a QTreeView-hoz.
@@ -133,7 +135,7 @@ void ProductTreeManager::addRootProduct() {
     pm.barcode = "NEW";
 
     //ProductRegistry::instance().insert(pm);
-    if (!ProductRegistry::instance().registerData(pm)) {
+    if (!ProductRegistry::instance().insert(pm)) {
         zWarning("⚠️ Nem sikerült regisztrálni az új gyökérelemet (barcode ütközés?)");
         return;
     }
@@ -156,7 +158,7 @@ void ProductTreeManager::addChildProduct() {
    //ProductRegistry::instance().insert(pm);
 
     //ProductRegistry::instance().insert(pm);
-    if (!ProductRegistry::instance().registerData(pm)) {
+    if (!ProductRegistry::instance().insert(pm)) {
         zWarning("⚠️ Nem sikerült regisztrálni az új gyermeket (barcode ütközés?)");
         return;
     }

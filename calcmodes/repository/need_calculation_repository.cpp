@@ -7,7 +7,7 @@
 #include <QTextStream>
 
 static QString nc_path() {
-    // Hunglish: később SettingsManager.datapath + traits
+    // * később SettingsManager.datapath + traits
     return "testdata/needcalcs.csv";
 }
 
@@ -32,7 +32,7 @@ bool NeedCalculationRepository::load(QVector<NeedCalculation>& out) {
         }
         NeedCalculation c;
         c.id = QUuid::createUuid();
-        c.productDefinitionId = QUuid(f[0].trimmed());
+        c.productId = QUuid(f[0].trimmed());
         c.name = f[1].trimmed();
         tmp.append(c);
     }
@@ -55,7 +55,7 @@ bool NeedCalculationRepository::save(const QVector<NeedCalculation>& data) {
     out.setEncoding(QStringConverter::Utf8);
     out << "productDefinitionId;modeName\n";
     for (const auto& c : data) {
-        out << c.productDefinitionId.toString(QUuid::WithoutBraces) << ";"
+        out << c.productId.toString(QUuid::WithoutBraces) << ";"
             << c.name << "\n";
     }
     zInfo(QString("💾 NeedCalculation saved: %1 sor").arg(data.size()));

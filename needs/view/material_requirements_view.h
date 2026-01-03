@@ -34,7 +34,7 @@ public:
      * @struct RequirementRow
      * @brief Egy kapcsolat (Product ↔ Material) teljes adata a táblához.
      *
-     * Hunglish:
+     * *
      * - Mindkét oldal azonosítói (UUID + barcode) a későbbi repo integrációhoz.
      * - A name-ek a felhasználónak, a barcode/UUID az auditnak.
      */
@@ -79,7 +79,7 @@ public:
 signals:
     /**
      * @brief Jelzés: új kapcsolat hozzáadása kérve (toolbarból, plusz gombból).
-     * Hunglish: a view kéri, a manager létrehozza és visszatölti.
+     * * a view kéri, a manager létrehozza és visszatölti.
      */
     void request_add_requirement(const QUuid& product_id,
                                  const QString& product_barcode);

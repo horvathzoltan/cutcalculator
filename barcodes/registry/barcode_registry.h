@@ -5,10 +5,8 @@
 #include <QString>
 //#include <optional>
 #include "barcodes/model/barcode_record.h"
-//#include "common/registry/barcode_identifiable_registry_base.h"
-//#include "common/model/barcode_identifiable_entity.h"
 #include "common/registry/base/registry_engine_base.h"
-//#include "common/registry/registry_base.h"
+#include "common/registry/feature/register_me.h"
 
 /**
  * @brief BarcodeRegistry – globális könyvelés a barcode-okhoz.
@@ -38,6 +36,7 @@ public:
 
     // ➕ Új barcode regisztrálása
     bool registerData(const BarcodeRecord& record);
+    bool registerData_volatile(const BarcodeRecord &record);
 
     // 🔍 Keresés
     const BarcodeRecord* findByCode(const QString& code) const;
@@ -53,7 +52,6 @@ public:
     bool retire(const QString &code, const QString &reason);
 
     void persist() const;   // 🔧 Új: on-the-fly perzisztálás
-    bool registerData_volatile(const BarcodeRecord &record);
 };
 
 

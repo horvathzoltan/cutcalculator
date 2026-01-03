@@ -4,13 +4,13 @@
 #include "../repository/need_rule_repository.h"
 #include "../../common/logger/event_logger.h"
 
-// Hunglish: tedd a saját view headeredre – itt csak a felhasznált mezőket jelezzük.
+// * tedd a saját view headeredre – itt csak a felhasznált mezőket jelezzük.
 #include "../view/material_requirements_view.h"
 
 /**
  * 🎤 NeedRulePresenter – MVP "Presenter"
  *
- * Hunglish: a view passzív, a presenter lookupolja a material törzset, és
+ * * a view passzív, a presenter lookupolja a material törzset, és
  * összerakja a RequirementRow-kat a NeedRule kapcsolat alapján.
  */
 class NeedRulePresenter {
@@ -20,7 +20,7 @@ public:
     explicit NeedRulePresenter(MaterialRequirementsView* view)
         : _view(view) {}
 
-    // Hunglish: init – repo load, és a view frissítése egy konkrét Product-ra
+    // * init – repo load, és a view frissítése egy konkrét Product-ra
     bool initializeAndRefreshForProduct(const QUuid& productId) {
         const bool ok = NeedRuleRepository::load();
         if (!ok) {
@@ -30,7 +30,7 @@ public:
         return ok;
     }
 
-    // Hunglish: frissítés – adott Product GUID alapján kigyűjtjük a kapcsolt Materialokat
+    // * frissítés – adott Product GUID alapján kigyűjtjük a kapcsolt Materialokat
     void refreshForProduct(const QUuid& productId) {
         const auto rules = NeedRuleRegistry::instance().findByLeft(productId);
 
@@ -42,7 +42,7 @@ public:
             row.product_id = r.leftId;
             row.material_id = r.rightId;
 
-            // Hunglish: right() convenience – Material registry lookup
+            // * right() convenience – Material registry lookup
             if (auto matOpt = r.right()) {
                 const auto& mat = *matOpt;
                 row.material_name = mat.name;
@@ -63,7 +63,7 @@ public:
                        .arg(productId.toString(QUuid::WithoutBraces)));
     }
 
-    // Hunglish: add – beszúrás registrybe, majd view refresh
+    // * add – beszúrás registrybe, majd view refresh
     void addNeedRule(const QUuid& productId, const QUuid& materialId) {
         NeedRule c;
         c.leftId = productId;
@@ -78,7 +78,7 @@ public:
         refreshForProduct(productId);
     }
 
-    // Hunglish: remove – törlés registryből, majd view refresh
+    // * remove – törlés registryből, majd view refresh
     void removeNeedRule(const QUuid& productId, const QUuid& materialId) {
         const bool ok = NeedRuleRegistry::instance().remove(productId, materialId);
         if (ok) {

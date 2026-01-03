@@ -1,4 +1,4 @@
-#include "registry_base.h"
+#include "common/registry/feature/registry_base.h"
 #include "common/system/verbose_manager.h"
 #include "common/registry/manager/registry_manager.h"
 

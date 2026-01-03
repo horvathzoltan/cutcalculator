@@ -9,7 +9,7 @@
 /**
  * 🧩 ConnectionEntity – generikus kapcsolótábla sor
  *
- * Hunglish: ez a "kapcsos gyík" alapmodell. Bal és jobb oldali entitás GUID-ját tárolja,
+ * * ez a "kapcsos gyík" alapmodell. Bal és jobb oldali entitás GUID-ját tárolja,
  * és convenience lookupot ad típusból – nem piszkálja a repo/regit, csak lehívja, ha kell.
  *
  * Elvárás a LeftEntity/RightEntity típusoktól:
@@ -21,7 +21,7 @@ struct ConnectionEntity {
     QUuid leftId{};
     QUuid rightId{};
 
-    // Hunglish: lookup – bal oldali entitás visszafejtése GUID-ból
+    // * lookup – bal oldali entitás visszafejtése GUID-ból
     std::optional<LeftEntity> left() const {
         using RegistryType = typename RegistryFor<LeftEntity>::type;
         if (auto* reg = lookupRegistry<RegistryType>()) {
@@ -31,7 +31,7 @@ struct ConnectionEntity {
         return std::nullopt;
     }
 
-    // Hunglish: lookup – jobb oldali entitás visszafejtése GUID-ból
+    // * lookup – jobb oldali entitás visszafejtése GUID-ból
     // std::optional<RightEntity> right() const {
     //     if (auto opt = RightEntity::registry().findById(rightId)) {
     //         return opt;

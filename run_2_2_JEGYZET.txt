@@ -70,7 +70,7 @@ A files.txt tartalmazhat:
 
 Parancs:
 
-    ./sourcetotxt.sh -d ~/source/repos/CutCalculator files.txt
+    ./sourcetotxt.sh -d ~/source/repos/CutCalculator files.txt > masi2.txt
 
 ------------------------------------------------------------------------
 
@@ -107,3 +107,17 @@ pandoc -s -f markdown -t plain -o masi2.txt masi2.txt
 zoli@pif:~$ pandoc kezikonyv_1.md -o kezikonyv_1.pdf --pdf-engine=lualatex --template=emoji-template.tex
 zoli@pif:~$ pandoc kezikonyv_2.md -o kezikonyv_2.pdf --pdf-engine=lualatex --template=emoji-template.tex
 
+find ~/source/repos/CutCalculator/ -type d -name ".*" -prune -o -type f -print > masi2.txt
+
+----
+ténylegesen módosult fájlok listázása:
+---
+
+find ~/source/repos/CutCalculator/ \
+  -type d -name ".*" -prune -o \
+  -type f -printf "%p | size=%s | created=%C+ | modified=%TY-%Tm-%Td %TH:%TM:%TS\n" \
+  > files.txt
+
+./sourcetotxt.sh -d ~/source/repos/CutCalculator files.txt > masi2.txt
+
+./sourcesplit.sh masi2.txt 1200

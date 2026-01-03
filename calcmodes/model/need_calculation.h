@@ -10,10 +10,5 @@
  * - Nem enum, hanem szabadon definiált string (pl. "falc", "glass").
  */
 struct NeedCalculation: public IdentifiableEntity {
-    QUuid productDefinitionId;  // 🔗 Kapcsolat a ProductMaster-hez
-
-    QString toString() const override {
-        return QString("NeedCalculation{id=%1, name=%2, productId=%3}")
-            .arg(id.toString(), name, productDefinitionId.toString());
-    }
+    QUuid productId;  // 🔗 Kapcsolat a ProductMaster-hez
 };

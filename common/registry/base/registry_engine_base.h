@@ -1,7 +1,6 @@
 #pragma once
-#include "registry_base.h"
+#include "common/registry/feature/registry_base.h"
 #include <QList>
-#include "common/system/registry_catalog.h"
 
 template<typename TEntity>//, typename TDerived>
 class RegistryEngineBase : public RegistryBase {
@@ -18,6 +17,17 @@ public:
         guardInstanceUsage();
         _items.append(e);
         return true;
+    }
+
+    bool addAll(const QVector<TEntity>& v) {
+        guardInstanceUsage();
+        _items.append(v);
+        return true;
+    }
+
+    void setAll(const QVector<TEntity>& v) {
+        _items.clear();
+        _items.append(v);
     }
 
     QList<const TEntity*> all() const {
@@ -67,6 +77,25 @@ public:
         }
         return nullptr;
     }
+
+    template<typename Predicate>
+    QVector<TEntity> findAll(Predicate&& pred) const {
+        guardInstanceUsage();
+        QVector<TEntity> out;
+        out.reserve(_items.size());
+        for (const auto& item : _items)
+            if (pred(item))
+                out.append(item);
+        return out;
+    }
+
+    //
+    template<typename Predicate>
+    bool existsBy(Predicate&& pred) const {
+        return findIf(std::forward<Predicate>(pred)) != nullptr;
+    }
+
+
 //private:
     //inline static bool _autoRegister = (RegistryCatalog::add<TDerived>(), true);
 protected:

@@ -23,13 +23,15 @@ int NeedCalculator::evalFormula(const QString& f, int w, int h) {
 QVector<CutItem> NeedCalculator::makeCutList(const OrderLine& ol, const QString& modeName) {
     QVector<CutItem> out;
 
-    auto calcOpt = NeedCalculationRegistry::instance().findByProductAndName(ol.productId, modeName);
-    if (!calcOpt.has_value()) {
+    const NeedCalculation *calc =
+        NeedCalculationRegistry::instance().findByProductAndName(ol.productId,
+                                                                                           modeName);
+    if (!calc) {
         zEventWARN(QString("⚠️ No calculation mode for product %1").arg(ol.productId.toString()));
         return out;
     }
 
-    const auto calcId = calcOpt->id;
+    const auto calcId = calc->id;
     auto details = NeedCalculationDetailRegistry::instance().findByCalculation(calcId);
 
     for (const auto& d : details) {
@@ -45,9 +47,11 @@ QVector<CutItem> NeedCalculator::makeCutList(const OrderLine& ol, const QString&
 
 QVector<KitItem> NeedCalculator::makeKitList(const OrderLine& ol, const QString& modeName) {
     QVector<KitItem> out;
-    auto calcOpt = NeedCalculationRegistry::instance().findByProductAndName(ol.productId, modeName);
-    if (!calcOpt.has_value()) return out;
-    const auto calcId = calcOpt->id;
+    const NeedCalculation *calc =
+        NeedCalculationRegistry::instance().findByProductAndName(ol.productId,
+                                                                                           modeName);
+    if (!calc) return out;
+    const auto calcId = calc->id;
     auto details = NeedCalculationDetailRegistry::instance().findByCalculation(calcId);
 
     for (const auto& d : details) {

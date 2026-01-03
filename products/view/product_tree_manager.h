@@ -62,7 +62,7 @@ private slots:
 signals:
     /**
      * @brief Jelzi, hogy a fa aktuális kiválasztása megváltozott.
-     * Hunglish: amikor a user másik productot kattint, a view‑k (pl. MaterialRequirementsView)
+     * * amikor a user másik productot kattint, a view‑k (pl. MaterialRequirementsView)
      * tudják, melyik producthoz kell mutatni az adatokat.
      */
     void currentProductChanged(const QUuid& id,

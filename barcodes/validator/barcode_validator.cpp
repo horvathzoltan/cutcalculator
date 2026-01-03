@@ -9,7 +9,7 @@ bool BarcodeValidator::checkAndRegister(const QString& code,
 {
     auto& br = BarcodeRegistry::instance();
 
-    // Quick sanity: üres kód nem oké (Hunglish: ezt jobb korán elkapni)
+    // Quick sanity: üres kód nem oké (* ezt jobb korán elkapni)
     if (code.trimmed().isEmpty()) {
         ctx.addError(ctx.currentLineNumber(),
                      QString("Empty barcode is not allowed"),

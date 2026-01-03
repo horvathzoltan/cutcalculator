@@ -1,0 +1,69 @@
+Kérlek, készíts egy EXAKT, DIFF-ALAPÚ, KATEGORIZÁLT,
+PONTOKBA SZEDETT összefoglalót a mai munkáról.
+
+A cél:
+1) egzakt, diff-alapú elszámolás a ténylegesen módosult fájlok alapján
+2) áttekintő, strukturált összefoglaló a fejlesztési napról
+3) minden ötlet, probléma, döntés és BUG írásos nyoma megmaradjon
+4) a BUG-ok életciklusa követhető legyen (nem törlődnek, csak státuszt váltanak)
+
+A struktúra legyen kötelező:
+
+🎯 A mai munka egzakt eredménye – kategóriákba rendezve
+
+Minden kategória így nézzen ki:
+
+🟦 <Kategória neve>
+Érintett fájlok:
+- <fájlok>
+Mai eredmények:
+- <diff-alapú, konkrét pontok>
+Kategória:
+➡️ <rövid címke>
+
+A végén kérek egy:
+
+🟩 Összegzés – a mai nap X nagy eredménye
+
+
+Ezek után kérlek, készítsd el a részletes napi inputot a következő blokkokkal:
+
+
+📝 Mai nap összefoglalója
+- mi készült el → minden pont elején legyen: [✅ ELKÉSZÜLT]
+- mi haladt → minden pont elején legyen: [🚧 HALADT]
+
+A felsorolások legyenek pontokba szedve,
+és minden pont elején szerepeljen a megfelelő állapot-emoji.
+
+
+🐞 BUG lista (életciklus-kezeléssel)
+- minden ma feltárt hiba kerüljön ide
+- súlyos hiba → [🔥 SOS]
+- normál hiba → [🐞 BUG]
+- javítva, de hibásan → [🔴 ÚJRAJAVÍTÁS]
+- ha egy korábbi hiba ma megszűnt → [✅ KÉSZ] jelöléssel kerüljön a lista végére
+- ha egy korábbi hiba ma újra előjött → állapota váltson vissza [🐞 BUG], [🔥 SOS] vagy [🔴 ÚJRAJAVÍTÁS]
+- a hibákat SOHA nem töröljük, csak státuszt váltunk
+
+
+A következő három bekezdés külön-külön, folyószövegben jelenjen meg:
+- milyen ötletek születtek
+- milyen problémák merültek fel
+- milyen döntések születtek
+
+
+📁 Érintett fájlok / modulok
+- felsorolásban add meg a ma módosult fájlokat
+- a diff alapján fogalmazd meg, hogy melyik fájlban mi változott
+
+
+💡 Új ötletek / megfigyelések
+- rövid, tömör bulletpontokban
+- minden gondolat maradjon meg, semmit ne hagyj ki
+
+
+Fontos:
+- Ez még NEM az állapottábla frissítése.
+- Ez csak a napi input, amit a következő lépésben használunk.
+- A válasz legyen fejlesztőbarát, strukturált, precíz és teljes.

@@ -175,7 +175,7 @@ void SnapshotManager::saveWorkbenchSnapshot(const WorkbenchSnapshot& s,
     }
 
     if (!GeometryHelper::isWindowGeometryReady(contextWindow)) {
-        // Hunglish: ha a window még nem stabil, akkor snapshot mentés csak zaj lenne.
+        // * ha a window még nem stabil, akkor snapshot mentés csak zaj lenne.
         zWarning("⏳ Workbench snapshot skipped: window not ready");
         return;
     }

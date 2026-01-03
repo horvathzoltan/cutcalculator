@@ -17,7 +17,7 @@
 #include "common/snapshot/snapshot_manager.h"
 
 #include "common/system/verbose_class_initializer.h"
-#include "common/system/registry_catalog.h"
+#include "common/registry/feature/registry_catalog.h"
 //extern void registerAllVerbose();
 
 int main(int argc, char *argv[])

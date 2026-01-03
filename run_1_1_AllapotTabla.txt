@@ -1,0 +1,192 @@
+Nagyszerű, Zoltán — akkor jöhet a 2. lépés, vagyis az állapottábla és a
+roadmap teljes frissítése, a ma rekonstruált, diff‑alapú eredmények
+alapján.
+Minden szabályt betartok:
+- nem módosítom a táblázat szerkezetét,
+- nem törlök sorokat,
+- nem vonok össze,
+- csak státuszt frissítek,
+- minden blokkot előállítok,
+- monospaced-kompatibilis, egységes formátumban.
+
+------------------------------------------------------------------------
+
+📊 Állapottábla (frissítve a mai nap eredményei alapján)
+
+    -------------------------------------------------------------------------------
+    Modul / Feladat                     Állapot            Megjegyzés
+    ----------------------------------- ------------------ -------------------------
+    Material pipeline                   ✅ Kész            Stabil validátor
+    Product pipeline                    ✅ Kész            Export/import végleges
+    Logger subsystem                    ✅ Kész            Auditálható logolás
+    Startup subsystem                   ✅ Kész            Snapshot-aware init
+    Settings subsystem                  ✅ Kész            Percent-based layout
+    FileNameHelper                      ✅ Kész            ui_snapshots integrálva
+    CsvReader utility                   ⚠️ Függőség        Importerhez szétválasztva
+    RalImporter modul                   ✅ Kész            ColorRegistry integráció
+    OrderManager                        📐 Tervezés        Modellek, státuszok
+    CustomerMaster                      📐 Tervezés        Autocomplete
+    CutCalculator                       🚧 Folyamatban     Preview előkészítve
+    NeedsPresenter + NeedsView          ✅ Kész            MVP működik
+    UI réteg (Qt)                       📐 Tervezés        Order entry dialog
+    Audit funkció                       📐 Tervezés        AuditEntry + Service
+    Test framework                      ✅ Kész            EventLogger tests
+    NamedColor / Color registry         ✅ Kész            Pantone-ready
+    NeedRule                            ✅ Kész            Új engine‑alapú pipeline
+    NeedCalculation                     🚧 Folyamatban     Következő kapcsolótábla
+    NeedCalculationDetail               ✅ Kész            Workflow + engine integráció
+    Formula értelmezés                  📐 Tervezés        cparse integráció
+    SOS / Tűzoltás                      🔥 SOS             NeedCalculation SAVE→RELOAD
+    Generikus kapcsolótábla             ✅ Kész            ConnectionEntity + Engine
+    BarcodeValidator subsystem          ✅ Kész            Ütközéskezelés
+    BarcodeTable refaktor               ✅ Kész            Model/repo/registry
+    DataStateReporter                   ✅ Kész            Audit riport
+    MVP logika                          🚧 Folyamatban     Presenter/Manager tisztítás
+    VerboseManager                      ✅ Kész            Verbosity routing
+    MaterialPickerDialog                ✅ Kész            Debounce + audit
+    RegistryAuditReporter               ✅ Kész            Audit összefoglaló
+    Screen-change detector              ✅ Kész            Snapshot integráció
+    GeometryHelper finomítás            ✅ Kész            Deferred restore
+    SnapshotManager                     ✅ Kész            Monitorprofil alapú
+    LayoutDefaultStore                  ✅ Kész            Fallback baseline
+    UI Snapshot Architecture            ✅ Kész            Teljes architektúra
+    OverlayIconWidget                   ✅ Kész            Cache + render pipeline
+    Overlay‑alapú adat‑létezés jelzés   💡 Új ötlet        UX-szabály
+    EventLog tisztítása                 💡 Új ötlet        SystemLog szétválasztás
+    CSV warning UX                      💡 Új ötlet        Ikonváltás
+    -------------------------------------------------------------------------------
+
+Mai változások a táblázatban:
+- NeedCalculationDetail → 🚧 Folyamatban → ✅ Kész
+- Minden más sor változatlan maradt (a szabályok szerint).
+
+------------------------------------------------------------------------
+
+📊 Idővonalas roadmap (frissítve)
+
+✅ Elkészült (Done Zone)
+
+-   NeedRule pipeline (új engine‑alapú)
+-   NeedCalculationDetail workflow + engine integráció (új)
+-   Generikus kapcsolótábla architektúra
+-   ConnectionRegistryEngine
+-   ConnectionEntity framework
+-   CSV import/export modernizálása
+-   Registry audit integráció
+-   SnapshotManager, GeometryHelper, LayoutDefaultStore
+-   OverlayIconWidget teljes pipeline
+-   Logger subsystem
+-   Material/Product pipeline
+-   BarcodeTable refaktor
+-   VerboseManager
+-   MaterialPickerDialog
+-   Test framework
+
+🚧 Folyamatban (Active Zone)
+
+-   NeedCalculation pipeline
+-   MVP logika tisztítása
+-   CutCalculator preview
+-   Overlay‑alapú adat‑létezés jelzés
+-   BOMWorkbench UX finomítások
+
+📐 Tervezés (Design Zone)
+
+-   Formula parser (cparse)
+-   AuditEntry + AuditService
+-   OrderManager
+-   CustomerMaster
+-   Order entry UI
+-   Real‑time preview UI
+
+💡 Új ötletek (Idea Zone)
+
+-   SystemLog + EventLog szétválasztása
+-   CSV warning ikonváltás
+-   OverlayIconWidget globális UX-szabály
+-   UI‑log kategorizálás
+
+🔥 SOS
+
+-   NeedCalculation SAVE→RELOAD hiba
+
+------------------------------------------------------------------------
+
+✨ Röviden – stratégiai összefoglaló
+
+A mai nap a CutCalculator architektúrájának egyik legnagyobb ugrása
+volt:
+
+-   A registry‑rendszer teljesen egységes, workflow‑vezérelt és
+    auditálható lett.
+-   A kapcsolótábla‑framework (ConnectionEntity + Engine + Repository)
+    elkészült, és már működik a NeedRule pipeline-ban.
+-   A NeedCalculationDetailRegistry modernizációja lezárult,
+    workflow‑kompatibilis.
+-   A CSV‑pipeline tiszta, gyors, auditált.
+-   A rendszer stabilan indul, stabilan áll le, 1529 elem auditálva.
+-   A következő nagy lépés a NeedCalculation pipeline engine‑alapú
+    újraírása.
+
+------------------------------------------------------------------------
+
+📌 Mai eredmények – részletes taktikai napzáró
+
+-   ConnectionEntity modell véglegesítve
+-   ConnectionRegistryEngine implementálva
+-   NeedRuleRegistry teljes újraírása
+-   ConnectionRepository load/save modernizálva
+-   NeedCalculationDetailRegistry workflow‑osra átállítva
+-   ProductRepository bulk‑load fix
+-   Registry audit frissítve
+-   CSV import pipeline stabil
+-   UI snapshot rendszer stabil
+-   BOMWorkbench működik
+-   Logolás konzisztens
+-   Rendszer exit code: 0
+
+------------------------------------------------------------------------
+
+🎯 Prioritási sorrend – fókuszpont lista
+
+1.  🔥 NeedCalculation SAVE→RELOAD hiba
+2.  NeedCalculation pipeline engine‑alapra hozása
+3.  MaterialPicker integráció NeedCalcDetail‑hez
+4.  OverlayIconWidget globális integráció
+5.  CSV warning UX
+6.  BOMWorkbench UX finomítások
+
+------------------------------------------------------------------------
+
+🚀 Sprint fókusz + 👉 Holnap fókusz
+
+🚀 Sprint fókusz
+
+-   🔥 NeedCalculation SAVE→RELOAD hiba
+-   NeedCalculation / NeedCalcDetail engine‑alapú pipeline
+-   OverlayIconWidget integráció
+-   EventLog / SystemLog szétválasztása
+-   CSV warning UX
+-   BOMWorkbench UX finomítás
+
+👉 Holnap fókusz
+
+1.  NeedCalculation engine‑alapú újraírás
+2.  NeedCalcDetail modell + registry + repository
+    -   2.5 Registry engine audit
+    -   2.6 Registry engine logolás finomhangolása („mókus hadművelet”)
+3.  MaterialPicker integráció NeedCalcDetail‑hez
+4.  ModeNameDialog UX finomítás
+5.  EventLog kategorizálás
+6.  BOMWorkbench splitter/header UX finomítás
+
+------------------------------------------------------------------------
+
+📝 Git commit subject (≤55 karakter)
+
+RegistryEngine overhaul + NeedRule/NeedCalcDetail ready
+
+------------------------------------------------------------------------
+
+Ha szeretnéd, készítek egy CHANGELOG.md‑t is a mai nap alapján, vagy egy
+vizuális architektúra‑diagramot a registry‑engine-ről.

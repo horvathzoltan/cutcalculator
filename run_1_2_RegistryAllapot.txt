@@ -1,0 +1,96 @@
+Zoltán, hozok neked egy tiszta, áttekinthető, fejlesztési érettségi
+táblázatot, ahol:
+
+-   minden registry egy sor,
+-   minden fontos engine‑/workflow‑feature egy oszlop,
+-   és jelölöm, hogy az adott registry jelenleg hol tart.
+
+Ez lesz a hivatalos „Registry Fejlettségi Mátrix”.
+
+------------------------------------------------------------------------
+
+🧩 Registry Fejlettségi Mátrix (2026‑01‑03)
+
+  ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+  Registry                        Engine típusa                       Identifiable   Workflow                 Domain      Duplicate   before/after   Log      Persist   Bulk load     Lookup API         Állapot
+                                                                      (QUuid)        (insert/update/remove)   validáció   validáció   hookok         hookok   hook      támogatás     (findIf/findAll)
+  ------------------------------- ----------------------------------- -------------- ------------------------ ----------- ----------- -------------- -------- --------- ------------- ------------------ ---------------
+  BarcodeRegistry                 RegistryEngineBase                  ❌             ❌                       ⚠️          ✔ (barcode  ❌             ✔        ✔         ✔ (volatile + ❌                 OK – lookup
+                                                                                                              részleges   unique)                                       persist)                         registry
+
+  MaterialRegistry                BarcodeIdentifiableRegistryEngine   ✔              ✔                        ✔           ✔           ✔              ✔        ✔         ✔             ✔                  KÉSZ
+
+  ProductRegistry                 BarcodeHierarchicalRegistryEngine   ✔              ✔                        ✔           ✔           ✔              ✔        ✔         ✔             ✔                  KÉSZ
+
+  NeedRuleRegistry                ConnectionRegistryEngine            ⚠️ (nem QUuid  ❌ (csak insert/remove)  ⚠️ nincs    ⚠️ nincs    ❌             ❌       ✔         ✔             ❌                 FÉLIG KÉSZ
+                                                                      alapú)
+
+  NeedCalculationRegistry         IdentifiableRegistryEngine          ✔              ✔                        ✔           ✔           ✔              ✔        ✔         ✔             ✔                  KÉSZ
+
+  NeedCalculationDetailRegistry   IdentifiableRegistryEngine          ✔              ✔                        ✔           ✔           ✔              ✔        ✔         ✔             ✔                  KÉSZ (frissen
+                                                                                                                                                                                                         modernizálva)
+
+  ColorRegistry                   RegistryEngineBase                  ❌             ❌                       ❌          ❌          ❌             ❌       ❌        ✔             ✔ (forEach)        OK – lookup
+                                                                                                                                                                                                         registry
+  ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+------------------------------------------------------------------------
+
+🟩 Mit jelent ez a mátrix?
+
+✔ 4 registry teljesen workflow‑kompatibilis
+
+-   MaterialRegistry
+-   ProductRegistry
+-   NeedCalculationRegistry
+-   NeedCalculationDetailRegistry
+
+Ezek 100% modern engine.
+
+✔ 2 registry lookup‑jellegű, workflow nélkül
+
+-   BarcodeRegistry
+-   ColorRegistry
+
+Ezek szándékosan workflow‑mentesek, mert immutable lookup adatokat
+kezelnek.
+
+🟨 1 registry félig workflow‑os
+
+-   NeedRuleRegistry
+
+Ez egy kapcsolótábla, ezért:
+
+-   nincs identifiable entity
+-   nincs update
+-   nincs domain validáció
+-   nincs duplicate validáció
+-   nincs log hook
+-   nincs workflow
+
+Ha akarod, át tudjuk tenni IdentifiableRegistryEngine‑re, de nem
+kötelező.
+
+------------------------------------------------------------------------
+
+🟦 Ha szeretnéd, készítek egy második táblázatot is: „Mit kell még fejleszteni?”
+
+De már most látszik:
+
+✔ A rendszer 90%-a workflow‑kész
+
+✔ A registry‑engine architektúra stabil
+
+✔ A CSV import bulk load mindenhol rendben
+
+✔ A NeedCalculationDetailRegistry modernizálása sikeres
+
+✔ A logok tiszták, auditálhatók
+
+A következő lépés csak akkor kell, ha a NeedRuleRegistry‑t is
+workflow‑ossá akarod tenni.
+
+------------------------------------------------------------------------
+
+Ha szeretnéd, csinálok egy „Registry Modernizációs Checklist” táblázatot
+is, ahol pipálhatod, hogy mi készült el.

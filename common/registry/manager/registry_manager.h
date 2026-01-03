@@ -1,90 +1,9 @@
-// #pragma once
-// #include "common/logger/event_logger.h"
-// #include "common/logger/logger.h"
-// #include "common/model/barcode_identifiable_entity.h"
-// #include "registry_base.h"
-
-// #include <QVector>
-// #include <QString>
-
-// #include "common/utils/table_formatter.h"
-
-// class RegistryManager {
-// public:
-//     static RegistryManager& instance() {
-//         static RegistryManager mgr;
-//         return mgr;
-//     }
-
-//     // --- Egységes regisztráció ---
-//     void registerRepo(RegistryBase* repo) {
-//         repos.append(repo);
-//     }
-
-//     // --- Audit riport ---
-//     void auditReport() const {
-//         zInfo("📊 Registry audit összefoglaló:");
-
-//         QVector<QString> header = {"Registry", "Type", "Count"};
-//         QVector<QVector<QString>> rows;
-
-//         for (auto* repo : repos) {
-//             rows.push_back({
-//                 repo->name(),
-//                 repo->typeName(),
-//                 QString::number(repo->size())
-//             });
-//         }
-
-//         const auto lines = TableFormatter::format(header, rows);
-//         for (const auto& line : lines)
-//             zInfo().noquote() << line;
-
-//         zInfo().noquote() << QString("Összesen: %1").arg(totalCount());
-//         zEvent(QString("Registry audit összefoglaló – összesen %1 elem tárolva").arg(totalCount()));
-//     }
-
-//     // --- Összes elemszám ---
-//     int totalCount() const {
-//         int sum = 0;
-//         for (auto* repo : repos)
-//             sum += repo->size();
-//         return sum;
-//     }
-
-//     // --- Keresés típusnév alapján ---
-//     RegistryBase* findByTypeName(const QString& typeName) const {
-//         for (auto* repo : repos)
-//             if (repo->typeName() == typeName)
-//                 return repo;
-//         return nullptr;
-//     }
-
-//     // --- Entitás keresése ID alapján ---
-//     const BarcodeIdentifiableEntity* findEntity(const QString& typeName,
-//                                                 const QUuid& id) const
-//     {
-//         if (auto* repo = findByTypeName(typeName))
-//             return repo->findEntityById(id);   // registry maga implementálja
-//         return nullptr;
-//     }
-
-//     const QVector<RegistryBase*>& allRepos() const {
-//         return repos;
-//     }
-
-// private:
-//     RegistryManager() = default;
-
-//     QVector<RegistryBase*> repos;
-// };
-
 // registry_manager.h
 #pragma once
 #include "common/logger/event_logger.h"
 #include "common/logger/logger.h"
 #include "common/model/barcode_identifiable_entity.h"
-#include "common/registry/base/registry_base.h"
+#include "common/registry/feature/registry_base.h"
 #include "common/registry/barcode/ibarcode_identifiable_registry_base.h"
 
 
@@ -195,3 +114,85 @@ private:
     QVector<RegistryBase*> repos;
     QVector<IBarcodeIdentifiableRegistryBase*> identifiable;  // csak az azonosíthatók
 };
+
+// #pragma once
+// #include "common/logger/event_logger.h"
+// #include "common/logger/logger.h"
+// #include "common/model/barcode_identifiable_entity.h"
+// #include "registry_base.h"
+
+// #include <QVector>
+// #include <QString>
+
+// #include "common/utils/table_formatter.h"
+
+// class RegistryManager {
+// public:
+//     static RegistryManager& instance() {
+//         static RegistryManager mgr;
+//         return mgr;
+//     }
+
+//     // --- Egységes regisztráció ---
+//     void registerRepo(RegistryBase* repo) {
+//         repos.append(repo);
+//     }
+
+//     // --- Audit riport ---
+//     void auditReport() const {
+//         zInfo("📊 Registry audit összefoglaló:");
+
+//         QVector<QString> header = {"Registry", "Type", "Count"};
+//         QVector<QVector<QString>> rows;
+
+//         for (auto* repo : repos) {
+//             rows.push_back({
+//                 repo->name(),
+//                 repo->typeName(),
+//                 QString::number(repo->size())
+//             });
+//         }
+
+//         const auto lines = TableFormatter::format(header, rows);
+//         for (const auto& line : lines)
+//             zInfo().noquote() << line;
+
+//         zInfo().noquote() << QString("Összesen: %1").arg(totalCount());
+//         zEvent(QString("Registry audit összefoglaló – összesen %1 elem tárolva").arg(totalCount()));
+//     }
+
+//     // --- Összes elemszám ---
+//     int totalCount() const {
+//         int sum = 0;
+//         for (auto* repo : repos)
+//             sum += repo->size();
+//         return sum;
+//     }
+
+//     // --- Keresés típusnév alapján ---
+//     RegistryBase* findByTypeName(const QString& typeName) const {
+//         for (auto* repo : repos)
+//             if (repo->typeName() == typeName)
+//                 return repo;
+//         return nullptr;
+//     }
+
+//     // --- Entitás keresése ID alapján ---
+//     const BarcodeIdentifiableEntity* findEntity(const QString& typeName,
+//                                                 const QUuid& id) const
+//     {
+//         if (auto* repo = findByTypeName(typeName))
+//             return repo->findEntityById(id);   // registry maga implementálja
+//         return nullptr;
+//     }
+
+//     const QVector<RegistryBase*>& allRepos() const {
+//         return repos;
+//     }
+
+// private:
+//     RegistryManager() = default;
+
+//     QVector<RegistryBase*> repos;
+// };
+

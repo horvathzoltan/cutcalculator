@@ -44,7 +44,7 @@ void CalculationModesManager::connectSignals() {
                 // 📦 Új entitás
                 NeedCalculation c;
                 c.id = QUuid::createUuid();
-                c.productDefinitionId = productId;
+                c.productId = productId;
                 c.name = name;
 
                 if (NeedCalculationRegistry::instance().insert(c)) {
@@ -75,7 +75,7 @@ void CalculationModesManager::connectSignals() {
                     return;
 
                 auto duplicateCheck = [&](const QString& name) {
-                    return NeedCalculationRegistry::instance().exists(old->productDefinitionId, name);
+                    return NeedCalculationRegistry::instance().exists(old->productId, name);
                 };
 
                 ModeNameDialog dlg(_view, old->name, duplicateCheck);

@@ -10,7 +10,7 @@
  * @class CalculationModesView
  * @brief ProductDefinition → ModeName lista (NeedCalculation).
  *
- * Hunglish:
+ * *
  * - bal alsó panel a BOMWorkbench-ben
  * - oszlopok: ModeName, DetailsCount
  */

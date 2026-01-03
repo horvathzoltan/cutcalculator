@@ -18,7 +18,8 @@ ROL-RR,ROL-P
 class NeedRuleRepository {
 public:
     static bool load() {
-        return ConnectionRepository<NeedRule, NeedRuleTraits>::load(NeedRuleRegistry::instance());
+        return ConnectionRepository<NeedRule, NeedRuleTraits>
+            ::load(NeedRuleRegistry::instance());
     }
 
     static bool save() {

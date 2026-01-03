@@ -6,6 +6,7 @@
 #include "colors/model/named_color.h"
 #include "colors/model/ralsystem.h"
 #include "common/registry/base/registry_engine_base.h"
+#include "common/registry/feature/register_me.h"
 
 /**
  * @brief ColorRegistry – a betöltött színek törzsadata.

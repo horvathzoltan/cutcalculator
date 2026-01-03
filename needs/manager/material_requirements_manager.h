@@ -6,7 +6,7 @@
 /**
  * MaterialRequirementsManager
  *
- * Hunglish:
+ * *
  * - Glue a view és a registry/repo között.
  * - Kezeli az add/remove kéréseket, és visszatölti a táblát.
  * - A product selection váltására szűrten tölti a kapcsolatok listáját.

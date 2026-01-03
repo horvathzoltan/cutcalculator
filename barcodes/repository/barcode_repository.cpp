@@ -15,7 +15,7 @@
  * Header (ajánlott, nem kötelező):
  *   code;entityType;entityId;introducedAt;retiredAt;status
  *
- * Hunglish:
+ * *
  * - Dátumok: Qt::ISODate (YYYY-MM-DDTHH:MM:SS).
  * - retiredAt: üres, ha nincs nyugdíjazva.
  * - status: "Active" vagy "Retired".
@@ -139,7 +139,7 @@ bool BarcodeRepository::loadFromCSV(BarcodeRegistry& registry)
         CsvImporter::buildAll<BarcodeRow, BarcodeRecord>(rows, buildRecordFromRow, ctx);
 
     // 3) Duplikáció kockázat – globális uniqueness a CSV-ben is
-    //    Hunglish: fail-fast, ha a CSV-ben ugyanaz a code többször szerepel.
+    //    * fail-fast, ha a CSV-ben ugyanaz a code többször szerepel.
     {
         QSet<QString> seen;
         for (const auto& r : records) {

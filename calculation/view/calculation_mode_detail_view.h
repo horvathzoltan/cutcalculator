@@ -8,7 +8,7 @@
  * @class CalculationModeDetailView
  * @brief NeedCalculationDetail lista: Material + Formula + TypeIcon (⚙️/📦)
  *
- * Hunglish:
+ * *
  * - jobb oldali panel
  * - piros háttér hibás/missing formula esetén
  */

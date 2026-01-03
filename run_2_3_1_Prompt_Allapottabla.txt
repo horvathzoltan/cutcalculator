@@ -97,6 +97,7 @@ A frissítés során készítsd el a következő blokkokat:
 🎯 Prioritási sorrend – fókuszpont lista
 🚀 Sprint fókusz (🔥 SOS pontokkal) és 👉 Holnap fókusz
 
-Végül adj egy git commit subjectet (max 55 karakter). ***
+Végül adj egy git commit subjectet (max 55 karakter).
+***
 <git‑commit‑subject‑ide>
 ***

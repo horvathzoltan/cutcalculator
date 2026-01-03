@@ -7,7 +7,6 @@
 #include "common/csv/filecontext.h"
 #include "common/logger/logger.h"
 #include "common/registry/manager/registry_traits.h"
-#include "connection_registry.h"
 #include "common/registry/manager/registry_lookup.h"
 
 
@@ -19,7 +18,7 @@ struct ConnectionRow {
 /**
  * 📂 ConnectionRepository<T, Traits> – generikus CSV import/export
  *
- * Hunglish: a traits mondja meg a pathot és a headert. A repo csak IO-t végez és parse-ol.
+ * * a traits mondja meg a pathot és a headert. A repo csak IO-t végez és parse-ol.
  * Elvárás a Traits-től:
  *  - static QString filePath();
  *  - static QStringList headers(); // pl. {"productId","materialId"}
@@ -133,7 +132,7 @@ public:
         }
 
         ctx.setTotalLines(lineNumber);
-        registry.setData(defs);
+        registry.setAll(defs);
 
         zInfo(QString("📊 ConnectionRepository: %1 kapcsolat betöltve → %2")
                   .arg(defs.size()).arg(path));
