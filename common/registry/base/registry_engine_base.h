@@ -1,8 +1,9 @@
 #pragma once
 #include "common/registry/feature/registry_base.h"
-#include <QList>
+#include <QVector>
+#include <QUuid>
 
-template<typename TEntity>//, typename TDerived>
+template<typename TEntity>
 class RegistryEngineBase : public RegistryBase {
 public:
     using Base = RegistryBase;
@@ -12,6 +13,47 @@ public:
                        const QString& entityTypeName)
         : RegistryBase(registryName, entityTypeName)
     {}
+
+// --- Internal CRUD a workflow policy számára ---
+    bool insertInternal(const TEntity& e) {
+        guardInstanceUsage();
+        _items.append(e);
+        return true;
+    }
+
+    bool updateInternal(const TEntity& e) {
+        guardInstanceUsage();
+        for (auto& item : _items) {
+            if (item.id == e.id) {   // IdentifiableEntity szerződés
+                item = e;
+                return true;
+            }
+        }
+        return false; // nem találtuk
+    }
+
+    bool removeInternal(const QUuid& id) {
+        guardInstanceUsage();
+        for (int i = 0; i < _items.size(); ++i) {
+            if (_items[i].id == id) {
+                _items.removeAt(i);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    bool removeInternal(const QUuid& leftId, const QUuid& rightId) {
+        guardInstanceUsage();
+        for (int i = 0; i < _items.size(); ++i) {
+            if (_items[i].leftId == leftId && _items[i].rightId == rightId) {
+                _items.removeAt(i);
+                return true;
+            }
+        }
+        return false;
+    }
+    // --- CRUD storage primitives ---
 
     bool add(const TEntity& e) {
         guardInstanceUsage();
@@ -26,20 +68,24 @@ public:
     }
 
     void setAll(const QVector<TEntity>& v) {
-        _items.clear();
-        _items.append(v);
+        guardInstanceUsage();
+        _items = v;
     }
 
-    QList<const TEntity*> all() const {
+    // --- READ APIs ---
+
+    // POINTERES ALL() → workflow + domain hookoknak
+    QVector<const TEntity*> all() const {
         guardInstanceUsage();
-        QList<const TEntity*> out;
+        QVector<const TEntity*> out;
         out.reserve(_items.size());
         for (const auto& item : _items)
             out.append(&item);
         return out;
     }
 
-    QList<TEntity> readAll() const {
+    // MÁSOLATOS READALL() → repositoryknak
+    QVector<TEntity> readAll() const {
         guardInstanceUsage();
         return _items;
     }
@@ -61,23 +107,19 @@ public:
     auto cbegin() const { guardInstanceUsage(); return _items.cbegin(); }
     auto cend()   const { guardInstanceUsage(); return _items.cend(); }
 
-    template<typename Func>
-    void forEach(Func&& f) const {
-        guardInstanceUsage();
-        for (const auto& item : _items)
-            f(item);
-    }
+    // --- FIND APIs ---
 
+    // find by predicate → pointer
     template<typename Predicate>
     const TEntity* findIf(Predicate&& pred) const {
         guardInstanceUsage();
-        for (const auto& item : _items) {
+        for (const auto& item : _items)
             if (pred(item))
                 return &item;
-        }
         return nullptr;
     }
 
+    // find all by predicate → QVector
     template<typename Predicate>
     QVector<TEntity> findAll(Predicate&& pred) const {
         guardInstanceUsage();
@@ -89,15 +131,37 @@ public:
         return out;
     }
 
-    //
+    // exists by predicate
     template<typename Predicate>
     bool existsBy(Predicate&& pred) const {
         return findIf(std::forward<Predicate>(pred)) != nullptr;
     }
 
+    // --- FIND BY ID (kötelező minden IdentifiableEntity-hez) ---
+    const TEntity* findById(const QUuid& id) const {
+        guardInstanceUsage();
+        for (const auto& item : _items)
+            if (item.id == id)
+                return &item;
+        return nullptr;
+    }
 
-//private:
-    //inline static bool _autoRegister = (RegistryCatalog::add<TDerived>(), true);
+    bool existsById(const QUuid& id) const {
+        return findById(id) != nullptr;
+    }
+
+    // --- ConnectionEntity-specifikus helper: findByPair ---
+    const TEntity* findByPair(const QUuid& leftId, const QUuid& rightId) const {
+        guardInstanceUsage();
+        for (const auto& item : _items) {
+            if (item.leftId == leftId && item.rightId == rightId)
+                return &item;
+        }
+        return nullptr;
+    }
+
+
+
 protected:
-    QList<TEntity> _items;
+    QVector<TEntity> _items;
 };

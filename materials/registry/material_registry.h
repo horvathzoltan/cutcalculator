@@ -2,26 +2,57 @@
 
 #include <QVector>
 #include <QUuid>
-#include <QString>
-#include "common/registry/barcode/barcode_identifiable_registry_engine.h"
-#include "common/system/verbose_manager.h"
-#include "materials/model/material_master.h"
-#include "common/registry/feature/register_me.h"
 
-class MaterialRegistry : public BarcodeIdentifiableRegistryEngine<MaterialMaster>,
-                         public RegisterMe<MaterialRegistry>
+#include "common/registry/base/registry_engine_base.h"
+#include "materials/model/material_master.h"
+
+class MaterialRegistry
+    : public RegistryEngineBase<MaterialMaster>
 {
-    AUTO_REGISTER_REGISTRY(MaterialRegistry);
 public:
     static MaterialRegistry& instance() {
         static MaterialRegistry inst;
+        //inst.initialize();
+
         return inst;
     }
 
-private:
-    MaterialRegistry(); // <-- saját ctor
+    // Lookup API
+    QVector<MaterialMaster> findByType(MaterialType type) const;
+    QVector<MaterialMaster> findByShape(CrossSectionShape::Shape shape) const;
+    QVector<MaterialMaster> findByColor(const NamedColor& color) const;
 
-public:
-    bool insert(const MaterialMaster& e);
-    bool verbose() const { return IS_VERBOSE_THIS(); }
+private:
+    MaterialRegistry()
+        : RegistryEngineBase("MaterialRegistry", "MaterialMaster")
+    {}
 };
+
+
+// #pragma once
+
+// #include <QVector>
+// #include <QUuid>
+// #include <QString>
+// #include "common/registry/barcode/barcode_identifiable_registry_engine.h"
+// #include "common/system/verbose_manager.h"
+// #include "materials/model/material_master.h"
+// #include "common/registry/feature/register_me.h"
+
+// class MaterialRegistry : public BarcodeIdentifiableRegistryEngine<MaterialMaster>,
+//                          public RegisterMe<MaterialRegistry>
+// {
+//     AUTO_REGISTER_REGISTRY(MaterialRegistry);
+// public:
+//     static MaterialRegistry& instance() {
+//         static MaterialRegistry inst;
+//         return inst;
+//     }
+
+// private:
+//     MaterialRegistry(); // <-- saját ctor
+
+// public:
+//     bool insert(const MaterialMaster& e);
+//     bool verbose() const { return IS_VERBOSE_THIS(); }
+// };

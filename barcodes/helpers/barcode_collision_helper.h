@@ -19,6 +19,7 @@ public:
     struct RowInfo {
         QString barcode;
         QString name;
+        std::optional<QUuid> entityId;   // 🔥 ÚJ: az entitás azonosítója
     };
 
     static std::optional<CsvImporter::RowError>

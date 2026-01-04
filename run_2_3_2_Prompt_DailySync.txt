@@ -3,13 +3,14 @@ PONTOKBA SZEDETT összefoglalót a mai munkáról.
 
 A cél:
 1) egzakt, diff-alapú elszámolás a ténylegesen módosult fájlok alapján
+1.1) ezeket az alábbi script adja: ./aipack.sh -m 24 ~/source/repos/CutCalculator 1200
 2) áttekintő, strukturált összefoglaló a fejlesztési napról
 3) minden ötlet, probléma, döntés és BUG írásos nyoma megmaradjon
 4) a BUG-ok életciklusa követhető legyen (nem törlődnek, csak státuszt váltanak)
 
 A struktúra legyen kötelező:
 
-🎯 A mai munka egzakt eredménye – kategóriákba rendezve
+🎯 A mai(<itt legyen egy időbélyeg>) munka egzakt eredménye – kategóriákba rendezve
 
 Minden kategória így nézzen ki:
 

@@ -95,6 +95,7 @@ BarcodeRepository::buildRecordFromRow(const BarcodeRow& row,
         return std::nullopt;
 
     BarcodeRecord rec;
+    rec.id = QUuid::createUuid(); // 🔑 új, belső ID
     rec.code         = row.code;
     rec.entityType   = row.entityType;
     rec.introducedAt = QDateTime::fromString(row.introducedAtStr, Qt::ISODate);
@@ -118,28 +119,30 @@ BarcodeRepository::loadBarcodeRows(CsvImporter::FileContext& ctx)
 }
 
 // --- Entry Point ---
-bool BarcodeRepository::loadFromCSV(BarcodeRegistry& registry)
+bool BarcodeRepository::load(QVector<BarcodeRecord>& out)
 {
     auto& helper = FileNameHelper::instance();
     if (!helper.isInitialized()) {
-        zWarning("⚠️ A FileNameHelper nincs inicializálva.");
+        zWarning("⚠️ FileNameHelper nincs inicializálva.");
         return false;
     }
 
-    // Javaslat: implementáld a FileNameHelper-ben:
-    //   QString getBarcodeCsvFile() const;
-    const QString fn = helper.getBarcodeCsvFile(); // auditbarát: központi helyről jön
+    const QString fn = helper.getBarcodeCsvFile();
     CsvImporter::FileContext ctx("Barcode import", fn);
 
-    // 1) Beolvasás + konvertálás
-    const QVector<CsvImporter::AuditedRow<BarcodeRow>> rows = loadBarcodeRows(ctx);
+    // 1) Convert
+    const QVector<CsvImporter::AuditedRow<BarcodeRow>> rows =
+        loadBarcodeRows(ctx);
 
-    // 2) Build – típusos rekordok
+    // 2) Build
     const QVector<BarcodeRecord> records =
-        CsvImporter::buildAll<BarcodeRow, BarcodeRecord>(rows, buildRecordFromRow, ctx);
+        CsvImporter::buildAll<BarcodeRow, BarcodeRecord>(
+            rows,
+            buildRecordFromRow,
+            ctx
+            );
 
-    // 3) Duplikáció kockázat – globális uniqueness a CSV-ben is
-    //    * fail-fast, ha a CSV-ben ugyanaz a code többször szerepel.
+    // 3) Duplikáció ellenőrzés (CSV-n belül)
     {
         QSet<QString> seen;
         for (const auto& r : records) {
@@ -153,29 +156,77 @@ bool BarcodeRepository::loadFromCSV(BarcodeRegistry& registry)
     }
 
     if (ctx.hasErrors()) {
-        zWarning(QString("⚠️ Hibák a barcode import során (%1)").arg(ctx.errorsSize()));
+        zWarning(QString("⚠️ Hibák a barcode import során (%1)")
+                     .arg(ctx.errorsSize()));
     }
 
-    // 4) Assemble – a registrybe töltés (globális uniqueness itt is érvényesül)
-    int accepted = 0;
-    for (const auto& rec : records) {
-        if (registry.isBarcodeUnique(rec.code)) {
-            // Régisztáció a registrybe – a registry a MaterialRegistry mintájára auditál
-            if (registry.registerData_volatile(rec)) {
-                ++accepted;
-            }
-        } else {
-            // CSV-ben validnak tűnt, de a registryben már szerepel – audit WARN
-            zWarning(QString("⚠️ Barcode duplikált a registryben is: %1").arg(rec.code));
-        }
-    }
+    out = records;
 
-    zInfo(QString("📊 BarcodeRepository: %1 rekord beolvasva, %2 regisztrálva")
-              .arg(records.size())
-              .arg(accepted));
+    zInfo(QString("📦 BarcodeRepository: %1 rekord beolvasva")
+              .arg(records.size()));
 
     return !records.isEmpty();
 }
+
+
+// bool BarcodeRepository::loadFromCSV(BarcodeRegistry& registry)
+// {
+//     auto& helper = FileNameHelper::instance();
+//     if (!helper.isInitialized()) {
+//         zWarning("⚠️ A FileNameHelper nincs inicializálva.");
+//         return false;
+//     }
+
+//     // Javaslat: implementáld a FileNameHelper-ben:
+//     //   QString getBarcodeCsvFile() const;
+//     const QString fn = helper.getBarcodeCsvFile(); // auditbarát: központi helyről jön
+//     CsvImporter::FileContext ctx("Barcode import", fn);
+
+//     // 1) Beolvasás + konvertálás
+//     const QVector<CsvImporter::AuditedRow<BarcodeRow>> rows = loadBarcodeRows(ctx);
+
+//     // 2) Build – típusos rekordok
+//     const QVector<BarcodeRecord> records =
+//         CsvImporter::buildAll<BarcodeRow, BarcodeRecord>(rows, buildRecordFromRow, ctx);
+
+//     // 3) Duplikáció kockázat – globális uniqueness a CSV-ben is
+//     //    * fail-fast, ha a CSV-ben ugyanaz a code többször szerepel.
+//     {
+//         QSet<QString> seen;
+//         for (const auto& r : records) {
+//             if (seen.contains(r.code)) {
+//                 ctx.addError(ctx.currentLineNumber(),
+//                              QString("⚠️ Duplikált barcode a CSV-ben: %1").arg(r.code));
+//             } else {
+//                 seen.insert(r.code);
+//             }
+//         }
+//     }
+
+//     if (ctx.hasErrors()) {
+//         zWarning(QString("⚠️ Hibák a barcode import során (%1)").arg(ctx.errorsSize()));
+//     }
+
+//     // 4) Assemble – a registrybe töltés (globális uniqueness itt is érvényesül)
+//     int accepted = 0;
+//     for (const auto& rec : records) {
+//         if (registry.isBarcodeUnique(rec.code)) {
+//             // Régisztáció a registrybe – a registry a MaterialRegistry mintájára auditál
+//             if (registry.registerData_volatile(rec)) {
+//                 ++accepted;
+//             }
+//         } else {
+//             // CSV-ben validnak tűnt, de a registryben már szerepel – audit WARN
+//             zWarning(QString("⚠️ Barcode duplikált a registryben is: %1").arg(rec.code));
+//         }
+//     }
+
+//     zInfo(QString("📊 BarcodeRepository: %1 rekord beolvasva, %2 regisztrálva")
+//               .arg(records.size())
+//               .arg(accepted));
+
+//     return !records.isEmpty();
+// }
 
 // --- Export (opcionális) ---
 bool BarcodeRepository::saveToCSV(const BarcodeRegistry& registry, const QString& path)

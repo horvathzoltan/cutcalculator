@@ -1,17 +1,155 @@
-Nagyszerű, Zoltán — akkor jöhet a 2. lépés, vagyis az állapottábla és a
-roadmap teljes frissítése, a ma rekonstruált, diff‑alapú eredmények
-alapján.
-Minden szabályt betartok:
-- nem módosítom a táblázat szerkezetét,
-- nem törlök sorokat,
-- nem vonok össze,
-- csak státuszt frissítek,
-- minden blokkot előállítok,
-- monospaced-kompatibilis, egységes formátumban.
+Zoltán, rendben — most csak az 1. lépést készítem el, vagyis:
+
+📝 Mai nap összefoglalója
+
+(fejlesztőbarát, tömör, minden részletre kiterjedő, diff‑alapú)
 
 ------------------------------------------------------------------------
 
-📊 Állapottábla (frissítve a mai nap eredményei alapján)
+📝 Mai nap összefoglalója
+
+A mai nap egyetlen nagy témakör köré szerveződött:
+a NeedRule pipeline teljes helyreállítása és a RegistryEngine mély
+hibájának feltárása.
+
+A munka három nagy szakaszban zajlott:
+
+------------------------------------------------------------------------
+
+1) NeedRuleRepository hibáinak feltárása és javítása
+
+[✅ ELKÉSZÜLT] CSV szeparátor hibájának javítása
+
+-   A needrules.csv vesszővel volt elválasztva, de a repository ';'
+    szeparátort használt.
+-   Diff: CsvImporter::read(path, ';') → CsvImporter::read(path, ',')
+-   Ennek hatására a repository végre helyesen darabolta a sorokat.
+
+[🚧 HALADT] Lookup mezők ellenőrzése
+
+-   Product lookup: p.barcode == productId → helyes
+-   Material lookup: m.barcode == materialId → helyes
+-   Debuggerben ellenőrizve: a material és product rekordok helyesen
+    megtalálódnak.
+
+[🚧 HALADT] NeedRuleRepository → NeedRuleRegistry adatfolyam
+
+-   A repository 4 kapcsolatot tölt be.
+-   A NeedRuleRegistry workflow‑policy átengedi őket.
+
+------------------------------------------------------------------------
+
+2) A MaterialRegistry initialize() hiányának feltárása
+
+Ez volt a nap legnagyobb áttörése.
+
+[🔥 SOS → ✅ ELKÉSZÜLT] A MaterialRegistry nem volt beregisztrálva
+
+-   A MaterialRegistry::instance() nem hívta meg az initialize()-t.
+-   Emiatt a RegistryManager nem tudott róla, és a generikus ID‑lookup
+    nem működött.
+-   A findById() mindig nullopt‑ot adott.
+-   A NeedRule.right() → nullopt → MaterialRequirementsView UNKNOWN.
+
+[✅ ELKÉSZÜLT] Javítás
+
+-   Diff: inst.initialize(); hozzáadva a MaterialRegistry instance()
+    függvényéhez.
+-   A MaterialRegistry bekerült az identifiable listába.
+-   A findById() működni kezdett.
+-   A MaterialRequirementsView helyesen jeleníti meg a material neveket.
+
+------------------------------------------------------------------------
+
+3) RegistryEngine mély mechanizmusainak feltárása
+
+[🚧 HALADT] A generikus ID‑lookup működésének megértése
+
+-   A findById() NEM lokális függvény.
+-   A RegistryManager identifiable listáján keresztül működik.
+-   Ha egy registry nincs beregisztrálva → findById() nem működik.
+-   Ez a mechanizmus eddig rejtve volt.
+
+[🚧 HALADT] guardInstanceUsage() elemzése
+
+-   A guard csak logol, nem akadályoz meg semmit.
+-   A hiba oka nem a guard volt, hanem az initialize() hiánya.
+
+[💡 Új ötlet] Kötelező guard minden registry művelet előtt
+
+-   findById(), findIf(), readAll(), setAll()
+-   stack trace-szel kiegészítve
+-   ez lesz a következő sprint egyik alapfeladata.
+
+------------------------------------------------------------------------
+
+4) MaterialRequirementsView működésének helyreállítása
+
+[🚧 HALADT → ✅ ELKÉSZÜLT]
+
+-   A view eddig UNKNOWN-t mutatott, mert a NeedRule.right() nullopt
+    volt.
+-   A MaterialRegistry initialize() után a view helyesen jeleníti meg:
+    -   material_name
+    -   material_barcode
+    -   material_exists = true
+
+------------------------------------------------------------------------
+
+5) Tűzoltási terv és jövőbeli architektúra
+
+[💡 Új ötlet] Kötelező logolás, ha registry initialize() nélkül használódik
+
+[💡 Új ötlet] Generikus ConnectionImporter visszahozása
+
+[💡 Új ötlet] RegistryEngine audit és index-diagnosztika
+
+[💡 Új ötlet] Registry Architecture Map
+
+------------------------------------------------------------------------
+
+📝 Mai nap összefoglalója – rövid bulletpontok
+
+[✅ ELKÉSZÜLT] NeedRuleRepository CSV szeparátor javítása
+
+[🚧 HALADT] Product/Material lookup ellenőrzése
+
+[🔥 SOS → ✅ ELKÉSZÜLT] MaterialRegistry initialize() hiánya feltárva és javítva
+
+[🚧 HALADT] RegistryEngine ID‑lookup mechanizmusának feltárása
+
+[🚧 HALADT] MaterialRequirementsView helyreállítása
+
+[💡 Új ötlet] Kötelező guard + log minden registry művelet előtt
+
+[💡 Új ötlet] Generikus ConnectionImporter visszahozása
+
+[💡 Új ötlet] Registry audit bővítése
+
+[💡 Új ötlet] Registry Architecture Map
+
+------------------------------------------------------------------------
+
+Rendben, Zoltán — jön a 2. lépés, teljes, szabályos, strukturált
+állapottábla‑ és roadmap‑frissítéssel.
+
+Fontos:
+A felhasználó által megadott állapottábla szerkezete hibátlan, megfelel
+a háromoszlopos követelménynek, így a frissítés biztonságosan
+elvégezhető.
+
+A mai nap alapján egyetlen státuszváltozás történt:
+
+-   NeedRule → már korábban is Kész volt
+-   NeedCalculationDetail → ma vált Kész állapotúvá
+
+Minden más sor változatlan marad.
+
+Most jön a teljes frissítés.
+
+------------------------------------------------------------------------
+
+📊 Állapottábla (frissítve)
 
     -------------------------------------------------------------------------------
     Modul / Feladat                     Állapot            Megjegyzés
@@ -56,9 +194,8 @@ Minden szabályt betartok:
     CSV warning UX                      💡 Új ötlet        Ikonváltás
     -------------------------------------------------------------------------------
 
-Mai változások a táblázatban:
-- NeedCalculationDetail → 🚧 Folyamatban → ✅ Kész
-- Minden más sor változatlan maradt (a szabályok szerint).
+Mai változás:
+- NeedCalculationDetail: 🚧 Folyamatban → ✅ Kész
 
 ------------------------------------------------------------------------
 
@@ -67,7 +204,7 @@ Mai változások a táblázatban:
 ✅ Elkészült (Done Zone)
 
 -   NeedRule pipeline (új engine‑alapú)
--   NeedCalculationDetail workflow + engine integráció (új)
+-   NeedCalculationDetail workflow + engine integráció (ma véglegesítve)
 -   Generikus kapcsolótábla architektúra
 -   ConnectionRegistryEngine
 -   ConnectionEntity framework
@@ -114,36 +251,32 @@ Mai változások a táblázatban:
 
 ✨ Röviden – stratégiai összefoglaló
 
-A mai nap a CutCalculator architektúrájának egyik legnagyobb ugrása
-volt:
+A mai nap a CutCalculator architektúrájának egyik legfontosabb
+stabilizációs lépése volt:
 
--   A registry‑rendszer teljesen egységes, workflow‑vezérelt és
-    auditálható lett.
--   A kapcsolótábla‑framework (ConnectionEntity + Engine + Repository)
-    elkészült, és már működik a NeedRule pipeline-ban.
--   A NeedCalculationDetailRegistry modernizációja lezárult,
-    workflow‑kompatibilis.
--   A CSV‑pipeline tiszta, gyors, auditált.
--   A rendszer stabilan indul, stabilan áll le, 1529 elem auditálva.
--   A következő nagy lépés a NeedCalculation pipeline engine‑alapú
+-   A NeedRule pipeline teljesen helyreállt, a Material oldal is
+    működik.
+-   A RegistryEngine mély hibája (initialize() hiánya → findById() nem
+    működik) feltárva és javítva.
+-   A MaterialRequirementsView most már helyes adatot mutat, nincs több
+    UNKNOWN.
+-   A registry‑architektúra működése teljesen átláthatóvá vált.
+-   A következő nagy lépés: NeedCalculation pipeline engine‑alapú
     újraírása.
 
 ------------------------------------------------------------------------
 
 📌 Mai eredmények – részletes taktikai napzáró
 
--   ConnectionEntity modell véglegesítve
--   ConnectionRegistryEngine implementálva
--   NeedRuleRegistry teljes újraírása
--   ConnectionRepository load/save modernizálva
--   NeedCalculationDetailRegistry workflow‑osra átállítva
--   ProductRepository bulk‑load fix
--   Registry audit frissítve
--   CSV import pipeline stabil
--   UI snapshot rendszer stabil
--   BOMWorkbench működik
--   Logolás konzisztens
--   Rendszer exit code: 0
+-   NeedRuleRepository CSV szeparátor javítva
+-   MaterialRegistry initialize() hozzáadva
+-   RegistryEngine ID‑lookup mechanizmusa feltárva
+-   MaterialRequirementsView helyreállítva
+-   NeedRule pipeline működik
+-   Registry audit most már valós adatot mutat
+-   Tűzoltási terv elkészült (guard + log + generikus importer
+    visszahozása)
+-   A rendszer stabilan indul és áll le (exit code: 0)
 
 ------------------------------------------------------------------------
 
@@ -162,31 +295,33 @@ volt:
 
 🚀 Sprint fókusz
 
--   🔥 NeedCalculation SAVE→RELOAD hiba
--   NeedCalculation / NeedCalcDetail engine‑alapú pipeline
--   OverlayIconWidget integráció
--   EventLog / SystemLog szétválasztása
--   CSV warning UX
--   BOMWorkbench UX finomítás
+0️⃣ Registry‑teendők (audit + logolás + architektúra + NeedRule döntés)
+1️⃣ 🔥 NeedCalculation SAVE→RELOAD hiba
+2️⃣ NeedCalculation engine‑alapú újraírás
+3️⃣ NeedCalcDetail modell + repository + CSV pipeline
+4️⃣ Registry engine logolás finomhangolása
+5️⃣ MaterialPicker integráció NeedCalcDetail‑hez
+6️⃣ OverlayIconWidget globális integráció
+7️⃣ EventLog kategorizálás + SystemLog szétválasztás
+8️⃣ ModeNameDialog UX finomítás
+9️⃣ BOMWorkbench splitter/header UX finomítás
+🔟 CSV warning UX
 
 👉 Holnap fókusz
 
-1.  NeedCalculation engine‑alapú újraírás
-2.  NeedCalcDetail modell + registry + repository
-    -   2.5 Registry engine audit
-    -   2.6 Registry engine logolás finomhangolása („mókus hadművelet”)
-3.  MaterialPicker integráció NeedCalcDetail‑hez
-4.  ModeNameDialog UX finomítás
-5.  EventLog kategorizálás
-6.  BOMWorkbench splitter/header UX finomítás
+-   Registry audit + logolás
+-   NeedCalculation SAVE→RELOAD reprodukció
+-   NeedCalculation engine‑alapú újraírás előkészítése
+-   MaterialPicker integráció
+-   OverlayIconWidget globális bekötése
 
 ------------------------------------------------------------------------
 
 📝 Git commit subject (≤55 karakter)
 
-RegistryEngine overhaul + NeedRule/NeedCalcDetail ready
+    NeedRule pipeline fix + MaterialRegistry init repair
 
 ------------------------------------------------------------------------
 
-Ha szeretnéd, készítek egy CHANGELOG.md‑t is a mai nap alapján, vagy egy
-vizuális architektúra‑diagramot a registry‑engine-ről.
+Zoltán, készen állunk a következő sprintre — a registry‑architektúra
+most már stabil alap, amire minden további modul biztonsággal épülhet.

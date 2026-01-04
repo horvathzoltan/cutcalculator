@@ -1,29 +1,75 @@
 #pragma once
-#include "common/registry/barcode/barcode_hierarchical_registry_engine.h"
+
+#include <QVector>
+#include <QUuid>
+
+#include "common/registry/base/registry_engine.h"
+#include "common/registry/workflow/crud_workflow_policy.h"
+
 #include "products/model/product_master.h"
-#include "common/system/verbose_manager.h"
-#include "common/registry/feature/register_me.h"
+#include "common/logger/logger.h"
 
-class ProductRegistry : public BarcodeHierarchicalRegistryEngine<ProductMaster>,
-                        public RegisterMe<ProductRegistry>
-
+class ProductRegistry
+    : public RegistryEngine<ProductMaster, CrudWorkflowPolicy>
 {
-    AUTO_REGISTER_REGISTRY(ProductRegistry);
-private:
-    ProductRegistry();
 public:
     static ProductRegistry& instance() {
         static ProductRegistry inst;
-        return inst; // NINCS guard
+        inst.initialize();
+        return inst;
     }
 
-    bool insert(const ProductMaster& e);
-    bool remove(const QUuid& id);
-    bool update(const ProductMaster& e);
+    // Hierarchia lookupok
+    QVector<ProductMaster> findChildren(const QUuid& parentId) const;
+    QVector<ProductMaster> findRoots() const;
 
     void persist() const override;
 
-    bool verbose() const { return IS_VERBOSE_THIS(); }
+protected:
+    // Domain hookok
+    bool validateDomain(const ProductMaster& p) const override;
+    bool validateDuplicate(const ProductMaster& p) const override;
+
+    bool beforeInsert(const ProductMaster& p) override;
+    bool beforeUpdate(const ProductMaster& p) override;
+
+    void onInsertLog(const ProductMaster& p) override;
+    void onUpdateLog(const ProductMaster& p) override;
+    void onRemoveLog(const ProductMaster& p) override;
+
+
+private:
+    ProductRegistry()
+        : RegistryEngine("ProductRegistry", "ProductMaster")
+    {}
 };
+
+// #pragma once
+// #include "common/registry/barcode/barcode_hierarchical_registry_engine.h"
+// #include "products/model/product_master.h"
+// #include "common/system/verbose_manager.h"
+// #include "common/registry/feature/register_me.h"
+
+// class ProductRegistry : public BarcodeHierarchicalRegistryEngine<ProductMaster>,
+//                         public RegisterMe<ProductRegistry>
+
+// {
+//     AUTO_REGISTER_REGISTRY(ProductRegistry);
+// private:
+//     ProductRegistry();
+// public:
+//     static ProductRegistry& instance() {
+//         static ProductRegistry inst;
+//         return inst; // NINCS guard
+//     }
+
+//     bool insert(const ProductMaster& e);
+//     bool remove(const QUuid& id);
+//     bool update(const ProductMaster& e);
+
+//     void persist() const override;
+
+//     bool verbose() const { return IS_VERBOSE_THIS(); }
+// };
 
 

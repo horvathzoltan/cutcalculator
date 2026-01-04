@@ -121,3 +121,8 @@ find ~/source/repos/CutCalculator/ \
 ./sourcetotxt.sh -d ~/source/repos/CutCalculator files.txt > masi2.txt
 
 ./sourcesplit.sh masi2.txt 1200
+
+---
+ma módosult fájlok listája
+---
+./aipack.sh -m 24 ~/source/repos/CutCalculator 1200

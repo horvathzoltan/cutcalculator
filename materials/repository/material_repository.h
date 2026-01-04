@@ -17,7 +17,7 @@
  */
 class MaterialRepository {
 public:
-    static bool loadFromCSV(MaterialRegistry& registry);
+    static bool load(QVector<MaterialMaster>& out);
 private:
     // 📥 CSV betöltés → visszaadja az anyagok listáját
    // static QVector<MaterialMaster> loadFromCSV_private(CsvImporter::FileContext& filePath);

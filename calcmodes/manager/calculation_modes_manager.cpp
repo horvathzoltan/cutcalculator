@@ -27,9 +27,13 @@ void CalculationModesManager::connectSignals() {
     connect(_view, &CalculationModesView::request_add_mode,
             this, [this](const QUuid& productId) {
 
-                // 🧪 Duplikációs ellenőrzés callback
+                // 🧪 Duplikációs ellenőrzés: productId + name egyedisége
                 auto duplicateCheck = [&](const QString& name) {
-                    return NeedCalculationRegistry::instance().exists(productId, name);
+                    return NeedCalculationRegistry::instance().existsBy(
+                        [&](const NeedCalculation& x) {
+                            return x.productId == productId && x.name == name;
+                        }
+                        );
                 };
 
                 // 🎨 Dialógus megnyitása
@@ -70,12 +74,17 @@ void CalculationModesManager::connectSignals() {
     connect(_view, &CalculationModesView::request_rename_mode,
             this, [this](const QUuid& id) {
 
-                auto old = NeedCalculationRegistry::instance().findById(id);
+                const auto* old = NeedCalculationRegistry::instance().findById(id);
                 if (!old)
                     return;
 
+                // Duplikációs ellenőrzés ugyanarra a productId-re
                 auto duplicateCheck = [&](const QString& name) {
-                    return NeedCalculationRegistry::instance().exists(old->productId, name);
+                    return NeedCalculationRegistry::instance().existsBy(
+                        [&](const NeedCalculation& x) {
+                            return x.productId == old->productId && x.name == name;
+                        }
+                        );
                 };
 
                 ModeNameDialog dlg(_view, old->name, duplicateCheck);
@@ -83,10 +92,13 @@ void CalculationModesManager::connectSignals() {
                     return;
 
                 QString newName = dlg.value();
-                if (newName.isEmpty())
+                if (newName.isEmpty() || newName == old->name)
                     return;
 
-                if (NeedCalculationRegistry::instance().rename(id, newName)) {
+                NeedCalculation updated = *old;
+                updated.name = newName;
+
+                if (NeedCalculationRegistry::instance().update(updated)) {
                     zEventINFO(QString("✏️ Mode renamed: %1 → %2").arg(old->name, newName));
                     reloadAll();
                 }
@@ -98,12 +110,14 @@ void CalculationModesManager::connectSignals() {
  * ============================================================ */
 void CalculationModesManager::reloadAll() {
     QVector<NeedCalculation> calcs;
-    NeedCalculationRepository::load(calcs);
-    NeedCalculationRegistry::instance().setAll(calcs);
+    if (NeedCalculationRepository::load(calcs)) {
+        NeedCalculationRegistry::instance().setAll(calcs);
+    }
 
     QVector<NeedCalculationDetail> details;
-    NeedCalculationDetailRepository::load(details);
-    NeedCalculationDetailRegistry::instance().setAll(details);
+    if (NeedCalculationDetailRepository::load(details)) {
+        NeedCalculationDetailRegistry::instance().setAll(details);
+    }
 }
 
 /* ============================================================
@@ -113,7 +127,11 @@ void CalculationModesManager::refreshForProduct(const QUuid& productId,
                                                 const QString& productName,
                                                 const QString& productBarcode)
 {
-    auto modes = NeedCalculationRegistry::instance().findByProduct(productId);
+    auto modes = NeedCalculationRegistry::instance().findAll(
+        [&](const NeedCalculation& c) {
+            return c.productId == productId;
+        }
+        );
 
     QVector<CalculationModesView::ModeRow> rows;
     rows.reserve(modes.size());

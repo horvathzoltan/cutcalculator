@@ -27,7 +27,8 @@ public:
      * - A FileNameHelper-ből várja a CSV útvonalát (pl. getBarcodeCsvFile()).
      * - Audit hibák esetén warning és részösszegző log.
      */
-    static bool loadFromCSV(BarcodeRegistry& registry);
+//    static bool loadFromCSV(BarcodeRegistry& registry);
+    static bool load(QVector<BarcodeRecord>& out);
 
     /**
      * Opcionális export – a registry jelenlegi tartalmát kiírja CSV-be.

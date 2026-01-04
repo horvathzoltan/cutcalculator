@@ -29,6 +29,16 @@ BarcodeCollisionHelper::makeBarcodeCollisionError(const QString& myTypeName,
     // Globális uniqueness check – ha nem unique, nézzük, mivel ütközik
     if (!br.isBarcodeUnique(code)) {
         if (auto rec = br.findByCode(code)) {
+
+        // 🔥 ÚJ: Ha ugyanahhoz az entitáshoz tartozik → nem ütközés
+            if (rec->entityId.has_value() &&
+                     row.entityId.has_value() &&
+                     rec->entityId == row.entityId)
+            {
+                return std::nullopt;
+            }
+
+
             // 🔑 ÚJ: ha entityId üres → hazatérés, nem collision
             if (!rec->entityId.has_value()) {
                 return std::nullopt;

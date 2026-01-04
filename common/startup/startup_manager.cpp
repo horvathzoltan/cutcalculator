@@ -1,5 +1,7 @@
 #include <QSet>
 
+#include "colors/registry/color_registry.h"
+
 #include "startup_manager.h"
 #include "colors/repository/color_repository.h"
 #include "common/utils/filename_helper.h"
@@ -45,25 +47,45 @@ StartupStatus StartupManager::runStartupSequence() {
     return finalStatus;
 }
 
+// StartupStatus StartupManager::initMaterialRegistry() {
+//     bool loaded = MaterialRepository::loadFromCSV(MaterialRegistry::instance());
+//     if (loaded){
+//         zInfo(QString("📊 MaterialRegistry: %1 anyag tárolva").arg(MaterialRegistry::instance().size()));
+//     } else{
+//         return StartupStatus::failure("⚠️ MaterialRegistry: anyagok betöltése sikertelen.");
+//     }
+
+//     return StartupStatus::success();
+// }
+
 StartupStatus StartupManager::initMaterialRegistry() {
-    bool loaded = MaterialRepository::loadFromCSV(MaterialRegistry::instance());
-    if (loaded){
-        zInfo(QString("📊 MaterialRegistry: %1 anyag tárolva").arg(MaterialRegistry::instance().size()));
-    } else{
-        return StartupStatus::failure("⚠️ MaterialRegistry: anyagok betöltése sikertelen.");
-    }
+    QVector<MaterialMaster> mats;
+    bool ok = MaterialRepository::load(mats);
+
+    if (!ok)
+        return StartupStatus::failure("Material CSV betöltése sikertelen.");
+
+    MaterialRegistry::instance().setAll(mats);
+
+    zInfo(QString("📦 MaterialRegistry: %1 anyag betöltve")
+              .arg(MaterialRegistry::instance().size()));
 
     return StartupStatus::success();
 }
 
+
 StartupStatus StartupManager::initProductRegistry() {
-    bool loaded = ProductRepository::loadFromCSV(ProductRegistry::instance());
-    if (loaded) {
-        zInfo(QString("📊 ProductRegistry: %1 terméktípus tárolva")
-                  .arg(ProductRegistry::instance().size()));
-    } else {
-        return StartupStatus::failure("⚠️ ProductRegistry: terméktípusok betöltése sikertelen.");
-    }
+    QVector<ProductMaster> products;
+    bool ok = ProductRepository::load(products);
+
+    if (!ok)
+        return StartupStatus::failure("Product CSV betöltése sikertelen.");
+
+    ProductRegistry::instance().setAll(products);
+
+    zInfo(QString("📦 ProductRegistry: %1 termék betöltve")
+              .arg(ProductRegistry::instance().size()));
+
     return StartupStatus::success();
 }
 
@@ -82,20 +104,49 @@ StartupStatus StartupManager::initRalColors()
         { RalSystem::Plastic2, fnh.getRalPlastic2CsvFile() }
     };
 
-    bool loaded = ColorRepository::loadRalColors({ralSources});
-    if (!loaded){
-        return StartupStatus::failure("❌ Nem sikerült betölteni a RAL színeket a CSV fájlból.");
-    }
+    QVector<NamedColor> colors;
+    bool ok = ColorRepository::loadRalColors(ralSources, colors);
+
+    if (!ok)
+        return StartupStatus::failure("❌ Nem sikerült betölteni a RAL színeket.");
+
+    ColorRegistry::instance().setAll(colors);
+
+    zInfo(QString("🎨 ColorRegistry: %1 szín betöltve")
+              .arg(ColorRegistry::instance().size()));
 
     return StartupStatus::success();
 }
 
+// StartupStatus StartupManager::initRalColors()
+// {
+//     auto fnh = FileNameHelper::instance();
+
+//     QList<RalSource> ralSources = {
+//         { RalSystem::Classic,  fnh.getRalClassicCsvFile() },
+//         { RalSystem::Design,   fnh.getRalDesignCsvFile() },
+//         { RalSystem::Plastic1, fnh.getRalPlastic1CsvFile() },
+//         { RalSystem::Plastic2, fnh.getRalPlastic2CsvFile() }
+//     };
+
+//     bool loaded = ColorRepository::loadRalColors({ralSources});
+//     if (!loaded){
+//         return StartupStatus::failure("❌ Nem sikerült betölteni a RAL színeket a CSV fájlból.");
+//     }
+
+//     return StartupStatus::success();
+// }
+
 
 StartupStatus StartupManager::initNeedRuleRegistry() {
-    bool loaded = NeedRuleRepository::load();
-    if (!loaded) {
+    QVector<NeedRule> rules;
+    bool ok = NeedRuleRepository::load(rules);
+
+    if (!ok) {
         return StartupStatus::failure("⚠️ NeedRuleRegistry: kapcsolatok betöltése sikertelen.");
-    }
+    }    
+
+    NeedRuleRegistry::instance().setAll(rules);
 
     int count = NeedRuleRegistry::instance().size();
     if (count == 0) {
@@ -107,13 +158,28 @@ StartupStatus StartupManager::initNeedRuleRegistry() {
     return StartupStatus::success();
 }
 
+// StartupStatus StartupManager::initBarcodeRegistry() {
+//     bool loaded = BarcodeRepository::loadFromCSV(BarcodeRegistry::instance());
+//     if (loaded) {
+//         zInfo(QString("📊 BarcodeRegistry: %1 rekord tárolva")
+//                   .arg(BarcodeRegistry::instance().size()));
+//     } else {
+//         return StartupStatus::failure("⚠️ BarcodeRegistry: barcodes betöltése sikertelen.");
+//     }
+//     return StartupStatus::success();
+// }
 StartupStatus StartupManager::initBarcodeRegistry() {
-    bool loaded = BarcodeRepository::loadFromCSV(BarcodeRegistry::instance());
-    if (loaded) {
-        zInfo(QString("📊 BarcodeRegistry: %1 rekord tárolva")
-                  .arg(BarcodeRegistry::instance().size()));
-    } else {
-        return StartupStatus::failure("⚠️ BarcodeRegistry: barcodes betöltése sikertelen.");
-    }
+    QVector<BarcodeRecord> records;
+    bool ok = BarcodeRepository::load(records);
+
+    if (!ok)
+        return StartupStatus::failure("⚠️ Barcode CSV betöltése sikertelen.");
+
+    BarcodeRegistry::instance().setAll(records);
+
+    zInfo(QString("📊 BarcodeRegistry: %1 rekord betöltve")
+              .arg(BarcodeRegistry::instance().size()));
+
     return StartupStatus::success();
 }
+

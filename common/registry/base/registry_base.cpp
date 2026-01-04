@@ -27,7 +27,7 @@ void RegistryBase::guardInstanceUsage() const {
     if (!_isInitialized) {
         QString err = QString("❌ Registry '%1' instance() used before initialize()").arg(_name);
         if(IS_VERBOSE_THIS()){
-            //zWarning(err);
+            zWarning(err);
         }else{
             zError(err);
         }

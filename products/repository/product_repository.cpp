@@ -118,43 +118,77 @@ ProductRepository::loadProductRows(CsvImporter::FileContext& ctx) {
 }
 
 // --- Entry Point ---
-bool ProductRepository::loadFromCSV(ProductRegistry& registry) {
-    const auto& fileNameHelper_instance = FileNameHelper::instance();
-    if (!fileNameHelper_instance.isInitialized()) {
-        zWarning("⚠️ A FileNameHelper nincs inicializálva.");
+bool ProductRepository::load(QVector<ProductMaster>& out)
+{
+    auto& helper = FileNameHelper::instance();
+    if (!helper.isInitialized()) {
+        zWarning("⚠️ FileNameHelper nincs inicializálva.");
         return false;
     }
 
-    const QString path = fileNameHelper_instance.getProductCsvFile(); // products.csv
-    CsvImporter::FileContext ctx("Product import", path);
+    const QString fn = helper.getProductCsvFile();
+    CsvImporter::FileContext ctx("Product import", fn);
 
     const auto rows = loadProductRows(ctx);
 
-    // 🔍 Validáció a buildAll előtt
-    //validateProductRows(rows, ctx);
-
-    // Első fázis: buildAll → minden ProductMaster id+barcode+name
-    // Domain objektumok építése
     QVector<ProductMaster> defs =
         CsvImporter::buildAll<ProductRow, ProductMaster>(
             rows,
             buildProductFromRow,
             ctx
-        );
+            );
 
-
-    // Második fázis: parentBarcode → parentId feloldás
     resolveParents(defs, rows, ctx);
 
     if (ctx.hasErrors()) {
-        zWarning(QString("⚠️ Hibák a Product import során (%1)").arg(ctx.errorsSize()));
+        zWarning(QString("⚠️ Hibák a product import során (%1)")
+                     .arg(ctx.errorsSize()));
     }
 
-    registry.setAll(defs);
+    out = defs;
 
-    zInfo(QString("📊 ProductRepository: %1 terméktípus betöltve").arg(defs.size()));
+    zInfo(QString("📦 ProductRepository: %1 termék betöltve").arg(defs.size()));
     return !defs.isEmpty();
 }
+
+
+// bool ProductRepository::loadFromCSV(ProductRegistry& registry) {
+//     const auto& fileNameHelper_instance = FileNameHelper::instance();
+//     if (!fileNameHelper_instance.isInitialized()) {
+//         zWarning("⚠️ A FileNameHelper nincs inicializálva.");
+//         return false;
+//     }
+
+//     const QString path = fileNameHelper_instance.getProductCsvFile(); // products.csv
+//     CsvImporter::FileContext ctx("Product import", path);
+
+//     const auto rows = loadProductRows(ctx);
+
+//     // 🔍 Validáció a buildAll előtt
+//     //validateProductRows(rows, ctx);
+
+//     // Első fázis: buildAll → minden ProductMaster id+barcode+name
+//     // Domain objektumok építése
+//     QVector<ProductMaster> defs =
+//         CsvImporter::buildAll<ProductRow, ProductMaster>(
+//             rows,
+//             buildProductFromRow,
+//             ctx
+//         );
+
+
+//     // Második fázis: parentBarcode → parentId feloldás
+//     resolveParents(defs, rows, ctx);
+
+//     if (ctx.hasErrors()) {
+//         zWarning(QString("⚠️ Hibák a Product import során (%1)").arg(ctx.errorsSize()));
+//     }
+
+//     registry.setAll(defs);
+
+//     zInfo(QString("📊 ProductRepository: %1 terméktípus betöltve").arg(defs.size()));
+//     return !defs.isEmpty();
+// }
 
 // --- Új helper: validáció a buildAll előtt ---
 // void ProductRepository::validateProductRows(const QVector<CsvImporter::AuditedRow<ProductRepository::ProductRow>>& rows,

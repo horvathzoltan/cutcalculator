@@ -45,6 +45,12 @@ public:
     };
 
     static NormalizedRal normalizeRalExtended(const QString& raw);
+
+    bool operator==(const NamedColor& other) const {
+        return m_code == other.m_code
+               && m_system == other.m_system;
+    }
+
 private:
     QColor m_color;
     QString m_name;

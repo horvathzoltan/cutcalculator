@@ -115,64 +115,117 @@ ColorRepository::validateRalRow(const RalRow& rr, RalSystem system, int lineNumb
  * Stage 3: Assemble
  * ========================================================= */
 
-bool ColorRepository::loadRalColors(const QList<RalSource>& sources) {
-    //NamedColor::clearRalColors();
-    ColorRegistry::instance().clear();
+// bool ColorRepository::loadRalColors(const QList<RalSource>& sources, QVector<NamedColor>& out) {
+//     //NamedColor::clearRalColors();
+//     ColorRegistry::instance().clear();
 
+//     bool ok = true;
+
+//     for (const RalSource& src : sources) {
+//         const QString systemName = RalSystemUtils::toString(src.system);
+//         CsvImporter::FileContext ctx("RAL " + systemName + " import", src.filePath);
+
+//         // 1) Convert
+//         const auto rows = CsvImporter::readAndConvert<CsvImporter::AuditedRow<RalRow>>(ctx, convertRowToRalRow);
+
+//         // 2) Build (+ Validate)
+//         const QVector<NamedColor> namedColors =
+//             CsvImporter::buildAll<RalRow, NamedColor>(
+//             rows,
+//             [&](const RalRow &rr, CsvImporter::FileContext &buildCtx) {
+//                 return buildNamedColorFromRow(rr, buildCtx, src.system);
+//             },
+//             ctx);
+
+//         // 3) Assemble (duplikátum ellenőrzés + beszúrás)
+//         QHash<QString, QVector<int>> occurrenceMap;
+
+//         for (int i = 0; i < namedColors.size(); ++i) {
+//             const auto& nc = namedColors[i];
+//             if (!nc.isValid()) continue; // hibás sor, már validációban jelzett
+
+//             const QString key = nc.code();//.trimmed().toUpper();
+
+//             //if (NamedColor::containsRalColor(key)) {
+//             if (ColorRegistry::instance().findByCode(key) != nullptr) {
+//                 occurrenceMap[key].append(rows[i].rawLineNumber);
+
+//                 QString allLines;
+//                 for (int ln : occurrenceMap[key]) {
+//                     allLines += QString::number(ln) + " ";
+//                 }
+
+//                 ctx.addError(rows[i].rawLineNumber,
+//                              QString("❌ Többszörös RAL kód: %1 (%2), előfordulások sorai: %3")
+//                                  .arg(key, systemName, allLines.trimmed()));
+//                 ok = false;
+//                 continue;
+//             }
+
+//             //NamedColor::insertRalColor(nc);
+//             ColorRegistry::instance().insert(nc);
+//             occurrenceMap[key] = { rows[i].rawLineNumber };
+//         }
+
+
+//         if (ctx.hasErrors()) {
+//             ok = false;
+//             // opcionálisan: itt lehet összefoglalót kiírni a loggerbe
+//             // zInfo(ctx.summary());
+//         }
+//     }
+
+//     return ok;
+// }
+bool ColorRepository::loadRalColors(const QList<RalSource>& sources,
+                                    QVector<NamedColor>& out)
+{
+    out.clear();
     bool ok = true;
+
+    // Lokális duplikáció-ellenőrzés
+    QSet<QString> globalSeen;
 
     for (const RalSource& src : sources) {
         const QString systemName = RalSystemUtils::toString(src.system);
         CsvImporter::FileContext ctx("RAL " + systemName + " import", src.filePath);
 
         // 1) Convert
-        const auto rows = CsvImporter::readAndConvert<CsvImporter::AuditedRow<RalRow>>(ctx, convertRowToRalRow);
+        const auto rows =
+            CsvImporter::readAndConvert<CsvImporter::AuditedRow<RalRow>>(
+                ctx, convertRowToRalRow);
 
         // 2) Build (+ Validate)
         const QVector<NamedColor> namedColors =
             CsvImporter::buildAll<RalRow, NamedColor>(
-            rows,
-            [&](const RalRow &rr, CsvImporter::FileContext &buildCtx) {
-                return buildNamedColorFromRow(rr, buildCtx, src.system);
-            },
-            ctx);
+                rows,
+                [&](const RalRow& rr, CsvImporter::FileContext& buildCtx) {
+                    return buildNamedColorFromRow(rr, buildCtx, src.system);
+                },
+                ctx);
 
-        // 3) Assemble (duplikátum ellenőrzés + beszúrás)
-        QHash<QString, QVector<int>> occurrenceMap;
-
+        // 3) Assemble (duplikáció-ellenőrzés lokálisan)
         for (int i = 0; i < namedColors.size(); ++i) {
             const auto& nc = namedColors[i];
-            if (!nc.isValid()) continue; // hibás sor, már validációban jelzett
+            if (!nc.isValid())
+                continue;
 
-            const QString key = nc.code();//.trimmed().toUpper();
+            QString key = nc.code().trimmed().toUpper();
 
-            //if (NamedColor::containsRalColor(key)) {
-            if (ColorRegistry::instance().findByCode(key) != nullptr) {
-                occurrenceMap[key].append(rows[i].rawLineNumber);
-
-                QString allLines;
-                for (int ln : occurrenceMap[key]) {
-                    allLines += QString::number(ln) + " ";
-                }
-
+            if (globalSeen.contains(key)) {
                 ctx.addError(rows[i].rawLineNumber,
-                             QString("❌ Többszörös RAL kód: %1 (%2), előfordulások sorai: %3")
-                                 .arg(key, systemName, allLines.trimmed()));
+                             QString("❌ Többszörös RAL kód: %1 (%2)")
+                                 .arg(key, systemName));
                 ok = false;
                 continue;
             }
 
-            //NamedColor::insertRalColor(nc);
-            ColorRegistry::instance().insert(nc);
-            occurrenceMap[key] = { rows[i].rawLineNumber };
+            globalSeen.insert(key);
+            out.append(nc);
         }
 
-
-        if (ctx.hasErrors()) {
+        if (ctx.hasErrors())
             ok = false;
-            // opcionálisan: itt lehet összefoglalót kiírni a loggerbe
-            // zInfo(ctx.summary());
-        }
     }
 
     return ok;

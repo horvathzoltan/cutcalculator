@@ -44,7 +44,7 @@ public:
      * @param sources RAL rendszer + fájl párok listája
      * @return true, ha nem volt hiba; false, ha volt bármely forrásnál hiba
      */
-    static bool loadRalColors(const QList<RalSource>& sources);
+    static bool loadRalColors(const QList<RalSource>& sources, QVector<NamedColor>& out);
 
 private:
     // =========================

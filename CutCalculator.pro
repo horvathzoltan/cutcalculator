@@ -29,6 +29,7 @@ SOURCES += \
     materials/view/color_badge.cpp \
     needs/manager/material_requirements_manager.cpp \
     needs/registry/need_rule_registry.cpp \
+    needs/repository/need_rule_repository.cpp \
     needs/view/material_picker_dialog.cpp \
     needs/view/material_requirements_view.cpp \
     calculation/manager/calculation_mode_detail_manager.cpp \
@@ -96,10 +97,16 @@ HEADERS += \
     common/registry/barcode/ibarcode_identifiable_registry_base.h \
     common/registry/base/identifiable_registry_engine.h \
     common/registry/base/identifiable_registry_helper.h \
+    common/registry/base/registry_engine.h \
     common/registry/base/registry_engine_base.h \
     common/registry/feature/register_me.h \
     common/registry/manager/registry_lookup.h \
     common/registry/manager/registry_traits.h \
+    common/registry/workflow/barcode_workflow_policy.h \
+    common/registry/workflow/base_workflow_policy.h \
+    common/registry/workflow/connection_workflow_policy.h \
+    common/registry/workflow/crud_workflow_policy.h \
+    common/registry/workflow/lookup_workflow_policy.h \
     common/snapshot/snapshot_manager.h \
     common/snapshot/workbench_snapshot.h \
     common/system/nameof.hpp \
@@ -201,6 +208,7 @@ DISTFILES += \
     run_1_1_AllapotTabla.txt \
     run_1_2_RegistryAllapot.txt \
     run_1_3_RegistryCheckList.txt \
+    run_1_4_DailySync.txt \
     run_2_1_AIDevelopmentHandbook.txt \
     run_2_2_JEGYZET.txt \
     run_2_3_1_Prompt_Allapottabla.txt \

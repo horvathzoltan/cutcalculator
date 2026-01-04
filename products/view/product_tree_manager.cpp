@@ -79,7 +79,7 @@ void ProductTreeManager::styleItem(QStandardItem* item, bool isLeaf, bool isRoot
 void ProductTreeManager::populate() {
     _model->removeRows(0, _model->rowCount());
 
-    auto roots = ProductRegistry::instance().roots();
+    auto roots = ProductRegistry::instance().findRoots();
     for (const auto& root : roots) {
         auto* nameItem = new QStandardItem(root.name);
         auto* codeItem = new QStandardItem(root.barcode);

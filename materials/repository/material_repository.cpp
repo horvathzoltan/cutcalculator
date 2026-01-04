@@ -179,7 +179,8 @@ MaterialRepository::loadMaterialRows(CsvImporter::FileContext& ctx) {
 }
 
 // --- Entry Point ---
-bool MaterialRepository::loadFromCSV(MaterialRegistry& registry) {
+bool MaterialRepository::load(QVector<MaterialMaster>& out)
+{
     auto& helper = FileNameHelper::instance();
     if (!helper.isInitialized()) {
         zWarning("⚠️ A FileNameHelper nincs inicializálva.");
@@ -189,22 +190,21 @@ bool MaterialRepository::loadFromCSV(MaterialRegistry& registry) {
     const QString fn = helper.getMaterialCsvFile();
     CsvImporter::FileContext ctx("Material import", fn);
 
-    const QVector<CsvImporter::AuditedRow<MaterialRepository::MaterialRow>> rows = loadMaterialRows(ctx);
+    const auto rows = loadMaterialRows(ctx);
 
     const QVector<MaterialMaster> defs =
         CsvImporter::buildAll<MaterialRow, MaterialMaster>(
             rows,
             buildMaterialFromRow,
             ctx
-        );
+            );
 
     if (ctx.hasErrors()) {
         zWarning(QString("⚠️ Hibák az anyag import során (%1)").arg(ctx.errorsSize()));
     }
 
-    registry.setAll(defs);
+    out = defs;
 
     zInfo(QString("📊 MaterialRepository: %1 anyag betöltve").arg(defs.size()));
     return !defs.isEmpty();
 }
-

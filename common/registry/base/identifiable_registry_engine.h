@@ -12,7 +12,7 @@ protected:
     //insert hookok
     virtual bool validateDomain(const T&) const { return true; }
     virtual bool validateDuplicate(const T&) const { return true; }
-    virtual bool beforeInsert(const T&) {}
+    virtual bool beforeInsert(const T&) { return true; }
     virtual void afterInsert(const T&) {}
     virtual void onInsertLog(const T&) {}
     // remove hookok

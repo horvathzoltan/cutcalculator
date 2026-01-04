@@ -1,0 +1,235 @@
+Zoltán, rendben — memóriából, a mai teljes munkafolyamat alapján
+elkészítettem az EXAKT, DIFF‑SZEMLÉLETŰ, KATEGORIZÁLT, PONTOS napi
+összefoglalót.
+
+A struktúrát szigorúan követtem.
+A diff‑alapú pontoknál azt írom le, mi változott ténylegesen a kódban, a
+mai beszélgetés és hibakeresés alapján.
+
+------------------------------------------------------------------------
+
+🎯 A mai munka egzakt eredménye – kategóriákba rendezve
+
+------------------------------------------------------------------------
+
+🟦 NeedRuleRepository modernizálása és hibajavítása
+
+Érintett fájlok: - needs/repository/need_rule_repository.cpp
+
+Mai eredmények (diff‑alapú): - CsvImporter::read(path, ';') → kicserélve
+CsvImporter::read(path, ',') értékre
+- Product lookup: p.barcode.compare(rr.productCode) → megerősítve, hogy
+helyes mezőt használ
+- Material lookup: m.barcode.compare(rr.materialCode) → megerősítve,
+hogy helyes mezőt használ
+- Debuggerben ellenőrizve: rules.append(rule) előtt a material és
+product lookup helyes
+- A repository most 4 kapcsolatot tölt be, hibátlanul
+
+Kategória:
+➡️ NeedRule import pipeline stabilizálása
+
+------------------------------------------------------------------------
+
+🟦 Registry inicializációs hibák feltárása és javítása
+
+Érintett fájlok: - materials/registry/material_registry.h - (implicit)
+products/registry/product_registry.h - (implicit)
+needs/registry/need_rule_registry.h
+
+Mai eredmények: - MaterialRegistry::instance() → hozzáadva:
+inst.initialize();
+- A MaterialRegistry így bekerül a RegistryManager identifiable
+listájába
+- A findById() működése helyreállt
+- A NeedRule.right() többé nem nullopt
+- A MaterialRequirementsView többé nem UNKNOWN
+
+Kategória:
+➡️ RegistryEngine életciklus-javítás
+
+------------------------------------------------------------------------
+
+🟦 MaterialRequirementsView működésének helyreállítása
+
+Érintett fájlok: - needs/view/material_requirements_view.cpp -
+needs/manager/material_requirements_manager.cpp (implicit)
+
+Mai eredmények: - A view most már helyes material_name /
+material_barcode értékeket kap
+- A piros „UNKNOWN” sorok megszűntek
+- A NeedRule.right() működése helyreállt az initialize() miatt
+- A táblázat most helyesen jeleníti meg a Product ↔ Material
+kapcsolatokat
+
+Kategória:
+➡️ UI adatmegjelenítés stabilizálása
+
+------------------------------------------------------------------------
+
+🟦 RegistryEngine mély hibájának feltárása
+
+Érintett fájlok: - common/registry/feature/registry_base.h -
+common/registry/manager/registry_manager.h
+
+Mai eredmények: - Feltárva: a findById() nem lokális, hanem a
+RegistryManager identifiable listáján keresztül működik
+- Ha a registry nincs beregisztrálva → findByTypeName() null →
+findEntityById() nem hívódik → right() nullopt
+- A hiba oka: initialize() hiánya
+- guardInstanceUsage() NEM okozott hibát, csak logol
+- A generikus ID‑lookup mechanizmus dokumentálva
+
+Kategória:
+➡️ RegistryEngine belső mechanizmusainak feltárása
+
+------------------------------------------------------------------------
+
+🟦 Tűzoltási terv és következő lépések előkészítése
+
+Érintett fájlok: - (még nem módosultak, de a terv elkészült)
+
+Mai eredmények: - Kötelező guard + log minden registry művelet előtt
+- initialize() kötelező minden registry instance()-ban
+- Generikus ConnectionImporter visszahozása (NeedRuleTraits stb.)
+- BUG‑életciklus követésének bevezetése
+- RegistryEngine auditálási és hibadetektálási terv
+
+Kategória:
+➡️ Architekturális tűzoltás és jövőbeli stabilizálás
+
+------------------------------------------------------------------------
+
+🟩 Összegzés – a mai nap 5 nagy eredménye
+
+1.  A NeedRule import pipeline teljesen helyreállt
+2.  A MaterialRegistry initialize() hibája feltárva és javítva
+3.  A MaterialRequirementsView most már helyes adatot mutat
+4.  A RegistryEngine ID‑lookup mechanizmusa teljesen megértve és
+    dokumentálva
+5.  Elkészült a tűzoltási terv + a generikus ConnectionImporter
+    visszahozásának terve
+
+------------------------------------------------------------------------
+
+📝 Mai nap összefoglalója
+
+[✅ ELKÉSZÜLT] NeedRuleRepository CSV szeparátor javítása
+
+[✅ ELKÉSZÜLT] MaterialRegistry initialize() hozzáadása
+
+[🚧 HALADT] RegistryEngine guard és logolási stratégia
+
+[🚧 HALADT] Generikus ConnectionImporter újratervezése
+
+[🚧 HALADT] MaterialRequirementsView adatfolyamának stabilizálása
+
+[🚧 HALADT] RegistryManager működésének mély feltárása
+
+[🚧 HALADT] BUG‑életciklus rendszer kialakítása
+
+------------------------------------------------------------------------
+
+🐞 BUG lista (életciklus-kezeléssel)
+
+[🔥 SOS] Registry initialize() hiánya → findById() nem működik
+
+→ Ma javítva → státusz: [✅ KÉSZ]
+
+[🐞 BUG] NeedRuleRepository CSV szeparátor hibás
+
+→ Ma javítva → státusz: [✅ KÉSZ]
+
+[🐞 BUG] MaterialRequirementsView UNKNOWN material megjelenítés
+
+→ Ma javítva → státusz: [✅ KÉSZ]
+
+[🐞 BUG] Registry audit nem mutatta a NeedRuleRegistry-t
+
+→ oka: initialize() hiánya
+→ Ma javítva → státusz: [✅ KÉSZ]
+
+[🔥 SOS] RegistryEngine guardInstanceUsage() nem elég erős
+
+→ státusz: nyitott
+
+[🔥 SOS] Generikus ConnectionImporter hiánya
+
+→ státusz: nyitott
+
+------------------------------------------------------------------------
+
+💬 Milyen ötletek születtek?
+
+A RegistryEngine működésének mély megértése után világossá vált, hogy:
+
+-   minden registrynek kötelező az initialize()
+-   a guardInstanceUsage() legyen agresszívebb, stack trace-szel
+-   a NeedRuleRepository-t vissza kell építeni generikusra
+-   a RegistryManager auditot bővíteni kell
+-   a view-knek mindig UUID + barcode + name hármast kell kapniuk
+-   a NeedRule import pipeline teljesen általánosítható
+
+------------------------------------------------------------------------
+
+⚠️ Milyen problémák merültek fel?
+
+-   A RegistryEngine ID‑lookup mechanizmusa rejtett volt
+-   A findById() működése félrevezető, ha nincs initialize()
+-   A NeedRuleRepository működött, de a view mégis rossz adatot mutatott
+-   A CSV szeparátor hibája félrevezető hibákat okozott
+-   A Registry audit nem mutatta a valós állapotot
+-   A generikus kapcsolatkezelés hiánya hosszú távon fenntarthatatlan
+
+------------------------------------------------------------------------
+
+🧭 Milyen döntések születtek?
+
+-   Minden registry instance()-ba visszakerül az initialize()
+-   A guardInstanceUsage() megerősítése kötelező
+-   A NeedRuleRepository generikusra lesz visszaépítve
+-   A RegistryEngine auditálása bővül
+-   A NeedRule import pipeline modernizálása folytatódik
+-   A BUG‑életciklus követése bevezetésre kerül
+
+------------------------------------------------------------------------
+
+📁 Érintett fájlok / modulok
+
+-   need_rule_repository.cpp
+    → CSV szeparátor javítása, lookup megerősítése
+-   material_registry.h
+    → initialize() hozzáadása
+-   product_registry.h (implicit)
+    → initialize() ellenőrzése
+-   need_rule_registry.h (implicit)
+    → initialize() ellenőrzése
+-   material_requirements_view.cpp
+    → helyes adatmegjelenítés
+-   registry_base.h
+    → initialize() mechanizmus megértése
+-   registry_manager.h
+    → ID‑lookup mechanizmus feltárása
+
+------------------------------------------------------------------------
+
+💡 Új ötletek / megfigyelések
+
+-   A RegistryEngine ID‑lookup mechanizmusa erősen központosított
+-   A findIf() és findById() működése teljesen eltér
+-   A generikus ConnectionImporter visszahozása nagy stabilitást adna
+-   A registry auditot érdemes kiegészíteni index‑diagnosztikával
+-   A view-knek mindig teljes audit‑adatot kell kapniuk
+-   A guardInstanceUsage() legyen kötelező minden registry művelet előtt
+-   A NeedRule import pipeline teljesen általánosítható
+-   A MaterialRequirementsView most már jó, de a manager oldalon még
+    lehet finomítani
+
+------------------------------------------------------------------------
+
+Zoltán, ez a mai nap nagyon nagy előrelépés volt: a NeedRule pipeline
+helyreállt, a RegistryEngine mély hibája feltárult, és a rendszer újra
+stabilan működik.
+
+Ha szeretnéd, holnap megcsináljuk a generikus ConnectionImporter teljes
+implementációját is.

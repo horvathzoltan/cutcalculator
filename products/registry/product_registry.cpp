@@ -1,28 +1,106 @@
-#include "product_registry.h"
+#include "products/registry/product_registry.h"
 #include "products/repository/product_repository.h"
 #include "common/utils/filename_helper.h"
-#include "common/registry/barcode/barcode_registry_helper.h"
 
-ProductRegistry::ProductRegistry()
-    : BarcodeHierarchicalRegistryEngine<ProductMaster>("ProductRegistry", "Product")
-{}
+// --- Lookup API ---
 
-
-bool ProductRegistry::insert(const ProductMaster& e) {
-    return BarcodeRegistryHelper::insert(*this, e);
+QVector<ProductMaster>
+ProductRegistry::findChildren(const QUuid& parentId) const
+{
+    return findAll([&](const ProductMaster& p){
+        return p.parentId == parentId;
+    });
 }
 
-bool ProductRegistry::remove(const QUuid& id) {
-    return IdentifiableRegistryHelper::remove(*this, id);
+QVector<ProductMaster>
+ProductRegistry::findRoots() const
+{
+    return findAll([&](const ProductMaster& p){
+        return p.parentId.isNull();
+    });
 }
 
-bool ProductRegistry::update(const ProductMaster& e) {
-    return IdentifiableRegistryHelper::update(*this, e);
+// --- Domain hookok ---
+
+bool ProductRegistry::validateDomain(const ProductMaster& p) const
+{
+    return !p.name.isEmpty()
+    && !p.barcode.isEmpty();
 }
 
-void ProductRegistry::persist() const {
+bool ProductRegistry::validateDuplicate(const ProductMaster& p) const
+{
+    return !existsBy([&](const ProductMaster& x){
+        return x.name == p.name
+               && x.parentId == p.parentId;
+    });
+}
+
+bool ProductRegistry::beforeInsert(const ProductMaster&)
+{
+    return true;
+}
+
+bool ProductRegistry::beforeUpdate(const ProductMaster&)
+{
+    return true;
+}
+
+// --- Log hookok ---
+
+void ProductRegistry::onInsertLog(const ProductMaster& p)
+{
+    zInfo(QString("➕ Product INSERT: %1").arg(p.name));
+}
+
+void ProductRegistry::onUpdateLog(const ProductMaster& p)
+{
+    zInfo(QString("✏️ Product UPDATE: %1").arg(p.name));
+}
+
+void ProductRegistry::onRemoveLog(const ProductMaster& p)
+{
+    zInfo(QString("🗑️ Product REMOVE: %1").arg(p.name));
+}
+
+// --- Persist ---
+
+void ProductRegistry::persist() const
+{
     const QString path = FileNameHelper::instance().getProductCsvFile();
-    if (path.isEmpty()) return;
+    if (path.isEmpty())
+        return;
 
-    ProductRepository::saveToCSV(_items, path);
+    ProductRepository::saveToCSV(readAll(), path);
 }
+
+
+
+// #include "product_registry.h"
+// #include "products/repository/product_repository.h"
+// #include "common/utils/filename_helper.h"
+// #include "common/registry/barcode/barcode_registry_helper.h"
+
+// ProductRegistry::ProductRegistry()
+//     : BarcodeHierarchicalRegistryEngine<ProductMaster>("ProductRegistry", "Product")
+// {}
+
+
+// bool ProductRegistry::insert(const ProductMaster& e) {
+//     return BarcodeRegistryHelper::insert(*this, e);
+// }
+
+// bool ProductRegistry::remove(const QUuid& id) {
+//     return IdentifiableRegistryHelper::remove(*this, id);
+// }
+
+// bool ProductRegistry::update(const ProductMaster& e) {
+//     return IdentifiableRegistryHelper::update(*this, e);
+// }
+
+// void ProductRegistry::persist() const {
+//     const QString path = FileNameHelper::instance().getProductCsvFile();
+//     if (path.isEmpty()) return;
+
+//     ProductRepository::saveToCSV(_items, path);
+// }
