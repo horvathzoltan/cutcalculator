@@ -1,9 +1,26 @@
-Kérlek, készíts egy EXAKT, DIFF-ALAPÚ, KATEGORIZÁLT,
+Kérlek, készítsd el a mai napi ASCII aktivitásgrafikont a következő szabályokkal:
+
+⏱ Mai napi aktivitás – óránkénti ASCII grafikon (<itt legyen egy tól-ig időbélyeg>)
+
+1) A grafikon óránkénti bontású legyen.
+2) Minden óra külön sorban jelenjen meg.
+3) A sorok egymás alatt legyenek, egy blokkban.
+4) Minden karakter kb. 5 percet jelentsen.
+5) Jelölések:
+   - # = mély, intenzív architektúra
+   - + = implementálás / refaktor / kódolás
+   - . = könnyebb munka (log, riport, validálás)
+6) A grafikon a mai első üzenet időpontjától a mai utolsó üzenet időpontjáig tartson.
+7) A sorok formátuma legyen:
+   HH:00 |<ASCII aktivitás>|
+8) A grafikon legyen tiszta, áttekinthető, egységes szélességű.
+
+A grafikon után kérlek, készíts egy EXAKT, MÓDOSULT FÁJL-ALAPÚ, KATEGORIZÁLT,
 PONTOKBA SZEDETT összefoglalót a mai munkáról.
 
 A cél:
-1) egzakt, diff-alapú elszámolás a ténylegesen módosult fájlok alapján
-1.1) ezeket az alábbi script adja: ./aipack.sh -m 24 ~/source/repos/CutCalculator 1200
+1) egzakt elszámolás a ténylegesen módosult fájlok alapján
+(ezeket az alábbi script adja: ./aipack.sh -m 24 ~/source/repos/CutCalculator 1200)
 2) áttekintő, strukturált összefoglaló a fejlesztési napról
 3) minden ötlet, probléma, döntés és BUG írásos nyoma megmaradjon
 4) a BUG-ok életciklusa követhető legyen (nem törlődnek, csak státuszt váltanak)
@@ -18,7 +35,7 @@ Minden kategória így nézzen ki:
 Érintett fájlok:
 - <fájlok>
 Mai eredmények:
-- <diff-alapú, konkrét pontok>
+- <a módosult fájlok tartalma alapján, konkrét pontok>
 Kategória:
 ➡️ <rövid címke>
 
@@ -56,7 +73,7 @@ A következő három bekezdés külön-külön, folyószövegben jelenjen meg:
 
 📁 Érintett fájlok / modulok
 - felsorolásban add meg a ma módosult fájlokat
-- a diff alapján fogalmazd meg, hogy melyik fájlban mi változott
+- a fájlok tartalma alapján fogalmazd meg, hogy melyik fájlban mi változott
 
 
 💡 Új ötletek / megfigyelések

@@ -2,11 +2,15 @@
 
 #include "calcmodes/model/need_calculation.h"
 #include "common/registry/base/registry_engine.h"
+#include "common/registry/feature/register_me.h"
 #include "common/registry/workflow/crud_workflow_policy.h"
 
 class NeedCalculationRegistry
-    : public RegistryEngine<NeedCalculation, CrudWorkflowPolicy>
+    : public RegistryEngine<NeedCalculation, CrudWorkflowPolicy>,
+      public RegisterMe<NeedCalculationRegistry>
 {
+    AUTO_REGISTER_REGISTRY
+
 public:
     // ⭐ Singleton
     static NeedCalculationRegistry& instance();

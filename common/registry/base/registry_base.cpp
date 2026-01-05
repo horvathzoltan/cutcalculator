@@ -2,6 +2,23 @@
 #include "common/system/verbose_manager.h"
 #include "common/registry/manager/registry_manager.h"
 
+// #include <execinfo.h>   // backtrace(), backtrace_symbols()
+// #include <cstdlib>
+
+// static void printStack() {
+//     void* array[32];
+//     int size = backtrace(array, 32);
+//     char** symbols = backtrace_symbols(array, size);
+
+//     zWarning("🔍 Stack trace:");
+//     for (int i = 0; i < size; ++i) {
+//         zWarning(symbols[i]);
+//     }
+
+//     free(symbols);
+// }
+
+
 RegistryBase::RegistryBase(const QString& registryName,
                            const QString& entityTypeName)
     : _name(registryName),
@@ -22,19 +39,20 @@ void RegistryBase::initialize() {
     _isRegistered = true;
 }
 
-
 void RegistryBase::guardInstanceUsage() const {
-    if (!_isInitialized) {
-        QString err = QString("❌ Registry '%1' instance() used before initialize()").arg(_name);
-        if(IS_VERBOSE_THIS()){
-            zWarning(err);
-        }else{
-            zError(err);
-        }
+    if (!_isInitialized && !_warned) {
+        _warned = true;
 
+        zWarning().noquote()
+            << QString("❌ Registry '%1' used before initialize()")
+                   .arg(_name);
+
+        // if(_name == "NeedCalculationRegistry"){
+        //     zWarning("krokodil");
+        // }
+        //printStack();
     }
 }
-
 
 QString RegistryBase::logEntityAction(const QString& action,
                         const IRegistryEntity& e,

@@ -7,12 +7,14 @@
 #include "common/registry/workflow/connection_workflow_policy.h"
 
 #include "needs/model/need_rule.h"
-#include "needs/repository/need_rule_repository.h"
-#include "common/logger/logger.h"
+//#include "needs/repository/need_rule_repository.h"
+//#include "common/logger/logger.h"
 
 class NeedRuleRegistry
-    : public RegistryEngine<NeedRule, ConnectionWorkflowPolicy>
+    : public RegistryEngine<NeedRule, ConnectionWorkflowPolicy>,
+      public RegisterMe<NeedRuleRegistry>
 {
+    AUTO_REGISTER_REGISTRY;
 public:
     static NeedRuleRegistry& instance() {
         static NeedRuleRegistry inst;

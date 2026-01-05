@@ -36,6 +36,7 @@ protected:
     QString _typeName;  // Entitás típusa (pl. "MaterialMaster")
     bool _isInitialized = false;
     bool _isRegistered= false;
+    mutable bool _warned = false;
 };
 
 

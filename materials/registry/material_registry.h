@@ -4,16 +4,17 @@
 #include <QUuid>
 
 #include "common/registry/base/registry_engine_base.h"
+#include "common/registry/feature/register_me.h"
 #include "materials/model/material_master.h"
 
 class MaterialRegistry
-    : public RegistryEngineBase<MaterialMaster>
+    : public RegistryEngineBase<MaterialMaster>,
+      public RegisterMe<MaterialRegistry>
 {
+    AUTO_REGISTER_REGISTRY
 public:
     static MaterialRegistry& instance() {
         static MaterialRegistry inst;
-        //inst.initialize();
-
         return inst;
     }
 

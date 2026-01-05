@@ -93,7 +93,10 @@ MaterialRequirementsManager::makeRowsForProduct(const QUuid& productId,
         r.material_id = rule.rightId;
 
         // Lookup Material
-        if (auto matOpt = rule.right() ){
+
+        auto matOpt = rule.right();
+
+        if (matOpt.has_value()){
             const auto& mat = *matOpt;
             r.material_name = mat.name;
             r.material_barcode = mat.barcode;

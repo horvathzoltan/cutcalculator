@@ -6,6 +6,7 @@
 
 #include "barcodes/model/barcode_record.h"
 #include "common/registry/base/registry_engine.h"
+#include "common/registry/feature/register_me.h"
 #include "common/registry/workflow/crud_workflow_policy.h"
 
 /**
@@ -16,8 +17,10 @@
  * - CSV-ből betölt, runtime-ban módosul, és visszaír CSV-be.
  */
 class BarcodeRegistry
-    : public RegistryEngine<BarcodeRecord, CrudWorkflowPolicy>
+    : public RegistryEngine<BarcodeRecord, CrudWorkflowPolicy>,
+      public RegisterMe<BarcodeRegistry>
 {
+    AUTO_REGISTER_REGISTRY
 public:
     static BarcodeRegistry& instance() {
         static BarcodeRegistry reg;

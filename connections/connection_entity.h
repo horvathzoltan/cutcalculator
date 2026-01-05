@@ -4,7 +4,8 @@
 
 #include <QUuid>
 #include <optional>
-#include "common/registry/manager/registry_lookup.h"
+//#include "common/registry/manager/registry_lookup.h"
+#include "common/registry/manager/registry_manager.h"
 
 /**
  * 🧩 ConnectionEntity – generikus kapcsolótábla sor
@@ -24,7 +25,7 @@ struct ConnectionEntity {
     // * lookup – bal oldali entitás visszafejtése GUID-ból
     std::optional<LeftEntity> left() const {
         using RegistryType = typename RegistryFor<LeftEntity>::type;
-        if (auto* reg = lookupRegistry<RegistryType>()) {
+        if (auto* reg = RegistryManager::instance().lookupRegistry<RegistryType>()) {
             if (auto* found = reg->findById(leftId))
                 return *found;
         }
@@ -41,7 +42,7 @@ struct ConnectionEntity {
 
     std::optional<RightEntity> right() const {
         using RegistryType = typename RegistryFor<RightEntity>::type;
-        if (auto* reg = lookupRegistry<RegistryType>()) {
+        if (auto* reg = RegistryManager::instance().lookupRegistry<RegistryType>()) {
             if (auto* found = reg->findById(rightId))
                 return *found;
         }

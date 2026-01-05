@@ -1,4 +1,5 @@
 #include "needs/registry/need_rule_registry.h"
+#include "needs/repository/need_rule_repository.h"
 
 // --- Lookup API ---
 

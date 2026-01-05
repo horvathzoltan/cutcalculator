@@ -4,16 +4,19 @@
 #include <QUuid>
 
 #include "common/registry/base/registry_engine.h"
+#include "common/registry/feature/register_me.h"
 #include "common/registry/workflow/crud_workflow_policy.h"
 
 #include "calculation/model/need_calculation_detail.h"
-#include "calculation/repository/need_calculation_detail_repository.h"
-#include "common/registry/manager/registry_manager.h"
-#include "common/logger/logger.h"
+//#include "calculation/repository/need_calculation_detail_repository.h"
+//#include "common/registry/manager/registry_manager.h"
+//#include "common/logger/logger.h"
 
 class NeedCalculationDetailRegistry
-    : public RegistryEngine<NeedCalculationDetail, CrudWorkflowPolicy>
-{    
+    : public RegistryEngine<NeedCalculationDetail, CrudWorkflowPolicy>,
+      public RegisterMe<NeedCalculationDetailRegistry>
+{
+    AUTO_REGISTER_REGISTRY
 public:
     static NeedCalculationDetailRegistry& instance() {
         static NeedCalculationDetailRegistry inst;

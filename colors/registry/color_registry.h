@@ -5,10 +5,15 @@
 
 #include "common/registry/base/registry_engine_base.h"
 #include "colors/model/named_color.h"
+#include "common/registry/feature/register_me.h"
+#include "materials/registry/material_registry.h"
+
 
 class ColorRegistry
-    : public RegistryEngineBase<NamedColor>
+    : public RegistryEngineBase<NamedColor>,
+    public RegisterMe<ColorRegistry>
 {
+    AUTO_REGISTER_REGISTRY
 public:
     static ColorRegistry& instance() {
         static ColorRegistry inst;

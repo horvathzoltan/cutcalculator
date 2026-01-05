@@ -4,14 +4,17 @@
 #include <QUuid>
 
 #include "common/registry/base/registry_engine.h"
+#include "common/registry/feature/register_me.h"
 #include "common/registry/workflow/crud_workflow_policy.h"
 
 #include "products/model/product_master.h"
-#include "common/logger/logger.h"
+//#include "common/logger/logger.h"
 
 class ProductRegistry
-    : public RegistryEngine<ProductMaster, CrudWorkflowPolicy>
+    : public RegistryEngine<ProductMaster, CrudWorkflowPolicy>,
+      public RegisterMe<ProductRegistry>
 {
+    AUTO_REGISTER_REGISTRY;
 public:
     static ProductRegistry& instance() {
         static ProductRegistry inst;
