@@ -30,6 +30,7 @@ protected:
     void afterInsert(const NeedCalculation&) override;
 
     void onInsertLog(const NeedCalculation& nc) override;
+    void onLoadLog() override; // <- ÚJ
 
     void persist() const override;
 };

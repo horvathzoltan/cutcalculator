@@ -114,6 +114,12 @@ void NeedCalculationDetailRegistry::persist() const
     NeedCalculationDetailRepository::save(readAll());
 }
 
+void NeedCalculationDetailRegistry::onLoadLog()
+{
+    zInfo(QString("📊 NeedCalculationDetailRegistry: %1 sor betöltve").arg(size()));
+}
+
+
 // #include "calculation/registry/need_calculation_detail_registry.h"
 
 // #include "calculation/repository/need_calculation_detail_repository.h"

@@ -81,6 +81,7 @@ HEADERS += \
     barcodes/helpers/barcode_collision_helper.h \
     barcodes/validator/barcode_validator.h \
     calcmodes/dialogs/mode_name_dialog.h \
+    calcmodes/repository/need_calculation_traits.h \
     common/layout/layout_default_store.h \
     common/model/barcode_base.h \
     common/model/barcode_hierarchical_entity.h \
@@ -92,6 +93,8 @@ HEADERS += \
     common/model/iregistry_entity.h \
     common/registry/barcode/barcode_hierarchical_registry_engine.h \
     common/registry/barcode/barcode_identifiable_registry_engine.h \
+    common/registry/barcode/barcode_index_mixin.h \
+    common/registry/barcode/barcode_lookup_mixin.h \
     common/registry/barcode/barcode_registry_helper.h \
     common/registry/base/hierarchical_registry_engine.h \
     common/registry/barcode/ibarcode_identifiable_registry_base.h \
@@ -100,6 +103,7 @@ HEADERS += \
     common/registry/base/registry_engine.h \
     common/registry/base/registry_engine_base.h \
     common/registry/feature/register_me.h \
+    common/registry/hierarchy/hierarchy_mixin.h \
     common/registry/manager/registry_lookup.h \
     common/registry/manager/registry_traits.h \
     common/registry/workflow/barcode_workflow_policy.h \
@@ -120,6 +124,7 @@ HEADERS += \
     common/utils/optional_utils.h \
     common/utils/table_formatter.h \
     connections/connection_entity.h \
+    connections/connection_importer.h \
     connections/connection_registry_engine.h \
     connections/connection_repository.h \
     materials/view/color_badge.h \
@@ -207,7 +212,7 @@ DISTFILES += \
     README.md \
     run_1_1_AllapotTabla.txt \
     run_1_2_RegistryAllapot.txt \
-    run_1_3_RegistryCheckList.txt \
+    run_1_3_RegistryRefactor.txt \
     run_1_4_DailySync.txt \
     run_2_1_AIDevelopmentHandbook.txt \
     run_2_2_JEGYZET.txt \

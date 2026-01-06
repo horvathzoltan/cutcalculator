@@ -137,16 +137,12 @@ StartupStatus StartupManager::initRalColors()
 //     return StartupStatus::success();
 // }
 
-
 StartupStatus StartupManager::initNeedRuleRegistry() {
-    QVector<NeedRule> rules;
-    bool ok = NeedRuleRepository::load(rules);
+    bool ok = NeedRuleRepository::load();
 
     if (!ok) {
         return StartupStatus::failure("⚠️ NeedRuleRegistry: kapcsolatok betöltése sikertelen.");
-    }    
-
-    NeedRuleRegistry::instance().setAll(rules);
+    }
 
     int count = NeedRuleRegistry::instance().size();
     if (count == 0) {
@@ -157,6 +153,26 @@ StartupStatus StartupManager::initNeedRuleRegistry() {
 
     return StartupStatus::success();
 }
+
+// StartupStatus StartupManager::initNeedRuleRegistry() {
+//     QVector<NeedRule> rules;
+//     bool ok = NeedRuleRepository::load(rules);
+
+//     if (!ok) {
+//         return StartupStatus::failure("⚠️ NeedRuleRegistry: kapcsolatok betöltése sikertelen.");
+//     }
+
+//     NeedRuleRegistry::instance().setAll(rules);
+
+//     int count = NeedRuleRegistry::instance().size();
+//     if (count == 0) {
+//         zInfo("📊 NeedRuleRegistry: jelenleg nincs kapcsolat – tiszta indulás");
+//     } else {
+//         zInfo(QString("📊 NeedRuleRegistry: %1 kapcsolat tárolva").arg(count));
+//     }
+
+//     return StartupStatus::success();
+// }
 
 // StartupStatus StartupManager::initBarcodeRegistry() {
 //     bool loaded = BarcodeRepository::loadFromCSV(BarcodeRegistry::instance());

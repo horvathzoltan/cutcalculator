@@ -4,21 +4,21 @@
 
 // --- Lookup API ---
 
-QVector<ProductMaster>
-ProductRegistry::findChildren(const QUuid& parentId) const
-{
-    return findAll([&](const ProductMaster& p){
-        return p.parentId == parentId;
-    });
-}
+// QVector<ProductMaster>
+// ProductRegistry::findChildren(const QUuid& parentId) const
+// {
+//     return findAll([&](const ProductMaster& p){
+//         return p.parentId == parentId;
+//     });
+// }
 
-QVector<ProductMaster>
-ProductRegistry::findRoots() const
-{
-    return findAll([&](const ProductMaster& p){
-        return p.parentId.isNull();
-    });
-}
+// QVector<ProductMaster>
+// ProductRegistry::findRoots() const
+// {
+//     return findAll([&](const ProductMaster& p){
+//         return p.parentId.isNull();
+//     });
+// }
 
 // --- Domain hookok ---
 
@@ -72,6 +72,14 @@ void ProductRegistry::persist() const
         return;
 
     ProductRepository::saveToCSV(readAll(), path);
+}
+
+void ProductRegistry::onLoadLog()
+{
+    // BarcodeIndexMixin indexépítés
+    onAfterLoad();
+
+    zInfo("📦 ProductRegistry loaded (barcode index built)");
 }
 
 

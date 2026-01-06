@@ -6,10 +6,9 @@
 NeedRuleRegistry::NeedRuleRegistry()
     : RegistryEngine("NeedRuleRegistry", "NeedRule")
 {
-    // QVector<NeedRule> tmp;
-    // NeedRuleRepository::load(tmp);
-    // setAll(tmp);
+    // A betöltést a StartupManager végzi, nem a konstruktor.
 }
+
 
 
 QVector<NeedRule>

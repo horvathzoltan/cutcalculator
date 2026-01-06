@@ -3,12 +3,19 @@
 #include <QVector>
 #include <QUuid>
 
-#include "common/registry/base/registry_engine_base.h"
+//#include "common/registry/base/registry_engine_base.h"
+#include "common/registry/base/registry_engine.h"
+
 #include "common/registry/feature/register_me.h"
 #include "materials/model/material_master.h"
+//#include "common/registry/barcode/barcode_lookup_mixin.h"
+#include "common/registry/barcode/barcode_index_mixin.h"
+#include "common/registry/workflow/crud_workflow_policy.h"
+
 
 class MaterialRegistry
-    : public RegistryEngineBase<MaterialMaster>,
+    : public RegistryEngine<MaterialMaster, CrudWorkflowPolicy>,
+      public BarcodeIndexMixin<MaterialRegistry, MaterialMaster>,
       public RegisterMe<MaterialRegistry>
 {
     AUTO_REGISTER_REGISTRY
@@ -23,9 +30,11 @@ public:
     QVector<MaterialMaster> findByShape(CrossSectionShape::Shape shape) const;
     QVector<MaterialMaster> findByColor(const NamedColor& color) const;
 
+protected:
+    void onLoadLog() override;
 private:
     MaterialRegistry()
-        : RegistryEngineBase("MaterialRegistry", "MaterialMaster")
+        : RegistryEngine("MaterialRegistry", "MaterialMaster")
     {}
 };
 

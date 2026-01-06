@@ -41,6 +41,7 @@ protected:
     void onUpdateLog(const NeedCalculationDetail& d) override;
     void onRemoveLog(const NeedCalculationDetail& d) override;
 
+    void onLoadLog() override; // <- ÚJ
     void persist() const override;
 
 private:

@@ -5,10 +5,11 @@
 #include "common/logger/event_logger.h"
 #include <QFile>
 #include <QTextStream>
+#include "common/utils/filename_helper.h"
 
 static QString nc_path() {
     // * később SettingsManager.datapath + traits
-    return "testdata/needcalcs.csv";
+    return FileNameHelper::instance().getNeedCalculationCsvFile();
 }
 
 bool NeedCalculationRepository::load(QVector<NeedCalculation>& out) {

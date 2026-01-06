@@ -1,27 +1,41 @@
 #pragma once
+
 #include <QFile>
 #include <QTextStream>
 #include <QUuid>
 #include <QStringList>
+#include <QVector>
+
 #include "common/utils/filehelper.h"
 #include "common/csv/filecontext.h"
 #include "common/logger/logger.h"
 #include "common/registry/manager/registry_traits.h"
-#include "common/registry/manager/registry_lookup.h"
+#include "common/registry/manager/registry_manager.h"
 
-
+/**
+ * 🧩 ConnectionRow – CSV sor modell (barcode-okkal)
+ *
+ * A tényleges kapcsolattípust (ConnectionType) már GUID-okkal tároljuk,
+ * de a CSV réteg barcode-okkal dolgozik, mert az emberi input is ilyen.
+ */
 struct ConnectionRow {
     QString leftBarcode;
     QString rightBarcode;
 };
 
 /**
- * 📂 ConnectionRepository<T, Traits> – generikus CSV import/export
+ * 📂 ConnectionRepository<ConnectionType, Traits> – generikus CSV import/export
  *
- * * a traits mondja meg a pathot és a headert. A repo csak IO-t végez és parse-ol.
- * Elvárás a Traits-től:
+ * A Traits felel a konfigurációért:
  *  - static QString filePath();
- *  - static QStringList headers(); // pl. {"productId","materialId"}
+ *  - static QStringList headers();          // pl. {"productId","materialId"}
+ *  - using LeftEntity; using RightEntity;   // entitástípusok
+ *  - using RegistryType;                    // kapcsolattábla registry típusa (NeedRuleRegistry, stb.)
+ *
+ * A repository:
+ *  - csak IO-t és parse-olást végez
+ *  - a registry-ket a RegistryManager-en keresztül éri el
+ *  - CsvImporter::FileContext segítségével auditálható hibakezelést ad
  */
 template<typename ConnectionType, typename Traits>
 class ConnectionRepository {
@@ -31,17 +45,15 @@ public:
         const QString path = Traits::filePath();
 
         using RegistryType = typename Traits::RegistryType;
-        auto* reg = lookupRegistry<RegistryType>();
-        QString opName = reg ? QString("%1 import").arg(reg->typeName()) : "Connection import";
+        auto& regInstance = RegistryType::instance();
 
-        //QString opName = QString("%1 import").arg(reg->typeName());
+        QString opName = QString("%1 import").arg(regInstance.typeName());
         CsvImporter::FileContext ctx(opName, path);
 
         QFile file(path);
-            QIODevice::OpenMode mode = QIODevice::ReadOnly | QIODevice::Text;
+        QIODevice::OpenMode mode = QIODevice::ReadOnly | QIODevice::Text;
         if (!file.open(mode)) {
-            ctx.setFileError("Nem sikerült megnyitni beolvasásra");
-            //zWarning(QString("⚠️ Nem sikerült megnyitni beolvasásra: %1").arg(path));
+            ctx.setFileError(QStringLiteral("Nem sikerült megnyitni beolvasásra"));
             FileHelper::logFileError(file, "CSV CONNECTION_READ", mode);
             return false;
         }
@@ -52,79 +64,52 @@ public:
         QString header = in.readLine();
         int lineNumber = 1; // header counted
 
-        // while (!in.atEnd()) {
-        //     const QString line = in.readLine();
-        //     ++lineNumber;
-        //     ctx.setCurrentLineNumber(lineNumber);
-        //     ctx.setReadlines(lineNumber);
-
-        //     if (line.trimmed().isEmpty()) continue;
-        //     const QStringList parts = line.split(',', Qt::KeepEmptyParts);
-
-        //     if (parts.size() < 2) {
-        //         ctx.addError(lineNumber, "⚠️ Kevés mező kapcsolatsorban");
-        //         continue;
-        //     }
-
-        //     const QUuid left(parts[0].trimmed());
-        //     const QUuid right(parts[1].trimmed());
-
-        //     if (left.isNull() || right.isNull()) {
-        //         ctx.addError(lineNumber, "⚠️ Érvénytelen UUID a kapcsolatsorban");
-        //         continue;
-        //     }
-
-        //     ConnectionType c;
-        //     c.leftId = left;
-        //     c.rightId = right;
-        //     defs.append(c);
-        // }
-
-        // connection_repository.h
-        // ConnectionRepository::load
-
         while (!in.atEnd()) {
             const QString line = in.readLine();
             ++lineNumber;
             ctx.setCurrentLineNumber(lineNumber);
             ctx.setReadlines(lineNumber);
 
-            if (line.trimmed().isEmpty()) continue;
+            if (line.trimmed().isEmpty())
+                continue;
+
             const QStringList parts = line.split(',', Qt::KeepEmptyParts);
 
             if (parts.size() < 2) {
-                ctx.addError(lineNumber, "⚠️ Kevés mező kapcsolatsorban");
+                ctx.addError(lineNumber, QStringLiteral("⚠️ Kevés mező kapcsolatsorban"));
                 continue;
             }
 
-            // Új: barcode stringek beolvasása
             const QString leftBarcode = parts[0].trimmed();
             const QString rightBarcode = parts[1].trimmed();
 
             if (leftBarcode.isEmpty() || rightBarcode.isEmpty()) {
-                ctx.addError(lineNumber, "⚠️ Hiányzó barcode a kapcsolatsorban");
+                ctx.addError(lineNumber, QStringLiteral("⚠️ Hiányzó barcode a kapcsolatsorban"),
+                             leftBarcode, rightBarcode);
                 continue;
             }
 
-            // Registry lookup – bal oldal
-            using LeftRegistry = typename RegistryFor<typename Traits::LeftEntity>::type;
-            auto* leftReg = lookupRegistry<LeftRegistry>();
+            // 🔍 Registry lookup – bal oldal
+            using LeftEntity = typename Traits::LeftEntity;
+            using LeftRegistry = typename RegistryFor<LeftEntity>::type;
+            auto* leftReg = RegistryManager::instance().lookupRegistry<LeftRegistry>();
             auto* leftEntity = leftReg ? leftReg->findByBarcode(leftBarcode) : nullptr;
 
-            // Registry lookup – jobb oldal
-            using RightRegistry = typename RegistryFor<typename Traits::RightEntity>::type;
-            auto* rightReg = lookupRegistry<RightRegistry>();
+            // 🔍 Registry lookup – jobb oldal
+            using RightEntity = typename Traits::RightEntity;
+            using RightRegistry = typename RegistryFor<RightEntity>::type;
+            auto* rightReg = RegistryManager::instance().lookupRegistry<RightRegistry>();
             auto* rightEntity = rightReg ? rightReg->findByBarcode(rightBarcode) : nullptr;
 
             if (!leftEntity || !rightEntity) {
                 ctx.addError(lineNumber,
-                             "⚠️ Nem található entitás a barcode alapján",
+                             QStringLiteral("⚠️ Nem található entitás a barcode alapján"),
                              leftBarcode,
                              rightBarcode);
                 continue;
             }
 
-            // GUID beállítása a feloldott entitásokból
+            // GUID-ok beállítása a feloldott entitásokból
             ConnectionType c;
             c.leftId = leftEntity->id;
             c.rightId = rightEntity->id;
@@ -132,73 +117,55 @@ public:
         }
 
         ctx.setTotalLines(lineNumber);
+
+        // A registry engine teljes adatkészletét cseréljük
         registry.setAll(defs);
 
-        zInfo(QString("📊 ConnectionRepository: %1 kapcsolat betöltve → %2")
+        zInfo(QStringLiteral("📊 ConnectionRepository: %1 kapcsolat betöltve → %2")
                   .arg(defs.size()).arg(path));
 
-        // amikor a ctx kimegy a scope-ból, a destruktor átadja magát a FileContextCollector-nak
-        return true;
+        // amikor a ctx kimegy a scope-ból, a FileContextCollector automatikusan gyűjti
+        return !ctx.hasErrors();
     }
 
-
-    static bool save(const QVector<ConnectionType>& data) {
+    template<typename RegistryEngine>
+    static bool save(const RegistryEngine& registry) {
         QFile file(Traits::filePath());
-         QIODevice::OpenMode mode = QIODevice::WriteOnly | QIODevice::Text;
+        QIODevice::OpenMode mode = QIODevice::WriteOnly | QIODevice::Text;
         if (!file.open(mode)) {
-            //zWarning(QString("⚠️ Nem sikerült megnyitni írásra: %1").arg(Traits::filePath()));
             FileHelper::logFileError(file, "CSV CONNECTION_SAVE", mode);
             return false;
         }
 
         QTextStream out(&file);
-        const auto hdr = Traits::headers(); // pl. {"productBarcode","materialBarcode"}
+        const auto hdr = Traits::headers(); // pl. {"productId","materialId"}
         out << hdr.join(",") << "\n";
 
+        const auto data = registry.readAll();
+
         for (const auto& c : data) {
-            QString leftBarcode, rightBarcode;
+            QString leftBarcode;
+            QString rightBarcode;
 
             // 🔍 Bal oldali entitás barcode-ja
             if (auto opt = c.left()) {
                 leftBarcode = opt->barcode;
             } else {
-                leftBarcode = ""; // vagy "<missing>"
+                leftBarcode.clear();
             }
 
             // 🔍 Jobb oldali entitás barcode-ja
             if (auto opt = c.right()) {
                 rightBarcode = opt->barcode;
             } else {
-                rightBarcode = ""; // vagy "<missing>"
+                rightBarcode.clear();
             }
 
             out << leftBarcode << "," << rightBarcode << "\n";
         }
 
-        zWarning(QString("💾 ConnectionRepository: %1 kapcsolat mentve → %2")
-                     .arg(data.size()).arg(Traits::filePath()));
+        zInfo(QStringLiteral("💾 ConnectionRepository: %1 kapcsolat mentve → %2")
+                  .arg(data.size()).arg(Traits::filePath()));
         return true;
     }
-
-
-    // static bool save(const QVector<ConnectionType>& data) {
-    //     QFile file(Traits::filePath());
-    //     if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
-    //         zWarning(QString("⚠️ Nem sikerült megnyitni írásra: %1").arg(Traits::filePath()));
-    //         return false;
-    //     }
-
-    //     QTextStream out(&file);
-    //     const auto hdr = Traits::headers();
-    //     out << hdr.join(",") << "\n";
-
-    //     for (const auto& c : data) {
-    //         out << c.leftId.toString(QUuid::WithBraces) << ","
-    //             << c.rightId.toString(QUuid::WithBraces) << "\n";
-    //     }
-
-    //     zWarning(QString("💾 ConnectionRepository: %1 kapcsolat mentve → %2")
-    //                    .arg(data.size()).arg(Traits::filePath()));
-    //     return true;
-    // }
 };

@@ -12,7 +12,7 @@
 
 class NeedRuleRegistry
     : public RegistryEngine<NeedRule, ConnectionWorkflowPolicy>,
-      public RegisterMe<NeedRuleRegistry>
+    public RegisterMe<NeedRuleRegistry>
 {
     AUTO_REGISTER_REGISTRY;
 public:
@@ -21,14 +21,10 @@ public:
         return inst;
     }
 
-    // 🔍 Ezt használja a Presenter / Manager
     QVector<NeedRule> findByLeft(const QUuid& leftId) const;
 
 protected:
-    // Kapcsolat validáció: mindkét oldal létezik‑e?
     bool validateConnection(const NeedRule& r) const override;
-
-    // Duplikáció: ugyanaz a (leftId, rightId) már létezik‑e?
     bool validateDuplicate(const NeedRule& r) const override;
 
     bool beforeInsert(const NeedRule& r) override;
@@ -40,8 +36,9 @@ protected:
     void persist() const override;
 
 private:
-    NeedRuleRegistry();
+    NeedRuleRegistry(); // unchanged
 };
+
 
 // #pragma once
 

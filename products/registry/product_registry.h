@@ -6,12 +6,17 @@
 #include "common/registry/base/registry_engine.h"
 #include "common/registry/feature/register_me.h"
 #include "common/registry/workflow/crud_workflow_policy.h"
+//#include "common/registry/barcode/barcode_lookup_mixin.h"
+#include "common/registry/barcode/barcode_index_mixin.h"
+#include "common/registry/hierarchy/hierarchy_mixin.h"
 
 #include "products/model/product_master.h"
 //#include "common/logger/logger.h"
 
 class ProductRegistry
     : public RegistryEngine<ProductMaster, CrudWorkflowPolicy>,
+      public BarcodeIndexMixin<ProductRegistry, ProductMaster>,
+      public HierarchyMixin<ProductRegistry, ProductMaster>,
       public RegisterMe<ProductRegistry>
 {
     AUTO_REGISTER_REGISTRY;
@@ -23,8 +28,8 @@ public:
     }
 
     // Hierarchia lookupok
-    QVector<ProductMaster> findChildren(const QUuid& parentId) const;
-    QVector<ProductMaster> findRoots() const;
+    // QVector<ProductMaster> findChildren(const QUuid& parentId) const;
+    // QVector<ProductMaster> findRoots() const;
 
     void persist() const override;
 
@@ -40,6 +45,7 @@ protected:
     void onUpdateLog(const ProductMaster& p) override;
     void onRemoveLog(const ProductMaster& p) override;
 
+    void onLoadLog() override;
 
 private:
     ProductRegistry()

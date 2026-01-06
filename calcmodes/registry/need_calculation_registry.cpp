@@ -12,10 +12,7 @@ NeedCalculationRegistry& NeedCalculationRegistry::instance()
 NeedCalculationRegistry::NeedCalculationRegistry()
     : RegistryEngine("NeedCalculationRegistry", "NeedCalculation")
 {
-    QVector<NeedCalculation> tmp;
-    if (NeedCalculationRepository::load(tmp)) {
-        setAll(tmp);
-    }
+    // A betöltést a CalculationModesManager / StartupManager végzi, nem a konstruktor.
 }
 
 // ⭐ Kényelmi API – a NeedCalculator használja
@@ -60,6 +57,11 @@ void NeedCalculationRegistry::onInsertLog(const NeedCalculation& nc)
 void NeedCalculationRegistry::persist() const
 {
     NeedCalculationRepository::save(readAll());
+}
+
+void NeedCalculationRegistry::onLoadLog()
+{
+    zInfo(QString("📊 NeedCalculationRegistry: %1 mód betöltve").arg(size()));
 }
 
 

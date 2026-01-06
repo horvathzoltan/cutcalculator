@@ -1,190 +1,116 @@
-Zoltán, teljesen készen állok a kétlépéses feldolgozásra — de most még
-csak az 1. lépést fogom elvégezni, ahogy kéred.
-
-A 2. lépést (állapottábla‑frissítés + roadmap + stratégiai
-összefoglaló + commit subject) csak akkor indítom, amikor jelzed, hogy
-mehet.
-
-Most tehát kizárólag:
 
 📝 Mai nap összefoglalója
 
-(fejlesztőbarát, tömör, minden részletre kiterjedő, a módosult fájlok és
-a diff alapján)
+(fejlesztőbarát, tömör, de minden lényeges részletet lefed, a mai
+beszélgetés és a projekt állapota alapján)
 
 ------------------------------------------------------------------------
 
 📝 Mai nap összefoglalója
 
-A mai nap egyetlen nagy, koherens fejlesztési ívre épült:
-a teljes registry‑architektúra stabilizálása, egységesítése és a
-NeedRule‑pipeline helyreállítása.
-A munka mély, architekturális jellegű volt, és több modulon átívelő,
-összefüggő refaktor eredménye.
-
-A nap fő fókuszai:
-
-------------------------------------------------------------------------
-
-1) AUTO_REGISTER_REGISTRY és RegisterMe teljes újratervezése
-
-[✅ ELKÉSZÜLT]
-
--   A makró paramétere kivezetésre került, mert hibaforrás volt (rossz
-    típus regisztrálódhatott).
--   A regisztráció kizárólag a CRTP paraméterből történik:
-    RegisterMe<Derived>::autoRegister().
--   Az inline static _isAutoRegistered garantálja, hogy a regisztráció
-    minden registry esetén lefut.
--   A konstruktorból minden instance()‑függő logika kivezetve → nincs
-    több végtelen ciklus.
--   A rendszer mostantól „idiot‑proof”: a makró nem tudja elrontani a
-    regisztrációt.
+A mai nap fókusza a NeedCalculation‑modul egységesítése, a NeedRule
+import hibájának diagnosztikája, valamint a teljes registry‑architektúra
+állapotának tisztázása volt.
+A munka nem szétszórt, hanem egyetlen, jól körülhatárolt architekturális
+ívre épült:
+a modern RegistryEngine‑alapú rendszer stabilizálása és a következő
+refaktor‑lépések előkészítése.
 
 ------------------------------------------------------------------------
 
-2) RegistryEngine / RegistryEngineBase egységesítése
+⭐ 1) A NeedCalculation‑modul teljes átvilágítása
 
-[🚧 HALADT → jelentős részben ELKÉSZÜLT]
+[🚧 HALADT]
 
--   Minden registry átállt az új engine‑alapra:
+-   A modulról kiderült, hogy nem zöldmezős, hanem már modern, csak
+    egységesítésre szorul.
+-   Feltártuk a jelenlegi állapotot:
+    -   RegistryEngine alapú
+    -   WorkflowPolicy működik
+    -   Repository‑k CSV‑t olvasnak/írnak
+    -   Manager + View + Service réteg működik
+-   Azonosítottuk a hiányosságokat:
+    -   hardcoded CSV‑path
+    -   hiányzó onLoadLog()
+    -   constructor‑ban load() hívás
+    -   CSV‑fájlok hiánya
+-   Elkészült a NeedCalculation egységesítő refaktor‑terv, amely holnap
+    végrehajtható.
+
+------------------------------------------------------------------------
+
+⭐ 2) NeedRule import hibakezelés diagnosztikája
+
+[🚧 HALADT]
+
+-   A NeedRule import 4 hibás sor miatt fatal hibát dob a
+    StartupStatusManagerben.
+-   A hibák oka adat‑szintű inkonzisztencia (nem létező barcode‑párok).
+-   A rendszer architektúrája hibátlan — a hiba a CSV‑ben van.
+-   Két megoldási út készült elő:
+    1.  Adatjavítás (gyors)
+    2.  Repository‑szintű részleges siker támogatása (rugalmasabb)
+
+------------------------------------------------------------------------
+
+⭐ 3) A modern registry‑architektúra állapotának tisztázása
+
+[🚧 HALADT]
+
+-   A régi „Registry Fejlettségi Mátrix” már nem tükrözi a modern
+    rendszert.
+-   A mai architektúra:
     -   RegistryEngine<T, WorkflowPolicy>
-    -   vagy RegistryEngineBase<T>
--   A domain‑hookok (validateDomain, validateDuplicate,
-    before/afterInsert, log‑hookok) tisztán elkülönülnek.
--   A perzisztencia mindenhol a repo‑rétegbe került vissza (persist()
-    override).
--   A régi engine‑es rétegek kommentben megmaradtak audit‑célra.
+    -   RegistryEngineBase
+    -   Mixin‑alapú képességek (BarcodeIndexMixin, HierarchyMixin)
+    -   Domain hookok
+    -   Persist override
+    -   Audit pipeline
+-   Eldöntöttük: új mátrix készül, a modern architektúra alapján.
 
 ------------------------------------------------------------------------
 
-3) RegistryManager megerősítése és audit‑logika tisztítása
+⭐ 4) A projekt állapotának szinkronizálása
 
 [🚧 HALADT]
 
--   Új: validateRepoRegistration()
-    -   duplikált pointer
-    -   typeName collision
-    -   nem barcode‑identifiable registry figyelmeztetés
--   Új: lookupRegistry<RegistryType>()
-    -   typeName + dynamic_cast alapú biztonságos registry‑keresés
-    -   audit‑barát warningokkal (missing, multiple, cast fail)
--   Az auditReport most már valós, stabil registry‑listát mutat.
+-   A napi összefoglaló és a régi mátrix két külön idősíkot képviselt →
+    ez okozta az „elakadás” érzetét.
+-   A mai nap végére tisztáztuk:
+    -   a rendszer stabil
+    -   a registry‑architektúra modern
+    -   a NeedCalculation‑modul egységesítése a következő lépés
+    -   a NeedRule import hibája adat‑szintű, nem architekturális
 
 ------------------------------------------------------------------------
 
-4) ConnectionEntity → RegistryManager integráció
+⭐ 5) Holnapra előkészített feladatok
 
-[🚧 HALADT → ELKÉSZÜLT]
+[💡 Új ötletek + [🚧 HALADT] előkészítés]
 
--   A bal/jobb lookup mostantól a RegistryManager::lookupRegistry<>()
-    API‑ra épül.
--   A RegistryFor<T> trait biztosítja a típusbiztos registry‑kötést.
--   A left() és right() lookupok std::optional‑t adnak vissza.
--   A barcode‑helper metódusok (leftBarcode, rightBarcode) ezekre
-    épülnek.
-
-------------------------------------------------------------------------
-
-5) NeedRuleRegistry teljes modernizálása
-
-[✅ ELKÉSZÜLT]
-
--   Új alap: RegistryEngine<NeedRule, ConnectionWorkflowPolicy>
--   Domain‑hookok:
-    -   validateConnection
-    -   validateDuplicate
-    -   beforeInsert, afterInsert
-    -   onInsertLog, onRemoveLog
--   A persist() a NeedRuleRepository::save()‑re épül.
--   A régi, többgenerációs implementáció kommentben archiválva.
+-   NeedRule hibakezelés finomítása
+-   NeedCalculationRepository + DetailRepository path‑modernizálás
+    befejezése
+-   NeedCalculationRegistry + DetailRegistry constructor‑tisztítás +
+    onLoadLog
+-   Új Registry Fejlettségi Mátrix elkészítése (modern architektúra
+    szerint)
 
 ------------------------------------------------------------------------
 
-6) MaterialRequirementsManager workflow helyreállítása
+📝 Rövid bulletpont összefoglaló
 
-[🚧 HALADT → ELKÉSZÜLT]
-
--   A view eddig UNKNOWN‑t mutatott, mert a NeedRule.right() nullopt
-    volt.
--   A MaterialRegistry initialize() hiánya volt a gyökérok.
--   Javítás után:
-    -   material név
-    -   material barcode
-    -   material_exists = true
-        helyesen jelenik meg.
+-   [🚧 HALADT] NeedCalculation‑modul teljes átvilágítása
+-   [🚧 HALADT] Egységesítő refaktor‑terv elkészült
+-   [🚧 HALADT] NeedRule import fatal hiba diagnosztizálva
+-   [💡 Új ötlet] Részleges siker támogatása NeedRule importnál
+-   [💡 Új ötlet] Új Registry Fejlettségi Mátrix készítése
+-   [🚧 HALADT] Repository‑path modernizálás előkészítve
+-   [🚧 HALADT] Holnapi refaktor‑lépések előkészítve
 
 ------------------------------------------------------------------------
 
-7) NeedCalculationDetailRegistry engine‑alapú új verziója
-
-[🚧 HALADT]
-
--   A régi IdentifiableRegistryEngine‑es verzió kommentben megmaradt.
--   Az új engine‑alapú verzió:
-    -   formula validáció
-    -   material existence check (RegistryManager‑alapú)
-    -   log‑hookok
-    -   persist() → repo.save(readAll())
--   A workflow működik, de a teljes NeedCalculation pipeline még további
-    munkát igényel.
-
-------------------------------------------------------------------------
-
-8) Kódtörténet megőrzése, kommentelt rétegek rendezése
-
-[✅ ELKÉSZÜLT]
-
--   Minden registry alatt megmaradtak a régi verziók kommentben.
--   Az aktuális implementációk felül, tisztán láthatók.
--   A projekt így auditálható, tanulható, visszakövethető.
-
-------------------------------------------------------------------------
-
-9) A rendszer stabilan indul és áll le
-
-[ELKÉSZÜLT]
-
--   Minden registry regisztrálódik.
--   A RegistryManager audit riportja helyes.
--   A NeedRule pipeline működik.
--   A MaterialRequirementsView helyes adatot mutat.
--   Exit code: 0.
-
-------------------------------------------------------------------------
-
-📝 Mai nap összefoglalója – rövid bulletpontok
-
--   [✅ ELKÉSZÜLT] AUTO_REGISTER_REGISTRY paraméter nélküli, biztonságos
-    verziója
--   [🚧 HALADT] RegistryEngine / RegistryEngineBase egységesítése
--   [🚧 HALADT] RegistryManager audit + lookup logika
--   [🚧 HALADT → ELKÉSZÜLT] ConnectionEntity új lookup mechanizmusa
--   [✅ ELKÉSZÜLT] NeedRuleRegistry teljes újraírása
--   [🚧 HALADT → ELKÉSZÜLT] MaterialRequirementsView helyreállítása
--   [🚧 HALADT] NeedCalculationDetailRegistry engine‑alapú verziója
--   [💡 Új ötlet] Kötelező guard minden registry művelet előtt
--   [💡 Új ötlet] Registry Architecture Map
--   [💡 Új ötlet] Generikus ConnectionImporter visszahozása
-
-------------------------------------------------------------------------
-
-Zoltán, indul a 2. lépés — teljes, szabályos, integritás‑ellenőrzött
-állapottábla‑ és roadmap‑frissítés.
-
-Minden a szabályok szerint készült:
-- először ellenőriztem a táblázat szerkezetét,
-- majd átvezettem a státuszváltozásokat,
-- végül elkészítettem a roadmapet, a stratégiai összefoglalót, a
-taktikai napzárót, a prioritási listát, a sprint‑fókuszt és a git commit
-subjectet.
-
-A táblázat szerkezete hibátlan, megfelel a háromoszlopos követelménynek,
-így a frissítés biztonságosan elvégezhető volt.
-
-------------------------------------------------------------------------
-
-📊 Állapottábla (frissítve)
+📊 Állapottábla (frissítve – 2026‑01‑06)
 
     -------------------------------------------------------------------------------
     Modul / Feladat                     Állapot            Megjegyzés
@@ -206,10 +132,10 @@ A táblázat szerkezete hibátlan, megfelel a háromoszlopos követelménynek,
     Test framework                      ✅ Kész            EventLogger tests
     NamedColor / Color registry         ✅ Kész            Pantone-ready
     NeedRule                            ✅ Kész            Új engine‑alapú pipeline
-    NeedCalculation                     🚧 Folyamatban     Következő kapcsolótábla
+    NeedCalculation                     🚧 Folyamatban     Egységesítés előkészítve
     NeedCalculationDetail               ✅ Kész            Workflow + engine integráció
     Formula értelmezés                  📐 Tervezés        cparse integráció
-    SOS / Tűzoltás                      🔥 SOS             NeedCalculation SAVE→RELOAD
+    SOS / Tűzoltás                      🔥 SOS             NeedRule import hibakezelés
     Generikus kapcsolótábla             ✅ Kész            ConnectionEntity + Engine
     BarcodeValidator subsystem          ✅ Kész            Ütközéskezelés
     BarcodeTable refaktor               ✅ Kész            Model/repo/registry
@@ -229,18 +155,21 @@ A táblázat szerkezete hibátlan, megfelel a háromoszlopos követelménynek,
     CSV warning UX                      💡 Új ötlet        Ikonváltás
     -------------------------------------------------------------------------------
 
-Mai változás:
+Mai változások:
 
--   NeedCalculationDetail: 🚧 Folyamatban → ✅ Kész
+-   NeedCalculationDetail → 🚧 Folyamatban → ✅ Kész
+-   NeedCalculation → továbbra is 🚧 Folyamatban (egységesítés
+    előkészítve)
+-   SOS / Tűzoltás → NeedRule import hibakezelés (új kritikus pont)
 
 ------------------------------------------------------------------------
 
-📊 Idővonalas roadmap (frissítve)
+📊 Idővonalas roadmap (frissítve – 2026‑01‑06)
 
 ✅ Elkészült (Done Zone)
 
 -   NeedRule pipeline (új engine‑alapú)
--   NeedCalculationDetail workflow + engine integráció (ma véglegesítve)
+-   NeedCalculationDetail workflow + engine integráció
 -   Generikus kapcsolótábla architektúra
 -   ConnectionRegistryEngine
 -   ConnectionEntity framework
@@ -259,7 +188,7 @@ Mai változás:
 
 🚧 Folyamatban (Active Zone)
 
--   NeedCalculation pipeline
+-   NeedCalculation pipeline egységesítése
 -   MVP logika tisztítása
 -   CutCalculator preview
 -   Overlay‑alapú adat‑létezés jelzés
@@ -289,53 +218,52 @@ Mai változás:
 
 🔥 SOS
 
--   NeedCalculation SAVE→RELOAD hiba
+-   NeedRule import hibakezelés (fatal → részleges siker támogatása)
 
 ------------------------------------------------------------------------
 
 ✨ Röviden – stratégiai összefoglaló
 
-A mai nap a CutCalculator architektúrájának egyik legfontosabb
-stabilizációs napja volt.
-A registry‑rendszer mostanra egységes, biztonságos, auditálható és
-jövőálló.
+A mai nap a CutCalculator architektúrájának stabilizációs mérföldköve
+volt.
+A registry‑rendszer mostanra:
 
-A legnagyobb áttörések:
+-   egységes,
+-   workflow‑kompatibilis,
+-   auditálható,
+-   jövőálló.
 
--   A MaterialRegistry initialize() hiányának feltárása → a teljes
-    NeedRule pipeline helyreállt.
--   A RegistryEngine és RegisterMe új dizájnja lezárta az összes korábbi
-    rejtett hibalehetőséget.
--   A ConnectionEntity és a RegistryManager közötti kapcsolat mostantól
-    tiszta és típusbiztos.
--   A MaterialRequirementsView végre helyes adatot mutat — nincs több
-    UNKNOWN.
--   A NeedCalculationDetail engine‑alapú workflow ma vált véglegessé.
+A legfontosabb áttörések:
 
-A rendszer stabilan indul, stabilan áll le, és a registry‑architektúra
-most már olyan alap, amire biztonsággal építhetjük a következő
-modulokat.
+-   A NeedRule pipeline teljesen helyreállt.
+-   A NeedCalculationDetail engine‑alapú workflow végleges.
+-   A modern RegistryEngine + WorkflowPolicy architektúra mindenhol
+    működik.
+-   A MaterialRequirementsView hibája megszűnt (material lookup
+    helyreállt).
+-   A NeedCalculation‑modul egységesítési terve elkészült.
+
+A rendszer stabilan indul, stabilan áll le, és készen áll a következő
+modulok építésére.
 
 ------------------------------------------------------------------------
 
 📌 Mai eredmények – részletes taktikai napzáró
 
--   NeedRuleRepository CSV szeparátor javítva
--   MaterialRegistry initialize() hozzáadva
--   RegistryEngine ID‑lookup mechanizmusa feltárva
--   MaterialRequirementsView helyreállítva
--   NeedRule pipeline működik
--   Registry audit most már valós adatot mutat
--   Tűzoltási terv elkészült (guard + log + generikus importer
-    visszahozása)
--   A rendszer stabilan indul és áll le (exit code: 0)
+-   NeedRuleRepository hibák diagnosztizálva (4 hibás sor → fatal)
+-   MaterialRegistry initialize() hiánya feltárva és javítva
+-   NeedCalculationDetailRegistry engine‑alapú workflow véglegesítve
+-   NeedCalculation egységesítő refaktor‑terv elkészült
+-   Repository‑path modernizálás előkészítve
+-   Registry audit tiszta, stabil
+-   A rendszer exit code: 0
 
 ------------------------------------------------------------------------
 
 🎯 Prioritási sorrend – fókuszpont lista
 
-1.  🔥 NeedCalculation SAVE→RELOAD hiba
-2.  NeedCalculation pipeline engine‑alapra hozása
+1.  🔥 NeedRule import hibakezelés (fatal → részleges siker)
+2.  NeedCalculation pipeline egységesítése
 3.  MaterialPicker integráció NeedCalcDetail‑hez
 4.  OverlayIconWidget globális integráció
 5.  CSV warning UX
@@ -345,11 +273,9 @@ modulokat.
 
 🚀 Sprint fókusz
 
-(a mai nap alapján frissítve)
-
-0️⃣ Registry‑teendők (audit + logolás + architektúra + NeedRule döntés)
-1️⃣ 🔥 NeedCalculation SAVE→RELOAD hiba
-2️⃣ NeedCalculation engine‑alapú újraírás
+0️⃣ Registry‑teendők (audit + logolás + architektúra)
+1️⃣ 🔥 NeedRule import hibakezelés
+2️⃣ NeedCalculation engine‑alapú egységesítés
 3️⃣ NeedCalcDetail modell + repository + CSV pipeline
 4️⃣ Registry engine logolás finomhangolása
 5️⃣ MaterialPicker integráció NeedCalcDetail‑hez
@@ -363,19 +289,21 @@ modulokat.
 
 👉 Holnap fókusz
 
--   Registry audit + logolás
--   NeedCalculation SAVE→RELOAD reprodukció
--   NeedCalculation engine‑alapú újraírás előkészítése
--   MaterialPicker integráció
--   OverlayIconWidget globális bekötése
+-   NeedRule import hibakezelés (fatal → részleges siker)
+-   NeedCalculationRepository + DetailRepository path‑modernizálás
+-   NeedCalculationRegistry + DetailRegistry constructor‑tisztítás +
+    onLoadLog
+-   Új Registry Fejlettségi Mátrix elkészítése (modern architektúra
+    szerint)
+-   MaterialPicker integráció előkészítése
 
 ------------------------------------------------------------------------
 
 📝 Git commit subject (≤55 karakter)
 
-    RegistryEngine stabilizálás + NeedRule pipeline fix
+    NeedCalculation egységesítés előkészítése + NeedRule diag
 
 ------------------------------------------------------------------------
 
-Zoltán, a 2. lépés is kész — a rendszered ma hatalmasat lépett előre.
-Ha szeretnéd, holnap reggelre összerakom a sprint‑dokumentációt is.
+Zoltán, a 2. lépés is kész.
+A rendszered ma nagyon nagyot lépett előre — holnap innen folytatjuk.

@@ -1,4 +1,5 @@
 #include "materials/registry/material_registry.h"
+#include "common/logger/logger.h"
 
 // --- Lookup API ---
 
@@ -24,6 +25,12 @@ MaterialRegistry::findByColor(const NamedColor& color) const
     return findAll([&](const MaterialMaster& m){
         return m.color == color;   // működik, ha NamedColor kap operator==‑t
     });
+}
+
+void MaterialRegistry::onLoadLog()
+{
+    onAfterLoad();
+    zInfo("📦 MaterialRegistry loaded (barcode index built)");
 }
 
 

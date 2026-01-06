@@ -5,9 +5,10 @@
 #include "common/logger/event_logger.h"
 #include <QFile>
 #include <QTextStream>
+#include "common/utils/filename_helper.h"
 
 static QString ncd_path() {
-    return "testdata/needcalc_details.csv";
+    return FileNameHelper::instance().getNeedCalculationDetailCsvFile();
 }
 
 bool NeedCalculationDetailRepository::load(QVector<NeedCalculationDetail>& out) {
