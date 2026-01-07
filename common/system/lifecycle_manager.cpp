@@ -40,6 +40,9 @@ void LifecycleManager::setPhase_3(QCoreApplication* app) {
     LogManager::instance().enableBuffering(true);
     LogManager::instance().setFlushInterval(LogManager::Channel::Events, 2000);
     LogManager::instance().setFlushInterval(LogManager::Channel::Errors, 1000);
+
+    // 🔴 Itt már biztosan van QApplication → ha volt korai fatal, most lehet kulturáltan meghalni
+    Logger::flushPendingFatalIfAny();
 }
 
 void LifecycleManager::setPhase_4(QMainWindow* window) {

@@ -77,7 +77,7 @@ void ProductRegistry::persist() const
 void ProductRegistry::onLoadLog()
 {
     // BarcodeIndexMixin indexépítés
-    onAfterLoad();
+    //onAfterLoad();
 
     zInfo("📦 ProductRegistry loaded (barcode index built)");
 }

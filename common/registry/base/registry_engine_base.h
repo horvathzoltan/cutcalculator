@@ -65,12 +65,15 @@ public:
         guardInstanceUsage();
         _items.append(v);
         return true;
-    }
+    }  
 
     void setAll(const QVector<TEntity>& v) {
         guardInstanceUsage();
         _items = v;
+
+        onAfterSetAll();
     }
+
 
     // --- READ APIs ---
 
@@ -160,7 +163,9 @@ public:
         return nullptr;
     }
 
-
+// Hooks
+protected:
+    virtual void onAfterSetAll() {}
 
 protected:
     QVector<TEntity> _items;

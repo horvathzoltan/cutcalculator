@@ -29,7 +29,7 @@ MaterialRegistry::findByColor(const NamedColor& color) const
 
 void MaterialRegistry::onLoadLog()
 {
-    onAfterLoad();
+    //onAfterLoad();
     zInfo("📦 MaterialRegistry loaded (barcode index built)");
 }
 

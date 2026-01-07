@@ -58,22 +58,31 @@ public:
     static void setBreakOnError(bool b){ _isBreakOnError = b; }
 
 private:
-    static ErrLevel _errlevel;
+    static ErrLevel _errlevel;    
     static DbgLevel _dbglevel;
     static bool _isBreakOnError;
     static bool _isVerbose;
+    static bool _forceGuiInDebug;
+
+    static bool _hasPendingFatal;
+    static QStringList _pendingFatalMessages;
+
     //static bool _isInited;
-    static std::function<void(const QString& str)> _func;
+    //static std::function<void(const QString& str)> _func;
+    static void show_critical_dialog(const QString& msg);
 
     static QString ToString(ErrLevel, const QString&, const QString&, const QString&);
     static QString ToString(DbgLevel level, const QString &msg, const QString &loci, const QString &st);
     static QString ToString(const ErrLevel &l);
     static QString ToString(const DbgLevel &l);
     static void err_message(ErrLevel level, const QString &msg);
+    static void err_message2(ErrLevel level, const QString& msg);
+
     static void dbg_message(DbgLevel level, const QString& msg);
     static QString zStackTrace();
 
     static inline const QString DEFMSG = QStringLiteral("⚠️ [Logger] has not been initialized. Message skipped:");
+    static void addPendingFatal(const QString& msg);
 
 public:
     static void error2(const QString& msg, const LocInfo& l);
@@ -84,10 +93,13 @@ public:
     static void info2(const QStringList& msg, const LocInfo& l);
     static void message(const QString& msg);
 
-    static void SetFunction(std::function<void(const QString& str)> f){ _func = f;};
+    //static void SetFunction(std::function<void(const QString& str)> f){ _func = f;};
     static class LogStream warning2(const LocInfo &locinfo);
     static class LogStream error2(const LocInfo &locinfo);
     static class LogStream info2(const LocInfo &locinfo);
+
+    static void setForceGuiInDebug(bool on) { _forceGuiInDebug = on; }
+    static void flushPendingFatalIfAny();
 };
 
 class LogStream {

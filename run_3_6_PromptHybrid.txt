@@ -1,0 +1,200 @@
+------------------------------------------------------------------------
+
+🧩 Hibrid ipari refaktor + fejlesztés prompt
+
+------------------------------------------------------------------------
+
+STRICT MODE – KÉT FÁZIS
+
+-   A refaktor/fejlesztés NEM indulhat el automatikusan.
+-   Először csak a tervezési fázis fusson (elemzés + terv).
+-   Kódgenerálás csak explicit utasításra:
+
+  „Indulhat a generálás.”
+
+------------------------------------------------------------------------
+
+1) PROBLÉMÁK LISTÁJA (elemzés, kód nélkül)
+
+Elemezd a megadott kódot / modult, és sorold fel a problémákat az alábbi
+kategóriák szerint:
+
+-   safety
+-   readability
+-   performance
+-   modularity / SRP
+-   testability
+-   API consistency
+-   memory / ownership
+-   Qt best practices
+-   Clazy best practices
+
+Minden kategóriában:
+
+-   konkrét, rövid pontok
+-   ne legyenek általános frázisok
+-   csak a ténylegesen releváns problémák
+
+------------------------------------------------------------------------
+
+2) REFAKTOR + FEJLESZTÉSI JAVASLATOK (még mindig kód nélkül)
+
+Adj konkrét, moduláris, determinisztikus javaslatokat:
+
+-   mi maradjon meg (mi stabil, jó alap)
+-   mit kell refaktorálni
+-   mit érdemes fejleszteni / bővíteni (nem csak „javítani”)
+-   hol kell architekturális tisztítás (SRP, rétegek, ownership)
+-   hol kell UX / log / audit finomítás
+
+Szabályok:
+
+-   ne adj még kódot
+-   a javaslatok legyenek:
+    -   konkrétak
+    -   viselkedésváltoztatás nélküliek, ahol ez a cél (no semantic
+        drift)
+    -   ahol fejlesztés történik, ott jelöld: [FEJLESZTÉS]
+    -   ahol tiszta refaktor, ott jelöld: [REFAKTOR]
+
+------------------------------------------------------------------------
+
+3) ÚJ FÁJLOK LISTÁJA (csak tervezés)
+
+Ha szükségesek új fájlok, add meg:
+
+-   snake_case fájlnevek
+-   illeszkedjenek a projektstruktúrába (pl. common/, workbench/,
+    domain/, stb.)
+-   soronként egy fájl
+-   csak a tervezett új fájlok, kód nélkül
+
+Példa formátum:
+
+-   common/need_calculation_traits.h
+-   workbench/need_calculation_modes_model.cpp
+
+------------------------------------------------------------------------
+
+4) MEGLÉVŐ FÁJLOK – FEJLESZTÉSI KONTEXTUS (files.txt tervezés)
+
+Add meg, hogy a generáláshoz mely meglévő fájlokra lesz szükség (csak
+tervezés):
+
+-   relatív path
+-   csak létező fájlok
+-   ezek kerülnek majd a files.txt‑be
+-   a .pro fájl is szerepeljen
+
+Példa:
+
+-   CutCalculator.pro
+-   common/registry_engine.h
+-   common/need_calculation_registry.h
+-   workbench/need_calculation_manager.cpp
+
+------------------------------------------------------------------------
+
+5) CHUNK-HANDSHAKE SZABÁLY (adatvesztés ellen)
+
+Amikor a fájlok chunkokban érkeznek, minden chunk után válaszolj:
+
+  „X chunk érkezett. Ez volt az összes?”
+
+És várd a választ:
+
+-   „Igen, ez volt az összes.” → a kontextus teljes
+-   „Nem, jön még.” → várj, ne induljon el semmilyen generálás
+
+A chunkok sorrendje nem garantált, a fájlnévből kell következtetni.
+
+------------------------------------------------------------------------
+
+6) KÓDGENERÁLÁS – CSAK EXPLICIT UTASÍTÁSRA
+
+A kódgenerálás csak akkor indulhat el, ha ezt külön megadom:
+
+  „Indulhat a generálás.”
+
+A generált kód:
+
+-   C++20 + Qt 6.10
+-   Clazy‑tiszta
+-   magyar kommentek, angol terminológiával
+-   snake_case fájlnevek
+-   blokkfejlécek:
+
+    /* ============================================================
+     * 🧩 <Blokk neve>
+     * ============================================================ */
+
+Szabályok:
+
+-   ne térj el a jóváhagyott tervtől
+-   ne generálj extra fájlokat
+-   ne módosíts nem kért részeket
+-   ne legyen „Hunglish”
+
+------------------------------------------------------------------------
+
+7) SNIPPETEK – DIFF-SZERŰ MÓDOSÍTÁSOK
+
+Ha meglévő fájlokat módosítasz, minden módosítás snippet legyen.
+
+Minden snippet előtt:
+
+-   fájlnév (relatív path)
+-   függvénynév vagy környezet
+-   opcionális sor‑támpont
+
+Formátum:
+
+RÉGI:
+
+    <régi kódrészlet pontosan>
+
+ÚJ:
+
+    <új kódrészlet pontosan>
+
+Szabályok:
+
+-   csak a módosított sorok
+-   ne legyen felesleges környezeti kód
+-   ne legyen kommentár, magyarázat
+-   ne legyen extra whitespace
+
+Új kódrészlet beszúrása esetén:
+
+-   egyértelműen írd le, hova kerül (fájl, függvény, környezet)
+-   csak egy ÚJ kódblokk legyen
+
+Teljes törlés esetén:
+
+-   csak jelezd, hogy a megadott blokkot teljesen el kell távolítani
+-   ne adj helyette új kódot
+
+------------------------------------------------------------------------
+
+8) ATOMIKUS PATCH-EK
+
+Minden snippet:
+
+-   egyetlen logikai változtatás
+-   ha több változtatás van, külön snippet:
+
+  #1 – apply first
+  #2 – apply second
+  …
+
+------------------------------------------------------------------------
+
+9) STRICT MODE – NINCS IMPROVIZÁCIÓ AZ IMPLEMENTÁCIÓBAN
+
+-   A tervezési fázisban improvizálhatsz, javasolhatsz alternatívákat.
+-   Az implementációs fázisban:
+    -   NINCS improvizáció
+    -   NEM térhetsz el a jóváhagyott tervtől
+    -   csak azt valósíthatod meg, amit a tervben rögzítettünk.
+
+------------------------------------------------------------------------

@@ -2,6 +2,7 @@
 
 #include <QHash>
 #include <QString>
+#include "common/logger/logger.h"
 
 /**
  * 🧩 BarcodeIndexMixin<Derived, Entity>
@@ -44,11 +45,11 @@ protected:
         }
     }
 
-    // 🔄 load() után hívandó
-    void onAfterLoad()
-    {
+    // 🔄 setAll() után hívandó
+    void onAfterSetAll() {
         buildBarcodeIndex();
     }
+
 
 private:
     QHash<QString, const Entity*> _barcodeIndex;

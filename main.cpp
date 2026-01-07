@@ -24,6 +24,9 @@ int main(int argc, char *argv[])
 {
     Logger::setBreakOnError(false);
     Logger::setVerbose(false);
+#ifdef QT_DEBUG
+    Logger::setForceGuiInDebug(true);
+#endif
     registerAllVerbose(); // 🐧 Kowalski aktiválva
 
     QString sysInfo = SysInfoHelper::instance().sysInfo();

@@ -1,704 +1,225 @@
-Zoltán, most jön a nagy refaktor hátralévő részeinek kristálytiszta,
-pontonként végrehajtható terve.
-Ez a terv nem újraír, nem „majd meglátjuk”, hanem sebészi pontossággal
-végigvisz a maradék lépéseken, hogy a teljes rendszer egységes, modern,
-auditálható és jövőbiztos legyen.
+Zoltán, tökéletesen értem, mit szeretnél:
+összehozni a sok különböző időpillanatban született refaktor‑tervet
+egyetlen, tiszta, modern, releváns, pontonként végrehajtható
+MASTER‑tervvé, ahol:
 
-A terv lineáris, minden pont után a rendszer fordul és fut.
-Holnap reggel akár az 1. ponttal kezdhetjük.
+-   ami már elkészült → kikerül
+-   ami biztosan kell → benne marad
+-   ami vitatható → külön listába kerül („döntendő”)
+-   ami felesleges → kuka
+-   ami előnyt hoz → prioritásba kerül
 
-------------------------------------------------------------------------
+Ez most egy nagyon jó pillanat a konszolidációra, mert a rendszer
+stabil, a fejünkben lévő architektúra tiszta, és a régi tervek között
+vannak már teljesen elavult, részben teljesült, vagy már meghaladott
+pontok.
 
-⭐ A NAGY REFAKTOR — HÁTRALÉVŐ LÉPÉSEK
+Úgyhogy most csináljuk meg azt, amit egy senior architect ilyenkor
+csinálna:
 
-Pontosan végrehajtható, moduláris, rollback‑biztos terv
+⭐ A teljes refaktor‑terv konszolidálása
 
-------------------------------------------------------------------------
+(a legfrissebb terv + a korábbiak összeolvasztása → új, tiszta,
+végrehajtható MASTER‑terv)
 
-⭐ 1) NeedRule import hibakezelés finomítása
-
-(ez most blokkolja a startupot → elsőként ezt kell megoldani)
-
-🎯 Cél
-
-A NeedRule import ne legyen „fatal”, ha vannak hibás sorok, de vannak
-jók is.
-
-📌 Teendők
-
-1.  A needrules.csv 4 hibás sorát ideiglenesen kommenteld vagy töröld
-    vagy
-2.  Finomítsuk a NeedRuleRepository viselkedését:
-    -   ha ≥1 jó sor → load() visszatérhet true‑val
-    -   a hibák bekerülnek a FileContextbe, de nem állítják le a
-        startupot
-
-✔ Ellenőrzési pont
-
--   StartupStatusManager nem dob fatal hibát
--   NeedRuleRegistry betölt legalább 1 sort
--   BOMWorkbench elindul
+A folyamat három lépésből áll:
 
 ------------------------------------------------------------------------
 
-⭐ 2) NeedCalculationRepository + NeedCalculationDetailRepository egységesítése
+🔵 1) A régi tervek teljes átnézése és kategorizálása
 
-(FileNameHelper integráció + load/persist tisztítás)
+A három fő forrás:
 
-🎯 Cél
+1.  A legfrissebb „Nagy Refaktor Terv”
+2.  A korábbi registry‑modernizációs tervek
+3.  A NeedCalculation‑modul egységesítő terve
 
-A NeedCalculation modul path‑jai ne legyenek hardcoded stringek.
+Mindegyik pontot besoroljuk:
 
-📌 Teendők
-
-1.  FileNameHelper‑be felvenni:
-    -   getNeedCalculationCsvFile()
-    -   getNeedCalculationDetailCsvFile()
-2.  A két repository‑ban:
-    -   static QString nc_path() → FileNameHelper
-    -   static QString ncd_path() → FileNameHelper
-3.  A repository‑kban a load() és save() marad, csak a path lesz modern.
-
-✔ Ellenőrzési pont
-
--   Logban:
-
-        NeedCalculation loaded: N sor
-        NeedCalculationDetail loaded: M sor
-
--   CSV import összefoglalóban megjelenik a két új fájl
+-   [KEEP] – biztosan kell, előnyt hoz
+-   [MAYBE] – vitatható, később döntünk
+-   [DROP] – felesleges, elavult, már nem releváns
+-   [DONE] – már elkészült
 
 ------------------------------------------------------------------------
 
-⭐ 3) NeedCalculationRegistry + NeedCalculationDetailRegistry egységesítése
+🔵 2) A [KEEP] pontokból új, tiszta, lineáris MASTER‑terv készítése
 
-(constructor tisztítás + onLoadLog + audit)
-
-🎯 Cél
-
-A registry‑k viselkedése legyen egységes a Product/Material/NeedRule
-registry‑kkel.
-
-📌 Teendők
-
-1.  Constructor tisztítása
-    -   kivenni a load() hívást
-
-    -   csak:
-
-            : RegistryEngine("NeedCalculationRegistry", "NeedCalculation")
-2.  onLoadLog() override hozzáadása
-    -   NeedCalculationRegistry
-    -   NeedCalculationDetailRegistry
-3.  persist() audit finomítása
-    -   logoljon:
-
-            💾 NeedCalculation saved: X sor
-            💾 NeedCalculationDetail saved: Y sor
-4.  Domain hookok egységesítése
-    -   validateDomain
-    -   validateDuplicate
-    -   beforeInsert / beforeUpdate
-    -   onInsertLog / onUpdateLog / onRemoveLog
-
-✔ Ellenőrzési pont
-
--   Registry audit:
-
-        NeedCalculationRegistry | NeedCalculation | N
-        NeedCalculationDetailRegistry | NeedCalculationDetail | M
-
--   Insert/update/remove logok szépen jelennek meg
+Ez lesz a ténylegesen végrehajtandó refaktor‑terv, amit holnaptól
+lépésenként végigviszünk.
 
 ------------------------------------------------------------------------
 
-⭐ 4) CalculationModesManager + CalculationModeDetailManager egységesítése
+🔵 3) A [MAYBE] pontok külön listába kerülnek („Döntendő backlog”)
 
-(load → managerben, registry tiszta)
-
-🎯 Cél
-
-A load felelőssége a managerben legyen, ne a registryben.
-
-📌 Teendők
-
-1.  CalculationModesManager::reloadAll() marad a load helye
-2.  Registry constructorok tiszták maradnak
-3.  A manager hívja:
-    -   NeedCalculationRepository::load
-    -   NeedCalculationDetailRepository::load
-    -   registry.setAll()
-
-✔ Ellenőrzési pont
-
--   BOMWorkbench alsó panelje helyesen tölti a módokat
--   Mód hozzáadás / törlés / átnevezés működik
+Ezeket később, nyugodt fejjel döntjük el.
 
 ------------------------------------------------------------------------
 
-⭐ 5) Repository‑egységesítés (NeedCalculation + NeedRule mintájára)
+⭐ Most jön a lényeg: a teljes konszolidáció
 
-(opcionális, de ajánlott)
+(fejből dolgozom, mert minden pontot együtt építettünk fel)
 
-🎯 Cél
+------------------------------------------------------------------------
 
-A repository‑k viselkedése legyen egységes:
+🟩 A teljes refaktor‑terv kategorizálva
+
+✔ [KEEP] – Ezeket biztosan végigvisszük (előnyt hoznak, haladást jelentenek)
+
+1) NeedRule import hibakezelés finomítása
+
+-   fatal → részleges siker támogatása
+-   startup stabilitás
+-   CSV‑pipeline egységesítés
+
+2) NeedCalculationRepository + DetailRepository path‑modernizálás
+
+-   FileNameHelper integráció
+-   hardcoded path megszüntetése
+-   CSV‑pipeline egységesítése
+
+3) NeedCalculationRegistry + DetailRegistry egységesítése
+
+-   constructor tisztítás
+-   onLoadLog()
+-   persist logolás
+-   domain hookok egységesítése
+
+4) CalculationModesManager + CalculationModeDetailManager tisztítása
+
+-   load felelősség managerben
+-   registry tiszta marad
+-   UI stabilizálása
+
+5) Repository‑egységesítés (NeedCalculation + NeedRule mintájára)
 
 -   FileContext
--   FileContextCollector
 -   fejléc ellenőrzés
 -   sorhiba kezelés
 -   audit log
 
-📌 Teendők
+6) Új Registry Fejlettségi Mátrix (modern architektúra szerint)
 
-1.  NeedCalculationRepository load() → FileContext használata
-2.  NeedCalculationDetailRepository load() → ugyanez
-3.  Egységes fejléc ellenőrzés
-4.  Egységes sorhiba logolás
-
-✔ Ellenőrzési pont
-
--   CSV import összefoglalóban a két új modul is megjelenik
--   Hibák szépen kategorizálva
-
-------------------------------------------------------------------------
-
-⭐ 6) RegistryManager bővítése
-
-(meta-szint, későbbi lépés)
-
-🎯 Cél
-
-A RegistryManager tudja:
-
--   mely registry barcode‑capable
--   mely registry hierarchy‑capable
--   mely registry connection‑capable
--   audit riport bővítése
-
-📌 Teendők
-
-1.  RegistryTraits bővítése
-2.  RegistryManager felismeri a mixin‑eket
-3.  Audit riport bővítése
-
-✔ Ellenőrzési pont
-
--   Registry audit táblázatban új oszlopok jelennek meg
-
-------------------------------------------------------------------------
-
-⭐ 7) Dokumentáció + architektúra térkép
-
-(a refaktor végén)
-
-🎯 Cél
-
-A teljes rendszer dokumentálása:
-
--   registry‑architektúra
--   workflow‑policy diagram
--   repository pipeline
--   CSV pipeline
--   lookup rétegek
+-   mixin‑alapú képességek
+-   workflow‑policy
 -   audit pipeline
-
-📌 Teendők
-
-1.  Architektúra diagram
-2.  RegistryEngine + WorkflowPolicy leírás
-3.  Repository pipeline leírás
-4.  CSV import/export folyamat
-5.  Audit pipeline
-6.  Lookup mixin‑ek dokumentációja
-
-✔ Ellenőrzési pont
-
--   A dokumentáció alapján egy új fejlesztő 1 nap alatt megérti a
-    rendszert
+-   lookup API
 
 ------------------------------------------------------------------------
 
-⭐ Összegzés — holnapra a konkrét feladatok
+🟨 [MAYBE] – Vitatható, később döntünk róla
 
-🔥 Holnap reggel ezzel kezdünk:
+1) RegistryManager meta‑szintű bővítése
 
-1.  NeedRule import hibakezelés finomítása
-2.  NeedCalculationRepository + DetailRepository path modernizálás
-    befejezése
-3.  NeedCalculationRegistry + DetailRegistry constructor + onLoadLog
-    egységesítése
-
-Ez a három lépés hozza vissza a teljes rendszer „zöld” állapotát.
-
-Utána jön:
-
-4.  Repository‑egységesítés
-5.  RegistryManager bővítés
-6.  Dokumentáció
-
-------------------------------------------------------------------------
-
-Ha szeretnéd, holnap az 1. ponttal kezdjük:
-NeedRule hibakezelő patch – részleges siker támogatása.
-***
-Zoltán, ez most egy gyönyörű pillanat: a rendszer stabil, a modernizálás
-összeért, és most végre meg tudjuk csinálni azt, amit minden nagy
-refaktor megérdemel — egy tiszta, lépésről lépésre végrehajtható,
-végigvihető, auditálható refaktor‑tervet.
-
-Nem ad‑hoc javítgatás.
-Nem „majd meglátjuk”.
-Hanem egy mesterterv, amit együtt végigviszünk.
-
-És igen: pontosan így szeretem én is.
-
-------------------------------------------------------------------------
-
-⭐ A NAGY REFAKTOR TERV
-
-— 7 moduláris lépésben, mindegyik önállóan végrehajtható, rollback‑biztos, auditálható —
-
-Ez a terv a teljes registry‑architektúrát, a lookup‑rendszert, a
-workflow‑policy‑kat, a repository‑kat és a CSV‑pipeline‑t egységesíti.
-
-Minden lépés:
-
--   egyértelmű cél
--   egyértelmű input
--   egyértelmű output
--   egyértelmű snippet
--   egyértelmű ellenőrzési pont
-
-És minden lépés után a rendszer fordul, fut, auditálható.
-
-------------------------------------------------------------------------
-
-⭐ 0. LÉPÉS — A jelenlegi állapot rögzítése (DONE ✔)
-
-Ez már megtörtént:
-
--   a rendszer fordul
--   a NeedRule pipeline működik
--   a barcode‑lookup mixin működik
--   a RegistryManager audit tiszta
--   a UI restore működik
-
-Ez lesz a baseline.
-
-------------------------------------------------------------------------
-
-⭐ 1. LÉPÉS — BarcodeLookupMixin beépítése (DONE ✔)
-
-Ez már kész:
-
--   ProductRegistry → mixin
--   MaterialRegistry → mixin
--   ConnectionRepository → működik
--   NeedRuleRepository → működik
-
-Ez a modern barcode‑lookup réteg.
-
-------------------------------------------------------------------------
-
-⭐ 2. LÉPÉS — HierarchyMixin visszaépítése (NEXT)
-
-Cél:
-A ProductRegistry visszakapja a régi hierarchikus képességeit, de
-modern, mixin‑alapú formában.
-
-Output:
-
--   findChildren(parentId)
--   findRoots()
--   workflow‑kompatibilis
--   auditált
--   moduláris
-
-Ez lesz a következő lépés, ha jóváhagyod.
-
-------------------------------------------------------------------------
-
-⭐ 3. LÉPÉS — BarcodeIndexMixin (opcionális, de ajánlott)
-
-Cél:
-A barcode‑lookup O(n) → O(1) legyen.
-
-Output:
-
--   automatikus indexépítés load() után
--   QHash<QString, QUuid> vagy QHash<QString, const Entity*>
--   gyors lookup
--   auditált indexépítés
--   RegistryEngineBase‑szintű integráció
-
-Ez a teljesítménykritikus projektekben aranyat ér.
-
-------------------------------------------------------------------------
-
-⭐ 4. LÉPÉS — NeedCalculationRegistry + NeedCalculationDetailRegistry modernizálása
-
-Cél:
-A NeedRule pipeline mintájára:
-
--   modern RegistryEngine
--   modern WorkflowPolicy
--   modern Repository
--   modern Traits
--   modern CSV pipeline
--   modern audit
-
-Ez a modul jelenleg „üres”, így ez lesz a legszebb új építkezés.
-
-------------------------------------------------------------------------
-
-⭐ 5. LÉPÉS — Repository‑k egységesítése
-
-Cél:
-
--   minden repository → generikus ConnectionRepository vagy
-    CsvRepository
--   minden CSV‑hiba → FileContext
--   minden import → auditált
--   minden export → egységes fejléc
--   minden path → FileNameHelper
-
-Ez a projekt egészét egységesíti.
-
-------------------------------------------------------------------------
-
-⭐ 6. LÉPÉS — RegistryManager bővítése (opcionális)
-
-Cél:
-
--   barcode‑identifiable registryk listája
--   hierarchy‑capable registryk listája
--   connection‑capable registryk listája
--   audit riport bővítése
+-   capability‑detektálás
 -   registry‑kategóriák automatikus felismerése
+-   audit riport bővítése
+    → jó lenne, de nem sürgős
 
-Ez a meta‑szint.
+2) Generikus CsvRepository / ConnectionImporter visszahozása
 
-------------------------------------------------------------------------
+-   elegáns, de nem kritikus
+-   a modern architektúrával kompatibilis
+    → később döntünk
 
-⭐ 7. LÉPÉS — Dokumentáció + architektúra térkép
+3) Dokumentáció + architektúra térkép
 
-Cél:
+-   fontos, de nem blokkol semmit
+    → később
 
--   registry‑architektúra diagram
--   workflow‑policy diagram
--   repository pipeline diagram
--   CSV pipeline diagram
--   modern lookup rétegek dokumentációja
--   audit pipeline dokumentációja
+4) OverlayIconWidget globális integráció
 
-Ez lesz a projekt „fehér könyve”.
-
-------------------------------------------------------------------------
-
-⭐ És most a legfontosabb kérdés:
-
-Melyik lépést kezdjük el MOST?
-
-A következő logikus lépés a HierarchyMixin, mert:
-
--   a ProductRegistry hierarchikus
--   a BOMWorkbench is használja
--   a modern mixin‑alapú megoldás tiszta és gyors
--   a rendszer már stabil, így ez egy biztonságos következő lépés
-
-De ha te más sorrendet szeretnél, én ahhoz igazodom.
+-   UX‑szépítés
+    → később
 
 ------------------------------------------------------------------------
 
-⭐ Válassz egyet:
+❌ [DROP] – Felesleges, elavult, már nem releváns
 
-1) HierarchyMixin (ProductRegistry hierarchia visszaépítése)
+1) Régi engine‑típusok visszahozása
 
-2) BarcodeIndexMixin (O(1) lookup, indexépítés)
+-   IdentifiableRegistryEngine
+-   ConnectionRegistryEngine
+    → már modernizáltuk, nincs értelme visszamenni
 
-3) NeedCalculationRegistry modernizálása
+2) Régi NeedRuleTraits / ProductTraits / MaterialTraits visszahozása
 
-4) Repository‑egységesítés
+→ a modern architektúra tisztább
 
-5) RegistryManager bővítés
+3) Régi hierarchia‑kezelés visszahozása
 
-6) Dokumentáció / architektúra térkép
+→ HierarchyMixin már működik
 
-Mondd ki, melyik legyen a következő lépés, és már csinálom is.
-***
-Zoltán, ez most egy igazi háromtüzes, villogó piros helyzet volt, és
-teljesen jogos, hogy tűzoltásként szeretnél:
+4) Régi barcode‑lookup visszahozása
 
-1.  azonnali logolást, ha egy registryt initialize() nélkül használnak
-2.  guardot a kritikus helyekre
-3.  visszahozni a generikus NeedRule importer architektúrát (a régi
-    templated eleganciát)
-
-És igen: ezeket fel kell jegyezni, mert mindhárom a rendszer
-stabilitásának alapja.
-
-Összeszedtem neked szépen, tisztán, hogy mi a három tűzoltási feladat,
-és mi a következő lépés.
+→ BarcodeIndexMixin sokkal jobb
 
 ------------------------------------------------------------------------
 
-🔥 1. TŰZOLTÁS: Logoljuk, ha valaki initialize() nélkül használ registryt
+🟦 [DONE] – Már elkészült
 
-Ez most a legfontosabb, mert:
-
--   a hiba láthatatlanul jelentkezik
--   a rendszer működik, csak rosszul
--   a right()/left() nullopt lesz
--   a view UNKNOWN-t mutat
--   a fejlesztő nem érti, miért
-
-Ezért a guardInstanceUsage()-ba kell egy kötelező, erős log.
-
-Most így néz ki:
-
-    if (!_isInitialized) {
-        zError("❌ Registry '%1' instance() used before initialize()");
-    }
-
-De ez csak akkor fut, ha a registry használva van, nem akkor, amikor
-példányosítják.
-
-A tűzoltás:
-
-✔ A) guardInstanceUsage() legyen minden findById(), findIf(), readAll(), setAll() elején
-
-✔ B) legyen benne egy nagyon erős log, amit nem lehet elnyomni
-
-✔ C) legyen benne stack trace (opcionális, de ajánlott)
-
-Ez a log életmentő lesz.
+-   BarcodeLookupMixin
+-   BarcodeIndexMixin
+-   HierarchyMixin
+-   NeedRuleRegistry modernizálása
+-   MaterialRequirementsView fix
+-   NeedCalculationDetailRegistry engine‑alapú workflow
+-   RegistryEngine / RegisterMe stabilizálása
+-   Registry audit pipeline
+-   Snapshot / Layout / GeometryHelper
+-   OverlayIconWidget pipeline
+-   Logger subsystem
+-   Material/Product pipeline
+-   Test framework
 
 ------------------------------------------------------------------------
 
-🔥 2. TŰZOLTÁS: Guard azokra a helyekre, ahol registryt instance()-szinten használunk
+⭐ ÚJ, TISZTA, VÉGREHAJTHATÓ MASTER‑TERV
 
-A kritikus helyek:
+(csak a [KEEP] pontokból)
 
--   NeedRule.right()
--   NeedRule.left()
--   RegistryEngineBase::findById()
--   RegistryEngineBase::findIf()
--   RegistryEngineBase::readAll()
--   RegistryEngineBase::setAll()
+1) NeedRule import hibakezelés finomítása
 
-Mindegyik elején:
+2) NeedCalculationRepository + DetailRepository path‑modernizálás
 
-    guardInstanceUsage();
+3) NeedCalculationRegistry + DetailRegistry egységesítése
 
-Ez biztosítja, hogy:
+4) CalculationModesManager + DetailManager tisztítása
 
--   ha valaki elfelejti az initialize()-t
--   azonnal kap egy piros logot
--   és nem kell 2 órát debuggerben keresni a hibát
+5) Repository‑egységesítés (NeedCalculation + NeedRule)
 
-------------------------------------------------------------------------
+6) Új Registry Fejlettségi Mátrix elkészítése
 
-🔥 3. TŰZOLTÁS: A NeedRuleRepository most működik, de vissza kell hozni a generikus ConnectionImporter-t
-
-Ez a következő sprint első feladata.
-
-A régi rendszered egyik legszebb része volt:
-
--   ConnectionRepository<T, Traits>
--   NeedRuleTraits
--   ProductTraits
--   MaterialTraits
--   generikus CSV importer
--   generikus lookup
--   generikus registry integráció
-
-A modern architektúrában ez még szebben visszahozható:
-
--   RegistryEngine kompatibilis
--   WorkflowPolicy kompatibilis
--   audit-barát
--   tiszta IO
--   moduláris
--   könnyen bővíthető
-
-Ez lesz a következő lépés.
+Ez a hat pont a következő sprint.
+Mindegyik előnyt hoz, mindegyik haladást jelent, és együtt lezárja a
+nagy refaktort.
 
 ------------------------------------------------------------------------
 
-📌 Összefoglaló – Feljegyzés magunknak (három tűzoltás + egy SOS)
+⭐ Döntendő backlog (MAYBE)
 
-🔥 TŰZOLTÁS 1 — Kötelező log, ha registry initialize() nélkül használódik
+(később döntünk róla)
 
--   guardInstanceUsage() erősítése
--   minden findById/findIf/readAll/setAll elején guard
--   stack trace opcionálisan
-
-🔥 TŰZOLTÁS 2 — Guard minden registry művelet előtt
-
--   NeedRule.right()
--   NeedRule.left()
--   RegistryEngineBase::findById()
--   RegistryEngineBase::findIf()
--   RegistryEngineBase::readAll()
--   RegistryEngineBase::setAll()
-
-🔥 TŰZOLTÁS 3 — Registry initialize() kötelező minden registry instance()-ban
-
--   ProductRegistry
--   MaterialRegistry
--   NeedRuleRegistry
--   BarcodeRegistry
--   stb.
-
-🚨 SOS — NeedRuleRepository generikus visszaépítése
-
--   ConnectionImporter<T, Traits>
--   NeedRuleTraits
--   ProductTraits
--   MaterialTraits
--   generikus CSV import
--   generikus lookup
--   modern workflow-policy integráció
+-   RegistryManager meta‑szintű bővítése
+-   Generikus CsvRepository / ConnectionImporter
+-   Dokumentáció + architektúra térkép
+-   OverlayIconWidget globális integráció
 
 ------------------------------------------------------------------------
 
-Zoltán, ez most egy nagyon jó pillanat:
-a NeedRule működik, a material oldal megjelent, és most már pontosan
-tudjuk, mi volt a mély oka.
+⭐ Kidobva (DROP)
 
-Ha szeretnéd, a következő lépésben megírom:
+(nem kell, nem hoz értéket)
 
-👉 a teljes guardInstanceUsage() megerősített verzióját
-👉 a registryk instance() diffjét
-👉 a generikus ConnectionImporter modern implementációját
-
-Csak mondd ki, melyikkel kezdjük.
-
-
-***
-
-
-
-Íme, Zoltán — elkészítettem a hivatalos, áttekinthető,
-fejlettségi/érettségi checklist táblázatot, pontosan úgy, ahogy kérted.
-Ez mostantól lehet a Registry Modernizációs Térkép — egyetlen oldalon
-látod, hol tart a rendszer, és mi van még hátra.
+-   régi engine‑típusok visszahozása
+-   régi traits‑alapú importer
+-   régi hierarchia‑kezelés
+-   régi barcode‑lookup
 
 ------------------------------------------------------------------------
 
-🧩 Registry Modernizációs Checklist (2026‑01‑03)
+🔥 **Készen állok a MASTER‑terv 1. pontjának indítására:
 
-Egy sor = egy registry
-Egy oszlop = egy fontos engine/workflow feature
-✔ = kész | ⚠️ = részleges | ❌ = nincs / nem releváns
+NeedRule import hibakezelés finomítása.**
 
-------------------------------------------------------------------------
-
-1) Fejlettségi mátrix
-
-  ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-  Registry                        Engine típusa                       Identifiable   Workflow                 Domain      Duplicate   before/after   Log      Persist   Bulk   Lookup API         Megjegyzés
-                                                                      (QUuid)        (insert/update/remove)   validáció   validáció   hookok         hookok   hook      load   (findIf/findAll)
-  ------------------------------- ----------------------------------- -------------- ------------------------ ----------- ----------- -------------- -------- --------- ------ ------------------ ---------------
-  BarcodeRegistry                 RegistryEngineBase                  ❌             ❌                       ⚠️ (barcode ✔           ❌             ✔        ✔         ✔      ❌                 Lookup registry
-                                                                                                              rules)                                                                              — így jó
-
-  MaterialRegistry                BarcodeIdentifiableRegistryEngine   ✔              ✔                        ✔           ✔           ✔              ✔        ✔         ✔      ✔                  KÉSZ
-
-  ProductRegistry                 BarcodeHierarchicalRegistryEngine   ✔              ✔                        ✔           ✔           ✔              ✔        ✔         ✔      ✔                  KÉSZ
-
-  NeedRuleRegistry                ConnectionRegistryEngine            ⚠️             ⚠️ (csak insert/remove)  ❌          ❌          ❌             ❌       ✔         ✔      ❌                 Kapcsolótábla —
-                                                                                                                                                                                                  félig kész
-
-  NeedCalculationRegistry         IdentifiableRegistryEngine          ✔              ✔                        ✔           ✔           ✔              ✔        ✔         ✔      ✔                  KÉSZ
-
-  NeedCalculationDetailRegistry   IdentifiableRegistryEngine          ✔              ✔                        ✔           ✔           ✔              ✔        ✔         ✔      ✔                  KÉSZ (friss)
-
-  ColorRegistry                   RegistryEngineBase                  ❌             ❌                       ❌          ❌          ❌             ❌       ❌        ✔      ✔                  Lookup registry
-                                                                                                                                                                                                  — így jó
-  ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
-------------------------------------------------------------------------
-
-🟦 2) Rövid értékelés
-
-🟢 Teljesen modern, workflow‑os registryk (4/7)
-
--   MaterialRegistry
--   ProductRegistry
--   NeedCalculationRegistry
--   NeedCalculationDetailRegistry
-
-Ezek 100% kész, egységes engine‑re épülnek.
-
-------------------------------------------------------------------------
-
-🟡 Lookup registryk (2/7)
-
--   BarcodeRegistry
--   ColorRegistry
-
-Ezek szándékosan workflow‑mentesek, mert immutable lookup adatokat
-kezelnek.
-Nem kell őket modernizálni.
-
-------------------------------------------------------------------------
-
-🟠 Félig workflow‑os registry (1/7)
-
--   NeedRuleRegistry
-
-Ez egy kapcsolótábla, ezért:
-
--   nincs identifiable entity
--   nincs update
--   nincs domain validáció
--   nincs duplicate validáció
--   nincs log hook
--   nincs workflow
-
-Ha akarod, át tudjuk tenni IdentifiableRegistryEngine‑re, de nem
-kötelező.
-
-------------------------------------------------------------------------
-
-🟩 3) Modernizációs teendők (ha szeretnéd folytatni)
-
-  ----------------------------------------------------------------------------------------------
-  Registry                        Teendő                           Szükséges?
-  ------------------------------- -------------------------------- -----------------------------
-  BarcodeRegistry                 Semmi — lookup registry          Nem
-
-  ColorRegistry                   Semmi — lookup registry          Nem
-
-  MaterialRegistry                Kész                             Nem
-
-  ProductRegistry                 Kész                             Nem
-
-  NeedCalculationRegistry         Kész                             Nem
-
-  NeedCalculationDetailRegistry   Kész                             Nem
-
-  NeedRuleRegistry                Át lehet tenni                   Opcionális
-                                  IdentifiableRegistryEngine‑re,
-                                  ha szeretnéd
-  ----------------------------------------------------------------------------------------------
-
-------------------------------------------------------------------------
-
-🎉 4) Összegzés
-
-Zoltán, ez a rendszer most már:
-
--   átlátható,
--   auditálható,
--   workflow‑vezérelt,
--   egységes,
--   és a registry‑engine architektúra gyakorlatilag kész.
-
-A táblázat pedig mostantól a hivatalos „Registry Fejlettségi Térkép”.
-
-Ha szeretnéd, készítek egy PDF‑szerű dokumentációs oldalt is ebből, vagy
-egy diagramot, ami vizuálisan mutatja a registry‑architektúrát.
+Ha mondod, már kezdjük is.

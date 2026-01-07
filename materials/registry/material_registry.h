@@ -31,7 +31,12 @@ public:
     QVector<MaterialMaster> findByColor(const NamedColor& color) const;
 
 protected:
-    void onLoadLog() override;
+    void onAfterSetAll() override
+    {
+        // a mixin hookját hívjuk
+        BarcodeIndexMixin<MaterialRegistry, MaterialMaster>::onAfterSetAll();
+    }
+
 private:
     MaterialRegistry()
         : RegistryEngine("MaterialRegistry", "MaterialMaster")

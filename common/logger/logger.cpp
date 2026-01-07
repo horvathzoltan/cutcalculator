@@ -1,11 +1,13 @@
 #include "log_manager.h"
 #include "logger.h"
+#include "logger_gui.h"
 #include <QDebug>
 #include <csignal>
 #ifdef Q_OS_LINUX
 #include <execinfo.h>
 #include <cxxabi.h>
 #include <QDebug>
+#include <QApplication>
 #endif
 
 Logger::ErrLevel Logger::_errlevel = Logger::ErrLevel::INFO;
@@ -13,8 +15,11 @@ Logger::DbgLevel Logger::_dbglevel = Logger::DbgLevel::TRACE;
 bool Logger::_isBreakOnError = true;
 bool Logger::_isVerbose = true;
 //bool Logger::_isInited = true; // 🔴 alapból működő;
+bool Logger::_forceGuiInDebug = false;
+bool Logger::_hasPendingFatal = false;
+QStringList Logger::_pendingFatalMessages = {};
 
-std::function<void(const QString& str)> Logger::_func = nullptr;
+//std::function<void(const QString& str)> Logger::_func = nullptr;
 
 // void Logger::Init(ErrLevel errlevel,
 //                   DbgLevel dbglevel,
@@ -115,18 +120,18 @@ void Logger::dbg_message(DbgLevel level, const QString& msg)
     // központi fájlba
     LogManager::instance().write(LogManager::Channel::Errors, msg);
 
-    if(_func)
-    {
-        _func(msg);
-    }
+    // if(_func)
+    // {
+    //     _func(msg);
+    // }
 
-#ifdef Q_OS_LINUX
-    // 🔴 Végzetes hiba → kilépés
-    if((level ==DbgLevel::DEBUG) && _isBreakOnError){
-        std::exit(EXIT_FAILURE);
-        //std::raise(SIGTRAP);
-    }
-#endif
+// #ifdef Q_OS_LINUX
+//     // 🔴 Végzetes hiba → kilépés
+//     if((level ==DbgLevel::DEBUG) && _isBreakOnError){
+//         std::exit(EXIT_FAILURE);
+//         //std::raise(SIGTRAP);
+//     }
+// #endif
 #endif
 }
 
@@ -135,7 +140,6 @@ void Logger::err_message(ErrLevel level, const QString& msg)
 {
 //    GUIModes::Modes guimode;
 
-#ifdef QT_DEBUG
 #ifdef Q_OS_WIN
     auto a = __FUNCTION__;
 #elif defined(Q_OS_LINUX)
@@ -162,18 +166,59 @@ void Logger::err_message(ErrLevel level, const QString& msg)
 
     // központi fájlba
     LogManager::instance().write(LogManager::Channel::Errors, msg);
+}
 
-    if(_func)
-    {
-        _func(msg);
-    }
-#ifdef Q_OS_LINUX
-    // 🔴 Végzetes hiba → kilépés
-    if((level==ErrLevel::ERROR_) && _isBreakOnError){
-        std::exit(EXIT_FAILURE);
-        //std::raise(SIGTRAP);
-    }
+void Logger::err_message2(ErrLevel level, const QString& msg)
+{
+    if (level == ErrLevel::ERROR_) {
+        if (!QApplication::instance()) {
+            Logger::addPendingFatal(msg);
+        } else {
+#ifdef QT_DEBUG
+
+            if (_forceGuiInDebug) {
+                Logger::show_critical_dialog(msg);
+            }
+            //if (_isBreakOnError) {
+                std::exit(EXIT_FAILURE);
+            //}
+#else
+            Logger::show_critical_dialog(msg);
+            std::exit(EXIT_FAILURE);
 #endif
+        }
+    }
+}
+
+void Logger::addPendingFatal(const QString& msg) {
+    _pendingFatalMessages.append(msg);
+}
+
+void Logger::flushPendingFatalIfAny()
+{
+    if (_pendingFatalMessages.isEmpty())
+        return;
+
+    // Ha nincs QApplication, akkor még mindig nem tudunk GUI-t mutatni
+    if (!QApplication::instance()) {
+        // Ilyenkor NEM exitelünk, csak várunk tovább
+        return;
+    }
+
+#ifdef QT_DEBUG
+    // Debug: opcionális GUI dialog
+    if (_forceGuiInDebug) {
+        for (const auto& msg : _pendingFatalMessages) {
+            Logger::show_critical_dialog(msg);
+        }
+    }
+    std::exit(EXIT_FAILURE);
+#else
+    // Release: mindig GUI dialog + exit
+    for (const auto& msg : _pendingFatalMessages) {
+        Logger::show_critical_dialog(msg);
+    }
+    std::exit(EXIT_FAILURE);
 #endif
 }
 
@@ -331,21 +376,12 @@ void Logger::message(const QString& msg)
 
 
 void Logger::error2(const QString& msg,  const LocInfo& locinfo){
-    // if(!_isInited) {
-    //     Logger::message(DEFMSG+"\n" + msg);
-    //     return;
-    // }
-    //if(_errlevel>ErrLevel::ERROR_) return;
-
     auto li = locinfo.ToString();
     auto st = Logger::zStackTrace();
 
     auto msg2 = ToString(ErrLevel::ERROR_, msg, li, st);
     err_message(ErrLevel::ERROR_, msg2);
-
-    // 🔴 Végzetes hiba → kilépés
-    //std::exit(EXIT_FAILURE);
-    //std::abort(); // azonnali kilépés, core dump
+    err_message2(ErrLevel::ERROR_, msg);
 }
 
 LogStream Logger::warning2(const LocInfo& l){
@@ -398,4 +434,11 @@ void Logger::trace2(const LocInfo& locinfo){
     auto li = locinfo.ToString();
     auto msg2 = ToString(DbgLevel::TRACE, nullptr, li, nullptr);
     dbg_message(DbgLevel::TRACE, msg2);
+}
+
+/* ============================================================
+ * 🧩 Logger::show_critical_dialog – delegálás GUI modulnak
+ * ============================================================ */
+void Logger::show_critical_dialog(const QString& msg) {
+    LoggerGui::show_critical_dialog(msg);
 }

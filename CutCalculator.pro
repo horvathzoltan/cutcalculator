@@ -18,6 +18,7 @@ SOURCES += \
     barcodes/validator/barcode_validator.cpp \
     calcmodes/dialogs/mode_name_dialog.cpp \
     common/layout/layout_default_store.cpp \
+    common/logger/logger_gui.cpp \
     common/snapshot/snapshot_manager.cpp \
     common/system/verbose_class_initializer.cpp \
     common/system/verbose_manager.cpp \
@@ -83,6 +84,7 @@ HEADERS += \
     calcmodes/dialogs/mode_name_dialog.h \
     calcmodes/repository/need_calculation_traits.h \
     common/layout/layout_default_store.h \
+    common/logger/logger_gui.h \
     common/model/barcode_base.h \
     common/model/barcode_hierarchical_entity.h \
     common/model/barcode_identifiable_entity.h \
@@ -228,6 +230,7 @@ DISTFILES += \
     run_3_3_Prompt_CodeGeneration.txt \
     run_3_4_Prompt_Refactor.txt \
     run_3_5_Prompt_SnippletPatching.txt \
+    run_3_6_PromptHybrid.txt \
     run_4_1_Rendszerterv.txt \
     run_4_2_RendszerKomponensLista.txt \
     run_4_AnyagszuksegletSzamitas.txt \

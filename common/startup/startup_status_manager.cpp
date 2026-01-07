@@ -18,10 +18,8 @@ bool StartupStatusManager::handle(const StartupStatus& status)
 
     // Kritikus hiba: log + GUI + leállás.
     if (!status.isSuccess()) {
-        zError(status.errorMessage());
-
         const QString summary = makeErrorSummary(status.errorMessage());
-        QMessageBox::critical(nullptr, QStringLiteral("Hiba"), summary);
+        zError(summary);
         return false;
     }
 
