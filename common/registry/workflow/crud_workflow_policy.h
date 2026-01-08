@@ -105,4 +105,27 @@ struct CrudWorkflowPolicy : BaseWorkflowPolicy
             return true;
         });
     }
+
+
+    // template<typename Registry>
+    // static bool remove(Registry& reg, const QUuid& leftId, const QUuid& rightId)
+    // {
+    //     return run("remove-pair", [&]{
+    //         beforeOperation(reg, "remove-pair");
+
+    //         if (!reg.beforeRemovePair(leftId, rightId))
+    //             return false;
+
+    //         if (!reg.removeInternal(leftId, rightId))
+    //             return false;
+
+    //         reg.afterRemovePair(leftId, rightId);
+    //         reg.onRemovePairLog(leftId, rightId);
+
+    //         persist(reg);
+    //         afterOperation(reg, "remove-pair");
+    //         return true;
+    //     });
+    // }
+
 };

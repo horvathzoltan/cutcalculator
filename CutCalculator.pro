@@ -213,7 +213,7 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 DISTFILES += \
     README.md \
     run_1_1_AllapotTabla.txt \
-    run_1_2_RegistryAllapot.txt \
+    run_1_2_BugList.txt \
     run_1_3_RegistryRefactor.txt \
     run_1_4_DailySync.txt \
     run_2_1_AIDevelopmentHandbook.txt \
@@ -222,6 +222,7 @@ DISTFILES += \
     run_2_3_2_Prompt_DailySync.txt \
     run_2_3_3_Prompt_ReleaseNotes.txt \
     run_2_3_4_Prompt_SprintReview.txt \
+    run_2_3_5_Prompt_BugList.txt \
     run_2_5_Prompt_DeveloperManual.txt \
     run_2_6_ManualsWorkflow.txt \
     run_3_1_Manifest.txt \

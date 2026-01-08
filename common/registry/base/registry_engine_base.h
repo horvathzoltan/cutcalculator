@@ -2,19 +2,26 @@
 #include "common/registry/feature/registry_base.h"
 #include <QVector>
 #include <QUuid>
+#include <functional>
 
 template<typename TEntity>
 class RegistryEngineBase : public RegistryBase {
 public:
-    using Base = RegistryBase;
-    using EntityType = TEntity;
+    using ItemsChangedEvent = std::function<void()>;
 
     RegistryEngineBase(const QString& registryName,
                        const QString& entityTypeName)
         : RegistryBase(registryName, entityTypeName)
+        , _items(this)
     {}
 
-// --- Internal CRUD a workflow policy számára ---
+    // --- Event subscription API ---
+    void subscribeItemsChanged(ItemsChangedEvent cb) {
+        _itemsChangedSubscribers.push_back(std::move(cb));
+    }
+
+public:
+    // --- Internal CRUD ---
     bool insertInternal(const TEntity& e) {
         guardInstanceUsage();
         _items.append(e);
@@ -23,19 +30,21 @@ public:
 
     bool updateInternal(const TEntity& e) {
         guardInstanceUsage();
-        for (auto& item : _items) {
-            if (item.id == e.id) {   // IdentifiableEntity szerződés
+        for (auto& item : _items.data()) {
+            if (item.id == e.id) {
                 item = e;
+                onItemsChanged();
                 return true;
             }
         }
-        return false; // nem találtuk
+        return false;
     }
 
     bool removeInternal(const QUuid& id) {
         guardInstanceUsage();
-        for (int i = 0; i < _items.size(); ++i) {
-            if (_items[i].id == id) {
+        auto& raw = _items.data();
+        for (int i = 0; i < raw.size(); ++i) {
+            if (raw[i].id == id) {
                 _items.removeAt(i);
                 return true;
             }
@@ -45,105 +54,79 @@ public:
 
     bool removeInternal(const QUuid& leftId, const QUuid& rightId) {
         guardInstanceUsage();
-        for (int i = 0; i < _items.size(); ++i) {
-            if (_items[i].leftId == leftId && _items[i].rightId == rightId) {
+        auto& raw = _items.data();
+        for (int i = 0; i < raw.size(); ++i) {
+            if (raw[i].leftId == leftId && raw[i].rightId == rightId) {
                 _items.removeAt(i);
                 return true;
             }
         }
         return false;
     }
-    // --- CRUD storage primitives ---
 
-    bool add(const TEntity& e) {
-        guardInstanceUsage();
-        _items.append(e);
-        return true;
-    }
-
-    bool addAll(const QVector<TEntity>& v) {
-        guardInstanceUsage();
-        _items.append(v);
-        return true;
-    }  
-
-    void setAll(const QVector<TEntity>& v) {
-        guardInstanceUsage();
-        _items = v;
-
-        onAfterSetAll();
-    }
-
-
+public:
     // --- READ APIs ---
+    QVector<TEntity> readAll() const {
+        guardInstanceUsage();
+        return _items.data();
+    }
 
-    // POINTERES ALL() → workflow + domain hookoknak
     QVector<const TEntity*> all() const {
         guardInstanceUsage();
         QVector<const TEntity*> out;
-        out.reserve(_items.size());
-        for (const auto& item : _items)
+        const auto& raw = _items.data();
+        out.reserve(raw.size());
+        for (const auto& item : raw)
             out.append(&item);
         return out;
     }
 
-    // MÁSOLATOS READALL() → repositoryknak
-    QVector<TEntity> readAll() const {
-        guardInstanceUsage();
-        return _items;
-    }
-
     int size() const override {
         guardInstanceUsage();
-        return _items.size();
+        return _items.data().size();
     }
 
+// ezeket át kell majd gondolni - régi API visszahozva:
     bool isEmpty() const {
         guardInstanceUsage();
-        return _items.isEmpty();
+        return _items.data().isEmpty();
     }
 
-    // --- Iterátor API ---
-    auto begin() const { guardInstanceUsage(); return _items.begin(); }
-    auto end()   const { guardInstanceUsage(); return _items.end(); }
+    auto begin() const { guardInstanceUsage(); return _items.data().begin(); }
+    auto end()   const { guardInstanceUsage(); return _items.data().end(); }
 
-    auto cbegin() const { guardInstanceUsage(); return _items.cbegin(); }
-    auto cend()   const { guardInstanceUsage(); return _items.cend(); }
+    auto cbegin() const { guardInstanceUsage(); return _items.data().cbegin(); }
+    auto cend()   const { guardInstanceUsage(); return _items.data().cend(); }
 
-    // --- FIND APIs ---
-
-    // find by predicate → pointer
     template<typename Predicate>
     const TEntity* findIf(Predicate&& pred) const {
         guardInstanceUsage();
-        for (const auto& item : _items)
+        for (const auto& item : _items.data())
             if (pred(item))
                 return &item;
         return nullptr;
     }
 
-    // find all by predicate → QVector
     template<typename Predicate>
     QVector<TEntity> findAll(Predicate&& pred) const {
         guardInstanceUsage();
         QVector<TEntity> out;
-        out.reserve(_items.size());
-        for (const auto& item : _items)
+        const auto& raw = _items.data();
+        out.reserve(raw.size());
+        for (const auto& item : raw)
             if (pred(item))
                 out.append(item);
         return out;
     }
 
-    // exists by predicate
     template<typename Predicate>
     bool existsBy(Predicate&& pred) const {
         return findIf(std::forward<Predicate>(pred)) != nullptr;
     }
 
-    // --- FIND BY ID (kötelező minden IdentifiableEntity-hez) ---
     const TEntity* findById(const QUuid& id) const {
         guardInstanceUsage();
-        for (const auto& item : _items)
+        for (const auto& item : _items.data())
             if (item.id == id)
                 return &item;
         return nullptr;
@@ -153,20 +136,81 @@ public:
         return findById(id) != nullptr;
     }
 
-    // --- ConnectionEntity-specifikus helper: findByPair ---
     const TEntity* findByPair(const QUuid& leftId, const QUuid& rightId) const {
         guardInstanceUsage();
-        for (const auto& item : _items) {
+        for (const auto& item : _items.data()) {
             if (item.leftId == leftId && item.rightId == rightId)
                 return &item;
         }
         return nullptr;
     }
+public:
+    // --- WRITE APIs (régi API visszahozva) ---
 
-// Hooks
-protected:
-    virtual void onAfterSetAll() {}
+    bool add(const TEntity& e) {
+        guardInstanceUsage();
+        _items.append(e);        // ItemStore::append → eventet lő
+        return true;
+    }
+
+    bool addAll(const QVector<TEntity>& v) {
+        guardInstanceUsage();
+        _items.append(v);        // ItemStore::append → eventet lő
+        return true;
+    }
+
+    void setAll(const QVector<TEntity>& v) {
+        guardInstanceUsage();
+        _items.setAll(v);        // ItemStore::setAll → eventet lő
+    }
+
+
 
 protected:
-    QVector<TEntity> _items;
+    // --- Central event trigger ---
+    virtual void onItemsChanged() {
+        for (auto& cb : _itemsChangedSubscribers)
+            cb();
+    }
+
+    // --- Internal storage wrapper ---
+    class ItemStore {
+    public:
+        explicit ItemStore(RegistryEngineBase* owner)
+            : _owner(owner)
+        {}
+
+        void setAll(const QVector<TEntity>& v) {
+            _items = v;
+            _owner->onItemsChanged();
+        }
+
+        void append(const TEntity& e) {
+            _items.append(e);
+            _owner->onItemsChanged();
+        }
+
+        void append(const QVector<TEntity>& v) {
+            _items.append(v);
+            _owner->onItemsChanged();
+        }
+
+        void removeAt(int i) {
+            _items.removeAt(i);
+            _owner->onItemsChanged();
+        }
+
+        QVector<TEntity>& data() { return _items; }
+        const QVector<TEntity>& data() const { return _items; }
+
+    private:
+        RegistryEngineBase* _owner;
+        QVector<TEntity> _items;
+    };
+
+protected:
+    ItemStore _items;
+
+private:
+    QVector<ItemsChangedEvent> _itemsChangedSubscribers;
 };

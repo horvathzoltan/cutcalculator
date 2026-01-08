@@ -4,6 +4,7 @@
 #include <QUuid>
 
 //#include "common/registry/base/registry_engine_base.h"
+#include "common/logger/logger.h"
 #include "common/registry/base/registry_engine.h"
 
 #include "common/registry/feature/register_me.h"
@@ -30,17 +31,26 @@ public:
     QVector<MaterialMaster> findByShape(CrossSectionShape::Shape shape) const;
     QVector<MaterialMaster> findByColor(const NamedColor& color) const;
 
+    void persist() const override {};
+
 protected:
-    void onAfterSetAll() override
-    {
-        // a mixin hookját hívjuk
-        BarcodeIndexMixin<MaterialRegistry, MaterialMaster>::onAfterSetAll();
-    }
+    // Domain hookok
+    bool validateDomain(const MaterialMaster& m) const override;
+    bool validateDuplicate(const MaterialMaster& m) const override;
+
+    bool beforeInsert(const MaterialMaster& m) override;
+    bool beforeUpdate(const MaterialMaster& m) override;
+
+    void onInsertLog(const MaterialMaster& m) override;
+    void onUpdateLog(const MaterialMaster& m) override;
+    void onRemoveLog(const MaterialMaster& m) override;
 
 private:
     MaterialRegistry()
-        : RegistryEngine("MaterialRegistry", "MaterialMaster")
+        : RegistryEngine< MaterialMaster, CrudWorkflowPolicy>(
+              L("MaterialRegistry"), L("MaterialMaster"))
     {}
+
 };
 
 

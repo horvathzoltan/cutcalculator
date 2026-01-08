@@ -40,7 +40,7 @@ public:
     bool retire(const QString& code, const QString& reason);
 
     // 💾 CSV persist (BarcodeRepository-on keresztül)
-    void persist() const override;
+    void persist() const;
 
 protected:
     // Workflow hookok

@@ -1,225 +1,290 @@
-Zoltán, tökéletesen értem, mit szeretnél:
-összehozni a sok különböző időpillanatban született refaktor‑tervet
-egyetlen, tiszta, modern, releváns, pontonként végrehajtható
-MASTER‑tervvé, ahol:
+Zoltán, akkor most összerakom a teljes, végrehajtható, lépésről‑lépésre
+követhető tervet a RegistryStore / RegistryDomain / RegistryEngine
+szétválasztására.
+Ez nem elmélet, hanem konkrét műveleti lista, amit ha sorban
+végigviszel, a rendszered egy tiszta, moduláris, auditálható
+architektúrává áll össze.
 
--   ami már elkészült → kikerül
--   ami biztosan kell → benne marad
--   ami vitatható → külön listába kerül („döntendő”)
--   ami felesleges → kuka
--   ami előnyt hoz → prioritásba kerül
+A terv három fázisra bomlik:
 
-Ez most egy nagyon jó pillanat a konszolidációra, mert a rendszer
-stabil, a fejünkben lévő architektúra tiszta, és a régi tervek között
-vannak már teljesen elavult, részben teljesült, vagy már meghaladott
-pontok.
+1.  Új architektúra létrehozása (új fájlok, új osztályok)
+2.  RegistryEngine átalakítása (a három réteg összekötése)
+3.  Domain registryk átvezetése (Material, Product, NeedRule, Barcode)
 
-Úgyhogy most csináljuk meg azt, amit egy senior architect ilyenkor
-csinálna:
-
-⭐ A teljes refaktor‑terv konszolidálása
-
-(a legfrissebb terv + a korábbiak összeolvasztása → új, tiszta,
-végrehajtható MASTER‑terv)
-
-A folyamat három lépésből áll:
+Mindegyik fázis konkrét, végrehajtható lépésekre van bontva.
 
 ------------------------------------------------------------------------
 
-🔵 1) A régi tervek teljes átnézése és kategorizálása
+🟦 FAZIS 1 — Új architektúra létrehozása
 
-A három fő forrás:
+1.1. Hozd létre az új fájlt:
 
-1.  A legfrissebb „Nagy Refaktor Terv”
-2.  A korábbi registry‑modernizációs tervek
-3.  A NeedCalculation‑modul egységesítő terve
+common/registry/base/registry_store.h
 
-Mindegyik pontot besoroljuk:
+Tartalma:
 
--   [KEEP] – biztosan kell, előnyt hoz
--   [MAYBE] – vitatható, később döntünk
--   [DROP] – felesleges, elavult, már nem releváns
--   [DONE] – már elkészült
+-   RegistryStore<TEntity> osztály
+-   kizárólag storage + lookup API
+-   semmi virtual, semmi domain, semmi workflow
 
-------------------------------------------------------------------------
+Konkrét teendő:
 
-🔵 2) A [KEEP] pontokból új, tiszta, lineáris MASTER‑terv készítése
+-   Vágd ki a RegistryEngineBase‑ből:
+    -   _items + ItemStore
+    -   insertInternal, updateInternal, removeInternal
+    -   readAll, all, findIf, findAll, existsBy, findById, findByPair
+    -   add, addAll, setAll
+    -   subscribeItemsChanged, onItemsChanged
 
-Ez lesz a ténylegesen végrehajtandó refaktor‑terv, amit holnaptól
-lépésenként végigviszünk.
-
-------------------------------------------------------------------------
-
-🔵 3) A [MAYBE] pontok külön listába kerülnek („Döntendő backlog”)
-
-Ezeket később, nyugodt fejjel döntjük el.
+És tedd át a RegistryStore<TEntity>‑be.
 
 ------------------------------------------------------------------------
 
-⭐ Most jön a lényeg: a teljes konszolidáció
+1.2. Hozd létre az új fájlt:
 
-(fejből dolgozom, mert minden pontot együtt építettünk fel)
+common/registry/base/registry_domain.h
 
-------------------------------------------------------------------------
+Tartalma:
 
-🟩 A teljes refaktor‑terv kategorizálva
+-   RegistryDomain<TEntity> mixin
+-   kizárólag domain hookok
 
-✔ [KEEP] – Ezeket biztosan végigvisszük (előnyt hoznak, haladást jelentenek)
+Konkrét teendő:
 
-1) NeedRule import hibakezelés finomítása
+-   Vágd ki a RegistryEngine‑ből:
+    -   validateDomain
+    -   validateDuplicate
+    -   validateConnection
+    -   validateBarcode
+    -   validateCollision
+    -   beforeInsert, afterInsert
+    -   beforeUpdate, afterUpdate
+    -   beforeRemove, afterRemove
+    -   onInsertLog, onUpdateLog, onRemoveLog
+    -   onRegisterLog, onRetireLog
+    -   onLoadLog
+    -   persist
 
--   fatal → részleges siker támogatása
--   startup stabilitás
--   CSV‑pipeline egységesítés
-
-2) NeedCalculationRepository + DetailRepository path‑modernizálás
-
--   FileNameHelper integráció
--   hardcoded path megszüntetése
--   CSV‑pipeline egységesítése
-
-3) NeedCalculationRegistry + DetailRegistry egységesítése
-
--   constructor tisztítás
--   onLoadLog()
--   persist logolás
--   domain hookok egységesítése
-
-4) CalculationModesManager + CalculationModeDetailManager tisztítása
-
--   load felelősség managerben
--   registry tiszta marad
--   UI stabilizálása
-
-5) Repository‑egységesítés (NeedCalculation + NeedRule mintájára)
-
--   FileContext
--   fejléc ellenőrzés
--   sorhiba kezelés
--   audit log
-
-6) Új Registry Fejlettségi Mátrix (modern architektúra szerint)
-
--   mixin‑alapú képességek
--   workflow‑policy
--   audit pipeline
--   lookup API
+Minden hook alapértelmezése legyen no‑op.
 
 ------------------------------------------------------------------------
 
-🟨 [MAYBE] – Vitatható, később döntünk róla
+1.3. Hozd létre az új fájlt:
 
-1) RegistryManager meta‑szintű bővítése
+common/registry/base/registry_engine2.h
+(ideiglenes név, amíg át nem áll minden)
 
--   capability‑detektálás
--   registry‑kategóriák automatikus felismerése
--   audit riport bővítése
-    → jó lenne, de nem sürgős
+Tartalma:
 
-2) Generikus CsvRepository / ConnectionImporter visszahozása
+-   új
+    RegistryEngine<TEntity, WorkflowPolicy, Domain = RegistryDomain<TEntity>>
+-   öröklés:
+    -   RegistryStore<TEntity>
+    -   Domain
+    -   WorkflowPolicy
 
--   elegáns, de nem kritikus
--   a modern architektúrával kompatibilis
-    → később döntünk
+Konkrét teendő:
 
-3) Dokumentáció + architektúra térkép
-
--   fontos, de nem blokkol semmit
-    → később
-
-4) OverlayIconWidget globális integráció
-
--   UX‑szépítés
-    → később
-
-------------------------------------------------------------------------
-
-❌ [DROP] – Felesleges, elavult, már nem releváns
-
-1) Régi engine‑típusok visszahozása
-
--   IdentifiableRegistryEngine
--   ConnectionRegistryEngine
-    → már modernizáltuk, nincs értelme visszamenni
-
-2) Régi NeedRuleTraits / ProductTraits / MaterialTraits visszahozása
-
-→ a modern architektúra tisztább
-
-3) Régi hierarchia‑kezelés visszahozása
-
-→ HierarchyMixin már működik
-
-4) Régi barcode‑lookup visszahozása
-
-→ BarcodeIndexMixin sokkal jobb
+-   A régi RegistryEngine CRUD delegálását tedd át ide:
+    -   insert(e) → WorkflowPolicy::insert(*this, e)
+    -   update(e)
+    -   remove(id)
+    -   remove(leftId, rightId)
+    -   load(items)
+-   Semmi domain hook nem marad itt
+-   Semmi storage API nem marad itt
+-   Ez csak a „ragasztó” lesz
 
 ------------------------------------------------------------------------
 
-🟦 [DONE] – Már elkészült
+🟩 FAZIS 2 — RegistryEngineBase és RegistryEngine tisztítása
 
--   BarcodeLookupMixin
--   BarcodeIndexMixin
--   HierarchyMixin
--   NeedRuleRegistry modernizálása
--   MaterialRequirementsView fix
--   NeedCalculationDetailRegistry engine‑alapú workflow
--   RegistryEngine / RegisterMe stabilizálása
--   Registry audit pipeline
--   Snapshot / Layout / GeometryHelper
--   OverlayIconWidget pipeline
--   Logger subsystem
--   Material/Product pipeline
--   Test framework
+2.1. A régi RegistryEngineBase → töröld vagy jelöld deprecated‑nek
+
+Miután a RegistryStore átveszi a szerepét, a régi engine base:
+
+-   vagy teljesen törölhető,
+-   vagy átmenetileg #pragma message("deprecated").
 
 ------------------------------------------------------------------------
 
-⭐ ÚJ, TISZTA, VÉGREHAJTHATÓ MASTER‑TERV
+2.2. A régi RegistryEngine → fokozatosan kiváltjuk
 
-(csak a [KEEP] pontokból)
+Amíg minden registry át nem áll az új engine‑re, a régi engine:
 
-1) NeedRule import hibakezelés finomítása
-
-2) NeedCalculationRepository + DetailRepository path‑modernizálás
-
-3) NeedCalculationRegistry + DetailRegistry egységesítése
-
-4) CalculationModesManager + DetailManager tisztítása
-
-5) Repository‑egységesítés (NeedCalculation + NeedRule)
-
-6) Új Registry Fejlettségi Mátrix elkészítése
-
-Ez a hat pont a következő sprint.
-Mindegyik előnyt hoz, mindegyik haladást jelent, és együtt lezárja a
-nagy refaktort.
+-   maradjon érintetlen,
+-   de ne bővítsd tovább.
 
 ------------------------------------------------------------------------
 
-⭐ Döntendő backlog (MAYBE)
+🟧 FAZIS 3 — Domain registryk átvezetése az új architektúrára
 
-(később döntünk róla)
+Ezt registrynként kell megtenni.
 
--   RegistryManager meta‑szintű bővítése
--   Generikus CsvRepository / ConnectionImporter
--   Dokumentáció + architektúra térkép
--   OverlayIconWidget globális integráció
+3.1. MaterialRegistry átvezetése
+
+Konkrét lépések:
+
+1.  A headerben cseréld le az öröklést:
+
+Régi:
+
+    class MaterialRegistry
+        : public RegistryEngine<MaterialMaster, CrudWorkflowPolicy>
+
+Új:
+
+    class MaterialRegistry
+        : public RegistryEngine<MaterialMaster, CrudWorkflowPolicy, MaterialDomain>
+
+2.  Hozz létre egy új fájlt:
+    materials/registry/material_domain.h
+
+3.  Ebbe tedd át a Material‑specifikus hookokat:
+
+-   validateDomain
+-   validateDuplicate
+-   beforeInsert
+-   beforeUpdate
+-   onInsertLog
+-   onUpdateLog
+-   onRemoveLog
+-   persist
+
+4.  A MaterialRegistry.cpp‑ben töröld a hook implementációkat.
+
+5.  A MaterialRegistry csak lookup API‑t tartalmazzon:
+
+-   findByType
+-   findByShape
+-   findByColor
 
 ------------------------------------------------------------------------
 
-⭐ Kidobva (DROP)
+3.2. ProductRegistry átvezetése
 
-(nem kell, nem hoz értéket)
+Ugyanaz a minta:
 
--   régi engine‑típusok visszahozása
--   régi traits‑alapú importer
--   régi hierarchia‑kezelés
--   régi barcode‑lookup
+1.  Új fájl: products/registry/product_domain.h
+2.  Hookok átmozgatása
+3.  RegistryEngine öröklés cseréje
+4.  ProductRegistry.cpp tisztítása
 
 ------------------------------------------------------------------------
 
-🔥 **Készen állok a MASTER‑terv 1. pontjának indítására:
+3.3. NeedRuleRegistry átvezetése
 
-NeedRule import hibakezelés finomítása.**
+Itt fontos:
 
-Ha mondod, már kezdjük is.
+-   validateConnection a Domain‑be kerül
+-   validateDuplicate a Domain‑be kerül
+-   beforeInsert, afterInsert, onInsertLog, onRemoveLog, persist →
+    Domain
+
+Új fájl:
+needs/registry/need_rule_domain.h
+
+------------------------------------------------------------------------
+
+3.4. BarcodeRegistry átvezetése
+
+Ez a legösszetettebb, mert:
+
+-   validateBarcode
+-   validateCollision
+-   onRegisterLog
+-   onRetireLog
+
+is domain hook.
+
+Új fájl:
+barcodes/registry/barcode_domain.h
+
+------------------------------------------------------------------------
+
+🟪 FAZIS 4 — Workflow policy-k tisztítása
+
+4.1. A workflow policy-k csak Domain hookokat hívjanak
+
+Ellenőrizd:
+
+-   reg.validateDomain
+-   reg.validateDuplicate
+-   reg.validateConnection
+-   reg.validateBarcode
+-   reg.validateCollision
+-   reg.beforeInsert
+-   reg.afterInsert
+-   reg.persist
+
+Minden hívás működni fog, mert a Domain mixin biztosítja.
+
+------------------------------------------------------------------------
+
+🟫 FAZIS 5 — Mixinek ellenőrzése
+
+A mixinek (BarcodeIndexMixin, BarcodeLookupMixin, HierarchyMixin):
+
+-   csak a RegistryStore API-ját használják (findIf, readAll, existsBy)
+-   semmi domain hookot nem érintenek
+
+Ezért nem kell őket módosítani.
+
+------------------------------------------------------------------------
+
+🟩 FAZIS 6 — RegistryManager és RegistryCatalog ellenőrzése
+
+A RegistryEngine továbbra is örökli a RegistryBase‑t →
+a regisztrációs mechanizmus változatlanul működik.
+
+Nincs teendő.
+
+------------------------------------------------------------------------
+
+🟦 FAZIS 7 — Tesztelés
+
+7.1. Fordítás
+
+Ha minden registry átállt az új engine‑re, a régi engine törölhető.
+
+7.2. CSV import teszt
+
+-   Material import
+-   Product import
+-   Barcode import
+-   NeedRule import
+
+7.3. UI teszt
+
+-   BOMWorkbench
+-   Material picker
+-   Product tree
+-   NeedRule editor
+
+------------------------------------------------------------------------
+
+🟩 Összefoglaló — 12 pontos végrehajtási terv
+
+1.  RegistryStore létrehozása
+2.  RegistryDomain létrehozása
+3.  Új RegistryEngine létrehozása
+4.  Régi RegistryEngineBase tisztítása
+5.  MaterialDomain létrehozása
+6.  MaterialRegistry átállítása
+7.  ProductDomain létrehozása
+8.  ProductRegistry átállítása
+9.  NeedRuleDomain létrehozása
+10. NeedRuleRegistry átállítása
+11. BarcodeDomain létrehozása
+12. BarcodeRegistry átállítása
+
+Ha szeretnéd, a következő lépésben:
+
+👉 megírom a három új fájl teljes, kész kódját
+(RegistryStore, RegistryDomain, RegistryEngine)
+
+vagy
+
+👉 elkezdjük a MaterialRegistry átvezetését konkrét diff‑ekkel.
+
+Mondd, melyikkel menjünk tovább.

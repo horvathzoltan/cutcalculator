@@ -1,0 +1,30 @@
+Kérlek, készítsd el a CutCalculator BUG Tracking Table-t az alábbi szabályokkal:
+
+1) A táblázat oszlopsorrendje legyen:
+   - Státusz
+   - Súlyosság
+   - Modul / Fájl
+   - Leírás + Megjegyzés (hibrid, max néhány mondat)
+
+2) A táblázatot PRIORITÁS szerint rendezd:
+   a) Először súlyosság szerint:
+      - 🔥 SOS (legfontosabb)
+      - 🐞 BUG
+   b) Azonos súlyosságon belül státusz szerint:
+      - 🚧 FOLYAMATBAN / 🐞 BUG → elöl
+      - 🟢 KÉSZ → a lista végén
+
+3) A táblázat legyen széles, jól olvasható, bővíthető.
+
+4) A leírás + megjegyzés oszlop legyen hibrid:
+   - rövid, tömör, de informatív
+   - tartalmazza a hiba lényegét és a kontextust is
+
+5) A táblázatot Markdown formátumban add vissza.
+
+6) A táblázatba építsd be az alábbi hibákat:
+
+<IDE ILLIK A BUG-LISTA, PL. B001–B007>
+
+7) A végén ne adj összegzést, csak a táblázatot.
+

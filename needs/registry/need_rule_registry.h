@@ -23,6 +23,10 @@ public:
 
     QVector<NeedRule> findByLeft(const QUuid& leftId) const;
 
+    bool remove(const QUuid& leftId, const QUuid& rightId) {
+        return removeInternal(leftId, rightId);
+    }
+
 protected:
     bool validateConnection(const NeedRule& r) const override;
     bool validateDuplicate(const NeedRule& r) const override;

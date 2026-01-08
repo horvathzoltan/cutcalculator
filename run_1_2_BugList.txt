@@ -1,0 +1,99 @@
+Zoltán, értem a prioritási szabályt, és teljesen logikus:
+
+Rendezési elv
+
+1.  Súlyosság szerint (legfontosabb → legkevésbé fontos):
+    -   🔥 SOS
+    -   🐞 BUG
+2.  Azonos súlyosságon belül státusz szerint:
+    -   🔥 SOS / 🐞 BUG → nyitott / folyamatban lévő hibák előre
+    -   🟢 KÉSZ → mindig a lista végére kerül
+
+Ennek megfelelően újrarendeztem a teljes táblázatot.
+
+------------------------------------------------------------------------
+
+🐞 CutCalculator – BUG Tracking Table (v3 – prioritás szerint rendezve)
+
+(🔥 SOS elöl, 🐞 BUG utána; a kész hibák a lista végén)
+
+  -----------------------------------------------------------------------------------------
+  Státusz       Súlyosság      Modul / Fájl                   Leírás + Megjegyzés
+  ------------- -------------- ------------------------------ -----------------------------
+  🚧            🔥 SOS         registry_manager.h,            A RegistryManager
+  FOLYAMATBAN                  barcode_registry.h             barcode‑identifiable castja
+                                                              nem ismeri fel az új
+                                                              RegistryEngine‑alapú
+                                                              BarcodeRegistry-t; minden
+                                                              indításkor warningot dob. A
+                                                              logika túl szűk,
+                                                              capability‑alapú felismerés
+                                                              kell.
+
+  🚧            🐞 BUG         startup_manager,               A NeedCalculation és
+  FOLYAMATBAN                  need_calculation_repository    NeedCalculationDetail CSV-k
+                                                              hiányoznak, de a startup
+                                                              pipeline már próbálja
+                                                              beolvasni őket. Nem kritikus,
+                                                              de zajos logot eredményez.
+
+  🟢 KÉSZ       🔥 SOS         registry_engine.h,             A ConnectionWorkflowPolicy
+                               connection_workflow_policy.h   validateConnection hookot
+                                                              hívott, de a
+                                                              RegistryEngine-ben nem volt
+                                                              ilyen; hook visszahelyezve,
+                                                              NeedRuleRegistry működik.
+
+  🟢 KÉSZ       🔥 SOS         material_registry.cpp          A MaterialRegistry-ben
+                                                              hiányzott a persist()
+                                                              implementáció, ezért a vtable
+                                                              nem épült fel; implementáció
+                                                              pótolva, linker hiba
+                                                              megszűnt.
+
+  🟢 KÉSZ       🐞 BUG         registry_engine_base.h,        A NeedRuleRegistry
+                               need_rule_registry.cpp         remove(leftId,rightId) API-ja
+                                                              hiányzott; a pair‑remove
+                                                              visszaállítva, működik a
+                                                              MaterialRequirementsManager
+                                                              hívása.
+
+  🟢 KÉSZ       🔥 SOS         registry_engine.h,             A NeedRuleRegistry
+                               need_rule_registry.h           override-olta a
+                                                              validateConnection-t, de a
+                                                              base-ben nem volt ilyen; hook
+                                                              visszahelyezve, workflow újra
+                                                              működik.
+
+  🟢 KÉSZ       🔥 SOS         material_registry.cpp          Több domain hook hiányzott
+                                                              (validateDomain,
+                                                              validateDuplicate,
+                                                              beforeInsert, stb.), ezért a
+                                                              vtable hiányos volt; minden
+                                                              override implementálva.
+  -----------------------------------------------------------------------------------------
+
+------------------------------------------------------------------------
+
+🧭 Megjegyzés a sorrendről
+
+A táblázat mostantól:
+
+-   felül: a legfontosabb, még megoldandó hibák
+-   középen: alacsonyabb súlyosságú, de még nyitott hibák
+-   legalul: minden, ami 🟢 KÉSZ
+
+Ez a forma tökéletesen alkalmas napi frissítésre és sprint‑szintű
+követésre.
+
+------------------------------------------------------------------------
+
+Ha szeretnéd, készítek hozzá:
+
+-   szűrhető nézetet (csak SOS, csak BUG, csak nyitott),
+-   vagy egy dashboard‑szerű összesítést (hány SOS, hány BUG, hány
+    kész),
+-   vagy egy életciklus‑diagramot (BUG → FOLYAMATBAN → KÉSZ →
+    REGRESSZIÓ).
+
+Csak mondd, melyik irányba menjünk tovább.

@@ -1,6 +1,8 @@
 #include "materials/registry/material_registry.h"
 #include "common/logger/logger.h"
 
+#include "materials/model/material_type.h"
+
 // --- Lookup API ---
 
 QVector<MaterialMaster>
@@ -27,22 +29,33 @@ MaterialRegistry::findByColor(const NamedColor& color) const
     });
 }
 
-void MaterialRegistry::onLoadLog()
-{
-    //onAfterLoad();
-    zInfo("📦 MaterialRegistry loaded (barcode index built)");
+bool MaterialRegistry::validateDomain(const MaterialMaster& m) const {
+    return !m.name.trimmed().isEmpty()
+    && m.type.value != MaterialType::Type::Unknown;
 }
 
+bool MaterialRegistry::validateDuplicate(const MaterialMaster& m) const {
+    return !existsBy([&](const MaterialMaster& x){
+        return x.barcode == m.barcode;   // vagy ami a domain szerint egyedi
+    });
+}
 
-// #include "materials/registry/material_registry.h"
+bool MaterialRegistry::beforeInsert(const MaterialMaster& m) {
+    return true;
+}
 
-// #include "common/registry/barcode/barcode_registry_helper.h"
+bool MaterialRegistry::beforeUpdate(const MaterialMaster& m) {
+    return true;
+}
 
-// MaterialRegistry::MaterialRegistry()
-//     : BarcodeIdentifiableRegistryEngine<MaterialMaster>("MaterialRegistry", "MaterialMaster")
-// {}
+void MaterialRegistry::onInsertLog(const MaterialMaster& m) {
+    zInfo(QString("Material inserted: %1").arg(m.name));
+}
 
-// bool MaterialRegistry::insert(const MaterialMaster& e) {
-//     return BarcodeRegistryHelper::insert(*this, e);
-// }
+void MaterialRegistry::onUpdateLog(const MaterialMaster& m) {
+    zInfo(QString("Material updated: %1").arg(m.name));
+}
 
+void MaterialRegistry::onRemoveLog(const MaterialMaster& m) {
+    zInfo(QString("Material removed: %1").arg(m.name));
+}
