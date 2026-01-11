@@ -51,6 +51,9 @@ public:
                && m_system == other.m_system;
     }
 
+public:
+    using IdType = QString;
+    IdType id; //  technikai azonosító
 private:
     QColor m_color;
     QString m_name;

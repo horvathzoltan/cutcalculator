@@ -5,9 +5,9 @@
 #include <QString>
 
 #include "barcodes/model/barcode_record.h"
-#include "common/registry/base/registry_engine.h"
+#include "common/registry/base/registry_engine_base.h"
 #include "common/registry/feature/register_me.h"
-#include "common/registry/workflow/crud_workflow_policy.h"
+#include "common/registry/mixins/crud_mixin.h"
 
 /**
  * @brief BarcodeRegistry – globális könyvelés a barcode-okhoz.
@@ -17,7 +17,8 @@
  * - CSV-ből betölt, runtime-ban módosul, és visszaír CSV-be.
  */
 class BarcodeRegistry
-    : public RegistryEngine<BarcodeRecord, CrudWorkflowPolicy>,
+    : public RegistryEngineBase<BarcodeRecord>,
+      public CrudMixin<BarcodeRegistry, BarcodeRecord>,
       public RegisterMe<BarcodeRegistry>
 {
     AUTO_REGISTER_REGISTRY
@@ -42,21 +43,21 @@ public:
     // 💾 CSV persist (BarcodeRepository-on keresztül)
     void persist() const;
 
-protected:
+public:
     // Workflow hookok
-    bool validateDomain(const BarcodeRecord& r) const override;
-    bool validateDuplicate(const BarcodeRecord& r) const override;
+    bool validateDomain(const BarcodeRecord& r) const;
+    bool validateDuplicate(const BarcodeRecord& r) const;
 
-    bool beforeInsert(const BarcodeRecord& r) override;
-    bool beforeUpdate(const BarcodeRecord& r) override;
+    bool beforeInsert(BarcodeRecord& r);
+    bool beforeUpdate(BarcodeRecord& r);
 
-    void onInsertLog(const BarcodeRecord& r) override;
-    void onUpdateLog(const BarcodeRecord& r) override;
-    void onRemoveLog(const BarcodeRecord& r) override;
+    void onInsertLog(const BarcodeRecord& r);
+    void onUpdateLog(const BarcodeRecord& r);
+    void onRemoveLog(const BarcodeRecord& r);
 
 private:
     BarcodeRegistry()
-        : RegistryEngine("BarcodeRegistry", "BarcodeRecord")
+        : RegistryEngineBase("BarcodeRegistry", "BarcodeRecord")
     {}
 };
 

@@ -5,6 +5,7 @@
 #include <QUuid>
 
 struct IdentifiableEntity : public Entity, public IRegistryEntity {
+    using IdType = QUuid;
     QUuid id;
     QString name;
 

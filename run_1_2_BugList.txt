@@ -1,99 +1,176 @@
-Zoltán, értem a prioritási szabályt, és teljesen logikus:
+📊 Állapottábla — frissítés (integritás ellenőrzve)
 
-Rendezési elv
+A megadott állapottábla szerkezete megfelel a követelményeknek (három
+oszlop: Modul / Feladat | Állapot | Megjegyzés). Frissítettem a
+státuszokat a mai diagnózis és a javasolt teendők alapján. A táblázat
+monospaced blokkban, a kért formátumban következik.
 
-1.  Súlyosság szerint (legfontosabb → legkevésbé fontos):
-    -   🔥 SOS
-    -   🐞 BUG
-2.  Azonos súlyosságon belül státusz szerint:
-    -   🔥 SOS / 🐞 BUG → nyitott / folyamatban lévő hibák előre
-    -   🟢 KÉSZ → mindig a lista végére kerül
-
-Ennek megfelelően újrarendeztem a teljes táblázatot.
-
-------------------------------------------------------------------------
-
-🐞 CutCalculator – BUG Tracking Table (v3 – prioritás szerint rendezve)
-
-(🔥 SOS elöl, 🐞 BUG utána; a kész hibák a lista végén)
-
-  -----------------------------------------------------------------------------------------
-  Státusz       Súlyosság      Modul / Fájl                   Leírás + Megjegyzés
-  ------------- -------------- ------------------------------ -----------------------------
-  🚧            🔥 SOS         registry_manager.h,            A RegistryManager
-  FOLYAMATBAN                  barcode_registry.h             barcode‑identifiable castja
-                                                              nem ismeri fel az új
-                                                              RegistryEngine‑alapú
-                                                              BarcodeRegistry-t; minden
-                                                              indításkor warningot dob. A
-                                                              logika túl szűk,
-                                                              capability‑alapú felismerés
-                                                              kell.
-
-  🚧            🐞 BUG         startup_manager,               A NeedCalculation és
-  FOLYAMATBAN                  need_calculation_repository    NeedCalculationDetail CSV-k
-                                                              hiányoznak, de a startup
-                                                              pipeline már próbálja
-                                                              beolvasni őket. Nem kritikus,
-                                                              de zajos logot eredményez.
-
-  🟢 KÉSZ       🔥 SOS         registry_engine.h,             A ConnectionWorkflowPolicy
-                               connection_workflow_policy.h   validateConnection hookot
-                                                              hívott, de a
-                                                              RegistryEngine-ben nem volt
-                                                              ilyen; hook visszahelyezve,
-                                                              NeedRuleRegistry működik.
-
-  🟢 KÉSZ       🔥 SOS         material_registry.cpp          A MaterialRegistry-ben
-                                                              hiányzott a persist()
-                                                              implementáció, ezért a vtable
-                                                              nem épült fel; implementáció
-                                                              pótolva, linker hiba
-                                                              megszűnt.
-
-  🟢 KÉSZ       🐞 BUG         registry_engine_base.h,        A NeedRuleRegistry
-                               need_rule_registry.cpp         remove(leftId,rightId) API-ja
-                                                              hiányzott; a pair‑remove
-                                                              visszaállítva, működik a
-                                                              MaterialRequirementsManager
-                                                              hívása.
-
-  🟢 KÉSZ       🔥 SOS         registry_engine.h,             A NeedRuleRegistry
-                               need_rule_registry.h           override-olta a
-                                                              validateConnection-t, de a
-                                                              base-ben nem volt ilyen; hook
-                                                              visszahelyezve, workflow újra
-                                                              működik.
-
-  🟢 KÉSZ       🔥 SOS         material_registry.cpp          Több domain hook hiányzott
-                                                              (validateDomain,
-                                                              validateDuplicate,
-                                                              beforeInsert, stb.), ezért a
-                                                              vtable hiányos volt; minden
-                                                              override implementálva.
-  -----------------------------------------------------------------------------------------
+    -------------------------------------------------------------------------------
+    Modul / Feladat                     Állapot            Megjegyzés
+    ----------------------------------- ------------------ -------------------------
+    Material pipeline                   ✅ Kész            Stabil validátor
+    Product pipeline                    ✅ Kész            Export/import végleges
+    Logger subsystem                    ✅ Kész            Auditálható logolás
+    Startup subsystem                   ✅ Kész            Snapshot-aware init
+    Settings subsystem                  ✅ Kész            Percent-based layout
+    FileNameHelper                      ✅ Kész            ui_snapshots integrálva
+    CsvReader utility                   ⚠️ Függőség        Importerhez szétválasztva
+    RalImporter modul                   ✅ Kész            ColorRegistry integráció
+    OrderManager                        📐 Tervezés        Modellek, státuszok
+    CustomerMaster                      📐 Tervezés        Autocomplete
+    CutCalculator                       🚧 Folyamatban     Preview előkészítve
+    NeedsPresenter + NeedsView          ✅ Kész            MVP működik
+    UI réteg (Qt)                       📐 Tervezés        Order entry dialog
+    Audit funkció                       📐 Tervezés        AuditEntry + Service
+    Test framework                      ✅ Kész            EventLogger tests
+    NamedColor / Color registry         ✅ Kész            Pantone-ready
+    NeedRule                            ✅ Kész            Új engine‑alapú pipeline
+    NeedCalculation                     🚧 Folyamatban     Egységesítés előkészítve
+    NeedCalculationDetail               ✅ Kész            Workflow + engine integráció
+    Formula értelmezés                  📐 Tervezés        cparse integráció
+    SOS / Tűzoltás                      🔥 SOS             NeedRule import hibakezelés
+    Generikus kapcsolótábla             ✅ Kész            ConnectionEntity + Engine
+    BarcodeValidator subsystem          ✅ Kész            Ütközéskezelés
+    BarcodeTable refaktor               ✅ Kész            Model/repo/registry
+    DataStateReporter                   ✅ Kész            Audit riport
+    MVP logika                          🚧 Folyamatban     Presenter/Manager tisztítás
+    VerboseManager                      ✅ Kész            Verbosity routing
+    MaterialPickerDialog                ✅ Kész            Debounce + audit
+    RegistryAuditReporter               ✅ Kész            Audit összefoglaló
+    Screen-change detector              ✅ Kész            Snapshot integráció
+    GeometryHelper finomítás            ✅ Kész            Deferred restore
+    SnapshotManager                     ✅ Kész            Monitorprofil alapú
+    LayoutDefaultStore                  ✅ Kész            Fallback baseline
+    UI Snapshot Architecture            ✅ Kész            Teljes architektúra
+    OverlayIconWidget                   ✅ Kész            Cache + render pipeline
+    Overlay‑alapú adat‑létezés jelzés   💡 Új ötlet        UX-szabály
+    EventLog tisztítása                 💡 Új ötlet        SystemLog szétválasztás
+    CSV warning UX                      💡 Új ötlet        Ikonváltás
+    RegistryEngineBase ↔ Mixin hook‑lánc 🚧 Folyamatban     Virtuális hook lánc implementálása
+    -------------------------------------------------------------------------------
 
 ------------------------------------------------------------------------
 
-🧭 Megjegyzés a sorrendről
+📊 Idővonalas roadmap (frissítve)
 
-A táblázat mostantól:
+✅ Elkészült (Done Zone)
+- NeedRule pipeline (diagnosztizálva, működik)
+- NeedCalculationDetail engine‑alapú workflow
+- Generikus kapcsolótábla architektúra
+- RegistryEngine + WorkflowPolicy architektúra stabil
+- MaterialRegistry initialize() javítva
+- Logger subsystem
+- Material/Product pipeline
+- BarcodeTable refaktor
+- VerboseManager
+- MaterialPickerDialog
+- Test framework
+- SnapshotManager, GeometryHelper, LayoutDefaultStore
+- OverlayIconWidget teljes pipeline
 
--   felül: a legfontosabb, még megoldandó hibák
--   középen: alacsonyabb súlyosságú, de még nyitott hibák
--   legalul: minden, ami 🟢 KÉSZ
+🚧 Folyamatban (Active Zone)
+- NeedCalculation pipeline egységesítése
+- MVP logika tisztítása
+- CutCalculator preview
+- Overlay‑alapú adat‑létezés jelzés
+- BOMWorkbench UX finomítások
+- RegistryEngineBase ↔ Mixin hook‑lánc véglegesítése (ma prioritásként
+diagnosztizálva és előkészítve)
 
-Ez a forma tökéletesen alkalmas napi frissítésre és sprint‑szintű
-követésre.
+📐 Tervezés (Design Zone)
+- Formula parser (cparse)
+- AuditEntry + AuditService
+- OrderManager
+- CustomerMaster
+- Order entry UI
+- Real‑time preview UI
+
+💡 Új ötletek (Idea Zone)
+- SystemLog + EventLog szétválasztása
+- CSV warning ikonváltás
+- OverlayIconWidget globális UX-szabály
+- UI‑log kategorizálás
+
+🔥 SOS
+- NeedRule import hibakezelés (fatal → részleges siker támogatása)
+- BarcodeIndexMixin hook‑lánc véglegesítése (diagnózis alapján)
 
 ------------------------------------------------------------------------
 
-Ha szeretnéd, készítek hozzá:
+✨ Röviden – stratégiai összefoglaló
 
--   szűrhető nézetet (csak SOS, csak BUG, csak nyitott),
--   vagy egy dashboard‑szerű összesítést (hány SOS, hány BUG, hány
-    kész),
--   vagy egy életciklus‑diagramot (BUG → FOLYAMATBAN → KÉSZ →
-    REGRESSZIÓ).
+A mai nap a registry‑réteg kritikus láncszemét tisztázta: a NeedRule
+import hibáját nem az adatok vagy a pipeline okozta, hanem az, hogy a
+BarcodeIndexMixin index‑építése nem futott le a RegistryEngineBase
+eseményláncának hiánya miatt. A javasolt, minimális hatású megoldás a
+base hookok virtualizálása és a registry‑szintű override‑ok bevezetése,
+amelyek meghívják a mixin index‑építést. Ez a megközelítés tiszta,
+visszafordítható és nem igényel nagy szerkezeti átalakítást.
 
-Csak mondd, melyik irányba menjünk tovább.
+------------------------------------------------------------------------
+
+📌 Mai eredmények – részletes taktikai napzáró
+
+-   NeedRule import hibájának gyökéroka feltárva: index‑építés hiánya a
+    mixin miatt.
+-   Diagnózis: a BarcodeIndexMixin nem építette fel az indexet;
+    debuggerben _barcodeIndex <0 items>.
+-   Megoldási terv: RegistryEngineBase::onItemsChanged()/onAfterSetAll()
+    → virtual; registryk override‑olják és hívják a mixin index‑építőt.
+-   Javasolt köztes lépések: ideiglenes explicit rebuildIndex() hívás az
+    inicializáció után, amíg a virtuális lánc bevezetésre kerül.
+-   Több kapcsolódó figyelmeztetés dokumentálva és javításra
+    előkészítve: contract checks makrók, persistRegistry() wrapper, hook
+    szignatúra egységesítés, UI hibakezelés (remove/update), RowInfo
+    inicializálás.
+-   A rendszer jelenleg stabilan fut, exit code 0; a végleges javítás
+    holnapra ütemezett.
+
+------------------------------------------------------------------------
+
+🎯 Prioritási sorrend – fókuszpont lista
+
+1.  🔥 NeedRule import hibakezelés (fatal → részleges siker)
+2.  🚧 RegistryEngineBase ↔ Mixin hook‑lánc véglegesítése (virtuális
+    hook + override + index rebuild)
+3.  🚧 NeedCalculation pipeline egységesítése
+4.  ✅ MaterialPicker integráció NeedCalcDetail‑hez
+5.  ✅ OverlayIconWidget globális integráció
+6.  💡 CSV warning UX
+7.  🚧 BOMWorkbench UX finomítások
+
+------------------------------------------------------------------------
+
+🚀 Sprint fókusz (🔥 SOS pontokkal) és 👉 Holnap fókusz
+
+Sprint fókusz (rövid táv): - Implementálni a virtuális hook láncot a
+RegistryEngineBase‑ben.
+- Override‑ok hozzáadása a barcode‑képes registrykhez (MaterialRegistry,
+ProductRegistry) és a mixin index rebuild hívása.
+- Futtatni integrációs teszteket: NeedRule import + registry audit.
+- Javítani a kritikus warningokat: persistRegistry() wrapper, RowInfo
+init, beforeInsert/beforeUpdate szignatúra egységesítés.
+- Bevezetni CI ellenőrzést a registry contract checkekre (makrók vagy
+EnsureApi példányok .cpp‑ben).
+
+Holnap fókusz (első napirendi pontok): - Implementáció:
+RegistryEngineBase hookok virtualizálása és unit/integ tesztek.
+- Material/Product registry override és
+BarcodeIndexMixin::rebuildIndex() meghívás.
+- Futtatni aipack.sh és frissíteni az EXAKT módosult fájlok listáját;
+ennek alapján frissítem az állapottáblát és a napzárót.
+- Kezdeni a persistRegistry() wrapper és RowInfo inicializálás
+patch‑eit.
+
+------------------------------------------------------------------------
+
+Git commit subject (≤55 karakter)
+
+    NeedRule diag + RegistryEngine hook-chain prep
+
+------------------------------------------------------------------------
+
+Kész vagyok a következő lépésre: ha jóváhagyod, végrehajtom a
+táblázatban szereplő státuszváltozásokat a repository‑ban (commit/PR
+javaslat), és holnap reggel lefuttatom az aipack.sh-t, hogy az EXAKT,
+fájl‑alapú módosításlistát beépítsem a napi jelentésbe.

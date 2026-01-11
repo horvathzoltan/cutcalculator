@@ -22,10 +22,13 @@ protected:
     void buildBarcodeIndex() {
         _barcodeIndex.clear();
         auto* self = static_cast<const Derived*>(this);
-        const auto all = self->readAll();
-        for (const auto& e : all) {
-            if (!e.barcode.isEmpty())
-                _barcodeIndex.insert(e.barcode.toLower(), &e);
+
+        // FONTOS: stabil pointerek a belső tárolóból
+        const auto allPtrs = self->all();
+
+        for (const Entity* e : allPtrs) {
+            if (!e->barcode.isEmpty())
+                _barcodeIndex.insert(e->barcode.toLower(), e);
         }
     }
 

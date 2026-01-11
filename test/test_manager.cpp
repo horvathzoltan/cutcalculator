@@ -2,6 +2,7 @@
 #include <QDebug>
 
 #include "eventlogger_tests.h"
+#include "material_registry_smoke_test.h"
 
 TestManager& TestManager::instance() {
     static TestManager inst;
@@ -20,6 +21,10 @@ bool TestManager::runBusinessLogicTests(const QString& profile) {
     if (profile == "eventlogger") {
         ok = runEventLoggerTests();
         _lastResults << (ok ? "EventLogger tests PASSED" : "EventLogger tests FAILED");
+    }
+    else if (profile == "material_smoke") {
+        ok = runMaterialRegistrySmokeTest();
+        _lastResults << (ok ? "MaterialRegistry smoke PASSED" : "MaterialRegistry smoke FAILED");
     }
     else if (profile == "default") {
         _lastResults << "Default tests executed";

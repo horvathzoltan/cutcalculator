@@ -36,12 +36,12 @@ bool ProductRegistry::validateDuplicate(const ProductMaster& p) const
     });
 }
 
-bool ProductRegistry::beforeInsert(const ProductMaster&)
+bool ProductRegistry::beforeInsert( ProductMaster&)
 {
     return true;
 }
 
-bool ProductRegistry::beforeUpdate(const ProductMaster&)
+bool ProductRegistry::beforeUpdate(ProductMaster&)
 {
     return true;
 }
@@ -74,13 +74,13 @@ void ProductRegistry::persist() const
     ProductRepository::saveToCSV(readAll(), path);
 }
 
-void ProductRegistry::onLoadLog()
-{
-    // BarcodeIndexMixin indexépítés
-    //onAfterLoad();
+// void ProductRegistry::onLoadLog()
+// {
+//     // BarcodeIndexMixin indexépítés
+//     //onAfterLoad();
 
-    zInfo("📦 ProductRegistry loaded (barcode index built)");
-}
+//     zInfo("📦 ProductRegistry loaded (barcode index built)");
+// }
 
 
 

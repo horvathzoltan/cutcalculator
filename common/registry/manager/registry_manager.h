@@ -3,8 +3,9 @@
 #include "common/logger/event_logger.h"
 #include "common/logger/logger.h"
 #include "common/model/barcode_identifiable_entity.h"
+#include "common/registry/base/barcode_capable_interface.h"
 #include "common/registry/feature/registry_base.h"
-#include "common/registry/barcode/ibarcode_identifiable_registry_base.h"
+#include "common/registry/barcode/id_lookup_registry_interface.h"
 
 
 #include <QVector>
@@ -12,6 +13,20 @@
 #include <QDebug>
 
 #include "common/utils/table_formatter.h"
+
+// template<typename T>
+// concept BarcodeCapableRegistry =
+//     requires(T t) {
+//         // A BarcodeIndexMixin által biztosított API
+//         { t.rebuildIndex() } -> std::same_as<void>;
+//         { t.findByBarcode(QString{}) };
+//     };
+
+template<typename R>
+concept HasFindById =
+    requires(const R& r, const QUuid& id) {
+        { r.findById(id) };
+    };
 
 //class RegistryBase;
 
@@ -29,36 +44,32 @@ public:
         static RegistryManager mgr;
         return mgr;
     }
-
-    // void registerRepo(RegistryBase* repo) {
-    //     identifiable.append(repo);
-    // }
-
+    
     void validateRepoRegistration(RegistryBase* repo) {
-        static bool warned_duplicate = false;
-        static bool warned_typename = false;
-        static bool warned_cast = false;
+        static QSet<QString> warned_duplicate;
+        static QSet<QString> warned_typename;
+        static QSet<QString> warned_barcode_capability;
 
+        // --- Duplicate pointer ---
         for (auto* existing : repos) {
             if (existing == repo) {
-                if (!warned_duplicate) {
-                    warned_duplicate = true;
-                    zWarning().noquote() << QString("⚠️ registerRepo: duplicate registry pointer detected: '%1'").arg(repo->name());
+                if (!warned_duplicate.contains(repo->name())) {
+                    warned_duplicate.insert(repo->name());
+                    zWarning().noquote()
+                        << QString("⚠️ registerRepo: duplicate registry pointer detected: '%1'")
+                               .arg(repo->name());
                 }
                 return;
             }
-            if (existing->typeName() == repo->typeName()) {
-                if (!warned_typename) {
-                    warned_typename = true;
-                    zWarning().noquote() << QString("⚠️ registerRepo: typeName collision: '%1'").arg(repo->typeName());
-                }
-            }
-        }
 
-        if (!dynamic_cast<IBarcodeIdentifiableRegistryBase*>(repo)) {
-            if (!warned_cast) {
-                warned_cast = true;
-                zWarning().noquote() << QString("⚠️ registerRepo: registry '%1' is not barcode-identifiable").arg(repo->name());
+            // --- typeName collision ---
+            if (existing->typeName() == repo->typeName()) {
+                if (!warned_typename.contains(repo->typeName())) {
+                    warned_typename.insert(repo->typeName());
+                    zWarning().noquote()
+                        << QString("⚠️ registerRepo: typeName collision: '%1'")
+                               .arg(repo->typeName());
+                }
             }
         }
     }
@@ -66,10 +77,14 @@ public:
     void registerRepo(RegistryBase* repo) {
         validateRepoRegistration(repo);
         repos.append(repo);
-        if (auto* idRepo = dynamic_cast<IBarcodeIdentifiableRegistryBase*>(repo)) {
-            identifiable.append(idRepo);
+
+        if (dynamic_cast<IBarcodeCapable*>(repo)) {
+            identifiable.append(repo);
         }
     }
+
+
+
 
     // registry_manager.cpp
     void auditReport() const {
@@ -108,89 +123,49 @@ public:
         return sum;
     }
 
-    IBarcodeIdentifiableRegistryBase* findByTypeName(const QString& typeName) const {
+    RegistryBase* findByTypeName(const QString& typeName) const {
         static QSet<QString> warned_missing;
         static QSet<QString> warned_multiple;
-        static QSet<QString> warned_cast;
 
-        IBarcodeIdentifiableRegistryBase* found = nullptr;
+        RegistryBase* found = nullptr;
         int matchCount = 0;
 
-        for (auto* repo : identifiable) {
+        for (auto* repo : repos) {   // <-- EZ A LÉNYEG
             if (repo->typeName() == typeName) {
                 ++matchCount;
                 if (!found)
                     found = repo;
                 else if (!warned_multiple.contains(typeName)) {
                     warned_multiple.insert(typeName);
-                    zWarning().noquote() << QString("⚠️ findByTypeName: multiple identifiable registries found for typeName='%1'").arg(typeName);
+                    zWarning().noquote()
+                        << QString("⚠️ findByTypeName: multiple registries found for typeName='%1'")
+                               .arg(typeName);
                 }
             }
         }
 
         if (!found && !warned_missing.contains(typeName)) {
             warned_missing.insert(typeName);
-            zWarning().noquote() << QString("⚠️ findByTypeName: identifiable registry not found for typeName='%1'").arg(typeName);
+            zWarning().noquote()
+                << QString("⚠️ findByTypeName: no registry found for typeName='%1'")
+                       .arg(typeName);
         }
-
-
-        if (found && !dynamic_cast<IBarcodeIdentifiableRegistryBase*>(found) && !warned_cast.contains(typeName)) {
-            warned_cast.insert(typeName);
-            zWarning().noquote() << QString("⚠️ findByTypeName: typeName match, but dynamic_cast failed for '%1'").arg(typeName);
-        }
-
 
         return found;
     }
 
-
-    // IBarcodeIdentifiableRegistryBase* findByTypeName(const QString& typeName) const {
-    //     for (auto* repo : identifiable) {
-    //         if (repo->typeName() == typeName)
-    //             return repo;
-    //     }
-    //     return nullptr;
-    // }
-
-    // const QVector<RegistryBase*>& allRepos() const {
-    //     return repos;
-    // }
-
-    // const BarcodeIdentifiableEntity* findEntity(const QString& typeName, const QUuid& id) const {
-    //     auto* repo = findByTypeName(typeName);
-    //     if (repo) {
-    //         return repo->findEntityById(id); // minden registry implementálja → IdentifiableEntity*
-    //     }
-    //     return nullptr;
-    // }
-
-    const BarcodeIdentifiableEntity* findEntity(const QString& typeName, const QUuid& id) const {
-        static QSet<QString> warned_missing_id;
-
-        auto* repo = findByTypeName(typeName);
+    const IdentifiableEntity* findEntity(const QString& typeName, const QUuid& id) const {
+        const auto* repo = findByTypeName(typeName);
         if (!repo)
             return nullptr;
 
-        const BarcodeIdentifiableEntity* entity = repo->findEntityById(id);
-        if (!entity && !warned_missing_id.contains(typeName)) {
-            warned_missing_id.insert(typeName);
-            zWarning().noquote() << QString("⚠️ findEntity: entity not found in registry='%1', id='%2'")
-                                        .arg(typeName, id.toString(QUuid::WithoutBraces));
-        }
+        const auto* idRepo = dynamic_cast<const IdLookupRegistryInterface*>(repo);
+        if (!idRepo)
+            return nullptr;
 
-        return entity;
+        return idRepo->findEntityById(id);
     }
 
-
-    // registry_manager.h
-    // const IdentifiableEntity* findEntityByBarcode(const QString& typeName,
-    //                                               const QString& barcode) const {
-    //     IdentifiableRegistryBase* repo = findByTypeName(typeName);
-    //     if (repo) {
-    //         return repo->findEntityByBarcode(barcode); // minden registry implementálja
-    //     }
-    //     return nullptr;
-    // }
 
     template<typename RegistryType>
     RegistryType* lookupRegistry() {
@@ -234,88 +209,8 @@ public:
     }
 private:
     RegistryManager() = default;
-    QVector<RegistryBase*> repos;
-    QVector<IBarcodeIdentifiableRegistryBase*> identifiable;  // csak az azonosíthatók
+    QVector<RegistryBase*> identifiable;   // csak a barcode-képes registryk audit és loggolás miatt.
+    QVector<RegistryBase*> repos;          // minden registry
 };
 
-// #pragma once
-// #include "common/logger/event_logger.h"
-// #include "common/logger/logger.h"
-// #include "common/model/barcode_identifiable_entity.h"
-// #include "registry_base.h"
-
-// #include <QVector>
-// #include <QString>
-
-// #include "common/utils/table_formatter.h"
-
-// class RegistryManager {
-// public:
-//     static RegistryManager& instance() {
-//         static RegistryManager mgr;
-//         return mgr;
-//     }
-
-//     // --- Egységes regisztráció ---
-//     void registerRepo(RegistryBase* repo) {
-//         repos.append(repo);
-//     }
-
-//     // --- Audit riport ---
-//     void auditReport() const {
-//         zInfo("📊 Registry audit összefoglaló:");
-
-//         QVector<QString> header = {"Registry", "Type", "Count"};
-//         QVector<QVector<QString>> rows;
-
-//         for (auto* repo : repos) {
-//             rows.push_back({
-//                 repo->name(),
-//                 repo->typeName(),
-//                 QString::number(repo->size())
-//             });
-//         }
-
-//         const auto lines = TableFormatter::format(header, rows);
-//         for (const auto& line : lines)
-//             zInfo().noquote() << line;
-
-//         zInfo().noquote() << QString("Összesen: %1").arg(totalCount());
-//         zEvent(QString("Registry audit összefoglaló – összesen %1 elem tárolva").arg(totalCount()));
-//     }
-
-//     // --- Összes elemszám ---
-//     int totalCount() const {
-//         int sum = 0;
-//         for (auto* repo : repos)
-//             sum += repo->size();
-//         return sum;
-//     }
-
-//     // --- Keresés típusnév alapján ---
-//     RegistryBase* findByTypeName(const QString& typeName) const {
-//         for (auto* repo : repos)
-//             if (repo->typeName() == typeName)
-//                 return repo;
-//         return nullptr;
-//     }
-
-//     // --- Entitás keresése ID alapján ---
-//     const BarcodeIdentifiableEntity* findEntity(const QString& typeName,
-//                                                 const QUuid& id) const
-//     {
-//         if (auto* repo = findByTypeName(typeName))
-//             return repo->findEntityById(id);   // registry maga implementálja
-//         return nullptr;
-//     }
-
-//     const QVector<RegistryBase*>& allRepos() const {
-//         return repos;
-//     }
-
-// private:
-//     RegistryManager() = default;
-
-//     QVector<RegistryBase*> repos;
-// };
 

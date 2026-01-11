@@ -77,7 +77,7 @@ MaterialRepository::validateMaterialRow(const MaterialRow& row, int lineNumber) 
     } else {
         if (auto err = BarcodeCollisionHelper::makeBarcodeCollisionError(
                   "Material",
-                  BarcodeCollisionHelper::RowInfo{ row.barcode, row.name },
+                BarcodeCollisionHelper::RowInfo{ row.barcode, row.name, std::nullopt },
                   lineNumber))
         {
             errors.append(*err);

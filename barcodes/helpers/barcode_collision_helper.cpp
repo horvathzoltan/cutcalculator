@@ -39,6 +39,7 @@ BarcodeCollisionHelper::makeBarcodeCollisionError(const QString& myTypeName,
             }
 
 
+            // Ha a barcode-record nem tartalmaz entityId-t, akkor nincs domain-ütközés
             // 🔑 ÚJ: ha entityId üres → hazatérés, nem collision
             if (!rec->entityId.has_value()) {
                 return std::nullopt;

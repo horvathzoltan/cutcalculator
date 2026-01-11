@@ -14,7 +14,7 @@ public:
                  const QString& entityTypeName);
     virtual ~RegistryBase() = default;
 
-    QString name() const { return _name; }
+    QString name() const { return _registryName; }
     QString typeName() const { return _typeName; }
     virtual int size() const = 0;
 
@@ -32,7 +32,7 @@ public:
     void guardInstanceUsage() const;
 
 protected:
-    QString _name;      // Registry neve (pl. "MaterialRegistry")
+    QString _registryName;      // Registry neve (pl. "MaterialRegistry")
     QString _typeName;  // Entitás típusa (pl. "MaterialMaster")
     bool _isInitialized = false;
     bool _isRegistered= false;

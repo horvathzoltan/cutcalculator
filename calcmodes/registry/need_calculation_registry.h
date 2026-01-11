@@ -1,39 +1,54 @@
 #pragma once
 
 #include "calcmodes/model/need_calculation.h"
-#include "common/registry/base/registry_engine.h"
+#include "common/registry/base/registry_engine_base.h"
 #include "common/registry/feature/register_me.h"
-#include "common/registry/workflow/crud_workflow_policy.h"
+#include "common/registry/mixins/crud_mixin.h"
+#include "common/registry/mixins/crud_workflow_mixin.h"
 
 class NeedCalculationRegistry
-    : public RegistryEngine<NeedCalculation, CrudWorkflowPolicy>,
+    : public RegistryEngineBase<NeedCalculation>,
+      public CrudMixin<NeedCalculationRegistry, NeedCalculation>,
+      public CrudWorkflowMixin<NeedCalculationRegistry, NeedCalculation>,
       public RegisterMe<NeedCalculationRegistry>
 {
-    AUTO_REGISTER_REGISTRY
+AUTO_REGISTER_REGISTRY
 
-public:
-    // ⭐ Singleton
-    static NeedCalculationRegistry& instance();
-
-    // ⭐ Konstruktor deklaráció (definíció a .cpp-ben)
+    public:
+             static NeedCalculationRegistry& instance();
     NeedCalculationRegistry();
 
-    // ⭐ Kényelmi API – a NeedCalculator használja
     const NeedCalculation* findByProductAndName(const QUuid& productId,
                                                 const QString& name) const;
 
-protected:
-    bool validateDomain(const NeedCalculation& nc) const override;
-    bool validateDuplicate(const NeedCalculation& nc) const override;
+    bool insert(const NeedCalculation& nc) {
+        return insertWithWorkflow(nc);
+    }
 
-    bool beforeInsert(const NeedCalculation&) override;
-    void afterInsert(const NeedCalculation&) override;
+    bool update(const NeedCalculation& nc) {
+        return updateWithWorkflow(nc);
+    }
 
-    void onInsertLog(const NeedCalculation& nc) override;
-    void onLoadLog() override; // <- ÚJ
+    bool remove(const QUuid& id) {
+        return removeWithWorkflow(id);
+    }
 
-    void persist() const override;
+    bool validateDomain(const NeedCalculation& nc) const;
+    bool validateDuplicate(const NeedCalculation& nc) const;
+
+    bool beforeInsert(NeedCalculation&) { return true; }
+    bool beforeUpdate(NeedCalculation&) { return true; }
+    bool beforeRemove(NeedCalculation&) { return true; }
+
+    void onInsertLog(const NeedCalculation& nc);
+    void persist() const;
+    void onLoadLog();
+
+    void onUpdateLog(const NeedCalculation& nc);
+    void onRemoveLog(const NeedCalculation& nc);
+
 };
+
 
 
 // /**

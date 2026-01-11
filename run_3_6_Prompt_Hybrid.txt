@@ -1,0 +1,130 @@
+IPARI REFAKTOR + FEJLESZTÉS WORKFLOW
+V6 – Kompatibilis, stabil, állapotgép‑szerű működés
+
+A workflow négy felhasználói kérési módot definiál:
+1) DECOMPOSE mód – részproblémák feltárása
+2) PLAN mód – tervezés
+3) READY mód – terv jóváhagyása
+4) GENERATE mód – kódgenerálás
+
+A módokat mindig a felhasználó aktiválja explicit utasítással.
+A rendszer a módnak megfelelően válaszol.
+
+------------------------------------------------------------
+1) DECOMPOSE mód – részproblémák feltárása
+------------------------------------------------------------
+Aktiválás:
+"Lépj DECOMPOSE módba."
+
+Feladatok:
+- vizsgálat: egy vagy több részprobléma
+- ha több: listázás + kérdés: "Melyikkel kezdjük?"
+- ha egy: jelzés, hogy mehet a PLAN mód
+
+------------------------------------------------------------
+2) PLAN mód – tervezés
+------------------------------------------------------------
+Aktiválás:
+"Lépj PLAN módba ezzel a részproblémával: <...>"
+
+A tervezés tartalma:
+
+a) Problémák listája (kód nélkül):
+- safety
+- readability
+- performance
+- modularity / SRP
+- testability
+- API consistency
+- memory / ownership
+- Qt / Clazy relevancia
+
+b) Refaktor + fejlesztési javaslatok (kód nélkül):
+- [REFAKTOR]
+- [FEJLESZTÉS]
+- determinisztikus, moduláris
+- nincs viselkedésváltoztatás
+
+c) Új fájlok listája:
+- snake_case
+- soronként egy fájl
+
+d) Meglévő fájlok listája:
+- relatív path
+- .pro fájl is szerepel
+
+A végén:
+"A terv elkészült. Ha jóváhagyod, mondd: READY."
+
+------------------------------------------------------------
+3) READY mód – jóváhagyás
+------------------------------------------------------------
+Aktiválás:
+"READY."
+
+Feladat:
+- jelzés, hogy a rendszer készen áll a generálásra
+- várakozás a GENERATE mód aktiválására
+
+------------------------------------------------------------
+4) GENERATE mód – kódgenerálás
+------------------------------------------------------------
+Aktiválás:
+"GENERATE."
+
+Szabályok:
+- csak a jóváhagyott terv alapján
+- nincs improvizáció
+- nincs extra funkció
+- nincs viselkedésváltoztatás
+
+Követelmények:
+- C++20 + Qt 6.10
+- Clazy-tiszta
+- magyar kommentek, angol terminológiával
+- snake_case fájlnevek
+- minden publikus API dokumentálva
+- Doxygen szabályok betartva
+
+Blokkfejlécek:
+/* ============================================================
+ * 🧩 <Blokk neve>
+ * <1 soros magyarázat>
+ * ============================================================ */
+
+------------------------------------------------------------
+5) Snippet diff szabályok
+------------------------------------------------------------
+Formátum:
+RÉGI:
+<régi kódrészlet>
+
+ÚJ:
+<új kódrészlet>
+
+Szabályok:
+- csak módosított sorok
+- nincs komment
+- nincs extra whitespace
+- egy snippet = egy logikai változtatás
+
+------------------------------------------------------------
+6) Chunk-handshake (opcionális)
+------------------------------------------------------------
+Ha a felhasználó chunk-számot ír:
+"1/10 blokk"
+
+A rendszer:
+- megkérdezi: "Érkezett 1 chunk. Jön még?"
+- "Igen, jön még." → vár
+- "Nem, ez volt az összes." → folytatja a workflow-t
+
+------------------------------------------------------------
+7) Hibatűrés
+------------------------------------------------------------
+Ha megszakad a válasz:
+- nincs automatikus folytatás
+- kérdés:
+  "Folytassam onnan, ahol megszakadt?"
+  vagy
+  "Kezdjük újra az adott lépést?"

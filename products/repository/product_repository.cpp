@@ -97,7 +97,7 @@ ProductRepository::validateProductRow(const ProductRow& row, int lineNumber) {
     } else {
         if (auto err = BarcodeCollisionHelper::makeBarcodeCollisionError(
                 "Product",
-                BarcodeCollisionHelper::RowInfo{ row.barcode, row.name },
+                BarcodeCollisionHelper::RowInfo{ row.barcode, row.name, std::nullopt },
                 lineNumber))
         {
             errors.append(*err);

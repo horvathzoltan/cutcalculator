@@ -3,18 +3,20 @@
 #include <QVector>
 #include <QUuid>
 
-#include "common/registry/base/registry_engine.h"
 #include "common/registry/feature/register_me.h"
-#include "common/registry/workflow/crud_workflow_policy.h"
-//#include "common/registry/barcode/barcode_lookup_mixin.h"
+
 #include "common/registry/barcode/barcode_index_mixin.h"
 #include "common/registry/hierarchy/hierarchy_mixin.h"
 
+#include "common/registry/mixins/crud_workflow_mixin.h"
 #include "products/model/product_master.h"
-//#include "common/logger/logger.h"
+#include "common/registry/mixins/crud_mixin.h"
+#include "common/registry/base/registry_engine_base.h"
 
 class ProductRegistry
-    : public RegistryEngine<ProductMaster, CrudWorkflowPolicy>,
+    : public RegistryEngineBase<ProductMaster>,
+      public CrudMixin<ProductRegistry, ProductMaster>,
+      public CrudWorkflowMixin<ProductRegistry, ProductMaster>,
       public BarcodeIndexMixin<ProductRegistry, ProductMaster>,
       public HierarchyMixin<ProductRegistry, ProductMaster>,
       public RegisterMe<ProductRegistry>
@@ -27,29 +29,27 @@ public:
         return inst;
     }
 
-    // Hierarchia lookupok
-    // QVector<ProductMaster> findChildren(const QUuid& parentId) const;
-    // QVector<ProductMaster> findRoots() const;
+    void persist() const;
+    bool insert(const ProductMaster& p) { return insertWithWorkflow(p); }
+    bool update(const ProductMaster& p) { return updateWithWorkflow(p); }
+    bool remove(const QUuid& id) { return removeWithWorkflow(id); }
 
-    void persist() const override;
-
-protected:
     // Domain hookok
-    bool validateDomain(const ProductMaster& p) const override;
-    bool validateDuplicate(const ProductMaster& p) const override;
+    bool validateDomain(const ProductMaster& p) const;
+    bool validateDuplicate(const ProductMaster& p) const;
 
-    bool beforeInsert(const ProductMaster& p) override;
-    bool beforeUpdate(const ProductMaster& p) override;
+    bool beforeRemove(ProductMaster&) { return true; }
 
-    void onInsertLog(const ProductMaster& p) override;
-    void onUpdateLog(const ProductMaster& p) override;
-    void onRemoveLog(const ProductMaster& p) override;
+    bool beforeInsert(ProductMaster& p);
+    bool beforeUpdate(ProductMaster& p);
 
-    void onLoadLog() override;
+    void onInsertLog(const ProductMaster& p);
+    void onUpdateLog(const ProductMaster& p);
+    void onRemoveLog(const ProductMaster& p);
 
 private:
     ProductRegistry()
-        : RegistryEngine("ProductRegistry", "ProductMaster")
+        : RegistryEngineBase("ProductRegistry", "ProductMaster")
     {}
 };
 

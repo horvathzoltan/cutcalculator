@@ -21,7 +21,7 @@
 
 RegistryBase::RegistryBase(const QString& registryName,
                            const QString& entityTypeName)
-    : _name(registryName),
+    : _registryName(registryName),
     _typeName(entityTypeName)
 {
 // fontos: itt NEM regisztrálunk!
@@ -45,7 +45,7 @@ void RegistryBase::guardInstanceUsage() const {
 
         zWarning().noquote()
             << QString("❌ Registry '%1' used before initialize()")
-                   .arg(_name);
+                   .arg(_registryName);
 
         // if(_name == "NeedCalculationRegistry"){
         //     zWarning("krokodil");
@@ -61,7 +61,7 @@ QString RegistryBase::logEntityAction(const QString& action,
     QStringList lines;
 
     lines << QString("[%1] %2 → %3")
-                 .arg(_name, action, e.displayName());
+                 .arg(_registryName, action, e.displayName());
     lines << QString("  id: %1").arg(e.shortId());
     lines << QString("  type: %1").arg(_typeName);
 

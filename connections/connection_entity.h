@@ -19,6 +19,8 @@
  */
 template<typename LeftEntity, typename RightEntity>
 struct ConnectionEntity {
+    using IdType = QUuid; // ← ide kell beszúrni
+
     QUuid leftId{};
     QUuid rightId{};
 

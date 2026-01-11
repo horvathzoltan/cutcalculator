@@ -3,11 +3,21 @@
 #include <QVector>
 #include <QUuid>
 #include <functional>
+#include <atomic>
+#include <QReadWriteLock>
+#include <memory>
+#include "common/registry/subscription_token.h"
 
 template<typename TEntity>
 class RegistryEngineBase : public RegistryBase {
 public:
+    template<typename, typename>
+    friend struct RegistryCore;
+
+
     using ItemsChangedEvent = std::function<void()>;
+    using SubscriptionId = size_t;
+    using IdType = typename TEntity::IdType;
 
     RegistryEngineBase(const QString& registryName,
                        const QString& entityTypeName)
@@ -15,64 +25,101 @@ public:
         , _items(this)
     {}
 
-    // --- Event subscription API ---
-    void subscribeItemsChanged(ItemsChangedEvent cb) {
-        _itemsChangedSubscribers.push_back(std::move(cb));
+    void notifyItemsChanged() {
+        onItemsChanged();
     }
+
+    //void persistRegistry() const { persist(); }
+
+    // Public wrappers for store*Impl so non-derived mixins (RegistryCore) can call them.
+        // bool storeAddPublicImpl(const TEntity& e) { return storeAddImpl(e); }
+    // bool storeAddAllPublicImpl(const QVector<TEntity>& v) { return storeAddAllImpl(v); }
+    // void storeSetAllPublicImpl(const QVector<TEntity>& v) { storeSetAllImpl(v); }
+    // QVector<TEntity> storeReadAllPublicImpl() const { return storeReadAllImpl(); }
+    // const TEntity* storeFindByIdPublicImpl(const IdType& id) const { return storeFindByIdImpl(id); }
+    // const TEntity* storeFindByPairPublicImpl(const IdType& leftId, const IdType& rightId) const { return storeFindByPairImpl(leftId, rightId); }
+    // bool storeUpdatePublicImpl(const TEntity& e) { return storeUpdateImpl(e); }
+    // bool storeRemovePublicImpl(const IdType& id) { return storeRemoveImpl(id); }
+    // bool storeRemovePairPublicImpl(const IdType& leftId, const IdType& rightId) { return storeRemovePairImpl(leftId, rightId); }
+
+
+
+    // --- Event subscription API (thread-safe) ---
+
+    SubscriptionId subscribeItemsChanged(ItemsChangedEvent cb) {
+        const SubscriptionId id = _nextSubscriptionId.fetch_add(1, std::memory_order_relaxed);
+        {
+            QWriteLocker w(&_rwLock);
+            _itemsChangedSubscribers.push_back({id, std::move(cb)});
+        }
+        return id;
+    }
+
+    void unsubscribeItemsChanged(SubscriptionId id) {
+        QWriteLocker w(&_rwLock);
+        for (int i = 0; i < _itemsChangedSubscribers.size(); ++i) {
+            if (_itemsChangedSubscribers[i].first == id) {
+                _itemsChangedSubscribers.removeAt(i);
+                return;
+            }
+        }
+    }
+
+    SubscriptionToken subscribeItemsChangedToken(ItemsChangedEvent cb) {
+        const SubscriptionId id = subscribeItemsChanged(std::move(cb));
+        RegistryEngineBase* owner = this;
+        return SubscriptionToken([owner, id]() {
+            if (owner) owner->unsubscribeItemsChanged(id);
+        });
+    }
+
+    SubscriptionToken subscribeItemsChangedTokenShared(std::shared_ptr<RegistryEngineBase> ownerShared,
+                                                       ItemsChangedEvent cb) {
+        std::weak_ptr<RegistryEngineBase> weakOwner = ownerShared;
+        const SubscriptionId id = subscribeItemsChanged(std::move(cb));
+        return SubscriptionToken([weakOwner, id]() {
+            if (auto owner = weakOwner.lock()) {
+                owner->unsubscribeItemsChanged(id);
+            }
+        });
+    }
+
+    // --- DOMAIN HOOKS (alapértelmezésben no-op) ---
+//    virtual bool validateDomain(const TEntity&) const { return true; }
+//    virtual bool validateDuplicate(const TEntity&) const { return true; }
+
+    // javasolt: non-const referencia, mert a hookok gyakran módosítanak entitást
+ //   virtual bool beforeInsert(TEntity&) { return true; }
+ //   virtual void afterInsert(const TEntity&) {}
+
+    // javasolt: non-const referencia, mert a hookok gyakran módosítanak entitást
+ //   virtual bool beforeUpdate(TEntity&) { return true; }
+ //   virtual void afterUpdate(const TEntity&) {}
+
+  //  virtual bool beforeRemove(const TEntity&) { return true; }
+ //   virtual void afterRemove(const TEntity&) {}
+
+ //   virtual void onInsertLog(const TEntity&) {}
+ //   virtual void onUpdateLog(const TEntity&) {}
+ //   virtual void onRemoveLog(const TEntity&) {}
+
+  //  virtual void onLoadLog() {}
+  //  virtual void persist() const {}
+
+ //   virtual bool validateConnection(const TEntity&) const { return true; }
 
 public:
-    // --- Internal CRUD ---
-    bool insertInternal(const TEntity& e) {
-        guardInstanceUsage();
-        _items.append(e);
-        return true;
-    }
+    const QString& registryName() const { return _registryName; }
 
-    bool updateInternal(const TEntity& e) {
-        guardInstanceUsage();
-        for (auto& item : _items.data()) {
-            if (item.id == e.id) {
-                item = e;
-                onItemsChanged();
-                return true;
-            }
-        }
-        return false;
-    }
-
-    bool removeInternal(const QUuid& id) {
-        guardInstanceUsage();
-        auto& raw = _items.data();
-        for (int i = 0; i < raw.size(); ++i) {
-            if (raw[i].id == id) {
-                _items.removeAt(i);
-                return true;
-            }
-        }
-        return false;
-    }
-
-    bool removeInternal(const QUuid& leftId, const QUuid& rightId) {
-        guardInstanceUsage();
-        auto& raw = _items.data();
-        for (int i = 0; i < raw.size(); ++i) {
-            if (raw[i].leftId == leftId && raw[i].rightId == rightId) {
-                _items.removeAt(i);
-                return true;
-            }
-        }
-        return false;
-    }
-
-public:
-    // --- READ APIs ---
+    // --- READ APIs (delegáló thin wrappers) ---
     QVector<TEntity> readAll() const {
         guardInstanceUsage();
-        return _items.data();
+        return storeReadAllImpl();
     }
 
     QVector<const TEntity*> all() const {
         guardInstanceUsage();
+        QReadLocker r(&_rwLock);
         QVector<const TEntity*> out;
         const auto& raw = _items.data();
         out.reserve(raw.size());
@@ -83,24 +130,26 @@ public:
 
     int size() const override {
         guardInstanceUsage();
+        QReadLocker r(&_rwLock);
         return _items.data().size();
     }
 
-// ezeket át kell majd gondolni - régi API visszahozva:
     bool isEmpty() const {
         guardInstanceUsage();
+        QReadLocker r(&_rwLock);
         return _items.data().isEmpty();
     }
 
-    auto begin() const { guardInstanceUsage(); return _items.data().begin(); }
-    auto end()   const { guardInstanceUsage(); return _items.data().end(); }
+    // auto begin() const { guardInstanceUsage(); QReadLocker r(&_rwLock); return _items.data().begin(); }
+    // auto end()   const { guardInstanceUsage(); QReadLocker r(&_rwLock); return _items.data().end(); }
 
-    auto cbegin() const { guardInstanceUsage(); return _items.data().cbegin(); }
-    auto cend()   const { guardInstanceUsage(); return _items.data().cend(); }
+    // auto cbegin() const { guardInstanceUsage(); QReadLocker r(&_rwLock); return _items.data().cbegin(); }
+    // auto cend()   const { guardInstanceUsage(); QReadLocker r(&_rwLock); return _items.data().cend(); }
 
     template<typename Predicate>
     const TEntity* findIf(Predicate&& pred) const {
         guardInstanceUsage();
+        QReadLocker r(&_rwLock);
         for (const auto& item : _items.data())
             if (pred(item))
                 return &item;
@@ -110,6 +159,7 @@ public:
     template<typename Predicate>
     QVector<TEntity> findAll(Predicate&& pred) const {
         guardInstanceUsage();
+        QReadLocker r(&_rwLock);
         QVector<TEntity> out;
         const auto& raw = _items.data();
         out.reserve(raw.size());
@@ -124,53 +174,144 @@ public:
         return findIf(std::forward<Predicate>(pred)) != nullptr;
     }
 
-    const TEntity* findById(const QUuid& id) const {
+    const TEntity* findById(const IdType& id) const {
         guardInstanceUsage();
-        for (const auto& item : _items.data())
-            if (item.id == id)
-                return &item;
-        return nullptr;
+        return storeFindByIdImpl(id);
     }
 
-    bool existsById(const QUuid& id) const {
+    bool existsById(const IdType& id) const {
         return findById(id) != nullptr;
     }
 
-    const TEntity* findByPair(const QUuid& leftId, const QUuid& rightId) const {
+    const TEntity* findByPair(const IdType& leftId, const IdType& rightId) const {
         guardInstanceUsage();
-        for (const auto& item : _items.data()) {
-            if (item.leftId == leftId && item.rightId == rightId)
-                return &item;
-        }
-        return nullptr;
+        return storeFindByPairImpl(leftId, rightId);
     }
-public:
-    // --- WRITE APIs (régi API visszahozva) ---
 
+    // --- WRITE APIs (thin wrappers that notify) ---
     bool add(const TEntity& e) {
         guardInstanceUsage();
-        _items.append(e);        // ItemStore::append → eventet lő
+        if (!storeAddImpl(e)) return false;
+        onItemsChanged();
         return true;
     }
 
     bool addAll(const QVector<TEntity>& v) {
         guardInstanceUsage();
-        _items.append(v);        // ItemStore::append → eventet lő
+        if (!storeAddAllImpl(v)) return false;
+        onItemsChanged();
         return true;
     }
 
     void setAll(const QVector<TEntity>& v) {
         guardInstanceUsage();
-        _items.setAll(v);        // ItemStore::setAll → eventet lő
+        storeSetAllImpl(v);
+        onItemsChanged();
     }
 
+    // Internal names kept for compatibility with existing code
+    // bool insertInternal(const TEntity& e) { return add(e); }
 
+    bool updateInternal(const TEntity& e) {
+        guardInstanceUsage();
+        if (!storeUpdateImpl(e)) return false;
+        onItemsChanged();
+        return true;
+    }
+
+    bool removeInternal(const IdType& id) {
+        guardInstanceUsage();
+        if (!storeRemoveImpl(id)) return false;
+        onItemsChanged();
+        return true;
+    }
+
+    bool removeInternal(const IdType& leftId, const IdType& rightId) {
+        guardInstanceUsage();
+        if (!storeRemovePairImpl(leftId, rightId)) return false;
+        onItemsChanged();
+        return true;
+    }
 
 protected:
-    // --- Central event trigger ---
+    // --- Central event trigger (thread-safe, reentrancy-safe) ---
     virtual void onItemsChanged() {
-        for (auto& cb : _itemsChangedSubscribers)
-            cb();
+        QVector<std::pair<SubscriptionId, ItemsChangedEvent>> subsCopy;
+        {
+            QReadLocker r(&_rwLock);
+            subsCopy = _itemsChangedSubscribers;
+        }
+        for (const auto& p : subsCopy) {
+            try {
+                if (p.second) p.second();
+            } catch (...) {
+                // swallow exceptions from callbacks to keep engine stable
+            }
+        }
+    }
+
+    // --- Protected store*Impl methods used by RegistryCore and mixins ---
+    bool storeAddImpl(const TEntity& e) {
+        QWriteLocker w(&_rwLock);
+        _items.append(e);
+        return true;
+    }
+
+    bool storeAddAllImpl(const QVector<TEntity>& v) {
+        QWriteLocker w(&_rwLock);
+        _items.append(v);
+        return true;
+    }
+
+    void storeSetAllImpl(const QVector<TEntity>& v) {
+        QWriteLocker w(&_rwLock);
+        _items.setAll(v);
+    }
+
+    QVector<TEntity> storeReadAllImpl() const {
+        QReadLocker r(&_rwLock);
+        return _items.data();
+    }
+
+    const TEntity* storeFindByIdImpl(const IdType& id) const {
+        QReadLocker r(&_rwLock);
+        for (const auto& item : _items.data())
+            if (item.id == id) return &item;
+        return nullptr;
+    }
+
+    const TEntity* storeFindByPairImpl(const IdType& leftId, const IdType& rightId) const {
+        QReadLocker r(&_rwLock);
+        for (const auto& item : _items.data())
+            if (item.leftId == leftId && item.rightId == rightId) return &item;
+        return nullptr;
+    }
+
+    bool storeUpdateImpl(const TEntity& e) {
+        QWriteLocker w(&_rwLock);
+        auto& raw = _items.data();
+        for (auto& item : raw) {
+            if (item.id == e.id) { item = e; return true; }
+        }
+        return false;
+    }
+
+    bool storeRemoveImpl(const IdType& id) {
+        QWriteLocker w(&_rwLock);
+        auto& raw = _items.data();
+        for (int i = 0; i < raw.size(); ++i) {
+            if (raw[i].id == id) { _items.removeAt(i); return true; }
+        }
+        return false;
+    }
+
+    bool storeRemovePairImpl(const IdType& leftId, const IdType& rightId) {
+        QWriteLocker w(&_rwLock);
+        auto& raw = _items.data();
+        for (int i = 0; i < raw.size(); ++i) {
+            if (raw[i].leftId == leftId && raw[i].rightId == rightId) { _items.removeAt(i); return true; }
+        }
+        return false;
     }
 
     // --- Internal storage wrapper ---
@@ -182,22 +323,18 @@ protected:
 
         void setAll(const QVector<TEntity>& v) {
             _items = v;
-            _owner->onItemsChanged();
         }
 
         void append(const TEntity& e) {
             _items.append(e);
-            _owner->onItemsChanged();
         }
 
         void append(const QVector<TEntity>& v) {
             _items.append(v);
-            _owner->onItemsChanged();
         }
 
         void removeAt(int i) {
             _items.removeAt(i);
-            _owner->onItemsChanged();
         }
 
         QVector<TEntity>& data() { return _items; }
@@ -212,5 +349,7 @@ protected:
     ItemStore _items;
 
 private:
-    QVector<ItemsChangedEvent> _itemsChangedSubscribers;
+    mutable QReadWriteLock _rwLock;
+    QVector<std::pair<SubscriptionId, ItemsChangedEvent>> _itemsChangedSubscribers;
+    std::atomic<SubscriptionId> _nextSubscriptionId{1};
 };

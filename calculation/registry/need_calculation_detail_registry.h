@@ -3,17 +3,17 @@
 #include <QVector>
 #include <QUuid>
 
-#include "common/registry/base/registry_engine.h"
 #include "common/registry/feature/register_me.h"
-#include "common/registry/workflow/crud_workflow_policy.h"
-
+#include "common/registry/base/registry_engine_base.h"
 #include "calculation/model/need_calculation_detail.h"
-//#include "calculation/repository/need_calculation_detail_repository.h"
-//#include "common/registry/manager/registry_manager.h"
-//#include "common/logger/logger.h"
+#include "common/registry/mixins/crud_mixin.h"
+#include "common/registry/mixins/crud_workflow_mixin.h"
+
 
 class NeedCalculationDetailRegistry
-    : public RegistryEngine<NeedCalculationDetail, CrudWorkflowPolicy>,
+    : public RegistryEngineBase<NeedCalculationDetail>,
+      public CrudMixin<NeedCalculationDetailRegistry, NeedCalculationDetail>,
+      public CrudWorkflowMixin<NeedCalculationDetailRegistry, NeedCalculationDetail>,
       public RegisterMe<NeedCalculationDetailRegistry>
 {
     AUTO_REGISTER_REGISTRY
@@ -29,24 +29,40 @@ public:
     // Lookup API
     QVector<NeedCalculationDetail> findByCalculation(const QUuid& calcId) const;
 
-protected:
+
+    bool insert(const NeedCalculationDetail& d) {
+        return insertWithWorkflow(d);
+    }
+
+    bool update(const NeedCalculationDetail& d) {
+        return updateWithWorkflow(d);
+    }
+
+    bool remove(const QUuid& id) {
+        return removeWithWorkflow(id);
+    }
+
+
     // --- Domain hookok ---
-    bool validateDomain(const NeedCalculationDetail& d) const override;
-    bool validateDuplicate(const NeedCalculationDetail& d) const override;
+    bool validateDomain(const NeedCalculationDetail& d) const ;
+    bool validateDuplicate(const NeedCalculationDetail& d) const ;
 
-    bool beforeInsert(const NeedCalculationDetail& d) override;
-    bool beforeUpdate(const NeedCalculationDetail& d) override;
+    bool beforeInsert(NeedCalculationDetail& d) ;
+    bool beforeUpdate(NeedCalculationDetail& d) ;
+    bool beforeRemove(NeedCalculationDetail&) { return true; }
 
-    void onInsertLog(const NeedCalculationDetail& d) override;
-    void onUpdateLog(const NeedCalculationDetail& d) override;
-    void onRemoveLog(const NeedCalculationDetail& d) override;
 
-    void onLoadLog() override; // <- ÚJ
-    void persist() const override;
+    void onInsertLog(const NeedCalculationDetail& d) ;
+    void onUpdateLog(const NeedCalculationDetail& d) ;
+    void onRemoveLog(const NeedCalculationDetail& d) ;
+
+    void onLoadLog() ; // <- ÚJ
+    void persist() const ;
+
 
 private:
     NeedCalculationDetailRegistry()
-        : RegistryEngine("NeedCalculationDetailRegistry", "NeedCalculationDetail")
+        : RegistryEngineBase("NeedCalculationDetailRegistry", "NeedCalculationDetail")
     {}
 
     // Segédek

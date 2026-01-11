@@ -15,6 +15,7 @@
  * - "status" getterből számolódik → nincs redundáns mező.
  */
 struct BarcodeRecord {
+    using IdType = QUuid;
     QUuid id; // 🔑 belső, technikai azonosító (registry engine-nek)
     QString code;
     QString entityType;

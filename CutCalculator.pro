@@ -42,6 +42,7 @@ SOURCES += \
     calculation/service/need_calculator.cpp \
     calculation/view/calculation_mode_detail_view.cpp \
     calcmodes/view/calculation_modes_view.cpp \
+    test/material_registry_smoke_test.cpp \
     ui/widgets/overlay_icon_widget.cpp \
     workbench/view/bom_workbench.cpp \
     colors/model/named_color.cpp \
@@ -89,30 +90,27 @@ HEADERS += \
     common/model/barcode_hierarchical_entity.h \
     common/model/barcode_identifiable_entity.h \
     common/model/entity.h \
-    common/model/entity_log_helper.h \
     common/model/hierarchical_base.h \
     common/model/identifiable_entity.h \
     common/model/iregistry_entity.h \
-    common/registry/barcode/barcode_hierarchical_registry_engine.h \
-    common/registry/barcode/barcode_identifiable_registry_engine.h \
     common/registry/barcode/barcode_index_mixin.h \
     common/registry/barcode/barcode_lookup_mixin.h \
-    common/registry/barcode/barcode_registry_helper.h \
-    common/registry/base/hierarchical_registry_engine.h \
-    common/registry/barcode/ibarcode_identifiable_registry_base.h \
-    common/registry/base/identifiable_registry_engine.h \
-    common/registry/base/identifiable_registry_helper.h \
-    common/registry/base/registry_engine.h \
+    common/registry/barcode/id_lookup_registry_interface.h \
+    common/registry/base/barcode_capable_interface.h \
     common/registry/base/registry_engine_base.h \
+    common/registry/contract_checks.h \
+    common/registry/core/registry_core.h \
     common/registry/feature/register_me.h \
     common/registry/hierarchy/hierarchy_mixin.h \
-    common/registry/manager/registry_lookup.h \
     common/registry/manager/registry_traits.h \
-    common/registry/workflow/barcode_workflow_policy.h \
-    common/registry/workflow/base_workflow_policy.h \
-    common/registry/workflow/connection_workflow_policy.h \
-    common/registry/workflow/crud_workflow_policy.h \
-    common/registry/workflow/lookup_workflow_policy.h \
+    common/registry/mixins/collector_mixin.h \
+    common/registry/mixins/connection_crud_mixin.h \
+    common/registry/mixins/connection_workflow_mixin.h \
+    common/registry/mixins/contract_checks.h \
+    common/registry/mixins/crud_mixin.h \
+    common/registry/mixins/crud_workflow_mixin.h \
+    common/registry/mixins/id_lookup_mixin.h \
+    common/registry/subscription_token.h \
     common/snapshot/snapshot_manager.h \
     common/snapshot/workbench_snapshot.h \
     common/system/nameof.hpp \
@@ -149,6 +147,7 @@ HEADERS += \
     calculation/service/need_calculator.h \
     calculation/view/calculation_mode_detail_view.h \
     calcmodes/view/calculation_modes_view.h \
+    test/material_registry_smoke_test.h \
     ui/widgets/overlay_icon_widget.h \
     workbench/view/bom_workbench.h \
     colors/model/named_color.h \
@@ -212,6 +211,10 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 
 DISTFILES += \
     README.md \
+    docs/entity_contract.md \
+    docs/entity_matrix.md \
+    docs/registry_contract.md \
+    docs/registry_matrix.md \
     run_1_1_AllapotTabla.txt \
     run_1_2_BugList.txt \
     run_1_3_RegistryRefactor.txt \
@@ -231,7 +234,7 @@ DISTFILES += \
     run_3_3_Prompt_CodeGeneration.txt \
     run_3_4_Prompt_Refactor.txt \
     run_3_5_Prompt_SnippletPatching.txt \
-    run_3_6_PromptHybrid.txt \
+    run_3_6_Prompt_Hybrid.txt \
     run_4_1_Rendszerterv.txt \
     run_4_2_RendszerKomponensLista.txt \
     run_4_AnyagszuksegletSzamitas.txt \

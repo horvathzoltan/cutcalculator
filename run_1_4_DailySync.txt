@@ -1,308 +1,339 @@
-⏱ Mai napi aktivitás – óránkénti ASCII grafikon (2026-01-08 21:09–21:26)
+⏱ Mai napi aktivitás – óránkénti ASCII grafikon (20:45–21:55)
 
-21:00 |###+……. |
+Minden karakter ≈ 5 perc.
 
-(12 karakter = 60 perc; 1 karakter ≈ 5 perc)
+    20:00 |         ### |
+    21:00 |###+#+##+++.#|
 
--   #: intenzív architektúra (RegistryEngine, WorkflowPolicy,
-    Connection/NeedRule modell)
--   +: implementálás / refaktor (RegistryManager, Repository-k, mixinek)
--   .: könnyebb munka (logok, audit, futtatás, ellenőrzés)
-
-------------------------------------------------------------------------
-
-🎯 A mai (2026-01-08) munka egzakt eredménye – kategóriákba rendezve
-
-🟦 Registry engine és workflow réteg konszolidálása
-Érintett fájlok: - common/registry/feature/registry_base.h (hiányzó, de
-API-ra épül minden) - common/registry/base/registry_base.cpp -
-common/registry/base/registry_engine_base.h -
-common/registry/base/registry_engine.h -
-common/registry/workflow/base_workflow_policy.h -
-common/registry/workflow/crud_workflow_policy.h -
-common/registry/workflow/connection_workflow_policy.h -
-common/registry/workflow/lookup_workflow_policy.h -
-common/registry/feature/register_me.h -
-common/registry/feature/registry_catalog.h -
-common/registry/manager/registry_manager.h -
-common/registry/manager/registry_traits.h Mai eredmények: - Egységes
-RegistryBase életciklus: initialize(), guardInstanceUsage(), auditbarát
-logolás, RegistryManager-regisztráció. - Új, tiszta
-RegistryEngineBase<TEntity>: belső _items tároló, guardolt CRUD,
-findIf/findAll/existsBy API, event-alapú ItemStore. -
-RegistryEngine<TEntity, WorkflowPolicy>: domain hookok (validate,
-before/after, log, persist, onLoadLog, validateConnection) leválasztva a
-workflow-ról. - BaseWorkflowPolicy + specializált policy-k (CRUD,
-Connection, Lookup, Barcode) – minden művelet egy egységes
-run(opName, fn) keretben fut. - RegisterMe + AUTO_REGISTER_REGISTRY +
-RegistryCatalog: compile-time biztosított regisztráció, későbbi
-initializeAll()-hoz előkészítve. - RegistryManager újragondolva: audit
-riport, barcode-azonosítható registryk külön listája, típusnév-alapú
-lookup, figyelmeztető logok (duplikált pointer, typeName collision, cast
-hibák). - RegistryFor<Entity> traits: generikus kapcsolat-lookuphoz
-(ConnectionEntity, ConnectionRepository). Kategória:
-➡️ Registry/Workflow architektúra konszolidáció
+-   20:45–21:00: fókuszált architektúra (#) – workflow mixinek megértése
+    / tervezése
+-   21:00–21:55: vegyes mély dizájn (#), implementálás/refaktor (+),
+    könnyebb tisztázás, logelemzés (.)
 
 ------------------------------------------------------------------------
 
-🟦 Barcode/Material/Product registry-k új engine-re emelése
-Érintett fájlok: - barcodes/model/barcode_record.h -
-barcodes/registry/barcode_registry.h -
-barcodes/registry/barcode_registry.cpp -
-barcodes/repository/barcode_repository.h -
-barcodes/repository/barcode_repository.cpp -
-materials/model/material_master.h -
-materials/registry/material_registry.h -
-materials/registry/material_registry.cpp -
-materials/repository/material_repository.h -
-materials/repository/material_repository.cpp -
-products/model/product_master.h -
-products/repository/product_repository.cpp Mai eredmények: -
-BarcodeRegistry átállítva
-RegistryEngine<BarcodeRecord, CrudWorkflowPolicy> alapra, domain
-hookokkal (validateDomain, validateDuplicate, beforeInsert/Update, log
-hookok). - BarcodeRepository háromfázisú importtal (Convert → Validate →
-Build → Assemble), auditbarát hibakezeléssel, CSV-szerződés
-rögzítésével. - MaterialRegistry
-RegistryEngine<MaterialMaster, CrudWorkflowPolicy>-re épül,
-domain-validációval (név, típus), duplikáció-ellenőrzéssel (barcode),
-log hookokkal. - MaterialRepository háromfázisú importtal,
-CuttingMode/PaintingMode, NamedColor, dimenzió-validáció integrálva,
-auditált hibagyűjtéssel. - ProductMaster a BarcodeHierarchicalEntity-re
-épül, előkészítve hierarchikus termékfára. - ProductRepository
-(részlet): parentBarcode → parentId kétfázisú feloldás, orphan
-összefoglaló, auditált hibák. Kategória:
-➡️ Domain registry-k modernizálása (Barcode/Material/Product)
+🎯 A mai (2026-01-11) munka egzakt eredménye – kategóriákba rendezve
 
 ------------------------------------------------------------------------
 
-🟦 Generikus Connection/NeedRule infrastruktúra
-Érintett fájlok: - connections/connection_entity.h -
-connections/connection_registry_engine.h -
-connections/connection_repository.h -
-connections/connection_importer.h - needs/model/need_rule.h -
-needs/registry/need_rule_registry.h -
+🟦 Registry workflow architektúra konszolidálása
+Érintett fájlok: - common/registry/mixins/crud_workflow_mixin.h -
+common/registry/mixins/connection_workflow_mixin.h - (konceptuálisan:
+common/registry/mixins/crud_mixin.h,
+common/registry/base/registry_engine_base.h – inkább szerződés szinten)
+
+Mai eredmények: - Pontosítottuk a CrudWorkflowMixin szerződését: milyen
+hookokat vár a hosttól (validateDomain, validateDuplicate,
+beforeInsert/Update/Remove, onInsert/Update/RemoveLog, persist). -
+Letisztáztuk, hogy a workflow mixin mindig a publikus CRUD‑override‑re
+épül (insert/update/remove →
+insertWithWorkflow/updateWithWorkflow/removeWithWorkflow), és soha nem
+megy közvetlenül a motor protected API‑jára. - Különválasztottuk a CRUD
+workflowt és a connection workflowt: a ConnectionWorkflowMixin a
+kapcsolattáblákra (NeedRuleRegistry), a CrudWorkflowMixin pedig az
+entitás registrykre (Product, NeedCalculation, NeedCalculationDetail)
+vonatkozik. - Kimondtuk és dokumentáltuk: a workflow mixinek notóriusan
+nem valók olyan helyekre, mint a BarcodeRegistry (speciális
+audit‑/életút‑logika) és ColorRegistry (pure lookup).
+
+Kategória:
+➡️ ARCHITECTURE / WORKFLOW_CONTRACT
+
+------------------------------------------------------------------------
+
+🟦 NeedRule / kapcsolat‑registryk workflow‑ja
+Érintett fájlok: - needs/registry/need_rule_registry.h -
 needs/registry/need_rule_registry.cpp -
-needs/repository/need_rule_repository.h -
-needs/repository/need_rule_repository.cpp Mai eredmények: -
-ConnectionEntity<Left,Right>: bal/jobb GUID, registry-alapú lookup
-RegistryFor + RegistryManager::lookupRegistry segítségével, barcode
-convenience (leftBarcode/rightBarcode), auditbarát describe(). -
-ConnectionRepository<ConnectionType, Traits>: generikus CSV
-import/export kapcsolattáblákhoz, Traits-alapú konfigurációval
-(filePath, headers, Left/RightEntity, RegistryType). -
-ConnectionImporter<Row,Domain,Traits>: háromfázisú import keret (Convert
-→ Validate → Build) kapcsolattípusokra. - NeedRule =
-ConnectionEntity<ProductMaster, MaterialMaster> – domain-szintű típus. -
-NeedRuleRegistry RegistryEngine<NeedRule, ConnectionWorkflowPolicy>-re
-épül, domain hookokkal (validateConnection, validateDuplicate, log,
-persist → NeedRuleRepository::save()). - NeedRuleRepository
-ConnectionRepository-alapú load/save-re egyszerűsítve. Kategória:
-➡️ Generikus kapcsolótábla-architektúra (NeedRule és társai)
+common/registry/mixins/connection_workflow_mixin.h - (érintőlegesen:
+needs/manager/material_requirements_manager.cpp,
+workbench/view/bom_workbench.cpp – hívási pontok)
+
+Mai eredmények: - Bevezettük a ConnectionWorkflowMixin‑t
+NeedRuleRegistry‑re, amely: - kapcsolat entitást épít leftId, rightId
+alapján, - lefuttatja a domain hookokat (validateConnection,
+validateDuplicate, később beforeInsert), - hívja a ConnectionCrudMixin
+insert/remove metódusait, - domain logot ír és persistál. - Kijavítottuk
+az API‑mismatch hibát: a NeedRuleRegistry nem írhatja felül az
+insert(const Connection&) metódust egy saját insert(left,right)‑tal –
+helyette új publikus API született pl. insertRule(left,right) /
+removeRule(left,right), ami a workflow‑ra mutat. - Rendezettük a GUI
+hívási pontokat (MaterialRequirementsManager, BomWorkbench), hogy a
+domain API‑t hívják, ne a nyers CRUD‑ot.
+
+Kategória:
+➡️ DOMAIN / CONNECTION_WORKFLOW
 
 ------------------------------------------------------------------------
 
-🟦 Barcode/Hierarchy mixinek és lookup indexek
-Érintett fájlok: - common/registry/barcode/barcode_index_mixin.h -
-common/registry/barcode/barcode_lookup_mixin.h -
-common/registry/hierarchy/hierarchy_mixin.h -
-common/model/identifiable_entity.h - common/model/iregistry_entity.h -
-common/model/hierarchical_entity.h -
-common/model/barcode_identifiable_entity.h -
-common/model/barcode_hierarchical_entity.h Mai eredmények: -
-BarcodeIndexMixin<Derived,Entity>: subscribeItemsChanged-re épülő
-automatikus barcode-index, findByBarcode O(1) lookup-pal. -
-BarcodeLookupMixin általános findByBarcode API-t ad, ha a registry
-findIf-et biztosít. - HierarchyMixin<Derived,Entity>:
-findChildren(parentId) és findRoots() generikusan, findAll-ra építve. -
-Modellek (IdentifiableEntity, BarcodeIdentifiableEntity,
-HierarchicalEntity, BarcodeHierarchicalEntity) tisztán szétválasztják az
-azonosíthatóságot, hierarchiát és barcode-ot, auditbarát
-displayName/toString/hierarchyPath implementációval. Kategória:
-➡️ Indexelés és hierarchia-mixinek tiszta modellre építve
+🟦 NeedCalculation és NeedCalculationDetail domain registryk workflow‑ra
+emelése
+Érintett fájlok: - calcmodes/registry/need_calculation_registry.h -
+calcmodes/registry/need_calculation_registry.cpp -
+calculation/registry/need_calculation_detail_registry.h -
+calculation/registry/need_calculation_detail_registry.cpp
+
+Mai eredmények: - A NeedCalculationRegistry‑t teljes értékű CrudWorkflow
+registryvé alakítottuk: - insert/update/remove most már
+insertWithWorkflow/updateWithWorkflow/removeWithWorkflow‑ra mutat. -
+Hozzáadtuk a hiányzó onUpdateLog és onRemoveLog hookokat, így a
+CrudWorkflowMixin Fordítási‑idejű elvárásai maradéktalanul
+teljesülnek. - A NeedCalculationDetailRegistry korábbi saját
+insertWithWorkflow/updateWithWorkflow implementációja feleslegessé vált,
+átadtuk a szerepet a CrudWorkflowMixin‑nek; a registry most csak: -
+domain hookokat ad (validateDomain, validateDuplicate,
+beforeInsert/Update/Remove), - domain logot
+(onInsert/Update/RemoveLog), - persistet. - A
+updateFormula(id, newFormula) már a workflow‑val kompatibilis módon
+hívja az updateWithWorkflow‑ot, biztosítva a formula‑validáció és
+persist megtörténtét.
+
+Kategória:
+➡️ DOMAIN / CRUD_WORKFLOW
 
 ------------------------------------------------------------------------
 
-🟩 Összegzés – a mai nap 4 nagy eredménye
+🟦 ProductRegistry és host‑hook szerződés tisztítása
+Érintett fájlok: - products/registry/product_registry.h -
+(konceptuálisan: products/repository/product_repository.h,
+common/registry/mixins/crud_workflow_mixin.h fordítási hibáin keresztül)
 
-1.  RegistryEngine + WorkflowPolicy réteg letisztítása, domain hookok és
-    workflow szétválasztása.
-2.  Barcode/Material/Product registry-k modernizálása egységes
-    import/persist és audit kerettel.
-3.  Generikus Connection/NeedRule infrastruktúra bevezetése,
-    Traits-alapú CSV import/exporttal.
-4.  Barcode- és hierarchia-mixinek bevezetése, amelyekre a teljes lookup
-    és fa-logika épülhet.
+Mai eredmények: - A ProductRegistry megkapta a hiányzó
+beforeRemove(ProductMaster&) hookot, így a CrudWorkflowMixin
+removeWithWorkflow hívása már típusbiztos és fordítható. - Ezzel a
+ProductRegistry végre ugyanabba a egységes CRUD‑workflow kategóriába
+került, mint a NeedCalculation* registryk: a GUI mindig
+insert/update/remove‑ot hív, a workflow pedig gondoskodik a domain
+szabályokról és persistálásról. - A fordítási hibák
+(has no member named beforeRemove) segítettek compile‑time guardként
+működni: ahol hiányzott a hook, ott most pontosan pótoltuk.
+
+Kategória:
+➡️ DOMAIN / PRODUCT_REGISTRY_CONSISTENCY
+
+------------------------------------------------------------------------
+
+🟦 Speciális registryk helyének tisztázása: ColorRegistry és
+BarcodeRegistry
+Érintett fájlok: - colors/registry/color_registry.h -
+colors/registry/color_registry.cpp -
+barcodes/registry/barcode_registry.h -
+barcodes/registry/barcode_registry.cpp - barcodes/model/barcode_record.h
+
+Mai eredmények: - Dokumentáltuk és megerősítettük, hogy a
+ColorRegistry: - tiszta technikai/lookup registry, - nincs
+CRUD‑workflow, - nem szükséges persistálni GUI‑módosításból (statikus
+adat). - A BarcodeRegistry‑t explicit audit registryként
+pozicionáltuk: - saját, magasabb szintű workflow API‑val (registerNew,
+retire), - a CRUD itt csak belső technikai lépés, - a workflow‑mixinek
+szándékosan nem érintik. - Ez lezárta azt a kérdést, hogy mely registryk
+„klasszikus domain CRUD” és melyek „speciális audit/technikai” szerepet
+töltenek be.
+
+Kategória:
+➡️ ARCHITECTURE / REGISTRY_CLASSIFICATION
+
+------------------------------------------------------------------------
+
+🟦 Dokumentáció – registry és entitás szerződés formalizálása
+Érintett fájlok: - docs/registry_contract.md (új / jelentősen
+frissített) - docs/entity_contract.md (új)
+
+Mai eredmények: - Létrehoztuk a Registry Contract v2‑t: -
+registry‑típusok (technikai, domain, connection, audit), - host‑hook
+szerződés, - workflow‑mixinek elvárásai, - threading, hibakezelés,
+persist szabályok, - compile‑time concept‑alapú ellenőrzés elvi
+kerete. - Létrehoztuk az Entity Contract v1‑et: - alap
+entitás‑hierarchia (Entity → IRegistryEntity → IdentifiableEntity →
+BarcodeIdentifiableEntity → BarcodeHierarchicalEntity), - domain
+entitások (MaterialMaster, ProductMaster, NeedCalculation,
+NeedCalculationDetail, NeedRule, BarcodeRecord, NamedColor), -
+invariánsok per entitás, - registry ↔ entitás mátrix. - Az egész
+dokumentáció most már ipari minőségű, tanítható, és bármikor
+hivatkozható.
+
+Kategória:
+➡️ DOCUMENTATION / ARCHITECTURE_SPEC
+
+------------------------------------------------------------------------
+
+🟩 Összegzés – a mai nap 5 nagy eredménye
+
+1.  Egységes CRUD‑workflow architektúrát építettünk a domain registrykre
+    (Product, NeedCalculation, NeedCalculationDetail).
+2.  A kapcsolat‑registry (NeedRuleRegistry) workflow‑ja tisztán levált a
+    CRUD‑mixinekről, külön ConnectionWorkflowMixin réteggel.
+3.  A speciális registryk (Barcode, Color) szerepét világosan
+    elkülönítettük a „sima domain” registryktől.
+4.  Fordítási időben megfogott API‑hibákat javítottunk (beforeRemove,
+    onUpdateLog/onRemoveLog), stabilizálva a host‑hook szerződést.
+5.  Két nagy dokumentum (registry + entity contract) most már
+    formalizálja az egész architektúrát – ez a jövőbeli refaktorok és
+    onboarding alapja.
 
 ------------------------------------------------------------------------
 
 📝 Mai nap összefoglalója
 
--   [✅ ELKÉSZÜLT] Egységes RegistryEngineBase + RegistryEngine
-    struktúra, domain hookokkal és workflow policy-kre támaszkodva.
--   [✅ ELKÉSZÜLT] RegistryManager új audit- és lookup-API-ja,
-    barcode-azonosítható registryk külön kezelésével.
--   [✅ ELKÉSZÜLT] BarcodeRegistry, MaterialRegistry, NeedRuleRegistry
-    átállítása az új engine-re és workflow-kra.
--   [✅ ELKÉSZÜLT] Háromfázisú CSV import pipeline
-    (Barcode/Material/Product/NeedRule) auditbarát hibakezeléssel.
--   [✅ ELKÉSZÜLT] Generikus ConnectionEntity + ConnectionRepository +
-    ConnectionImporter minta.
--   [✅ ELKÉSZÜLT] Barcode- és hierarchia-mixinek (index, lookup,
-    children/roots) integrálása.
--   [🚧 HALADT] NeedCalculation/NeedCalculationDetail CSV-k előkészítése
-    – jelenleg hiányzó fájlokra figyelmeztet a rendszer, de a pipeline
-    már fut.
--   [🚧 HALADT] RegistryDomain/RegistryEngine szerepének tisztázása – a
-    mai kód már előkészíti a későbbi RegistryDomain mixin
-    szétválasztást.
+-   [✅ ELKÉSZÜLT] A CrudWorkflowMixin és ConnectionWorkflowMixin
+    szerepének és elvárásainak tiszta, egységes modellje.
+-   [✅ ELKÉSZÜLT] NeedCalculationRegistry és
+    NeedCalculationDetailRegistry sikeres átállítása workflow‑alapú
+    CRUD‑ra, fordítási hibák nélkül.
+-   [✅ ELKÉSZÜLT] NeedRuleRegistry connection‑workflow integrációja, a
+    publikus API tiszta szétválasztásával (insertRule/removeRule).
+-   [✅ ELKÉSZÜLT] ProductRegistry hiányzó hookjainak (beforeRemove)
+    pótlása, így minden domain registry kompatibilis a
+    CrudWorkflowMixin‑nel.
+-   [✅ ELKÉSZÜLT] Registry‑ és entity‑contract dokumentumok első
+    verziója, ASCII ábrákkal és mátrixokkal.
+-   [🚧 HALADT] Speciális registryk (BarcodeRegistry) audit/workflow
+    mintáinak finomhangolása – tisztázva, hogy külön kategória a
+    klasszikus CRUD‑tól.
+-   [🚧 HALADT] Iparági összevetés (registry és entitás minták) –
+    helykeresés a „nagyvilágban”, további fejlődési irányok
+    feltérképezése (versioning, event sourcing stb.).
 
 ------------------------------------------------------------------------
 
 🐞 BUG lista (életciklus-kezeléssel)
 
--   [🐞 BUG] BarcodeRegistry nem barcode-identifiable a RegistryManager
-    szemében
+-   [🐞 BUG] CRUD workflow hook hiány – ProductRegistry::beforeRemove
+    -   Tünet: fordítási hiba a CrudWorkflowMixin removeWithWorkflow
+        instanciálásakor (has no member named 'beforeRemove').
+    -   Állapot ma: [✅ KÉSZ] – hozzáadott
+        bool beforeRemove(ProductMaster&) { return true; }.
+-   [🐞 BUG] NeedCalculationRegistry – hiányzó onUpdateLog/onRemoveLog
+    -   Tünet: fordítási hiba a CrudWorkflowMixin updateWithWorkflow és
+        removeWithWorkflow hívásainál.
+    -   Állapot ma: [✅ KÉSZ] – implementálva onUpdateLog és onRemoveLog
+        egyszerű, domain‑konzisztens logolással.
+-   [🐞 BUG] NeedRuleRegistry – insert API mismatch (Connection
+    vs. left/right)
     -   Tünet:
-        registerRepo: registry 'BarcodeRegistry' is not barcode-identifiable
-        warning.
-    -   Ok: RegistryManager jelenleg IBarcodeIdentifiableRegistryBase-re
-        castol, a BarcodeRegistry viszont már az új RegistryEngine-re
-        épül, nem az előző barcode-registry base-re.
-    -   Állapot: ismert, nem kritikus; későbbi lépésben vagy új
-        interface, vagy RegistryManager-logika finomhangolása szükséges.
--   [🐞 BUG] Hiányzó NeedCalculation CSV-k
-    -   Tünet: File error during CSV READ a needcalculations.csv és
-        needcalc_details.csv fájlokra.
-    -   Ok: fájlok még nincsenek létrehozva, de a startup pipeline már
-        próbálja beolvasni.
-    -   Állapot: ismert, tervezett hiány; később vagy dummy fájl, vagy
-        feltételes betöltés.
+        no matching function for call to 'NeedRuleRegistry::insert(Connection...)',
+        mivel a host insert(left,right)‑tal rejtette el az
+        insert(Connection)‑et.
+    -   Állapot ma: [✅ KÉSZ] – új publikus API (insertRule/removeRule)
+        jött létre, az eredeti CRUD‑insert érintetlen maradt.
+-   [🐞 BUG] NeedCalculationDetailRegistry – duplikált saját workflow a
+    CrudWorkflowMixin mellett
+    -   Tünet: kód‑szag, potenciális könnyen elromló duplázás
+        (insertWithWorkflow/updateWithWorkflow saját kézzel).
+    -   Állapot ma: [✅ KÉSZ] – a saját workflow függvények elhagyhatók,
+        a CrudWorkflowMixin vette át a szerepet, a registry csak
+        hookokat biztosít.
 
-(Korábbi hibák státuszát ma nem módosítottuk, ezért most csak az
-új/aktuális állapotok szerepelnek.)
+(Jelenleg nincs aktív, nyitott futó BUG, minden ma talált hiba státusza
+[✅ KÉSZ].)
 
 ------------------------------------------------------------------------
 
-Ötletek, problémák, döntések – folyószövegben
+milyen ötletek születtek
+Ma kirajzolódott egy nagyon tiszta kép arról, hogy a registryk és a
+hozzájuk kapcsolódó workflow‑k valójában külön családok: technikai,
+domain, connection, audit. Ez megnyitotta az utat egy olyan architektúra
+felé, ahol minden registrynek explicit szerepe van, nem csak „egy újabb
+CRUD”. Megszületett az az ötlet is, hogy a dokumentációt ne csak leíró
+módon, hanem mátrixokkal és ASCII ábrákkal építsük, így a kód és a
+dokumentum kölcsönösen megerősíti egymást, és új fejlesztőknek is
+vizuálisan egyértelmű a rendszer szerkezete. Emellett fölmerült egy
+hosszabb távú irány: versionelt, esetleg event‑sourced entitások és
+audit‑policyk bevezetése, ha a rendszer egyszer igényli.
 
-Ma az ötletek fő iránya az volt, hogy a registry-réteget három tiszta
-szintre bontsuk: egy minimális RegistryBase az életciklusért és
-auditért, egy RegistryEngineBase a tárolásért és read-API-kért, és egy
-RegistryEngine<TEntity, WorkflowPolicy> a domain hookokért, amelyre
-külön workflow policy-k épülnek. Ezzel párhuzamosan megszületett a
-gondolat, hogy a domain-specifikus logikát egy külön RegistryDomain
-mixinbe lehetne szervezni, így az engine tényleg csak “motor” maradna, a
-domain pedig tiszta, tesztelhető rétegként ülne rajta. A
-Connection/NeedRule vonalon az ötlet az volt, hogy minden kapcsolattábla
-ugyanarra a generikus ConnectionEntity/Repository/Importer mintára
-épüljön, Traits-szel paraméterezve.
+milyen problémák merültek fel
+A fordítás közben felszínre kerültek az eddig lappangó
+API‑inkonzisztenciák: hiányzó hookok (beforeRemove, onUpdateLog,
+onRemoveLog), felülírt CRUD metódusok, amelyek elrejtették a mixinek
+által elvárt API‑t. Ezek a hibák rámutattak arra, hogy a workflow‑t
+eddig helyenként „helyben oldottuk meg”, ahelyett hogy egységesen,
+mixin‑szinten kezeltük volna. A NeedRuleRegistry különösen szép példája
+volt annak, hogyan tud egy ártatlannak tűnő insert(left,right) API
+összeakadni a generikus insert(Connection) szerződéssel.
 
-A problémák között megjelent, hogy a RegistryManager jelenlegi
-barcode-centrikus nézete nem illeszkedik tökéletesen az új, általánosabb
-RegistryEngine-architektúrához: a
-dynamic_cast<IBarcodeIdentifiableRegistryBase*> figyelmeztetéseket
-generál olyan registrykre, amelyek valójában teljesen érvényesek, csak
-más base-t használnak. Emellett a NeedCalculation CSV-k hiánya is
-látszik a logban, ami ugyan nem runtime-hiba, de zajt visz a naplóba, és
-jelzi, hogy a pipeline már előrébb jár, mint az adat. A
-ConnectionRegistryEngine régi API-jának és az új RegistryEngine-alapú
-NeedRuleRegistry-nek az együttélése is felvet néhány “túlnyúló szerep”
-kérdést, amit a későbbi RegistryDomain-szétválasztás fog tisztázni.
-
-A döntések szintjén ma rögzítettük, hogy a workflow-k (CRUD, Connection,
-Lookup, Barcode) policy-ként élnek tovább, és a registryk csak domain
-hookokat és tárolást adnak. Eldőlt az is, hogy a CSV import mindenhol
-háromfázisú, auditbarát pipeline lesz, és a Connection/NeedRule világ
-generikus, Traits-alapú megoldásra épül. A RegisterMe +
-AUTO_REGISTER_REGISTRY + RegistryCatalog vonalon az a döntés született,
-hogy a regisztráció compile-time biztosított lesz, és a későbbi
-RegistryCatalog::initializeAll() hívás fogja egységesen életre kelteni a
-registryket. A Barcode/Hierarchy mixinek bevezetésével pedig kimondtuk,
-hogy az indexelés és fa-logika nem ad-hoc, hanem újrafelhasználható,
-típusbiztos komponensekre épül.
+milyen döntések születtek
+Döntés született arról, hogy minden domain registry egységesen a
+CrudWorkflowMixin‑re fog épülni, a CRUD‑metódusokat explicit
+workflow‑override‑on keresztül. A kapcsolat‑táblák külön
+ConnectionWorkflowMixin‑t kapnak, és a publikus API mindig beszélő nevű,
+domain‑orientált (pl. insertRule). A ColorRegistry és a BarcodeRegistry
+hivatalosan is külön kategóriába kerültek (technikai lookup, illetve
+audit/életút registry), így nem próbáljuk őket beleerőltetni a
+CRUD‑workflow sablonba. Dokumentációs szinten döntés született arról is,
+hogy a registry‑ és entity‑contract két külön, de egymást kiegészítő
+dokumentum lesz, mátrixokkal, ASCII ábrákkal, ipari minőségű
+szerkezettel.
 
 ------------------------------------------------------------------------
 
 📁 Érintett fájlok / modulok
 
--   common/registry/base/registry_base.cpp – RegistryBase életciklus
-    (initialize, guardInstanceUsage, logEntityAction) véglegesítése,
-    RegistryManager-regisztrációval.
--   common/registry/base/registry_engine_base.h – új, generikus
-    tárolómotor _items-szel, guardolt CRUD, find/exists API, event-alapú
-    ItemStore.
--   common/registry/base/registry_engine.h –
-    RegistryEngine<TEntity, WorkflowPolicy> domain hookokkal,
-    workflow-delegálással, persist hookkal.
--   common/registry/feature/register_me.h + registry_catalog.h –
-    compile-time regisztrációs minta, AUTO_REGISTER_REGISTRY,
-    RegistryCatalog::add/initializeAll.
--   common/registry/manager/registry_manager.h – audit riport,
-    barcode-azonosítható registryk listája, típusnév-alapú lookup,
-    figyelmeztető logok.
--   common/registry/workflow/*.h – Base/CRUD/Connection/Lookup/Barcode
-    workflow policy-k, egységes run() kerettel.
--   common/registry/barcode/*.h +
-    common/registry/hierarchy/hierarchy_mixin.h – barcode-index,
-    barcode-lookup, hierarchia-mixinek.
--   barcodes/model/barcode_record.h – auditbarát barcode-életút modell
-    (introducedAt, retiredAt, Status).
--   barcodes/registry/barcode_registry.* – új engine-re emelt
-    BarcodeRegistry, domain hookokkal és lookup API-val.
--   barcodes/repository/barcode_repository.* – háromfázisú CSV
-    import/export, auditált hibakezelés, duplikáció-ellenőrzés.
--   materials/model/material_master.h – BarcodeIdentifiableEntity-alapú
-    anyagmodell, szín, vágási/festési módokkal.
--   materials/registry/material_registry.* – RegistryEngine-alapú
-    anyagregistry, domain-validációval és logolással.
--   materials/repository/material_repository.* – háromfázisú
-    anyag-import, dimenzió- és színvalidációval.
--   products/model/product_master.h +
-    products/repository/product_repository.cpp – hierarchikus
-    termékmodell, parentBarcode → parentId feloldás, orphan audit.
--   connections/connection_entity.h – generikus ConnectionEntity
-    bal/jobb lookup-pal, barcode convenience-szel.
--   connections/connection_registry_engine.h – régi connection-engine,
-    most már az új RegistryEngine mellett, de még használható
-    referenciaként.
--   connections/connection_repository.h + connection_importer.h –
-    generikus CSV import/export és háromfázisú import keret
-    kapcsolattáblákhoz.
--   needs/model/need_rule.h – NeedRule = Product–Material kapcsolat,
-    ConnectionEntity-alapú.
--   needs/registry/need_rule_registry.* – NeedRuleRegistry az új
-    engine + ConnectionWorkflowPolicy alapján, domain hookokkal és
-    persist-tel.
--   needs/repository/need_rule_repository.* – NeedRuleRepository
-    ConnectionRepository-alapú load/save-re egyszerűsítve.
--   common/model/*.h – azonosítható, barcode-os és hierarchikus
-    entitások tiszta modellje, auditbarát string-reprezentációkkal.
+-   common/registry/mixins/crud_workflow_mixin.h
+    – A workflow lépései (validate → before* → CRUD → log → persist)
+    tisztázva, host‑hook elvárások rögzítve.
+
+-   common/registry/mixins/connection_workflow_mixin.h
+    – Connection‑típusú registrykre szabott workflow:
+    insertWithWorkflow(leftId,rightId) → Connection entitás + domain
+    hookok + CRUD + log + persist.
+
+-   needs/registry/need_rule_registry.h/.cpp
+    – Bevezetve a ConnectionWorkflowMixin, új publikus API
+    (insertRule/removeRule), a mixinek által elvárt függvények
+    illesztése.
+
+-   calcmodes/registry/need_calculation_registry.h/.cpp
+    – CRUD‑workflow integráció, hiányzó onUpdateLog, onRemoveLog,
+    before* hookok pótlása, publikus CRUD‑metódusok workflow‑ra
+    mutatnak.
+
+-   calculation/registry/need_calculation_detail_registry.h/.cpp
+    – A saját kézi workflow‑függvények feleslegessé váltak, a
+    CrudWorkflowMixin végzi a lépéseket, a registry csak a domain
+    logikára és hookokra fókuszál.
+
+-   products/registry/product_registry.h
+    – Hiányzó beforeRemove hook hozzáadva, a CrudWorkflowMixin
+    remove‑workflowja most már biztosan hívható.
+
+-   colors/registry/color_registry.h/.cpp
+    – Átnézve és rögzítve: pure technikai/lookup registry, nincs
+    workflow, nincs CRUD‑override.
+
+-   barcodes/registry/barcode_registry.h/.cpp
+    – Tudatosítva, hogy ez egy audit/életút registry; a registerNew és
+    retire saját workflow, nem illik rá a CrudWorkflowMixin.
+
+-   barcodes/model/barcode_record.h
+    – Audit entitás szerepe tisztázva, életút (introducedAt/retiredAt)
+    invariánsai dokumentálva.
+
+-   docs/registry_contract.md
+    – Új, egységes registry szerződés: registry típusok,
+    workflow‑mixinek, host‑hookok, threading, hibakezelés, compile‑time
+    elvárások.
+
+-   docs/entity_contract.md
+    – Új, egységes entitás szerződés: entitás‑hierarchia, domain
+    entitások, invariánsok, registry ↔ entitás mátrix.
 
 ------------------------------------------------------------------------
 
 💡 Új ötletek / megfigyelések
 
--   [💡] A RegistryEngine és a domain hookok szétválasztása után adja
-    magát egy külön RegistryDomain mixin, ami a domain-szabályokat
-    hordozza, az engine pedig tisztán technikai marad.
--   [💡] A Connection/NeedRule minta könnyen kiterjeszthető más
-    kapcsolattáblákra (pl. Product–Accessory, Material–Supplier) pusztán
-    Traits cseréjével.
--   [💡] A RegistryManager jelenlegi barcode-fókusza jó jelző, hogy
-    érdemes lesz egy általánosabb “registry capability” réteget
-    bevezetni (pl. külön interface a barcode-lookuphoz).
--   [💡] A háromfázisú CSV import (Convert → Validate → Build) nagyon
-    jól illeszkedik az audit- és diff-igényekhez; érdemes ezt “golden
-    patternként” rögzíteni a projektben.
--   [💡] A RegistryCatalog + AUTO_REGISTER_REGISTRY minta lehet a belépő
-    egy későbbi “initializeAllRegistries” startup-fázishoz, ahol a
-    teljes rendszer determinisztikusan életre kel.
--   [💡] A hierarchia-mixinek (findRoots/findChildren) és a
-    BarcodeIndexMixin együtt egy nagyon erős, de mégis egyszerű
-    lookup-réteget adnak a UI és a számítási szolgáltatások számára.
+-   A registryk és entitások mátrix‑alapú dokumentálása nagyon erős
+    onboarding eszköz – sokkal többet mond, mint hosszú szöveg.
+-   A workflow‑mixinek compile‑time szerződésként viselkednek: a
+    fordítási hibák most már valójában „szerződésszegési riasztások”.
+-   A BarcodeRegistry külön audit‑kategóriába emelése hosszú távon
+    megnyitja az utat policy‑alapú audit és lifecycle szabályok előtt.
+-   A NeedRule‑féle kapcsolat entitásoknál a domain‑orientált publikus
+    API (insertRule) sokkal érthetőbb, mint a nyers insert(Connection).
+-   A technikai registryk (ColorRegistry, MaterialRegistry) explicit
+    leválasztása a workflow‑világról csökkenti a jövőbeli „gyanús
+    workflow‑ráhúzás” kísértését.
+-   Az entitás‑hierarchia (Identifiable → BarcodeIdentifiable →
+    BarcodeHierarchical) már most DDD‑kompatibilis alap, ha egyszer
+    aggregate‑root irányba szeretnél lépni.
 
-------------------------------------------------------------------------
-
-Szép, kerek nap lett ebből—holnapra már egy tisztán szervezett
-Registry/Workflow/Connection világ vár rád pihenés után.
+Ez a mai nap szép zárása: a rendszered registry‑ és entitásrétege most
+már nem csak működik, hanem tanítható, magyarázható és jövőbiztos.

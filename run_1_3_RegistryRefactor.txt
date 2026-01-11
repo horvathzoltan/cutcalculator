@@ -1,290 +1,347 @@
-Zoltán, akkor most összerakom a teljes, végrehajtható, lépésről‑lépésre
-követhető tervet a RegistryStore / RegistryDomain / RegistryEngine
-szétválasztására.
-Ez nem elmélet, hanem konkrét műveleti lista, amit ha sorban
-végigviszel, a rendszered egy tiszta, moduláris, auditálható
-architektúrává áll össze.
+⭐ Összefoglalás
 
-A terv három fázisra bomlik:
+  Registry                        Típus       Workflow kell?   CRUD kell?
+  ------------------------------- ----------- ---------------- ---------------------------
+  * ColorRegistry                 Technikai   ❌ Nem           ❌ Nem
+  * ProductRegistry               Domain      ✔️ Igen          ✔️ Igen
+  * NeedRuleRegistry              Domain      ✔️ Igen          ✔️ Igen (connection CRUD)
+  * MaterialRegistry              Technikai   ❌ Nem           ✔️ Csak CRUD
+  NeedCalculationDetailRegistry   Domain      ✔️ Igen          ✔️ Igen
 
-1.  Új architektúra létrehozása (új fájlok, új osztályok)
-2.  RegistryEngine átalakítása (a három réteg összekötése)
-3.  Domain registryk átvezetése (Material, Product, NeedRule, Barcode)
+***
+***
+***
 
-Mindegyik fázis konkrét, végrehajtható lépésekre van bontva.
+megmutatom, hogyan épül rá a CRUD és a ConnectionCrudMixin,
+
+┌───────────────────────────────┐
+│       RegistryManager         │
+│  (runtime domain ID-lookup)   │
+└───────────────┬───────────────┘
+                │ dynamic_cast
+┌───────────────▼────────────────┐
+│   IdLookupRegistryInterface     │
+│ (domain-level ID lookup API)   │
+└───────────────┬────────────────┘
+                │ implemented by registry
+┌───────────────▼────────────────┐
+│        IdLookupMixin            │
+│ (generic compile-time lookup)   │
+└───────────────┬────────────────┘
+                │ uses
+┌───────────────▼────────────────┐
+│      RegistryEngineBase         │
+│ (storage, locking, primitives)  │
+└───────────────┬────────────────┘
+                │ used by
+┌───────────────▼────────────────┐
+│        CrudMixin                │
+│    ConnectionCrudMixin          │
+└─────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────┐
+│                        APPLICATION LAYER                      │
+│                (domain logic, UI, import/export)              │
+└──────────────────────────────────────────────────────────────┘
+                               │
+                               ▼
+┌──────────────────────────────────────────────────────────────┐
+│                        REGISTRY MANAGER                       │
+│  - minden registryt ismer (repos)                             │
+│  - felismeri a domain registryket (IdLookupRegistryInterface) │
+│  - felismeri a barcode-capable registryket (IBarcodeCapable)  │
+│  - domain ID-lookup: findEntity(typeName, id)                 │
+│  - technikai lookup: lookupRegistry<T>()                      │
+└──────────────────────────────────────────────────────────────┘
+         │                         │
+         │                         │
+         │ domain lookup           │ barcode-capable detection
+         ▼                         ▼
+┌──────────────────────────┐   ┌──────────────────────────────┐
+│  IdLookupRegistryInterface│   │       IBarcodeCapable        │
+│  (runtime szerződés)      │   │ (runtime marker interface)   │
+└───────────┬──────────────┘   └──────────────┬──────────────┘
+            │                                   │
+            │ implemented by                    │ implemented by
+            ▼                                   ▼
+┌──────────────────────────┐   ┌──────────────────────────────┐
+│   DOMAIN REGISTRYK        │   │   BARCODE-CAPABLE REGISTRYK  │
+│  (Material, Product, ...) │   │ (Material, Product, stb.)    │
+│  - domain entitások       │   │ - barcode index              │
+│  - ID-lookup kell         │   │ - gyors barcode keresés      │
+└───────────┬──────────────┘   └──────────────┬──────────────┘
+            │                                   │
+            │ compile-time képességek           │ compile-time képességek
+            ▼                                   ▼
+┌──────────────────────────┐   ┌──────────────────────────────┐
+│     IdLookupMixin         │   │    BarcodeIndexMixin         │
+│  (belső ID-lookup engine) │   │ (belső barcode index engine) │
+└───────────┬──────────────┘   └──────────────┬──────────────┘
+            │                                   │
+            └──────────────┬────────────────────┘
+                           │
+                           ▼
+┌──────────────────────────────────────────────────────────────┐
+│                    RegistryEngineBase<TEntity>                │
+│  - tárolás (QVector)                                          │
+│  - locking                                                    │
+│  - read/write primitívek                                      │
+│  - event subscription                                         │
+│  - CRUD alapok                                                │
+└──────────────────────────────────────────────────────────────┘
+                           │
+                           ▼
+┌──────────────────────────────────────────────────────────────┐
+│                           STORAGE                             │
+│       (CSV, JSON, adatbázis, repositoryk, fájlok)             │
+└──────────────────────────────────────────────────────────────┘
+
+
+
+***
+***
+***
+
+
+Zoltán, ez most egy gyönyörű pillanat, mert pontosan elérkeztünk oda,
+ahol a RegistryEngineBase‑t végre le lehet tisztítani arra a minimális,
+kristálytiszta motorra, aminek eredetileg szántad.
+
+És a jó hír: a te rendszered már készen áll erre.
+A RegistryManager, a mixinek, az interfészek, a domain‑lookup
+architektúra mind a helyükre kerültek.
+Most jön az utolsó nagy lépés: a motor kitisztítása.
+
+Engedd meg, hogy lépésről lépésre, nagyon tisztán megmutassam, hogyan
+kell ezt csinálni.
 
 ------------------------------------------------------------------------
 
-🟦 FAZIS 1 — Új architektúra létrehozása
+🌟 Mi a RegistryEngineBase valódi szerepe?
 
-1.1. Hozd létre az új fájlt:
+A RegistryEngineBase nem domain‑logika,
+nem ID‑lookup,
+nem barcode‑logika,
+nem connection‑logika,
+nem audit,
+nem routing.
 
-common/registry/base/registry_store.h
+A RegistryEngineBase egyetlen dolgot csináljon:
 
-Tartalma:
+👉 egy thread‑safe, eseményes, CRUD‑képes tárolómotor legyen
 
--   RegistryStore<TEntity> osztály
--   kizárólag storage + lookup API
--   semmi virtual, semmi domain, semmi workflow
+TEntity típusú objektumokhoz.
 
-Konkrét teendő:
+Ennyi.
+Semmi több.
 
--   Vágd ki a RegistryEngineBase‑ből:
-    -   _items + ItemStore
-    -   insertInternal, updateInternal, removeInternal
-    -   readAll, all, findIf, findAll, existsBy, findById, findByPair
-    -   add, addAll, setAll
-    -   subscribeItemsChanged, onItemsChanged
-
-És tedd át a RegistryStore<TEntity>‑be.
+Ez a „motor”.
 
 ------------------------------------------------------------------------
 
-1.2. Hozd létre az új fájlt:
+🌟 Mi az, ami most felesleges benne?
 
-common/registry/base/registry_domain.h
+A jelenlegi RegistryEngineBase rengeteg olyan funkciót tartalmaz, amit:
 
-Tartalma:
+-   már a mixinek végeznek,
+-   már a RegistryManager végez,
+-   már a domain registryk végeznek,
+-   vagy egyszerűen nem a motor feladata.
 
--   RegistryDomain<TEntity> mixin
--   kizárólag domain hookok
+A felesleges rétegek:
 
-Konkrét teendő:
+❌ Domain hookok
 
--   Vágd ki a RegistryEngine‑ből:
-    -   validateDomain
-    -   validateDuplicate
-    -   validateConnection
-    -   validateBarcode
-    -   validateCollision
-    -   beforeInsert, afterInsert
-    -   beforeUpdate, afterUpdate
-    -   beforeRemove, afterRemove
-    -   onInsertLog, onUpdateLog, onRemoveLog
-    -   onRegisterLog, onRetireLog
-    -   onLoadLog
-    -   persist
+validateDomain, validateDuplicate, validateConnection, stb.
+→ ezek domain registrykbe valók, nem a motorba.
 
-Minden hook alapértelmezése legyen no‑op.
+❌ Log hookok
 
-------------------------------------------------------------------------
+onInsertLog, onUpdateLog, onRemoveLog, onLoadLog
+→ ezek domain registrykbe valók.
 
-1.3. Hozd létre az új fájlt:
+❌ before/after insert/update/remove
 
-common/registry/base/registry_engine2.h
-(ideiglenes név, amíg át nem áll minden)
+→ domain registrykbe valók.
 
-Tartalma:
+❌ store*Impl wrapper metódusok
 
--   új
-    RegistryEngine<TEntity, WorkflowPolicy, Domain = RegistryDomain<TEntity>>
--   öröklés:
-    -   RegistryStore<TEntity>
-    -   Domain
-    -   WorkflowPolicy
+→ a RegistryCore vagy a mixinek hívják, de a motor nem kell, hogy
+publikus wrapper legyen.
 
-Konkrét teendő:
+❌ IdType alias
 
--   A régi RegistryEngine CRUD delegálását tedd át ide:
-    -   insert(e) → WorkflowPolicy::insert(*this, e)
-    -   update(e)
-    -   remove(id)
-    -   remove(leftId, rightId)
-    -   load(items)
--   Semmi domain hook nem marad itt
--   Semmi storage API nem marad itt
--   Ez csak a „ragasztó” lesz
+→ a mixinek és a domain registryk tudják, mi az ID.
+
+❌ findById, findByPair, existsById
+
+→ ezek a mixinek felelőssége (IdLookupMixin, ConnectionCrudMixin).
+
+❌ readAll, all, begin/end, cbegin/cend
+
+→ ezek a motor belső API‑i, de nem kell mindet publikusnak tartani.
+
+❌ SubscriptionToken logika
+
+→ maradhat, de külön modulba is tehető.
 
 ------------------------------------------------------------------------
 
-🟩 FAZIS 2 — RegistryEngineBase és RegistryEngine tisztítása
+🌟 Mi maradjon a motorban?
 
-2.1. A régi RegistryEngineBase → töröld vagy jelöld deprecated‑nek
+A minimális motor csak ezeket tartalmazza:
 
-Miután a RegistryStore átveszi a szerepét, a régi engine base:
+✔️ 1. Thread‑safe tároló (ItemStore)
 
--   vagy teljesen törölhető,
--   vagy átmenetileg #pragma message("deprecated").
+-   QVector
+-   read/write lock
+-   append, remove, setAll
+
+✔️ 2. Alap CRUD műveletek
+
+-   add
+-   update
+-   remove
+-   setAll
+-   readAll
+
+✔️ 3. Eseménykezelés
+
+-   subscribeItemsChanged
+-   unsubscribeItemsChanged
+-   onItemsChanged
+
+✔️ 4. Semmi domain logika
+
+Semmi ID‑lookup.
+Semmi barcode.
+Semmi connection.
+Semmi domain validation.
+Semmi log.
+
+A motor nem tud semmit a domainről.
 
 ------------------------------------------------------------------------
 
-2.2. A régi RegistryEngine → fokozatosan kiváltjuk
+🌟 Hogyan tisztítjuk ki?
 
-Amíg minden registry át nem áll az új engine‑re, a régi engine:
-
--   maradjon érintetlen,
--   de ne bővítsd tovább.
+A tisztítás három lépésből áll.
 
 ------------------------------------------------------------------------
 
-🟧 FAZIS 3 — Domain registryk átvezetése az új architektúrára
+🧹 1. LÉPÉS — Domain hookok eltávolítása
 
-Ezt registrynként kell megtenni.
-
-3.1. MaterialRegistry átvezetése
-
-Konkrét lépések:
-
-1.  A headerben cseréld le az öröklést:
-
-Régi:
-
-    class MaterialRegistry
-        : public RegistryEngine<MaterialMaster, CrudWorkflowPolicy>
-
-Új:
-
-    class MaterialRegistry
-        : public RegistryEngine<MaterialMaster, CrudWorkflowPolicy, MaterialDomain>
-
-2.  Hozz létre egy új fájlt:
-    materials/registry/material_domain.h
-
-3.  Ebbe tedd át a Material‑specifikus hookokat:
+Törölhető:
 
 -   validateDomain
 -   validateDuplicate
+-   validateConnection
 -   beforeInsert
+-   afterInsert
 -   beforeUpdate
+-   afterUpdate
+-   beforeRemove
+-   afterRemove
 -   onInsertLog
 -   onUpdateLog
 -   onRemoveLog
+-   onLoadLog
 -   persist
 
-4.  A MaterialRegistry.cpp‑ben töröld a hook implementációkat.
-
-5.  A MaterialRegistry csak lookup API‑t tartalmazzon:
-
--   findByType
--   findByShape
--   findByColor
+Ezeket a domain registryk saját maguk implementálják.
 
 ------------------------------------------------------------------------
 
-3.2. ProductRegistry átvezetése
+🧹 2. LÉPÉS — ID‑lookup és connection‑lookup eltávolítása
 
-Ugyanaz a minta:
+Törölhető:
 
-1.  Új fájl: products/registry/product_domain.h
-2.  Hookok átmozgatása
-3.  RegistryEngine öröklés cseréje
-4.  ProductRegistry.cpp tisztítása
+-   findById
+-   existsById
+-   findByPair
+-   existsBy
+-   findIf
+-   findAll
 
-------------------------------------------------------------------------
+Ezeket a mixinek adják:
 
-3.3. NeedRuleRegistry átvezetése
+-   IdLookupMixin
+-   ConnectionCrudMixin
+-   BarcodeIndexMixin
 
-Itt fontos:
-
--   validateConnection a Domain‑be kerül
--   validateDuplicate a Domain‑be kerül
--   beforeInsert, afterInsert, onInsertLog, onRemoveLog, persist →
-    Domain
-
-Új fájl:
-needs/registry/need_rule_domain.h
+A motor csak a store műveleteket tartja meg.
 
 ------------------------------------------------------------------------
 
-3.4. BarcodeRegistry átvezetése
+🧹 3. LÉPÉS — Publikus wrapper metódusok eltávolítása
 
-Ez a legösszetettebb, mert:
+Törölhető:
 
--   validateBarcode
--   validateCollision
--   onRegisterLog
--   onRetireLog
+-   storeAddPublicImpl
+-   storeAddAllPublicImpl
+-   storeSetAllPublicImpl
+-   storeReadAllPublicImpl
+-   storeFindByIdPublicImpl
+-   storeFindByPairPublicImpl
+-   storeUpdatePublicImpl
+-   storeRemovePublicImpl
+-   storeRemovePairPublicImpl
 
-is domain hook.
-
-Új fájl:
-barcodes/registry/barcode_domain.h
-
-------------------------------------------------------------------------
-
-🟪 FAZIS 4 — Workflow policy-k tisztítása
-
-4.1. A workflow policy-k csak Domain hookokat hívjanak
-
-Ellenőrizd:
-
--   reg.validateDomain
--   reg.validateDuplicate
--   reg.validateConnection
--   reg.validateBarcode
--   reg.validateCollision
--   reg.beforeInsert
--   reg.afterInsert
--   reg.persist
-
-Minden hívás működni fog, mert a Domain mixin biztosítja.
+Ezeket a RegistryCore vagy a mixinek hívják, de a motor nem kell, hogy
+publikus wrapper legyen.
 
 ------------------------------------------------------------------------
 
-🟫 FAZIS 5 — Mixinek ellenőrzése
+🌟 A végeredmény: a minimális motor
 
-A mixinek (BarcodeIndexMixin, BarcodeLookupMixin, HierarchyMixin):
+A RegistryEngineBase végül így néz ki (fogalmilag):
 
--   csak a RegistryStore API-ját használják (findIf, readAll, existsBy)
--   semmi domain hookot nem érintenek
+    class RegistryEngineBase<TEntity> : public RegistryBase {
+    public:
+        // CRUD
+        bool add(const TEntity&);
+        bool update(const TEntity&);
+        bool remove(const IdType&);
+        void setAll(const QVector<TEntity>&);
+        QVector<TEntity> readAll() const;
 
-Ezért nem kell őket módosítani.
+        // Events
+        SubscriptionId subscribeItemsChanged(ItemsChangedEvent);
+        void unsubscribeItemsChanged(SubscriptionId);
 
-------------------------------------------------------------------------
+    protected:
+        void onItemsChanged();
 
-🟩 FAZIS 6 — RegistryManager és RegistryCatalog ellenőrzése
+        // Storage
+        ItemStore _items;
+        QReadWriteLock _rwLock;
+    };
 
-A RegistryEngine továbbra is örökli a RegistryBase‑t →
-a regisztrációs mechanizmus változatlanul működik.
-
-Nincs teendő.
-
-------------------------------------------------------------------------
-
-🟦 FAZIS 7 — Tesztelés
-
-7.1. Fordítás
-
-Ha minden registry átállt az új engine‑re, a régi engine törölhető.
-
-7.2. CSV import teszt
-
--   Material import
--   Product import
--   Barcode import
--   NeedRule import
-
-7.3. UI teszt
-
--   BOMWorkbench
--   Material picker
--   Product tree
--   NeedRule editor
+Ez a minimális, tiszta, domain‑független motor.
 
 ------------------------------------------------------------------------
 
-🟩 Összefoglaló — 12 pontos végrehajtási terv
+🎉 Összegzés
 
-1.  RegistryStore létrehozása
-2.  RegistryDomain létrehozása
-3.  Új RegistryEngine létrehozása
-4.  Régi RegistryEngineBase tisztítása
-5.  MaterialDomain létrehozása
-6.  MaterialRegistry átállítása
-7.  ProductDomain létrehozása
-8.  ProductRegistry átállítása
-9.  NeedRuleDomain létrehozása
-10. NeedRuleRegistry átállítása
-11. BarcodeDomain létrehozása
-12. BarcodeRegistry átállítása
+Zoltán, a RegistryEngineBase kitisztítása azt jelenti:
 
-Ha szeretnéd, a következő lépésben:
+-   minden domain logika kikerül
+-   minden ID‑lookup kikerül
+-   minden connection logika kikerül
+-   minden barcode logika kikerül
+-   minden audit logika kikerül
+-   minden wrapper kikerül
+-   csak a thread‑safe tároló + CRUD + esemény marad
 
-👉 megírom a három új fájl teljes, kész kódját
-(RegistryStore, RegistryDomain, RegistryEngine)
+Ez a motor így:
 
-vagy
+-   gyors
+-   stabil
+-   átlátható
+-   újrafelhasználható
+-   domain‑független
+-   mixin‑barát
+-   RegistryManager‑barát
 
-👉 elkezdjük a MaterialRegistry átvezetését konkrét diff‑ekkel.
-
-Mondd, melyikkel menjünk tovább.
+Ha szeretnéd, megcsinálom neked a konkrét, lépésről lépésre diff‑tervet,
+hogy pontosan mit törölj és mit hagyj meg.

@@ -55,8 +55,6 @@ int main(int argc, char *argv[])
     QCoreApplication::setOrganizationName("horvathzoltan");
     QCoreApplication::setOrganizationDomain("https://github.com/horvathzoltan");
 
-
-
     SettingsManager::instance().detectTestMode(argc, argv);
     FileNameHelper::instance().setDataRootPath(SettingsManager::instance().dataRootPath());
 
@@ -65,8 +63,17 @@ int main(int argc, char *argv[])
     const auto dataDir = FileNameHelper::instance().getLogFolder();
     LifecycleManager::instance().setPhase_2(dataDir);
 
+    // 🔵 1) Registryk explicit inicializálása
+    RegistryCatalog::initializeAll();//initializeAllRegistries();
+
     // --test eventlogger
     if (SettingsManager::instance().isTestMode()) {
+        zInfo("****************************");
+        zInfo("***                      ***");
+        zInfo("***  ENTERING TEST MODE  ***");
+        zInfo("***                      ***");
+        zInfo("****************************");
+        //zInfo("testProfile: "+SettingsManager::instance().testProfile());
         bool ok = TestManager::instance().runBusinessLogicTests(SettingsManager::instance().testProfile());
         return ok ? 0 : 1;
     }
@@ -76,9 +83,6 @@ int main(int argc, char *argv[])
     LifecycleManager::instance().setPhase_3(&a);
 
     StartupManager manager;
-
-    // 🔵 1) Registryk explicit inicializálása
-    RegistryCatalog::initializeAll();//initializeAllRegistries();
 
     // 🔵 2) Startup pipeline futtatása
     StartupStatus status = manager.runStartupSequence();

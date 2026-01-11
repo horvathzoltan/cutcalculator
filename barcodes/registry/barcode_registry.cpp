@@ -45,14 +45,14 @@ bool BarcodeRegistry::validateDuplicate(const BarcodeRecord& r) const
     });
 }
 
-bool BarcodeRegistry::beforeInsert(const BarcodeRecord& r)
+bool BarcodeRegistry::beforeInsert(BarcodeRecord& r)
 {
     Q_UNUSED(r);
     // Jelenleg nincs extra logika – a caller (registerNew) tölti az introducedAt-et.
     return true;
 }
 
-bool BarcodeRegistry::beforeUpdate(const BarcodeRecord& r)
+bool BarcodeRegistry::beforeUpdate(BarcodeRecord& r)
 {
     Q_UNUSED(r);
     // Itt is maradhatunk passzívak – a retire() állítja a retiredAt-et.
@@ -194,6 +194,7 @@ void BarcodeRegistry::persist() const
     // Egyelőre megtartjuk a meglévő API-t
     BarcodeRepository::saveToCSV(*this, path);
 }
+
 
 // #include "barcodes/registry/barcode_registry.h"
 // #include "common/logger/logger.h"
@@ -370,9 +371,4 @@ void BarcodeRegistry::persist() const
 // //     return false;
 // // }
 
-// void BarcodeRegistry::persist() const {
-//     const QString path = FileNameHelper::instance().getBarcodeCsvFile();
-//     if (path.isEmpty()) return;
 
-//     BarcodeRepository::saveToCSV(*this, path);
-// }

@@ -179,9 +179,20 @@ void ProductTreeManager::removeProduct() {
     QString idStr = _model->itemFromIndex(index.sibling(index.row(), 2))->text();
     QUuid id(idStr);
 
-    ProductRegistry::instance().remove(id);
+    bool ok = ProductRegistry::instance().remove(id);
+    if (!ok) {
+        // EventLogger-ba figyelmeztetés (makró)
+        zEventWARN(QString("Törlés sikertelen: termék id=%1").arg(id.toString()));
+
+        // Konzol/log üzenet a fejlesztőknek
+        zWarning() << "Failed to remove product with id" << id;
+
+        return;
+    }
+
     populate();
 }
+
 
 void ProductTreeManager::onItemChanged(QStandardItem* item) {
     auto index = item->index();
@@ -224,7 +235,28 @@ void ProductTreeManager::onItemChanged(QStandardItem* item) {
         }
 
         // audit-barát update → perzisztál is
-        ProductRegistry::instance().update(updated);
+        bool ok = ProductRegistry::instance().update(updated);
+        if (!ok) {
+            // EventLogger figyelmeztetés (felhasználói/üzleti esemény)
+            zEventWARN(QString("⚠️ Product update failed: id=%1, field column=%2, attempted value=%3")
+                           .arg(id.toString()).arg(item->column()).arg(item->text()));
+
+            // Fejlesztői log
+            zWarning() << "Product update failed for id" << id << "column" << item->column();
+
+            // Visszaállítjuk a cellát az eredeti értékre (ha még van pm)
+            // if (pm) {
+            //     if (item->column() == 0) {
+            //         item->setText(pm->name);
+            //     } else if (item->column() == 1) {
+            //         item->setText(pm->barcode);
+            //     }
+            // }
+        } else {
+            // Sikeres update esemény (audit)
+            zEvent(QString("✏️ Product updated: id=%1").arg(id.toString()));
+        }
+
     }
 }
 
