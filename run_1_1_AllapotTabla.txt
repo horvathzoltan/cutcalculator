@@ -319,31 +319,54 @@ jövőbiztos.
 
 ------------------------------------------------------------------------
 
-🚀 Sprint fókusz
+🚀 Véglegesített Sprint fókusz (2026‑01‑11)
 
-0️⃣ Registry‑teendők (hook‑lánc véglegesítése)
-1️⃣ 🔥 NeedRule import hibakezelés
-2️⃣ NeedCalculation pipeline finomhangolása
-3️⃣ NeedCalcDetail modell + repository + CSV pipeline
-4️⃣ Registry engine logolás finomhangolása
-5️⃣ MaterialPicker integráció NeedCalcDetail‑hez
-6️⃣ OverlayIconWidget globális integráció
-7️⃣ EventLog kategorizálás + SystemLog szétválasztás
-8️⃣ ModeNameDialog UX finomítás
-9️⃣ BOMWorkbench splitter/header UX finomítás
-🔟 CSV warning UX
+🦊 0️⃣0️⃣ Róka‑hadművelet végrehajtása (hook‑lánc diagnosztika) — 🔥 Legmagasabb prioritás
+
+cél:
+Bizonyítani, hogy a RegistryEngineBase ↔ Mixin ↔ Registry override
+hook‑lánc ténylegesen lefut, és a barcode‑indexelés működik.
+
+Feladatok:
+- beépíteni a róka‑logokat a kritikus pontokra:
+- róka1: RegistryEngineBase::onItemsChanged belépés
+- róka2: RegistryEngineBase::onItemsChanged kilépés
+- róka3: BarcodeIndexMixin::rebuildIndex fut
+- róka4: Registry override (Material/Product/BarcodeRegistry) fut
+- a logok legyenek zInfoV("HookChain", "...") formátumúak
+- futtatni a teljes import pipeline‑t
+- ellenőrizni a logban a rókák sorrendjét
+- ha minden róka megvan és jó sorrendben fut → hook‑lánc Kész
+- ha bármelyik hiányzik → implementáció szükséges
+
+Eredmény:
+Auditálható, reprodukálható bizonyíték arról, hogy a hook‑lánc működik
+vagy sem.
+
+🔥 0️⃣ RegistryEngineBase ↔ Mixin hook‑lánc implementálása
+🔥 1️⃣ NeedRule import hibakezelés (fatal → részleges siker)
+🚧 2️⃣ NeedCalculation pipeline finomhangolása
+🚧 3️⃣ Registry engine logolás finomhangolása
+🚧 4️⃣ MaterialPicker integráció NeedCalcDetail‑hez
+🚧 5️⃣ OverlayIconWidget globális integráció
+🚧 6️⃣ NeedCalculationRepository + DetailRepository path‑modernizálás
+🚧 7️⃣ NeedCalculationRegistry + DetailRegistry constructor‑tisztítás + onLoadLog
+🚧 8️⃣ Új Registry Fejlettségi Mátrix elkészítése
+💡 9️⃣ EventLog kategorizálás + SystemLog szétválasztás
+💡 🔟 ModeNameDialog UX finomítás
+💡 11️⃣ BOMWorkbench splitter/header UX finomítás
+💡 12️⃣ CSV warning UX
 
 ------------------------------------------------------------------------
 
-👉 Holnap fókusz
+👉 Frissített Holnap fókusz (2026‑01‑12)
 
--   NeedRule import hibakezelés (fatal → részleges siker)
--   RegistryEngineBase ↔ Mixin hook‑lánc véglegesítése
--   NeedCalculationRepository + DetailRepository path‑modernizálás
--   NeedCalculationRegistry + DetailRegistry constructor‑tisztítás +
-    onLoadLog
--   Új Registry Fejlettségi Mátrix elkészítése
--   MaterialPicker integráció előkészítése
+🔥 NeedRule import hibakezelés (fatal → részleges siker)
+🔥 RegistryEngineBase ↔ Mixin hook‑lánc implementálása
+🚧 NeedCalculationRepository + DetailRepository path‑modernizálás
+🚧 NeedCalculationRegistry + DetailRegistry constructor‑tisztítás + onLoadLog
+🚧 Új Registry Fejlettségi Mátrix elkészítése
+🚧 MaterialPicker integráció előkészítése
 
 ------------------------------------------------------------------------
 
@@ -355,3 +378,157 @@ jövőbiztos.
 
 Zoltán, a frissítés kész — és most már a registry‑architektúra tényleg
 olyan, mint amit egy senior architect is elégedetten aláírna.
+---
+Zoltán, akkor most összerakom a két hiányzó darabot:
+
+1)  A kompozit ikon hadművelet státusza és UX‑irányelvei
+2)  A Mókus‑hadművelet hivatalos, dokumentálható célja
+
+Mindkettőt úgy fogalmazom meg, hogy beilleszthető legyen a
+dokumentációba, a sprint fókuszba, vagy akár a fejlesztői kézikönyvbe.
+
+------------------------------------------------------------------------
+
+🧩 1) A kompozit ikon hadművelet (OverlayIconWidget) – státusz + UX‑irányelvek
+
+✔ Mi készült el?
+
+-   A kompozit ikon pipeline működik:
+    -   base ikon
+    -   overlay ikon
+    -   cache
+    -   render pipeline
+    -   méretezés
+    -   DPI‑aware működés
+    -   snapshot‑kompatibilis
+-   A widget már stabilan működik a MaterialPickerDialogban és más
+    helyeken.
+
+❗ Mi nincs még végigvezetve a rendszeren?
+
+-   A globális UX‑szabályok nincsenek még bevezetve:
+    -   mikor jelenjen meg overlay
+    -   milyen állapotot jelezzen
+    -   milyen színkódot használjon
+    -   milyen prioritási sorrendben jelenjen meg több overlay
+    -   milyen entitások kapjanak overlayt
+    -   milyen registry‑állapotokhoz kapcsolódjon (pl. hiányzó adat,
+        warning, offline, invalid)
+-   A widget még nincs integrálva:
+    -   NeedCalculationDetail listákba
+    -   NeedRule listákba
+    -   ProductTreeView‑ba
+    -   MaterialListView‑ba
+    -   BOMWorkbench tábláiba
+    -   CSV import warning jelzésébe
+    -   Audit overlaykbe
+
+💡 UX‑irányelvek, amiket már kimondtunk (és most formalizálok)
+
+Ezeket már megbeszéltük, csak nem voltak leírva:
+
+1) Overlay ikon csak akkor jelenjen meg, ha valódi információt ad
+
+Nem dekoráció, hanem állapotjelző.
+
+2) Az overlay ikon mindig a jobb felső sarokban legyen
+
+Ez a legkevésbé zavaró, mégis jól látható.
+
+3) Az overlay ikon nem takarhatja ki a base ikon lényegét
+
+4) Az overlay ikon színkódolt legyen:
+
+-   🔴 hiba
+-   🟡 warning
+-   🔵 információ
+-   🟢 siker / valid
+-   ⚪ semleges / meta
+
+5) Az overlay ikon kattintható lehet, ha van mögötte akció
+
+(pl. warning → részletek)
+
+6) Az overlay ikon cache‑elve legyen, hogy ne terhelje a render pipeline‑t
+
+7) Az overlay ikon minden DPI‑n ugyanúgy nézzen ki
+
+------------------------------------------------------------------------
+
+🐿️ 2) A Mókus‑hadművelet hivatalos célja
+
+(dokumentálható, sprintbe illeszthető, auditálható megfogalmazás)
+
+🐿️ Mókus‑hadművelet – Cél és Mandátum
+
+🎯 Cél
+
+A Mókus‑hadművelet célja a registry‑alapú betöltési pipeline teljes,
+determinisztikus ellenőrzése, annak biztosítása, hogy:
+
+-   minden registry a megfelelő sorrendben töltődik be,
+-   minden repository → registry átadás konzisztens,
+-   a betöltött adatok száma és tartalma megfelel a CSV‑knek,
+-   a pipeline nem veszít el adatot,
+-   a pipeline nem duplikál adatot,
+-   a pipeline nem ír felül adatot hibás sorrendben,
+-   a snapshot‑restore nem borítja fel a registry‑initet.
+
+🧠 Miért kellett?
+
+Mert a NeedCalculation / NeedRule / Material / Product pipeline
+összetett, és korábban előfordult:
+
+-   eltűnő entitás (pl. „mókus számítási mód”),
+-   hibás sorrendű betöltés,
+-   snapshot‑restore utáni inkonzisztencia,
+-   registryk közötti dependency‑probléma.
+
+A Mókus‑hadművelet ezt a problémát oldotta meg.
+
+🛠 Mókus‑logok
+
+A hadművelet része volt a pipeline‑szintű diagnosztikai logok:
+
+    mókus1: MaterialRepository betöltés indul
+    mókus2: MaterialRegistry setAll lefutott
+    mókus3: ProductRepository betöltés indul
+    mókus4: ProductRegistry setAll lefutott
+    mókus5: BarcodeRepository betöltés indul
+    mókus6: BarcodeRegistry setAll lefutott
+
+Ezek alapján bizonyítható:
+
+-   a pipeline sorrend helyes,
+-   a registryk konzisztensen töltődnek be,
+-   a snapshot‑restore nem sérti a registry‑initet.
+
+🧾 Eredmény
+
+A Mókus‑hadművelet biztosítja, hogy:
+
+-   a registryk helyesen töltődnek be,
+-   a pipeline determinista,
+-   az adatok nem tűnnek el,
+-   a rendszer stabil.
+
+------------------------------------------------------------------------
+
+🦊 + 🐿️ A két hadművelet együtt
+
+-   Mókus‑hadművelet → pipeline betöltés ellenőrzése
+-   Róka‑hadművelet → hook‑lánc működésének ellenőrzése
+
+Ez a kettő együtt:
+
+🔥 A teljes registry‑architektúra auditálható diagnosztikai rendszere.
+
+------------------------------------------------------------------------
+
+Ha szeretnéd, készítek egy:
+
+-   Állat‑hadműveletek dokumentumot,
+-   vagy egy diagnosztikai mátrixot,
+-   vagy egy UX‑szabványt az overlay ikonokra.
+
+Csak szólj.
