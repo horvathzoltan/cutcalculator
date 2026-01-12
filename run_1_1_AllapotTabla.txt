@@ -325,6 +325,7 @@ A mai nap áttörést hozott a registry‑architektúrában:
 
 🔥 SOS
 
+🚀 0. Sprint fókusz – Needs → CalcModes → Calculation hármas modulrefaktor
 -   NeedRule import hibakezelés
 
 🎯 Sprint fókusz
@@ -349,6 +350,112 @@ A mai nap áttörést hozott a registry‑architektúrában:
 
 ------------------------------------------------------------------------
 
-Zoltán, a 2. lépés teljes —
-a táblázat integritása ellenőrizve, a frissítés végrehajtva, a roadmap
-naprakész.
+Íme, Zoltán — egy tiszta, erős, fókuszált 0. sprint feladatblokk,
+pontosan úgy megfogalmazva, ahogy a roadmapbe vagy a sprint‑doksiba
+illik.
+Ez a blokk kijelöli a következő napok/hétvége fókuszát, és szépen
+előkészíti a nagy Calculation‑refaktort.
+
+------------------------------------------------------------------------
+
+🚀 0. Sprint fókusz – Needs → CalcModes → Calculation hármas modulrefaktor
+
+🎯 0. Sprint célja
+
+A három, egymásra épülő számítási modul (Needs, CalcModes, Calculation)
+architekturális alapjainak egységesítése, stabilizálása és előkészítése
+a végső Calculation pipeline számára.
+A sprint célja, hogy a számítási logika minden rétege:
+
+-   egységes registry‑architektúrán fusson,
+-   tiszta workflow‑val rendelkezzen,
+-   determinisztikusan töltsön be,
+-   auditálható legyen,
+-   és készen álljon a Calculation motor végső integrációjára.
+
+------------------------------------------------------------------------
+
+🧩 0. Sprint fókuszpontok
+
+1️⃣ Needs modul stabilizálása
+
+A Needs modul a teljes számítási rendszer alapja.
+Feladatok:
+
+-   NeedRule, NeedCalculation, NeedCalculationDetail workflow‑k
+    egységesítése
+-   registry‑alapú pipeline véglegesítése
+-   MaterialPicker integráció előkészítése
+-   CSV import/export szerződés tisztítása
+-   audit‑logok egységesítése
+-   Mókus‑hadművelet szerinti betöltési sorrend validálása
+
+Eredmény: stabil, determinisztikus Needs pipeline, amelyre biztonsággal
+építhet a CalcModes és a Calculation.
+
+------------------------------------------------------------------------
+
+2️⃣ CalcModes modul (számítási módok) modernizálása
+
+A CalcModes modul a számítási motor konfigurációs rétege.
+Feladatok:
+
+-   számítási módok registry‑alapúvá tétele
+-   workflow‑hookok egységesítése
+-   Calculation engine felé átadott struktúrák tisztítása
+-   auditálható módválasztás
+-   UI‑oldali integráció előkészítése (ModeNameDialog, warning UX)
+
+Eredmény: tiszta, stabil, auditálható számítási mód‑réteg, amely
+determinisztikusan szolgálja ki a Calculation motort.
+
+------------------------------------------------------------------------
+
+3️⃣ Calculation modul előkészítése
+
+A Calculation modul a végső számítási motor.
+Feladatok:
+
+-   Calculation registry‑architektúra előkészítése
+-   CalculationDetail pipeline tisztítása
+-   Calculation engine input‑struktúrák egységesítése
+-   Calculation → UI → Audit hármas kapcsolat előkészítése
+-   Calculation logolási szerződés kialakítása
+
+Eredmény: a Calculation modul számára egy stabil, egységes, auditálható
+alap, amelyre a végső számítási motor ráépíthető.
+
+------------------------------------------------------------------------
+
+🦊🐿️ Diagnosztikai háttér – Róka nyugdíj, Mókus előléptetés
+
+A 0. sprintben a diagnosztikai fókusz a Róka‑hadműveletről átkerül a
+Mókus‑hadműveletre:
+
+-   a Róka megtette a dolgát: feltárta a hook‑lánc hiányosságait,
+-   a Mókus most átveszi a terepet: a Needs → CalcModes → Calculation
+    pipeline determinisztikus betöltését és konzisztenciáját fogja
+    őrizni.
+
+------------------------------------------------------------------------
+
+🧭 0. Sprint eredménye (várt állapot)
+
+A sprint végére:
+
+-   a Needs modul teljesen stabil,
+-   a CalcModes modul modernizált és auditálható,
+-   a Calculation modul előkészített és egységesített,
+-   a teljes számítási pipeline determinisztikus,
+-   a registry‑architektúra minden rétege egységes,
+-   a Calculation motor implementációja akadálytalanul indulhat.
+
+------------------------------------------------------------------------
+
+Ha szeretnéd, készítek hozzá:
+
+-   egy 0. sprint backlogot,
+-   egy 0. sprint feladatlistát (Jira‑kompatibilis),
+-   vagy egy 0. sprint architekturális diagramot.
+
+Csak mondd, melyik legyen a következő lépés.
