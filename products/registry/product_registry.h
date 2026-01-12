@@ -47,6 +47,12 @@ public:
     void onUpdateLog(const ProductMaster& p);
     void onRemoveLog(const ProductMaster& p);
 
+
+    void onItemsChanged() override {
+        zInfo("róka4: ProductRegistry::onItemsChanged fut");
+        RegistryEngineBase<ProductMaster>::onItemsChanged();
+    }
+
 private:
     ProductRegistry()
         : RegistryEngineBase("ProductRegistry", "ProductMaster")

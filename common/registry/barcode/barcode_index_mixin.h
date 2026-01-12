@@ -2,6 +2,7 @@
 
 #include <QHash>
 #include <QString>
+#include "common/logger/logger.h"
 
 template<typename Derived, typename Entity>
 class BarcodeIndexMixin {
@@ -20,6 +21,7 @@ public:
 
 protected:
     void buildBarcodeIndex() {
+        zInfo("róka3: BarcodeIndexMixin::buildBarcodeIndex fut");
         _barcodeIndex.clear();
         auto* self = static_cast<const Derived*>(this);
 

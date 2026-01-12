@@ -211,13 +211,15 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 
 DISTFILES += \
     README.md \
+    docs/barcodes_module_overview.md \
     docs/entity_contract.md \
     docs/entity_matrix.md \
     docs/registry_contract.md \
     docs/registry_matrix.md \
     run_1_1_AllapotTabla.txt \
     run_1_2_BugList.txt \
-    run_1_3_RegistryRefactor.txt \
+    run_1_3_0_CollectorMixin_Refactor.txt \
+    run_1_3_1_BarcodeRegistry_Refactor.txt \
     run_1_4_DailySync.txt \
     run_2_1_AIDevelopmentHandbook.txt \
     run_2_2_JEGYZET.txt \

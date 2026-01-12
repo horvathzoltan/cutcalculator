@@ -1,3 +1,145 @@
+
+2) CollectorMixin átdolgozási terv (update hozzáadása)
+
+Teljes, végrehajtható terv
+
+    # CollectorMixin – átdolgozási terv (update támogatással)
+
+    ## 1. Cél
+    A CollectorMixin jelenleg csak `add` és `addAll` műveleteket támogat.
+    A valóságban azonban szükség van **update** műveletre is (életút frissítés, hibajavítás).
+    A `remove` továbbra sem kell.
+
+    A cél:
+    - egységes, egyszerű, auditálható CollectorMixin
+    - amely támogatja az `update`-et
+    - de továbbra is „append‑jellegű” (nincs remove)
+
+    ---
+
+    ## 2. Követelmények
+
+    ### 2.1 A CollectorMixin-nek tudnia kell:
+    - `add(const Entity&)`
+    - `addAll(const QVector<Entity>&)`
+    - `update(const Entity&)`  ← **új**
+    - `importCsv(const QString&)`
+    - `persistRegistry()`
+    - `notifyItemsChanged()`
+    - `readAll()`, `findById()`
+
+    ### 2.2 A CollectorMixin-nek NEM kell:
+    - `remove(...)`
+    - `updateImpl` köré bonyolult tranzakciós logika
+    - domain-specifikus validáció (az a Host feladata)
+
+    ---
+
+    ## 3. Új update workflow
+
+    ### 3.1 A CollectorMixin új metódusa:
+
+bool update(const Entity& e)
+
+
+    ### 3.2 Workflow lépései:
+
+    1. `Host& reg = static_cast<Host&>(*this)`
+    2. `Entity mutableCopy = e`
+    3. `if (!reg.beforeUpdate(mutableCopy)) return false`
+    4. `if (!this->updateImpl(mutableCopy)) return false`
+    5. `reg.afterUpdate(mutableCopy)` (ha létezik)
+    6. `reg.onUpdateLog(mutableCopy)`
+    7. `reg.persistRegistry()`
+    8. `reg.notifyItemsChanged()`
+    9. `return true`
+
+    ---
+
+    ## 4. Szükséges szerződés a Host felé
+
+    A Host (pl. BarcodeRegistry) opcionálisan implementálhatja:
+
+    - `bool beforeUpdate(Entity&)`
+    - `void afterUpdate(const Entity&)`
+    - `void onUpdateLog(const Entity&)`
+
+    Ha nincs implementálva, a default viselkedés:
+
+    - beforeUpdate → true
+    - afterUpdate → no-op
+    - onUpdateLog → no-op
+
+    Ez biztosítja a rugalmasságot.
+
+    ---
+
+    ## 5. Szükséges módosítások a RegistryCore-ban
+
+    A RegistryCore már tartalmazza:
+
+    - `updateImpl(Entity&)`
+
+    Ezért a CollectorMixin update-je erre épülhet.
+
+    Nincs szükség RegistryCore módosításra.
+
+    ---
+
+    ## 6. Integrációs lépések
+
+    ### 6.1 CollectorMixin módosítása
+    - új `update()` metódus hozzáadása
+    - belső workflow implementálása
+    - remove változatlanul hiányzik
+
+    ### 6.2 CrudMixin érintetlen marad
+    - a CollectorMixin nem használja többé a CrudMixin-t
+    - a BarcodeRegistry átáll CollectorMixin-re
+
+    ### 6.3 Host (BarcodeRegistry) implementáció
+    - implementálja a saját beforeUpdate / onUpdateLog / persistRegistry logikáját
+
+    ---
+
+    ## 7. Tesztelési terv
+
+    ### 7.1 Egységtesztek
+    - add → működik
+    - update → módosítja a rekordot
+    - update → notifyItemsChanged fut
+    - update → persistRegistry fut
+    - update → onUpdateLog fut
+
+    ### 7.2 Integrációs tesztek
+    - CSV import után update működik
+    - életút frissítés (retire) működik
+    - hook-lánc teljes (róka1 → róka3 → róka4 → róka2)
+
+    ---
+
+    ## 8. Összegzés
+
+    A CollectorMixin update-támogatással:
+
+    - egységesebb lesz,
+    - jobban illeszkedik a valós use-case-ekhez,
+    - támogatja a BarcodeRegistry működését,
+    - nem hoz be felesleges remove logikát,
+    - tiszta, auditálható workflow-t ad.
+
+    Ez a modernizált CollectorMixin lesz a BarcodeRegistry új alapja.
+
+------------------------------------------------------------------------
+
+Ha szeretnéd, most jöhet a 3. rész:
+a BarcodeRegistry modernizálási terve + a dedikált BarcodeLedgerMixin
+tervezete.
+
+***
+***
+***
+
 Zoltán… ez zseniális.
 Pontosan ez a különbség a debugger‑függő fejlesztés és a rendszerszintű,
 auditálható, reprodukálható diagnosztika között.

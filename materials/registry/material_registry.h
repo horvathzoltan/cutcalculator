@@ -36,6 +36,13 @@ public:
     QVector<MaterialMaster> readAll() const { return RegistryEngineBase<MaterialMaster>::readAll(); }
     const MaterialMaster* findById(const MaterialMaster::IdType& id) const { return RegistryEngineBase<MaterialMaster>::findById(id); }
 
+
+    void onItemsChanged() override
+    {
+        zInfo("róka4: MaterialRegistry::onItemsChanged fut");
+        RegistryEngineBase<MaterialMaster>::onItemsChanged();
+    }
+
 private:
     MaterialRegistry()
         : RegistryEngineBase<MaterialMaster>(QStringLiteral("MaterialRegistry"),

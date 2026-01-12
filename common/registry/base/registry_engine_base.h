@@ -7,6 +7,7 @@
 #include <QReadWriteLock>
 #include <memory>
 #include "common/registry/subscription_token.h"
+#include "common/logger/logger.h"
 
 template<typename TEntity>
 class RegistryEngineBase : public RegistryBase {
@@ -235,7 +236,9 @@ public:
 
 protected:
     // --- Central event trigger (thread-safe, reentrancy-safe) ---
-    virtual void onItemsChanged() {
+    virtual void onItemsChanged(){
+        zInfo("róka1: RegistryEngineBase::onItemsChanged belépés");
+
         QVector<std::pair<SubscriptionId, ItemsChangedEvent>> subsCopy;
         {
             QReadLocker r(&_rwLock);
@@ -248,6 +251,8 @@ protected:
                 // swallow exceptions from callbacks to keep engine stable
             }
         }
+
+        zInfo("róka2: RegistryEngineBase::onItemsChanged kilépés");
     }
 
     // --- Protected store*Impl methods used by RegistryCore and mixins ---

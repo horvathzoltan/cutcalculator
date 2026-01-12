@@ -43,6 +43,12 @@ public:
     // 💾 CSV persist (BarcodeRepository-on keresztül)
     void persist() const;
 
+    void onItemsChanged() override
+    {
+        zInfo("róka4: BarcodeRegistry::onItemsChanged fut");
+        RegistryEngineBase<BarcodeRecord>::onItemsChanged();
+    }
+
 public:
     // Workflow hookok
     bool validateDomain(const BarcodeRecord& r) const;

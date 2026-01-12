@@ -1,0 +1,245 @@
+A BarcodeRegistry modernizálása – dedikált mixin + CollectorMixin integráció
+
+    # BarcodeRegistry modernizálási terv
+    ## Dedikált mixin + CollectorMixin integráció
+
+    ## 1. Bevezetés
+    A BarcodeRegistry a rendszer globális vonalkód-életút könyvelője.
+    Nem domain entitásokat kezel (Material, Product), hanem önálló, auditált életút-rekordokat (`BarcodeRecord`).
+
+    A jelenlegi implementáció:
+    - `RegistryEngineBase<BarcodeRecord>`
+    - `CrudMixin<BarcodeRegistry, BarcodeRecord>`
+    - `RegisterMe<BarcodeRegistry>`
+
+    Ez a felépítés részben működik, de nem tükrözi a BarcodeRegistry valódi szerepét:
+    - nem domain registry,
+    - nem CRUD jellegű,
+    - nem indexelő registry,
+    - hanem **globális ledger**, amely:
+      - append-jellegű,
+      - életút-kezelő,
+      - auditált,
+      - CSV-alapú,
+      - globális uniqueness-t biztosít.
+
+    A modernizálás célja:
+    - a BarcodeRegistry szerepének explicit kifejezése,
+    - a CollectorMixin használata (update-támogatással),
+    - egy dedikált mixin bevezetése: `BarcodeLedgerMixin`,
+    - a hook-lánc egységesítése,
+    - a kód tisztítása és auditálhatóságának növelése.
+
+    ---
+
+    ## 2. A BarcodeRegistry speciális szerepe
+    A BarcodeRegistry NEM domain registry.
+    A BarcodeRegistry NEM entitás-lookup registry.
+    A BarcodeRegistry NEM barcode-indexelő registry.
+
+    A BarcodeRegistry:
+    - globális könyvelő,
+    - életút-nyilvántartó,
+    - auditált append-tábla,
+    - globális uniqueness biztosító,
+    - CSV import/export szerződés fenntartója.
+
+    Ezért a Material/Product registryk mixinjei nem alkalmazhatók rá:
+    - `BarcodeIndexMixin` → nem releváns (a barcode maga az entitás)
+    - `IdLookupMixin` → nem releváns
+    - `CrudMixin` → részben releváns, de túl általános és remove-t is hoz
+
+    A CollectorMixin sokkal közelebb áll a valós szerepéhez:
+    - add
+    - addAll
+    - importCsv
+    - persistRegistry
+    - notifyItemsChanged
+    - (új) update
+    - nincs remove
+
+    ---
+
+    ## 3. A modernizált architektúra célállapota
+
+    ### 3.1 A BarcodeRegistry új felépítése
+
+class BarcodeRegistry : public RegistryEngineBase, public
+CollectorMixin<BarcodeRegistry, BarcodeRecord>, // update-támogatással
+public BarcodeLedgerMixin, // életút workflow public RegisterMe
+
+
+    ### 3.2 A BarcodeLedgerMixin szerepe
+    A dedikált mixin feladata:
+
+    - validateDomain
+    - validateDuplicate
+    - beforeInsert
+    - beforeUpdate
+    - afterInsert (opcionális)
+    - afterUpdate (opcionális)
+    - onInsertLog
+    - onUpdateLog
+    - onRemoveLog (no-op)
+    - persistRegistry
+    - retire workflow (specializált update)
+    - audit logok
+    - globális uniqueness logika
+    - domain-szintű életút logika
+
+    Ez a mixin kifejezi a BarcodeRegistry valódi szerepét:
+    - nem CRUD,
+    - nem domain registry,
+    - hanem ledger.
+
+    ---
+
+    ## 4. Modernizálási lépések (végrehajtható terv)
+
+    ### 4.1 CollectorMixin update-támogatásának bevezetése
+    Lásd külön dokumentumban: `collector_mixin_update_plan.md`.
+
+    ### 4.2 Új mixin létrehozása: `BarcodeLedgerMixin`
+    Fájl: `common/registry/mixins/barcode_ledger_mixin.h`
+
+    Feladatai:
+    - életút workflow (validateDomain, validateDuplicate)
+    - beforeInsert / beforeUpdate
+    - afterInsert / afterUpdate (opcionális)
+    - onInsertLog / onUpdateLog
+    - persistRegistry delegálása a Host felé
+    - retire workflow implementálása
+    - globális uniqueness ellenőrzés
+    - audit logok egységesítése
+
+    ### 4.3 A BarcodeRegistry átalakítása
+    - CrudMixin eltávolítása
+    - CollectorMixin beillesztése
+    - BarcodeLedgerMixin beillesztése
+    - saját onItemsChanged override megtartása (audit log)
+    - registerNew és retire átmozgatása a mixinbe vagy delegálása oda
+
+    ### 4.4 A BarcodeRegistry tisztítása
+    - a jelenlegi workflow hookok (validateDomain, validateDuplicate, beforeInsert, beforeUpdate, onInsertLog, onUpdateLog, onRemoveLog) átmozgatása a mixinbe
+    - a registry osztályban csak:
+      - konstruktor
+      - instance()
+      - onItemsChanged()
+      - persistRegistry() (ha a mixin ezt hívja)
+      - esetleg minimális API marad
+
+    ### 4.5 Hook-lánc egységesítése
+    A modernizált lánc:
+
+RegistryEngineBase::onItemsChanged() ↓
+CollectorMixin::notifyItemsChanged() ↓
+BarcodeLedgerMixin::subscribeItemsChanged() hookjai ↓
+BarcodeRegistry::onItemsChanged() override (audit log)
+
+
+    Ez egységes, tiszta, auditálható.
+
+    ---
+
+    ## 5. A BarcodeLedgerMixin részletes feladatai
+
+    ### 5.1 validateDomain
+    - code nem üres
+    - entityType nem üres
+    - introducedAt valid
+
+    ### 5.2 validateDuplicate
+    - globális uniqueness ellenőrzés
+    - entityId összevetése (ha van)
+
+    ### 5.3 beforeInsert
+    - introducedAt beállítása, ha hiányzik
+
+    ### 5.4 beforeUpdate
+    - retiredAt beállítása (retire workflow)
+    - domain-szintű ellenőrzések
+
+    ### 5.5 onInsertLog / onUpdateLog
+    - audit logok egységesítése
+
+    ### 5.6 persistRegistry
+    - Host::persist() hívása
+
+    ### 5.7 retire workflow
+    - BarcodeRecord másolása
+    - retiredAt beállítása
+    - update() hívása
+    - audit log
+
+    ---
+
+    ## 6. A modernizált BarcodeRegistry végső szerkezete
+
+    ### 6.1 Header
+
+class BarcodeRegistry : public RegistryEngineBase, public
+CollectorMixin<BarcodeRegistry, BarcodeRecord>, public
+BarcodeLedgerMixin, public RegisterMe { AUTO_REGISTER_REGISTRY public:
+static BarcodeRegistry& instance();
+
+    void onItemsChanged() override;
+    void persistRegistry();   // mixin ezt hívja
+
+};
+
+
+    ### 6.2 CPP
+
+    - instance()
+    - persistRegistry() → BarcodeRepository::saveToCSV
+    - onItemsChanged() → audit log + base hívás
+
+    Minden más logika a mixinekben lesz.
+
+    ---
+
+    ## 7. Tesztelési terv
+
+    ### 7.1 Egységtesztek
+    - add működik
+    - update működik
+    - retire működik
+    - validateDomain működik
+    - validateDuplicate működik
+    - persistRegistry hívódik
+    - hook-lánc teljes
+
+    ### 7.2 Integrációs tesztek
+    - CSV import → registry feltöltés
+    - CSV export → stabil szerződés
+    - Material/Product import → BarcodeRegistry működik
+    - ütközés → BarcodeCollisionHelper működik
+
+    ---
+
+    ## 8. Összegzés
+    A BarcodeRegistry modernizálása:
+
+    - megszünteti a kivétel-jelleget,
+    - kifejezi a ledger-szerepet,
+    - egységesíti a registry-architektúrát,
+    - tisztítja a kódot,
+    - auditálhatóvá teszi a hook-láncot,
+    - előkészíti a jövőbeli bővítéseket.
+
+    A CollectorMixin update-támogatása és a dedikált BarcodeLedgerMixin bevezetése
+    együtt egy tiszta, stabil, hosszú távon fenntartható architektúrát eredményez.
+
+------------------------------------------------------------------------
+
+Zoltán, ezzel a három dokumentummal a teljes barcodes modul mentális
+modellje, modernizálási terve és a CollectorMixin jövője is rögzítve
+van.
+
+Ha szeretnéd, készítek:
+
+-   egy összevont roadmapet,
+-   vagy konkrét patch-sorozatot,
+-   vagy diagramot a végső architektúráról.
+
+Most viszont pihenünk — és ez így van jól.
