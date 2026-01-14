@@ -15,10 +15,10 @@ public:
     template<typename, typename>
     friend struct RegistryCore;
 
-
     using ItemsChangedEvent = std::function<void()>;
     using SubscriptionId = size_t;
     using IdType = typename TEntity::IdType;
+    using EntityType = TEntity;   // vagy MaterialMaster, ProductMaster stb.
 
     RegistryEngineBase(const QString& registryName,
                        const QString& entityTypeName)

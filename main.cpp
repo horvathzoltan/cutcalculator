@@ -1,3 +1,4 @@
+#include "common/logger/log_manager.h"
 #include "mainwindow.h"
 
 #include <QApplication>
@@ -90,7 +91,10 @@ int main(int argc, char *argv[])
     // Opcionális finomhangolás a dialógusokra:
     StartupStatusManager::setPreviewLimit(2);           // hány warning jelenjen meg előnézetben
     StartupStatusManager::setShowLogHint(true);         // mutassuk-e a "részletek a logban" sort
-    StartupStatusManager::setHumanLogPath("errors.txt");// emberbarát fájlnév (ha van)
+    QString fnh = LogManager::instance().currentFile(LogManager::Channel::Errors);
+        //FileNameHelper::instance().getHumanReadableLogFilePath();
+
+    StartupStatusManager::setHumanLogPath(fnh);// emberbarát fájlnév (ha van)
     bool startupOk = StartupStatusManager::handle(status);
 
     // 🔵 3) Audit

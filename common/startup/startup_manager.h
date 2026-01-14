@@ -4,6 +4,7 @@
 
 #include <QString>
 #include <QStringList>
+#include "common/logger/logger.h"
 
 namespace StatusHelper{
 inline QString getMessage(bool b, const QString& msg){
@@ -12,17 +13,36 @@ inline QString getMessage(bool b, const QString& msg){
 }
 
 // 🚀 Indítási logikát vezérlő osztály
+// 🚀 Indítási logikát vezérlő osztály
 class StartupManager {
 public:
     StartupStatus runStartupSequence();
 
 private:
+    // ============================================================
+    // 🧩 GENERIKUS REGISTRY BETÖLTŐ
+    // ============================================================
+    template<typename Registry, typename Repository>
+    StartupStatus initRegistryGeneric(const QString& errorMessage, bool critical = true)
+    {
+        using Entity = typename Registry::EntityType;
 
-    bool hasMinimumMaterials(int minCount);
+        QVector<Entity> items;
+        bool ok = Repository::load(items);
 
-    StartupStatus initMaterialRegistry();
-    StartupStatus initProductRegistry();
+        if (!ok)
+            return StartupStatus::failure(errorMessage, critical);
+
+        Registry::instance().setAll(items);
+
+        zInfo(QString("📦 %1: %2 elem betöltve")
+                  .arg(Registry::instance().name())
+                  .arg(Registry::instance().size()));
+
+        return StartupStatus::success();
+    }
+
+    // Speciális (nem generikus) lépések
     StartupStatus initRalColors();
     StartupStatus initNeedRuleRegistry();
-    StartupStatus initBarcodeRegistry();
 };

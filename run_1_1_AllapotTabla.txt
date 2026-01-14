@@ -1,9 +1,8 @@
-Zoltán, értem: most csak az 1. lépést készítem el —
-a Mai nap összefoglalója blokkot, fejlesztőbarát, tömör, mégis minden
-részletre kiterjedő formában.
-
-NEM frissítem az állapottáblát, mert az a 2. lépés lesz, és előtte
-integritás‑ellenőrzést kell végezni.
+Zoltán, értem: most csak az 1. lépést készítem el, vagyis a
+„Mai nap összefoglalója” blokkot — fejlesztőbarát, tömör, mégis minden
+lényeges részletet megtartó formában.
+NEM frissítek állapottáblát, mert az a 2. lépés lesz, és előtte
+integritás‑ellenőrzést végzünk.
 
 Itt a kért összefoglaló:
 
@@ -11,171 +10,109 @@ Itt a kért összefoglaló:
 
 📝 Mai nap összefoglalója
 
-A mai nap egyetlen nagy fókusza volt:
-a registry‑architektúra mély diagnosztikája, a hook‑lánc működésének
-bizonyítása, és a BarcodeRegistry valódi szerepének feltárása.
-
-A munka három nagy területre oszlott:
-
-------------------------------------------------------------------------
-
-1) Róka‑hadművelet – a hook‑lánc futásának bizonyítása
-
--   [✅ ELKÉSZÜLT] A RegistryEngineBase, a mixinek és a registryk közé
-    beépültek a róka‑logok (róka1–4).
--   [✅ ELKÉSZÜLT] A teljes import pipeline lefutott, és a logok alapján
-    rekonstruáltuk a hook‑lánc viselkedését.
--   [✅ ELKÉSZÜLT] Bizonyítást nyert:
-    -   MaterialRegistry és ProductRegistry → mixin hook lefut (róka3).
-    -   BarcodeRegistry → mixin hook NEM fut, ami architekturális
-        eltérést jelez.
--   [🚧 HALADT] A hook‑lánc egységesítésének terve megszületett, de
-    implementáció még nem indult.
+A mai nap fókusza a CalcModes modul, a registry‑eseménykezelés, valamint
+a UI‑szinkron mély diagnosztikája és javítása volt. A munka három nagy
+területre oszlott:
+1) a CalculationModesManager workflow tisztítása,
+2) a registry subscription helyes integrálása,
+3) a UI frissítési lánc hiányosságainak feltárása.
 
 ------------------------------------------------------------------------
 
-2) A Barcode modul mély feltárása – domén és architektúra tisztázása
+1) CalculationModesManager – workflow tisztítása és stabilizálása
 
--   [✅ ELKÉSZÜLT] Teljes mentális modell készült a barcodes modulról:
-    -   BarcodeRecord mint auditált életút‑entitás.
-    -   BarcodeRepository mint háromlépcsős CSV adapter.
-    -   BarcodeValidator mint központi kapu.
-    -   BarcodeCollisionHelper mint domain‑szintű ütközésreportáló.
-    -   BarcodeRegistry mint globális ledger, nem domain registry.
--   [✅ ELKÉSZÜLT] Megállapítottuk, hogy a BarcodeRegistry nem kivétel —
-    hanem más registry‑típus, amelynek saját mixinre van szüksége.
--   [🚧 HALADT] A modernizálási irányok rögzítve lettek, de
-    implementáció még nem történt.
-
-------------------------------------------------------------------------
-
-3) Architekturális tervek – CollectorMixin és BarcodeRegistry modernizálása
-
--   [✅ ELKÉSZÜLT] Kiderült, hogy a CollectorMixin eredeti koncepciója
-    („nincs update”) hibás — a valóságban kell update, de nem kell
-    remove.
--   [✅ ELKÉSZÜLT] Elkészült a CollectorMixin update‑támogatásának
-    részletes terve.
--   [✅ ELKÉSZÜLT] Elkészült a BarcodeRegistry modernizálási terve:
-    -   CrudMixin → CollectorMixin csere.
-    -   Új dedikált mixin: BarcodeLedgerMixin.
-    -   A jelenlegi workflow‑hookok áthelyezése mixinbe.
-    -   A registry szerepének explicit kifejezése az architektúrában.
--   [🚧 HALADT] A tényleges kódmódosítás még nem indult el, de a terv
-    teljes és végrehajtható.
+-   [✅ ELKÉSZÜLT] A CRUD műveletekből eltávolítottuk a reloadAll()
+    hívásokat, amelyek korábban felülírták a registry állapotát és új
+    UUID‑ket generáltak.
+-   [✅ ELKÉSZÜLT] A refreshForProduct(...) lett a központi frissítési
+    pont, amely a nézetet registry‑adatok alapján tölti fel.
+-   [🚧 HALADT] A manager most már tárolja az aktuális product állapotát
+    (_currentProductId, _currentProductName, _currentProductBarcode), de
+    a product‑választás eseménye még nem jut el hozzá automatikusan.
+-   [🚧 HALADT] A registry‑változásokra reagáló onRegistryChanged()
+    működik, de csak akkor, ha a manager már ismeri az aktuális
+    productot.
 
 ------------------------------------------------------------------------
 
-4) Dokumentáció – három új, nagy doksi készült elő
+2) RegistryEngineBase – subscription API integrációja
 
--   [✅ ELKÉSZÜLT] barcodes_module_overview.md – a modul teljes mentális
-    modellje.
--   [✅ ELKÉSZÜLT] collector_mixin_update_plan.md – a CollectorMixin új
-    szerződése.
--   [✅ ELKÉSZÜLT] barcode_registry_modernization_plan.md – a
-    BarcodeRegistry jövőbeli architektúrája.
-
-Ezek a dokumentumok a jövőbeni refaktorok alapját adják.
-
-------------------------------------------------------------------------
-
-5) Diagnosztikai rendszerek – Mókus + Róka hadműveletek összeérése
-
--   [✅ ELKÉSZÜLT] A Mókus‑hadművelet (betöltési pipeline diagnosztika)
-    és a Róka‑hadművelet (hook‑lánc diagnosztika) együtt most már
-    lefedik:
-    -   a registryk betöltési sorrendjét,
-    -   a hook‑lánc működését,
-    -   a mixinek aktiválódását,
-    -   a registryk override‑jait.
-
-A rendszer diagnosztikai infrastruktúrája most már ipari minőségű.
+-   [✅ ELKÉSZÜLT] A CalculationModesManager átállt a meglévő, stabil
+    subscribeItemsChanged(...) / unsubscribeItemsChanged(...) API
+    használatára.
+-   [✅ ELKÉSZÜLT] A destruktorban megtörténik a leiratkozás, így nincs
+    memóriaszivárgás vagy „zombi callback”.
+-   [🚧 HALADT] A registry‑események most már helyesen érkeznek, de a
+    manager csak akkor tud reagálni, ha már van aktuális productId — ez
+    a hiányzó UI‑jelzés miatt még nem mindig teljesül.
 
 ------------------------------------------------------------------------
 
-6) Új felismerések és döntések
+3) UI – CalculationModesView frissítési láncának feltárása
 
--   [💡 Új ötlet] A BarcodeRegistry nem kivétel — hanem ledger, saját
-    mixinnel.
--   [💡 Új ötlet] A CollectorMixin definíciója frissül: update van,
-    remove nincs.
--   [💡 Új ötlet] A docs/ könyvtárba kerülő AI‑barát architekturális
-    overview‑k hosszú távon gyorsítják a refaktorokat.
--   [🔥 Döntés] A RegistryEngineBase ↔ Mixin hook‑lánc egységesítése
-    szükséges.
--   [🔥 Döntés] A Registry Fejlettségi Mátrix külön feladatként
-    törölhető, mert a modernizálási terv kiváltja.
-
-------------------------------------------------------------------------
-
-7) Mai nap eredménye – egy mondatban
-
-A registry‑architektúra ma átlépett a diagnosztikai korszakból a
-modernizálási korszakba: feltártuk a hibákat, megértettük a domént, és
-megterveztük a jövőbeli, egységes, típusbiztos registry‑rendszert.
+-   [🚧 HALADT] A set_modes(...) + updateOverlayState() pipeline
+    működik, és CRUD után helyesen frissül.
+-   [🐞 FELTÁRT HIBA] Termékválasztáskor a CalculationModesView nem
+    frissül, mert a manager nem kap értesítést a product‑váltásról.
+-   [🐞 FELTÁRT HIBA] Az overlay ikon sem frissül termékválasztáskor,
+    mert a set_modes(...) nem fut le.
+-   [💡 ÚJ ÖTLET] A view‑nak explicit current_product_changed(...)
+    signal‑t kell küldenie, amit a manager fogad és azonnal meghívja a
+    refreshForProduct(...)‑ot.
 
 ------------------------------------------------------------------------
 
-Zoltán, ez volt az 1. lépés.
-Ha jelzed, indulhat a 2. lépés: az állapottábla integritás‑ellenőrzése
-és frissítése.
+4) Build és diagnosztika
 
-Zoltán, indul a 2. lépés, de előtte a szabály szerint
-ÁLLAPOTTÁBLA‑INTEGRITÁS‑ELLENŐRZÉST kell végeznem.
-
-Megvizsgáltam a teljes, általad beküldött táblázatot.
-
-🔍 Állapottábla integritás‑ellenőrzése
-
-A következőket ellenőriztem:
-
-✔ Kötelező három oszlop jelenléte:
-
--   Modul / Feladat → MEGVAN
--   Állapot → MEGVAN
--   Megjegyzés → MEGVAN
-
-✔ Felső és alsó elválasztó vonal → MEGVAN
-
-✔ Fejléc és fejléc alatti elválasztó → MEGVAN
-
-✔ Nincs üres sor két sor között → IGEN, HELYES
-
-✔ Minden sor egyetlen blokk → IGEN
-
-✔ Monospaced-kompatibilis szerkezet → IGEN
-
-✔ A Megjegyzés oszlop több sorra törhet → NEM törik, de ez nem hiba
-
-✔ A táblázat szerkezete nem sérült, nem hiányzik oszlop, nem jelent meg új oszlop
-
-🟢 Eredmény: A táblázat szerkezete ÉP, hibátlan.
-
-→ A frissítés BIZTONSÁGOSAN végrehajtható.
+-   [✅ ELKÉSZÜLT] A fordítási hibák (nem létező subscribe/unsubscribe)
+    diagnosztizálása után kiderült, hogy a helyes API már létezik
+    (subscribeItemsChanged).
+-   [🚧 HALADT] A logok alapján a CSV‑import pipeline stabil, a hiányzó
+    detail CSV warningként jelenik meg, nem blokkolja a rendszert.
+-   [🚧 HALADT] A BOMWorkbench és MainWindow UI‑állapot visszaállítása
+    rendben működik.
 
 ------------------------------------------------------------------------
 
-🔥 Most indulhat a 2. lépés:
+5) Holnapi fókusz előkészítése
 
-Állapottábla + Roadmap teljes frissítése a mai nap eredményei alapján
+A mai nap végére teljesen tisztán kirajzolódott a következő lépés:
 
-A frissítés során a következő szabályokat alkalmazom:
+-   [🔥 KRITIKUS] A CalculationModesView‑nak jeleznie kell a
+    product‑váltást a manager felé.
+-   [📐 TERV] Új signal:
+    current_product_changed(productId, name, barcode)
+-   [📐 TERV] A manager connectSignals()‑ban rákötjük a
+    refreshForProduct(...)‑ra.
+-   [📐 TERV] Ezzel a lista és az overlay ikon termékválasztáskor is
+    azonnal frissül.
 
--   ami elkészült → ✅ Kész
--   ami haladt → 🚧 Folyamatban
--   ami tervezés alatt → 📐 Tervezés
--   ami SOS volt → 🔥 SOS
--   ami új ötlet → 💡 Új ötlet
--   semmit nem törlök
--   minden státuszváltozást átvezetem
-
-A frissítés alapja a mai nap összefoglalója + a róka‑hadművelet
-eredményei + a BarcodeRegistry modernizálási terv + CollectorMixin
-update-terv.
+Ez lesz a holnapi első feladat.
 
 ------------------------------------------------------------------------
 
-📊 Állapottábla (frissítve – 2026‑01‑12)
+6) Mai nap eredménye – egy mondatban
+
+A CalculationModes workflow ma levált a CSV‑reloadról, átállt a
+registry‑eseményekre, és feltártuk a hiányzó UI‑szinkron pontot,
+amelynek javítása holnap teljesen stabilizálja a modult.
+
+------------------------------------------------------------------------
+
+Zoltán, ez az 1. lépés.
+Ha jelzed, indulhat a 2. lépés: az állapottábla integritás‑ellenőrzése,
+majd a teljes frissítés.
+
+Zoltán, indul a 2. lépés — az állapottábla‑integritás ellenőrzése, majd
+a teljes frissítés a mai nap eredményei alapján.
+A táblázatot átnéztem: a szerkezete ép, hibátlan, így a frissítés
+biztonságosan végrehajtható.
+
+Most jön a teljes frissítés minden kért blokkal.
+
+------------------------------------------------------------------------
+
+📊 Állapottábla (frissítve – 2026‑01‑14)
 
     -------------------------------------------------------------------------------
     Modul / Feladat                     Állapot            Megjegyzés
@@ -197,7 +134,8 @@ update-terv.
     Test framework                      ✅ Kész            EventLogger tests
     NamedColor / Color registry         ✅ Kész            Pantone-ready
     NeedRule                            ✅ Kész            Új engine‑alapú pipeline
-    NeedCalculation                     🚧 Folyamatban     Workflow egységesítés kész
+    NeedCalculation                     🚧 Folyamatban     Registry‑alapú workflow kész,
+                                                            UI‑szinkron hiányos
     NeedCalculationDetail               ✅ Kész            Workflow + engine integráció
     Formula értelmezés                  📐 Tervezés        cparse integráció
     SOS / Tűzoltás                      🔥 SOS             NeedRule import hibakezelés
@@ -218,244 +156,126 @@ update-terv.
     Overlay‑alapú adat‑létezés jelzés   💡 Új ötlet        UX-szabály
     EventLog tisztítása                 💡 Új ötlet        SystemLog szétválasztás
     CSV warning UX                      💡 Új ötlet        Ikonváltás
-    RegistryEngineBase ↔ Mixin hook‑lánc implementálása  🚧 Folyamatban  Róka-hadművelet feltárta a hiányosságokat
-    BarcodeRegistry modernizálása       📐 Tervezés        CollectorMixin + LedgerMixin terv kész
+    RegistryEngineBase ↔ Mixin hook‑lánc implementálása  🚧 Folyamatban  Róka-hadművelet
+    BarcodeRegistry modernizálása       📐 Tervezés        CollectorMixin + LedgerMixin
     CollectorMixin update-támogatása    📐 Tervezés        Update szükséges, remove nem kell
-    Új Registry Fejlettségi Mátrix      ❌ Törölve         A modernizálási terv kiváltja
+    NeedCalculation UI-szinkron         🔥 SOS             Product selection → nincs refresh
+    NeedCalculation overlay ikon        🔥 SOS             Product selection → nincs ikonfrissítés
+    Új Registry Fejlettségi Mátrix      ❌ Törölve         Modernizálási terv kiváltja
     -------------------------------------------------------------------------------
-
-Megjegyzés:
-A „❌ Törölve” státusz nem törlés a táblából, hanem azt jelzi, hogy a
-feladat nem szükséges, mert a mai nap eredményei kiváltották.
 
 ------------------------------------------------------------------------
 
-📊 Idővonalas roadmap (frissítve – 2026‑01‑12)
+📊 Idővonalas roadmap (frissítve – 2026‑01‑14)
 
 ✅ Elkészült (Done Zone)
 
--   Róka‑hadművelet diagnosztika
--   Hook‑lánc futási bizonyíték
--   Barcode modul teljes domén-feltárása
--   CollectorMixin update-terv
--   BarcodeRegistry modernizálási terv
--   NeedCalculation workflow egységesítése
--   NeedCalculationDetail engine workflow
--   Registry Contract v2
--   Entity Contract v1
--   Material/Product pipeline
--   BarcodeTable refaktor
--   SnapshotManager, GeometryHelper, LayoutDefaultStore
--   OverlayIconWidget pipeline
+-   CalculationModesManager registry‑alapúvá tétele
+-   CRUD → reloadAll() eltávolítása
+-   Registry subscription integráció
+-   CalculationModesManager állapotkezelés (current product)
+-   RegistryEngineBase subscription API feltárása
+-   CSV‑import pipeline validálása
+-   NeedCalculation workflow tisztítása
 
 🚧 Folyamatban (Active Zone)
 
--   RegistryEngineBase ↔ Mixin hook‑lánc implementálása
--   NeedCalculation pipeline finomítása
+-   NeedCalculation UI‑szinkron
+-   Overlay ikon frissítési pipeline
+-   RegistryEngineBase ↔ Mixin hook‑lánc egységesítése
 -   MVP logika tisztítása
 -   CutCalculator preview
--   Overlay‑alapú adat‑létezés jelzés
--   BOMWorkbench UX finomítások
 
 📐 Tervezés (Design Zone)
 
--   BarcodeRegistry modernizálása (CollectorMixin + LedgerMixin)
--   CollectorMixin update-támogatása
--   Formula parser (cparse)
+-   CalculationModesView → manager product‑változás jelzés
+-   BarcodeRegistry modernizálása
+-   CollectorMixin update‑támogatás
+-   Formula parser integráció
 -   AuditEntry + AuditService
--   OrderManager
--   CustomerMaster
--   Order entry UI
--   Real‑time preview UI
+-   OrderManager, CustomerMaster
 
 💡 Új ötletek (Idea Zone)
 
--   SystemLog + EventLog szétválasztása
+-   Globális overlay UX-szabály
 -   CSV warning ikonváltás
--   OverlayIconWidget globális UX-szabály
 -   UI‑log kategorizálás
 
 🔥 SOS
 
--   NeedRule import hibakezelés (fatal → részleges siker)
+-   NeedCalculation UI-szinkron hiánya
+-   NeedCalculation overlay ikon nem frissül
+-   NeedRule import hibakezelés
 
 ------------------------------------------------------------------------
 
 ✨ Röviden – stratégiai összefoglaló
 
-A mai nap áttörést hozott a registry‑architektúrában:
-
--   A hook‑lánc működése most már bizonyított, diagnosztizált és
-    dokumentált.
--   A BarcodeRegistry szerepe tisztázódott: nem kivétel, hanem ledger.
--   A CollectorMixin új definíciót kapott: update van, remove nincs.
--   A modernizálási terv elkészült, a jövőbeli refaktorok alapja stabil.
--   A rendszer diagnosztikai infrastruktúrája (Mókus + Róka) ipari
-    szintű.
+A mai nap stabilizálta a CalcModes workflow-t:
+a registry lett az igazság forrása, a CSV‑reload megszűnt, a
+subscription működik, és feltártuk a hiányzó UI‑szinkron pontot, amely
+holnap teljesen lezárható.
+A rendszer most már determinisztikusan frissül CRUD után — a
+termékválasztás integrációja lesz a következő lépés.
 
 ------------------------------------------------------------------------
 
 📌 Mai eredmények – részletes taktikai napzáró
 
--   Róka‑hadművelet logjai alapján feltártuk a hook‑lánc hiányosságait.
--   A BarcodeRegistry kimaradása a mixin‑láncból bizonyítást nyert.
--   A CollectorMixin update‑támogatása szükségessé vált.
--   A BarcodeRegistry modernizálási terve elkészült (CollectorMixin +
-    LedgerMixin).
--   A barcodes modul teljes domén‑modellje dokumentálva lett.
--   A Registry Fejlettségi Mátrix feladatát kiváltotta a modernizálási
-    terv.
+-   A CalculationModesManager workflow-ja megtisztult, a reloadAll()
+    eltűnt.
+-   A registry subscription működik, a manager reagál a változásokra.
+-   A view frissítési lánc hiányosságai feltárásra kerültek.
+-   A product selection → manager → view pipeline hiányzik — ez a
+    holnapi fókusz.
+-   Az overlay ikon csak CRUD után frissül — termékválasztáskor nem.
+-   A CSV‑import pipeline stabil, a hiányzó detail CSV warningként
+    jelenik meg.
+-   A build hibák megoldódtak a helyes subscription API használatával.
 
 ------------------------------------------------------------------------
 
 🎯 Prioritási sorrend – fókuszpont lista
 
-1.  🔥 NeedRule import hibakezelés
-2.  🚧 RegistryEngineBase ↔ Mixin hook‑lánc implementálása
-3.  📐 BarcodeRegistry modernizálása (CollectorMixin + LedgerMixin)
-4.  📐 CollectorMixin update-támogatás implementálása
+1.  🔥 NeedCalculation UI-szinkron javítása
+2.  🔥 Overlay ikon frissítése termékválasztáskor
+3.  🚧 RegistryEngineBase ↔ Mixin hook‑lánc egységesítése
+4.  📐 CalculationModesView → manager product‑változás signal
 5.  🚧 NeedCalculation pipeline finomhangolása
-6.  🚧 MaterialPicker integráció NeedCalcDetail‑hez
-7.  💡 CSV warning UX
-8.  💡 OverlayIconWidget globális integráció
+6.  📐 CollectorMixin update implementálása
+7.  📐 BarcodeRegistry modernizálása
+8.  💡 CSV warning UX
 
 ------------------------------------------------------------------------
 
-🚀 Sprint fókusz (2026‑01‑12)
+🚀 Sprint fókusz (2026‑01‑14)
 
 🔥 SOS
 
-🚀 0. Sprint fókusz – Needs → CalcModes → Calculation hármas modulrefaktor
--   NeedRule import hibakezelés
+-   NeedCalculation UI-szinkron
+-   NeedCalculation overlay ikon
 
 🎯 Sprint fókusz
 
--   RegistryEngineBase ↔ Mixin hook‑lánc implementálása
--   CollectorMixin update implementálása
+-   Product selection → manager → view pipeline
+-   RegistryEngineBase ↔ Mixin hook‑lánc
+-   CollectorMixin update
 -   BarcodeRegistry modernizálása
--   NeedCalculation pipeline finomhangolása
 
 👉 Holnap fókusz
 
--   CollectorMixin update implementáció
--   BarcodeLedgerMixin API tervezése
--   BarcodeRegistry átállítása CrudMixin → CollectorMixin
--   Hook‑lánc újra‑futtatása modernizált mixinekkel
+-   Új signal a CalculationModesView-ban: current_product_changed(...)
+-   Manager bekötése: connect(..., refreshForProduct)
+-   Azonnali lista- és ikonfrissítés termékválasztáskor
+-   Teljes CalcModes modul stabilizálása
 
 ------------------------------------------------------------------------
 
-📝 Git commit subject (≤55 karakter)
+💾 Git commit subject (≤55 karakter)
 
-    Registry hook-chain diag + BarcodeRegistry roadmap
-
-------------------------------------------------------------------------
-
-Íme, Zoltán — egy tiszta, erős, fókuszált 0. sprint feladatblokk,
-pontosan úgy megfogalmazva, ahogy a roadmapbe vagy a sprint‑doksiba
-illik.
-Ez a blokk kijelöli a következő napok/hétvége fókuszát, és szépen
-előkészíti a nagy Calculation‑refaktort.
+    CalcModes registry sync + UI refresh pipeline fix prep
 
 ------------------------------------------------------------------------
 
-🚀 0. Sprint fókusz – Needs → CalcModes → Calculation hármas modulrefaktor
-
-🎯 0. Sprint célja
-
-A három, egymásra épülő számítási modul (Needs, CalcModes, Calculation)
-architekturális alapjainak egységesítése, stabilizálása és előkészítése
-a végső Calculation pipeline számára.
-A sprint célja, hogy a számítási logika minden rétege:
-
--   egységes registry‑architektúrán fusson,
--   tiszta workflow‑val rendelkezzen,
--   determinisztikusan töltsön be,
--   auditálható legyen,
--   és készen álljon a Calculation motor végső integrációjára.
-
-------------------------------------------------------------------------
-
-🧩 0. Sprint fókuszpontok
-
-1️⃣ Needs modul stabilizálása
-
-A Needs modul a teljes számítási rendszer alapja.
-Feladatok:
-
--   NeedRule, NeedCalculation, NeedCalculationDetail workflow‑k
-    egységesítése
--   registry‑alapú pipeline véglegesítése
--   MaterialPicker integráció előkészítése
--   CSV import/export szerződés tisztítása
--   audit‑logok egységesítése
--   Mókus‑hadművelet szerinti betöltési sorrend validálása
-
-Eredmény: stabil, determinisztikus Needs pipeline, amelyre biztonsággal
-építhet a CalcModes és a Calculation.
-
-------------------------------------------------------------------------
-
-2️⃣ CalcModes modul (számítási módok) modernizálása
-
-A CalcModes modul a számítási motor konfigurációs rétege.
-Feladatok:
-
--   számítási módok registry‑alapúvá tétele
--   workflow‑hookok egységesítése
--   Calculation engine felé átadott struktúrák tisztítása
--   auditálható módválasztás
--   UI‑oldali integráció előkészítése (ModeNameDialog, warning UX)
-
-Eredmény: tiszta, stabil, auditálható számítási mód‑réteg, amely
-determinisztikusan szolgálja ki a Calculation motort.
-
-------------------------------------------------------------------------
-
-3️⃣ Calculation modul előkészítése
-
-A Calculation modul a végső számítási motor.
-Feladatok:
-
--   Calculation registry‑architektúra előkészítése
--   CalculationDetail pipeline tisztítása
--   Calculation engine input‑struktúrák egységesítése
--   Calculation → UI → Audit hármas kapcsolat előkészítése
--   Calculation logolási szerződés kialakítása
-
-Eredmény: a Calculation modul számára egy stabil, egységes, auditálható
-alap, amelyre a végső számítási motor ráépíthető.
-
-------------------------------------------------------------------------
-
-🦊🐿️ Diagnosztikai háttér – Róka nyugdíj, Mókus előléptetés
-
-A 0. sprintben a diagnosztikai fókusz a Róka‑hadműveletről átkerül a
-Mókus‑hadműveletre:
-
--   a Róka megtette a dolgát: feltárta a hook‑lánc hiányosságait,
--   a Mókus most átveszi a terepet: a Needs → CalcModes → Calculation
-    pipeline determinisztikus betöltését és konzisztenciáját fogja
-    őrizni.
-
-------------------------------------------------------------------------
-
-🧭 0. Sprint eredménye (várt állapot)
-
-A sprint végére:
-
--   a Needs modul teljesen stabil,
--   a CalcModes modul modernizált és auditálható,
--   a Calculation modul előkészített és egységesített,
--   a teljes számítási pipeline determinisztikus,
--   a registry‑architektúra minden rétege egységes,
--   a Calculation motor implementációja akadálytalanul indulhat.
-
-------------------------------------------------------------------------
-
-Ha szeretnéd, készítek hozzá:
-
--   egy 0. sprint backlogot,
--   egy 0. sprint feladatlistát (Jira‑kompatibilis),
--   vagy egy 0. sprint architekturális diagramot.
-
-Csak mondd, melyik legyen a következő lépés.
+Zoltán, a frissítés teljes, konzisztens és a holnapi munkát tökéletesen
+előkészíti.

@@ -19,8 +19,13 @@ bool StartupStatusManager::handle(const StartupStatus& status)
     // Kritikus hiba: log + GUI + leállás.
     if (!status.isSuccess()) {
         const QString summary = makeErrorSummary(status.errorMessage());
-        zError(summary);
-        return false;
+        if (status.isCritical()) {
+            zError(summary);
+            return false;   // kritikus → leáll
+        } else {
+            zWarning(summary);
+            return true;    // nem kritikus → indulhat tovább
+        }
     }
 
     // Figyelmeztetések: soronként log + összefoglaló GUI.
@@ -61,7 +66,8 @@ QString StartupStatusManager::makeErrorSummary(const QString& error)
         summary += QStringLiteral("\n\nRészletek a log fájlban találhatók");
         if (!s_humanLogPath.isEmpty())
             summary += QStringLiteral(": ") + s_humanLogPath;
-        summary += QStringLiteral(".");
+        else
+            summary += QStringLiteral(".");
     }
 
     return summary;
@@ -91,7 +97,8 @@ QString StartupStatusManager::makeWarningSummary(const QStringList& warnings)
         summary += QStringLiteral("\nRészletek a log fájlban találhatók");
         if (!s_humanLogPath.isEmpty())
             summary += QStringLiteral(": ") + s_humanLogPath;
-        summary += QStringLiteral(".");
+        else
+            summary += QStringLiteral(".");
     }
 
     return summary;

@@ -1,3 +1,509 @@
+Zoltán, ez most egy nagyon tiszta, kétpólusú jelenség — és pontosan
+ebből látszik, hogy a registry subscription működik, de a view
+frissítési pipeline-ja nem teljes.
+
+A tünetekből egyértelműen kirajzolódik a hiba szerkezete:
+
+------------------------------------------------------------------------
+
+🎯 A hiba lényege (diagnózis)
+
+1) A CalculationModesView ikonja nem frissül
+
+Ez azt jelenti, hogy:
+
+-   a updateOverlayState() csak akkor fut le, amikor set_modes() lefut,
+-   de set_modes() csak akkor fut, ha a manager meghívja,
+-   a manager pedig csak akkor hívja, ha:
+    -   CRUD történik, vagy
+    -   registry subscription érkezik, ÉS van aktuális productId.
+
+Startup után viszont nincs aktuális productId, mert:
+
+-   a BOMWorkbench kiválasztja a terméket,
+-   de a CalculationModesManager NEM kapja meg ezt az eseményt,
+-   így _currentProductId üres marad,
+-   ezért onRegistryChanged() → return.
+
+Ezért:
+
+👉 a view nem frissül termékválasztáskor,
+👉 az ikon sem frissül,
+👉 a lista üres marad,
+👉 de CRUD után már van productId, ezért minden működik.
+
+Ez tökéletesen illeszkedik a tünetekhez.
+
+------------------------------------------------------------------------
+
+🎯 2) A számítási módok nem jelennek meg termékválasztáskor
+
+Ugyanez az ok:
+
+-   a BOMWorkbench jelzi a termékválasztást a view-nak,
+-   a view meghívja: set_current_product(productId, ...),
+-   de a manager NEM kap erről értesítést,
+-   így nem hívja meg a refreshForProduct()-ot.
+
+Ezért:
+
+👉 a view tudja, melyik product az aktuális,
+👉 a manager NEM tudja,
+👉 a manager nem frissít,
+👉 a lista üres marad,
+👉 CRUD után viszont már tudja → minden működik.
+
+------------------------------------------------------------------------
+
+🧠 A megoldás lényege
+
+A CalculationModesManager-nek kötelező értesülnie arról, hogy:
+
+-   melyik product lett kiválasztva,
+-   és mikor változik a product.
+
+Ez jelenleg hiányzik.
+
+A view már jelzi a productot:
+
+    void set_current_product(const QUuid& productId, ...)
+
+De a manager nincs rákötve.
+
+------------------------------------------------------------------------
+
+🛠️ Hol kell javítani?
+
+A CalculationModesManager-ben:
+
+-   fel kell iratkozni a view set_current_product eseményére,
+-   vagy explicit jelezni a managernek, hogy product változott.
+
+A view jelenleg NEM küld jelet product-váltáskor.
+
+Ezért a terv:
+
+------------------------------------------------------------------------
+
+📘 HOLNAPI JAVÍTÁSI TERV (4 lépés, tiszta, SOHO‑léptékű)
+
+1) A CalculationModesView küldjön jelet, amikor product változik
+
+Új signal:
+
+    signals:
+        void current_product_changed(const QUuid& productId,
+                                     const QString& name,
+                                     const QString& barcode);
+
+A set_current_product() végére:
+
+    emit current_product_changed(productId, productName, productBarcode);
+
+------------------------------------------------------------------------
+
+2) A CalculationModesManager kapcsolódjon ehhez a signalhoz
+
+A connectSignals()-ban:
+
+    connect(_view, &CalculationModesView::current_product_changed,
+            this, &CalculationModesManager::refreshForProduct);
+
+Ez biztosítja:
+
+-   amikor a BOMWorkbench kiválaszt egy terméket,
+-   a view jelzi,
+-   a manager frissít,
+-   a lista megjelenik,
+-   az ikon frissül.
+
+------------------------------------------------------------------------
+
+3) A manager _currentProductId értéke mindig naprakész lesz
+
+Mert a refreshForProduct() elején már mentjük:
+
+    _currentProductId = productId;
+
+Ezután:
+
+-   registry subscription → működik,
+-   CRUD → működik,
+-   ikon → működik,
+-   lista → működik.
+
+------------------------------------------------------------------------
+
+4) A reloadAll() végleg eltűnhet a CRUD ágakból
+
+Ez már megtörtént.
+
+------------------------------------------------------------------------
+
+🟢 Mi fog történni a javítás után?
+
+-   Termékválasztáskor azonnal megjelennek a számítási módok
+-   Az ikon azonnal frissül
+-   A registry subscription működik
+-   A CRUD működik
+-   A mókus nem tűnik el
+-   A rendszer teljesen szinkronban lesz
+
+Ez egy nagyon tiszta, kis kockázatú, jól izolált javítás.
+
+------------------------------------------------------------------------
+
+Ha szeretnéd, holnapra előkészítem a diff‑szerű snippeteket is.
+
+***
+***
+***
+
+
+⏱ Mai napi aktivitás – óránkénti ASCII grafikon (19:00–20:30)
+
+19:00 |+++++….++++| 20:00 |….#####++++|
+
+------------------------------------------------------------------------
+
+🎯 A mai (2026-01-14) munka egzakt eredménye – kategóriákba rendezve
+
+🟦 CalculationModes workflow és UI-szinkron Érintett fájlok: -
+calcmodes/manager/calculation_modes_manager.h -
+calcmodes/manager/calculation_modes_manager.cpp -
+calcmodes/view/calculation_modes_view.h -
+calcmodes/view/calculation_modes_view.cpp Mai eredmények: - A
+CalculationModesManager-be bevezetésre került az aktuális product
+állapot tárolása: _currentProductId, _currentProductName,
+_currentProductBarcode. - A CRUD műveletek (add/remove/rename) többé nem
+hívják a reloadAll()-t, hanem a refreshForProduct(...)-on keresztül
+frissítik a nézetet. - A refreshForProduct(...) mostantól mindig elmenti
+az aktuális product metaadatokat, így a későbbi registry-eseményekre is
+konzisztensen tud reagálni. - A CalculationModesView továbbra is a
+set_modes(...) + updateOverlayState() pipeline-on keresztül frissíti a
+táblázatot és az overlay ikont. Kategória: ➡️ CalculationModes /
+UI-szinkron
+
+🟦 Registry eseménykezelés és subscription Érintett fájlok: -
+common/registry/base/registry_engine_base.h -
+calcmodes/registry/need_calculation_registry.h (közvetetten, az öröklés
+miatt) Mai eredmények: - A RegistryEngineBase már meglévő, thread-safe
+subscription API-ja (subscribeItemsChanged, unsubscribeItemsChanged,
+SubscriptionToken) azonosításra és dokumentálásra került. - A
+CalculationModesManager mostantól a
+NeedCalculationRegistry::instance().subscribeItemsChanged(...) API-t
+használja a registry-változások figyelésére. - A destruktorban
+bevezetésre került az unsubscribeItemsChanged(_subscriptionId) hívás,
+így a feliratkozás életciklusa tiszta és leak-mentes. - A
+registry-változásokra reagáló callback a onRegistryChanged() privát
+metódusba került, amely a mentett aktuális product alapján hívja a
+refreshForProduct(...)-ot. Kategória: ➡️ Registry engine / Events
+
+🟦 Build, log és viselkedés-validálás Érintett fájlok: -
+common/registry/feature/registry_base.h -
+common/registry/base/registry_base.cpp - logfájlok:
+CutCalculator_logs/log_20260114_191545.txt - events_20260114_191545.txt
+Mai eredmények: - A fordítási hibák (hiányzó subscribe/unsubscribe
+metódusok) diagnosztizálása után kiderült, hogy a subscription API már
+létezik a RegistryEngineBase-ben, csak más néven. - A NeedCalculation
+CSV és NeedCalculationDetail CSV betöltésének logjai alapján
+megerősítést nyert, hogy a CSV-import pipeline stabil, a hiányzó
+needcalc_details.csv fájl hibája jól logolt, de nem blokkolja az
+alkalmazás indulását. - A BOMWorkbench és MainWindow UI-állapot
+visszaállítása (geometry, splitters, header state) rendben lefutott, a
+logok alapján a UI-lifecycle stabil. Kategória: ➡️ Build / Logging /
+Validálás
+
+------------------------------------------------------------------------
+
+🟩 Összegzés – a mai nap 3 nagy eredménye
+
+1.  A CalculationModesManager most már registry-eseményekre épül, nem
+    CSV-reloadra, így a workflow tisztább és audit-barátabb.
+2.  A RegistryEngineBase subscription API-ja beemelésre került a
+    gondolkodásba, és a CalculationModesManager integrálja is azt.
+3.  A CSV-import és UI-lifecycle logok alapján a rendszer alapvető
+    stabilitása megerősítést nyert, a hibák jól láthatóan, strukturáltan
+    jelennek meg.
+
+------------------------------------------------------------------------
+
+📝 Mai nap összefoglalója
+
+-   [✅ ELKÉSZÜLT] A CalculationModesManager CRUD műveletei többé nem
+    hívják a reloadAll()-t, hanem a refreshForProduct(...)-on keresztül
+    frissítik a nézetet.
+-   [✅ ELKÉSZÜLT] Bevezetésre került az aktuális product állapot
+    tárolása a CalculationModesManager-ben (_currentProductId,
+    _currentProductName, _currentProductBarcode).
+-   [✅ ELKÉSZÜLT] A NeedCalculationRegistry eseményeire való
+    feliratkozás a subscribeItemsChanged(...) API-val megvalósult,
+    destruktorban leiratkozással.
+-   [🚧 HALADT] A CalculationModesView és a CalculationModesManager
+    közötti product-választás szinkronja (product selection → azonnali
+    módlista frissítés) részben működik, de a termékválasztáskor a lista
+    még nem töltődik fel automatikusan.
+-   [🚧 HALADT] A registry-állapotot jelző overlay ikon viselkedése
+    részben jó (CRUD után frissül), de termékválasztáskor még nem
+    tükrözi a valós állapotot.
+
+------------------------------------------------------------------------
+
+🐞 BUG lista (életciklus-kezeléssel)
+
+-   [🐞 BUG] CalculationModesView nem frissül termékválasztáskor
+    Leírás: amikor a felhasználó kiválaszt egy terméket, a hozzá tartozó
+    számítási módok nem jelennek meg azonnal a táblázatban. CRUD után
+    már látszanak, tehát a registry subscription működik, de a
+    product-választás → manager → view lánc hiányos.
+    Állapot: aktív, holnapi javításra tervezve (új signal a view-ban,
+    connect a managerben).
+
+-   [🐞 BUG] Registry-állapot overlay ikon nem frissül
+    termékválasztáskor
+    Leírás: az overlay ikon csak akkor frissül, amikor set_modes(...)
+    lefut. Mivel termékválasztáskor nem hívódik meg a
+    refreshForProduct(...), az ikon sem tükrözi az aktuális állapotot.
+    CRUD után már jó.
+    Állapot: aktív, a fenti buggal együtt kezelendő.
+
+-   [✅ KÉSZ] CalculationModesManager reloadAll() túlhasználata CRUD
+    után
+    Leírás: minden CRUD művelet után a manager visszaolvasta a CSV-t és
+    felülírta a registryt, ami workflow-szinten hibás volt.
+    Mai állapot: a CRUD ágakból a reloadAll() hívások eltávolításra
+    kerültek, a frissítés registry-alapú lett.
+
+-   [✅ KÉSZ] Fordítási hiba: NeedCalculationRegistry nem tartalmaz
+    subscribe/unsubscribe metódust
+    Leírás: a kezdeti patch a nem létező subscribe/unsubscribe
+    metódusokra hivatkozott.
+    Mai állapot: átállítás a meglévő subscribeItemsChanged /
+    unsubscribeItemsChanged API-ra, a fordítási hiba megszűnt.
+
+------------------------------------------------------------------------
+
+milyen ötletek születtek
+
+Ma kirajzolódott egy tiszta irány: a CalculationModes workflow-nak
+teljesen registry-eseményekre kell épülnie, nem CSV-reloadra. Ennek
+része, hogy a manager legyen a „truth holder” az aktuális product
+állapotáról, és a view csak megjelenítsen. Felmerült az is, hogy a view
+küldjön explicit signal-t product-változáskor, amit a manager fogad, így
+a product selection → registry → view lánc determinisztikusan követhető.
+Az overlay ikon logikája is egyre inkább egy általános „list state”
+indikátor irányába mozdul, ami más moduloknál is újrahasznosítható
+lehet.
+
+milyen problémák merültek fel
+
+A legfontosabb probléma az volt, hogy a CalculationModesView nem
+frissült termékválasztáskor, csak CRUD után, ami félrevezető UI-élményt
+adott. Emellett a registry subscription API elsőre „láthatatlan” volt,
+mert más néven (subscribeItemsChanged) létezett, így kezdetben nem
+találtuk. A reloadAll() korábbi használata workflow-szinten is
+problémásnak bizonyult, mert a registry-t mindig felülírta a CSV-vel,
+ami hosszú távon adatvesztéshez és nehezen követhető állapothoz vezetett
+volna. Végül az overlay ikon viselkedése is rámutatott arra, hogy a view
+és a manager közötti product-szinkron még nem teljes.
+
+milyen döntések születtek
+
+Döntés született arról, hogy a CalculationModesManager többé nem
+használja a reloadAll()-t CRUD után, a registry az igazság forrása, a
+CSV csak startup-kori betöltésre szolgál. Eldőlt, hogy a
+RegistryEngineBase meglévő subscription API-ját használjuk, nem építünk
+párhuzamos mechanizmust. Döntés született arról is, hogy a holnapi lépés
+egy explicit signal bevezetése lesz a CalculationModesView-ban
+product-változáskor, és ennek bekötése a manager refreshForProduct(...)
+metódusába, így a termékválasztás azonnal látható módlistát és friss
+overlay ikont eredményez majd.
+
+------------------------------------------------------------------------
+
+📁 Érintett fájlok / modulok
+
+-   calcmodes/manager/calculation_modes_manager.h
+    Változás: új privát tagok (_subscriptionId, _currentProductId,
+    _currentProductName, _currentProductBarcode), új privát metódus
+    deklaráció (onRegistryChanged()), a class felelőssége kibővült az
+    aktuális product állapot kezelésével és registry-eseményekre
+    reagálással.
+
+-   calcmodes/manager/calculation_modes_manager.cpp
+    Változás: a konstruktorban bevezetésre került a
+    subscribeItemsChanged(...) hívás, a destruktorban az
+    unsubscribeItemsChanged(...). A CRUD ágakban a reloadAll() hívások
+    lecserélésre kerültek refreshForProduct(...) hívásokra. A
+    refreshForProduct(...) mostantól elmenti az aktuális product
+    metaadatokat, és új onRegistryChanged() metódus került be, amely
+    registry-eseményre frissíti a nézetet.
+
+-   calcmodes/view/calculation_modes_view.h / .cpp
+    Változás: ma inkább olvasás és viselkedés-analízis történt; a
+    set_modes(...) + updateOverlayState() pipeline megerősítést nyert, a
+    set_current_product(...) jelenlegi viselkedése (csak állapotmentés,
+    jelzés nélkül) azonosításra került, mint a holnapi javítás
+    célpontja.
+
+-   common/registry/base/registry_engine_base.h
+    Változás: a meglévő subscription API (subscribeItemsChanged,
+    unsubscribeItemsChanged, SubscriptionToken) viselkedése és
+    integrációja feltérképezésre került, és a CalculationModesManager
+    már erre támaszkodik. A onItemsChanged() belső működése (róka1/2
+    logok, callback-ek másolása, exception swallowing) megerősítette,
+    hogy a registry-események stabilan kezelhetők.
+
+-   common/registry/base/registry_base.cpp /
+    common/registry/feature/registry_base.h
+    Változás: tartalmi módosítás nem történt, de a lifecycle
+    (initialize, guardInstanceUsage, logEntityAction) viselkedése a mai
+    logok alapján validálásra került.
+
+------------------------------------------------------------------------
+
+💡 Új ötletek / megfigyelések
+
+-   A CalculationModesView-nek érdemes explicit signal-t küldenie
+    product-változáskor, hogy a manager determinisztikusan frissíthesse
+    a módlistát.
+-   A registry subscription API már most elég erős ahhoz, hogy más
+    modulok (pl. Materials, Products) is hasonló „live view” frissítést
+    kapjanak.
+-   Az overlay ikon logikája általánosítható egy „list state overlay”
+    komponenssé, amely több nézetben is ugyanazt a mintát követi (NoData
+    / NoFilteredData / Ok).
+-   A reloadAll()-t érdemes szigorúan csak startup-kori, vagy explicit
+    „hard reload” műveletre fenntartani, nem CRUD utáni automatikus
+    lépésként.
+-   A róka-logok (róka1/2/3/4) nagyon jól láthatóvá teszik a registry
+    pipeline-t; érdemes ezt a mintát más kritikus útvonalakon is
+    alkalmazni.
+
+------------------------------------------------------------------------
+
+
+***
+***
+****
+
+
+Így van, Zoltán — ez egy igazi mókus‑hadművelet nap volt, és rengeteg
+fontos hibát sikerült feltárni.
+Összeszedem neked pontokba rendezve, tisztán, átláthatóan, hogy lásd a
+teljes képet.
+
+------------------------------------------------------------------------
+
+🧩 A mai napon feltárt problémák – összefoglaló, pontokba szedve
+
+1) Végtelen rekurzió a ProductRegistry update‑workflow-ban
+
+Tünet: Segmentation fault, QString refcount crash.
+Ok:
+- ProductRegistry::update() → updateWithWorkflow()
+- CrudWorkflowMixin::updateWithWorkflow() → reg.update()
+- ami újra ProductRegistry::update() → végtelen ciklus.
+Megoldás:
+- A workflow közvetlenül a CrudMixin update‑jét hívja, nem a host public
+API‑ját.
+
+------------------------------------------------------------------------
+
+2) A NeedCalculationRegistry nem volt része a startup pipeline-nak
+
+Tünet:
+- A registry induláskor üres.
+- A mókus mód eltűnik a táblázatból.
+- A UI nem látja a registry változásait.
+Ok:
+- A StartupManager NEM tölti be a NeedCalculation CSV‑t.
+Megoldás:
+- initNeedCalculationRegistry() és initNeedCalculationDetailRegistry()
+hozzáadása a startup pipeline‑hoz.
+
+------------------------------------------------------------------------
+
+3) A CalculationModesManager::reloadAll() minden CRUD után felülírta a registryt
+
+Tünet:
+- A mókus mód megjelenik → majd azonnal eltűnik.
+- A táblázat nem frissül.
+- A registry UUID‑jei minden reload után megváltoznak.
+Ok:
+- A reloadAll() újraolvassa a CSV‑t, és új UUID‑eket generál.
+Megoldás:
+- A reloadAll() csak programindításkor fusson.
+- CRUD után csak refreshForProduct() fusson.
+
+------------------------------------------------------------------------
+
+4) A NeedCalculationRepository nem írta ki a fájl nevét a logba
+
+Tünet:
+- Nehéz követni, melyik CSV-be ment.
+Ok:
+- A save() és load() logok nem tartalmazták a fájl elérési útját.
+Megoldás:
+- Log kiegészítése: … → /path/to/needcalculations.csv.
+
+------------------------------------------------------------------------
+
+5) A CalculationModesView táblázata nem frissült registry változásra
+
+Tünet:
+- A mókus mód nem jelent meg a táblázatban.
+Ok:
+- A táblázat csak refreshForProduct() hívásra frissül.
+- A reloadAll() felülírta a registryt, de a UI nem kapott eseményt.
+Megoldás:
+- A registry notifyItemsChanged eseménye most már helyesen fut.
+- A reloadAll() eltávolítása után a táblázat frissülni fog.
+
+------------------------------------------------------------------------
+
+6) A NeedCalculationRepository load() új UUID‑eket generált minden betöltéskor
+
+Tünet:
+- A registryben lévő entitások ID‑jei minden reload után megváltoztak.
+- A UI elvesztette a kijelölést.
+Ok:
+- A CSV nem tartalmaz ID mezőt.
+- A load() minden sorhoz új UUID‑et generál.
+Megoldás:
+- A reloadAll() eltávolítása után ez már nem okoz problémát.
+- (Később érdemes lehet ID‑t is menteni.)
+
+------------------------------------------------------------------------
+
+7) A NeedCalculationDetailRegistry CSV hiánya warningot dobott
+
+Tünet:
+- Warning a logban: needcalc_details.csv not found.
+Ok:
+- A fájl még nem létezik.
+Megoldás:
+- Ez normális, amíg nincs detail adat.
+
+------------------------------------------------------------------------
+
+🟢 Összegzés egy mondatban
+
+A mai napon három nagy hibát sikerült megtalálni és megérteni:
+
+-   ProductRegistry rekurzió
+-   NeedCalculationRegistry nem töltődött be induláskor
+-   CalculationModesManager reloadAll() felülírta a registryt
+
+Mindhárom kritikus volt, és mindháromra megvan a tiszta, stabil
+megoldás.
+
+------------------------------------------------------------------------
+
+Ha szeretnéd, a következő lépésben összerakom a hivatalos patch‑listát,
+vagy mehetünk tovább a mókus‑hadművelet következő moduljára.
+
+
 ⏱ Mai napi aktivitás – óránkénti ASCII grafikon (20:00–21:00)
 
 20:00 |####++##++..|

@@ -13,8 +13,26 @@ CalculationModesManager::CalculationModesManager(CalculationModesView* view, QOb
     : QObject(parent), _view(view)
 {
     connectSignals();
-    reloadAll();
+    _subscriptionId =
+        NeedCalculationRegistry::instance().subscribeItemsChanged([this]() {
+            this->onRegistryChanged();
+        });
+
 }
+
+CalculationModesManager::~CalculationModesManager()
+{
+    NeedCalculationRegistry::instance().unsubscribeItemsChanged(_subscriptionId);
+}
+
+
+void CalculationModesManager::onRegistryChanged()
+{
+    if (_currentProductId.isNull())
+        return;
+    refreshForProduct(_currentProductId, _currentProductName, _currentProductBarcode);
+}
+
 
 /* ============================================================
  * 🧩 🔧 Signal kapcsolatok
@@ -53,7 +71,7 @@ void CalculationModesManager::connectSignals() {
 
                 if (NeedCalculationRegistry::instance().insert(c)) {
                     zEventINFO(QString("➕ New mode added: %1").arg(name));
-                    reloadAll();
+                    refreshForProduct(_currentProductId, _currentProductName, _currentProductBarcode);
                 }
             });
 
@@ -64,7 +82,7 @@ void CalculationModesManager::connectSignals() {
             this, [this](const QUuid& id) {
                 if (NeedCalculationRegistry::instance().remove(id)) {
                     zEventINFO("🗑️ Mode removed");
-                    reloadAll();
+                    refreshForProduct(_currentProductId, _currentProductName, _currentProductBarcode);
                 }
             });
 
@@ -100,7 +118,7 @@ void CalculationModesManager::connectSignals() {
 
                 if (NeedCalculationRegistry::instance().update(updated)) {
                     zEventINFO(QString("✏️ Mode renamed: %1 → %2").arg(old->name, newName));
-                    reloadAll();
+                    refreshForProduct(_currentProductId, _currentProductName, _currentProductBarcode);
                 }
             });
 }
@@ -108,17 +126,17 @@ void CalculationModesManager::connectSignals() {
 /* ============================================================
  * 🧩 📦 Adatok újratöltése
  * ============================================================ */
-void CalculationModesManager::reloadAll() {
-    QVector<NeedCalculation> calcs;
-    if (NeedCalculationRepository::load(calcs)) {
-        NeedCalculationRegistry::instance().setAll(calcs);
-    }
+// void CalculationModesManager::reloadAll() {
+//     QVector<NeedCalculation> calcs;
+//     if (NeedCalculationRepository::load(calcs)) {
+//         NeedCalculationRegistry::instance().setAll(calcs);
+//     }
 
-    QVector<NeedCalculationDetail> details;
-    if (NeedCalculationDetailRepository::load(details)) {
-        NeedCalculationDetailRegistry::instance().setAll(details);
-    }
-}
+//     QVector<NeedCalculationDetail> details;
+//     if (NeedCalculationDetailRepository::load(details)) {
+//         NeedCalculationDetailRegistry::instance().setAll(details);
+//     }
+// }
 
 /* ============================================================
  * 🧩 🎨 Nézet frissítése
@@ -127,11 +145,16 @@ void CalculationModesManager::refreshForProduct(const QUuid& productId,
                                                 const QString& productName,
                                                 const QString& productBarcode)
 {
+    _currentProductId = productId;
+    _currentProductName = productName;
+    _currentProductBarcode = productBarcode;
+
     auto modes = NeedCalculationRegistry::instance().findAll(
         [&](const NeedCalculation& c) {
             return c.productId == productId;
         }
         );
+
 
     QVector<CalculationModesView::ModeRow> rows;
     rows.reserve(modes.size());

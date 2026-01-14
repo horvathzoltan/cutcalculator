@@ -28,6 +28,8 @@ public:
     explicit CalculationModesManager(CalculationModesView* view,
                                      QObject* parent = nullptr);
 
+    ~CalculationModesManager();
+
     /* ============================================================
      * 🧩 Public API
      * ============================================================ */
@@ -40,10 +42,15 @@ private:
      * 🧩 Private members
      * ============================================================ */
     CalculationModesView* _view = nullptr;
+    size_t _subscriptionId = 0;
+    QUuid _currentProductId;
+    QString _currentProductName;
+    QString _currentProductBarcode;
 
     /* ============================================================
      * 🧩 🔧 Privát segédfüggvények
      * ============================================================ */
     void connectSignals();
     void reloadAll();
+    void onRegistryChanged();
 };

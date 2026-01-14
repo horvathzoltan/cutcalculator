@@ -1,98 +1,32 @@
-#include <QSet>
-
-#include "colors/registry/color_registry.h"
-
 #include "startup_manager.h"
-#include "colors/repository/color_repository.h"
+
 #include "common/utils/filename_helper.h"
 
-#include "materials/repository/material_repository.h"
+// --- Registryk és repositoryk ---
+#include "colors/registry/color_registry.h"
+#include "colors/repository/color_repository.h"
+
 #include "materials/registry/material_registry.h"
-#include "products/repository/product_repository.h"
+#include "materials/repository/material_repository.h"
+
 #include "products/registry/product_registry.h"
-#include "needs/repository/need_rule_repository.h"
+#include "products/repository/product_repository.h"
+
 #include "needs/registry/need_rule_registry.h"
+#include "needs/repository/need_rule_repository.h"
 
-#include "barcodes/repository/barcode_repository.h"
+#include "calcmodes/registry/need_calculation_registry.h"
+#include "calcmodes/repository/need_calculation_repository.h"
+
+#include "calculation/registry/need_calculation_detail_registry.h"
+#include "calculation/repository/need_calculation_detail_repository.h"
+
 #include "barcodes/registry/barcode_registry.h"
+#include "barcodes/repository/barcode_repository.h"
 
-StartupStatus StartupManager::runStartupSequence() {
-    StartupStatus ralColorStatus = initRalColors();
-    if (!ralColorStatus.isSuccess())
-        return ralColorStatus;
-
-    StartupStatus barcodeStatus = initBarcodeRegistry();
-    if (!barcodeStatus.isSuccess())
-        return barcodeStatus;
-
-    StartupStatus materialStatus = initMaterialRegistry();
-    if (!materialStatus.isSuccess())
-        return materialStatus;
-
-    StartupStatus productStatus = initProductRegistry();
-    if (!productStatus.isSuccess())
-        return productStatus;
-
-    StartupStatus needRuleStatus = initNeedRuleRegistry();
-    if (!needRuleStatus.isSuccess())
-        return needRuleStatus;
-
-    StartupStatus finalStatus = StartupStatus::success();
-    finalStatus.addWarnings(ralColorStatus.warnings());
-    finalStatus.addWarnings(barcodeStatus.warnings());
-    finalStatus.addWarnings(materialStatus.warnings());
-    finalStatus.addWarnings(productStatus.warnings());
-    finalStatus.addWarnings(needRuleStatus.warnings());
-
-    return finalStatus;
-}
-
-// StartupStatus StartupManager::initMaterialRegistry() {
-//     bool loaded = MaterialRepository::loadFromCSV(MaterialRegistry::instance());
-//     if (loaded){
-//         zInfo(QString("📊 MaterialRegistry: %1 anyag tárolva").arg(MaterialRegistry::instance().size()));
-//     } else{
-//         return StartupStatus::failure("⚠️ MaterialRegistry: anyagok betöltése sikertelen.");
-//     }
-
-//     return StartupStatus::success();
-// }
-
-StartupStatus StartupManager::initMaterialRegistry() {
-    QVector<MaterialMaster> mats;
-    bool ok = MaterialRepository::load(mats);
-
-    if (!ok)
-        return StartupStatus::failure("Material CSV betöltése sikertelen.");
-
-    MaterialRegistry::instance().setAll(mats);
-
-    zInfo(QString("📦 MaterialRegistry: %1 anyag betöltve")
-              .arg(MaterialRegistry::instance().size()));
-
-    return StartupStatus::success();
-}
-
-
-StartupStatus StartupManager::initProductRegistry() {
-    QVector<ProductMaster> products;
-    bool ok = ProductRepository::load(products);
-
-    if (!ok)
-        return StartupStatus::failure("Product CSV betöltése sikertelen.");
-
-    ProductRegistry::instance().setAll(products);
-
-    zInfo(QString("📦 ProductRegistry: %1 termék betöltve")
-              .arg(ProductRegistry::instance().size()));
-
-    return StartupStatus::success();
-}
-
-// bool StartupManager::hasMinimumMaterials(int minCount) {
-//     return MaterialRegistry::instance().readAll().size() >= minCount;
-// }
-
+// ============================================================
+// 🧩 SPECIÁLIS LÉPÉSEK (nem generikusak)
+// ============================================================
 StartupStatus StartupManager::initRalColors()
 {
     auto fnh = FileNameHelper::instance();
@@ -118,84 +52,69 @@ StartupStatus StartupManager::initRalColors()
     return StartupStatus::success();
 }
 
-// StartupStatus StartupManager::initRalColors()
-// {
-//     auto fnh = FileNameHelper::instance();
-
-//     QList<RalSource> ralSources = {
-//         { RalSystem::Classic,  fnh.getRalClassicCsvFile() },
-//         { RalSystem::Design,   fnh.getRalDesignCsvFile() },
-//         { RalSystem::Plastic1, fnh.getRalPlastic1CsvFile() },
-//         { RalSystem::Plastic2, fnh.getRalPlastic2CsvFile() }
-//     };
-
-//     bool loaded = ColorRepository::loadRalColors({ralSources});
-//     if (!loaded){
-//         return StartupStatus::failure("❌ Nem sikerült betölteni a RAL színeket a CSV fájlból.");
-//     }
-
-//     return StartupStatus::success();
-// }
-
-StartupStatus StartupManager::initNeedRuleRegistry() {
+StartupStatus StartupManager::initNeedRuleRegistry()
+{
     bool ok = NeedRuleRepository::load();
 
-    if (!ok) {
+    if (!ok)
         return StartupStatus::failure("⚠️ NeedRuleRegistry: kapcsolatok betöltése sikertelen.");
-    }
 
     int count = NeedRuleRegistry::instance().size();
-    if (count == 0) {
+
+    if (count == 0)
         zInfo("📊 NeedRuleRegistry: jelenleg nincs kapcsolat – tiszta indulás");
-    } else {
+    else
         zInfo(QString("📊 NeedRuleRegistry: %1 kapcsolat tárolva").arg(count));
-    }
 
     return StartupStatus::success();
 }
 
-// StartupStatus StartupManager::initNeedRuleRegistry() {
-//     QVector<NeedRule> rules;
-//     bool ok = NeedRuleRepository::load(rules);
+// ============================================================
+// 🚀 TELJES STARTUP PIPELINE
+// ============================================================
+StartupStatus StartupManager::runStartupSequence()
+{
+    QVector<StartupStatus> steps = {
 
-//     if (!ok) {
-//         return StartupStatus::failure("⚠️ NeedRuleRegistry: kapcsolatok betöltése sikertelen.");
-//     }
+    // 1) RAL színek (speciális)
+    initRalColors(),
 
-//     NeedRuleRegistry::instance().setAll(rules);
+        // 2) Barcode
+        initRegistryGeneric<BarcodeRegistry, BarcodeRepository>(
+            "Barcode CSV betöltése sikertelen.", true
+            ),
 
-//     int count = NeedRuleRegistry::instance().size();
-//     if (count == 0) {
-//         zInfo("📊 NeedRuleRegistry: jelenleg nincs kapcsolat – tiszta indulás");
-//     } else {
-//         zInfo(QString("📊 NeedRuleRegistry: %1 kapcsolat tárolva").arg(count));
-//     }
+        // 3) Material
+        initRegistryGeneric<MaterialRegistry, MaterialRepository>(
+            "Material CSV betöltése sikertelen.", true
+            ),
 
-//     return StartupStatus::success();
-// }
+        // 4) Product
+        initRegistryGeneric<ProductRegistry, ProductRepository>(
+            "Product CSV betöltése sikertelen.", false
+            ),
 
-// StartupStatus StartupManager::initBarcodeRegistry() {
-//     bool loaded = BarcodeRepository::loadFromCSV(BarcodeRegistry::instance());
-//     if (loaded) {
-//         zInfo(QString("📊 BarcodeRegistry: %1 rekord tárolva")
-//                   .arg(BarcodeRegistry::instance().size()));
-//     } else {
-//         return StartupStatus::failure("⚠️ BarcodeRegistry: barcodes betöltése sikertelen.");
-//     }
-//     return StartupStatus::success();
-// }
-StartupStatus StartupManager::initBarcodeRegistry() {
-    QVector<BarcodeRecord> records;
-    bool ok = BarcodeRepository::load(records);
+        // 5) NeedRule (speciális)
+        initNeedRuleRegistry(),
 
-    if (!ok)
-        return StartupStatus::failure("⚠️ Barcode CSV betöltése sikertelen.");
+        // 6) NeedCalculation (MÓKUSKA!)
+        initRegistryGeneric<NeedCalculationRegistry, NeedCalculationRepository>(
+            "NeedCalculation CSV betöltése sikertelen.", false
+            ),
 
-    BarcodeRegistry::instance().setAll(records);
+        // 7) NeedCalculationDetail (MÓKUSKA RÉSZLETEK!)
+        initRegistryGeneric<NeedCalculationDetailRegistry, NeedCalculationDetailRepository>(
+            "NeedCalculationDetail CSV betöltése sikertelen.", false
+            )
+};
 
-    zInfo(QString("📊 BarcodeRegistry: %1 rekord betöltve")
-              .arg(BarcodeRegistry::instance().size()));
+StartupStatus finalStatus = StartupStatus::success();
 
-    return StartupStatus::success();
+for (const auto& s : steps) {
+    if (!s.isSuccess())
+        return s;
+    finalStatus.addWarnings(s.warnings());
 }
 
+return finalStatus;
+}
