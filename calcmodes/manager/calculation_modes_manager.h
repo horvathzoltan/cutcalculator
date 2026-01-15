@@ -51,6 +51,6 @@ private:
      * 🧩 🔧 Privát segédfüggvények
      * ============================================================ */
     void connectSignals();
-    void reloadAll();
+    //void reloadAll();
     void onRegistryChanged();
 };

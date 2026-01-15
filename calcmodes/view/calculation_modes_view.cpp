@@ -59,13 +59,14 @@ void CalculationModesView::on_selection_changed() {
     emit selection_changed(item->data(Qt::UserRole).toUuid());
 }
 
-void CalculationModesView::set_current_product(const QUuid& productId, const QString&, const QString&) {
+void CalculationModesView::set_current_product(const QUuid& productId,
+                                               const QString& productName,
+                                               const QString& productBarcode)
+{
     _current_productId = productId;
-    // Jelzés a toolbar felé (add mode engedhető)
-    // NE indítsunk automatikus mód-hozzáadást
-    // emit request_add_mode(_current_productId);
-
+    //emit current_product_changed(productId, productName, productBarcode);
 }
+
 
 std::optional<QUuid> CalculationModesView::currentModeId() const {
     auto ranges = _table->selectedRanges();

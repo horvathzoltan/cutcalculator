@@ -42,6 +42,9 @@ signals:
     void request_add_mode(const QUuid& productId);
     void request_remove_mode(const QUuid& modeId);
     void request_rename_mode(const QUuid& modeId);
+    void current_product_changed(const QUuid& productId,
+                                 const QString& productName,
+                                 const QString& productBarcode);
 
 public slots:
     void set_current_product(const QUuid& productId, const QString& productName, const QString& productBarcode);

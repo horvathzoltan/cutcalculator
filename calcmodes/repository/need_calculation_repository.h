@@ -1,17 +1,38 @@
 #pragma once
 #include <QVector>
-#include "calcmodes/model/need_calculation.h"
+#include <optional>
 
-/**
- * @class NeedCalculationRepository
- * @brief CSV import/export a NeedCalculation rekordokhoz.
- *
- * *
- * - egyszerű fejléc: productDefinitionId;modeName
- * - id-ket beolvasáskor generáljuk (UUID), audit log megy FileContextbe.
- */
+#include "common/csv/csvimporter.h"
+#include "common/csv/filecontext.h"
+#include "calcmodes/model/need_calculation.h"
+#include "products/registry/product_registry.h"
+
 class NeedCalculationRepository {
 public:
     static bool load(QVector<NeedCalculation>& out);
     static bool save(const QVector<NeedCalculation>& data);
+
+private:
+    struct Row {
+        QString productBarcode;
+        QString modeName;
+    };
+
+    // Stage 1: Convert
+    static std::optional<CsvImporter::AuditedRow<Row>>
+    convertRowToRow(const QVector<QString>& parts, CsvImporter::FileContext& ctx);
+
+    // Stage 2: Build
+    static std::optional<NeedCalculation>
+    buildFromRow(const Row& row, CsvImporter::FileContext& ctx);
+
+    // Stage 2.5: Validate
+    static QVector<CsvImporter::RowError>
+    validateRow(const Row& row, int lineNumber);
+
+    // Stage 3: Load & Assemble
+    static QVector<CsvImporter::AuditedRow<Row>>
+    loadRows(CsvImporter::FileContext& ctx);
+
+    static QString filePath();
 };

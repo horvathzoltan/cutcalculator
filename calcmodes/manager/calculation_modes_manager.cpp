@@ -39,6 +39,9 @@ void CalculationModesManager::onRegistryChanged()
  * ============================================================ */
 void CalculationModesManager::connectSignals() {
 
+    // connect(_view, &CalculationModesView::current_product_changed, this,
+    //         &CalculationModesManager::refreshForProduct);
+
     /* ------------------------------
      * ➕ Új mód hozzáadása
      * ------------------------------ */
@@ -122,21 +125,6 @@ void CalculationModesManager::connectSignals() {
                 }
             });
 }
-
-/* ============================================================
- * 🧩 📦 Adatok újratöltése
- * ============================================================ */
-// void CalculationModesManager::reloadAll() {
-//     QVector<NeedCalculation> calcs;
-//     if (NeedCalculationRepository::load(calcs)) {
-//         NeedCalculationRegistry::instance().setAll(calcs);
-//     }
-
-//     QVector<NeedCalculationDetail> details;
-//     if (NeedCalculationDetailRepository::load(details)) {
-//         NeedCalculationDetailRegistry::instance().setAll(details);
-//     }
-// }
 
 /* ============================================================
  * 🧩 🎨 Nézet frissítése

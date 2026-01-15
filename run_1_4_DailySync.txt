@@ -1,9 +1,248 @@
-Zoltán, ez most egy nagyon tiszta, kétpólusú jelenség — és pontosan
-ebből látszik, hogy a registry subscription működik, de a view
-frissítési pipeline-ja nem teljes.
+⏱ Mai napi aktivitás – óránkénti ASCII grafikon (21:00–21:59)
 
-A tünetekből egyértelműen kirajzolódik a hiba szerkezete:
+21:00 |###+++++++….|
 
+🎯 A mai (2026-01-15) munka egzakt eredménye – kategóriákba rendezve
+
+🟦 CSV import architektúra és Three‑Phase Import 2.0 Érintett fájlok: -
+materials/repository/material_repository.{h,cpp} -
+products/repository/product_repository.{h,cpp} -
+common/csv/filecontext.{h,cpp} - (koncepcionálisan) minden
+*Repository::load CSV-importáló modul Mai eredmények: - Háromfázisú
+import (Convert → Validate → Build → Assemble) mintája
+MaterialRepository és ProductRepository alapján rögzítve, etalonként
+kijelölve. - FileContext életciklus és duplikált logolás okának
+feltárása (destruktor + manuális onContextDestroyed hívás → dupla CSV
+összefoglaló). - CSV-import filozófia és Three‑Phase Import 2.0
+dokumentum szinkronba hozása a tényleges kóddal (readAndConvert +
+buildAll, auditált hibakezelés). Kategória: ➡️
+ARCHITEKTÚRA / CSV-IMPORT-MINTA
+
+🟦 NeedCalculationRepository – 3‑fázisú, barcode‑alapú import Érintett
+fájlok: - calcmodes/repository/need_calculation_repository.{h,cpp} -
+products/registry/product_registry.* - common/utils/filename_helper.*
+Mai eredmények: - A régi, nyers CsvImporter::read-es NeedCalculation
+betöltés logikájának elemzése (UUID‑alapú productId beolvasás
+CSV‑ből). - Új, Three‑Phase Import 2.0 kompatibilis
+NeedCalculationRepository terv:
+- Row: productBarcode;modeName
+- Build Phase:
+productBarcode → ProductRegistry::findByBarcode → productId (UUID)
+- Auditált hibakezelés FileContext-tel. - Megértettük, miért „betölt, de
+nincs sehol”: CSV‑ben UUID, modellben runtime UUID → nincs stabil
+megfelelés, ezért filozófia-váltás emberi kulcsokra. Kategória: ➡️
+DOMAIN / NEEDCALC-PIPELINE-REFORM
+
+🟦 NeedCalculationDetailRepository – 3‑fázisú, reláció-feloldó import
+Érintett fájlok: -
+calculation/repository/need_calculation_detail_repository.{h,cpp} -
+calculation/model/need_calculation_detail.* -
+calcmodes/registry/need_calculation_registry.* -
+materials/registry/material_registry.* Mai eredmények: - A régi
+implementáció elemzése: nyers UUID‑beolvasás CSV‑ből
+(needCalculationId;materialId;formula), FileContextCollector manuális
+hívással. - Új 3‑fázisú verzió megtervezése:
+- Row: needCalculationName;materialBarcode;formula (emberi kulcsok)
+- Build Phase: NeedCalculationRegistry::findByName +
+MaterialRegistry::findByBarcode → UUID-k feloldása.
+- Hibás elnevezés (needCalculationBarcode) azonosítása, helyes kulcs:
+NeedCalculation.name mint emberi azonosító. Kategória: ➡️
+DOMAIN / NEEDCALC-DETAIL-PIPELINE-REFORM
+
+🟦 Data Model Philosophy és dokumentáció Érintett fájlok: - (dokumentum)
+„CutCalculator Data Model Philosophy” - (dokumentum) „Three Phase Import
+2.0” Mai eredmények: - Kimondtuk és formalizáltuk: CutCalculator nem
+adatbázis, hanem CSV‑alapú, emberi kulcsokra épülő rendszer, amely
+runtime UUID‑os entitáshálót épít. - Rögzítettük az „emberi kulcs
+vs. runtime UUID” kettősséget, és azt, hogy relációk mindig emberi
+kulcsokon (barcode, name) alapulnak, Build Phase-ben feloldva. -
+Megfogalmaztuk, hogy exportkor is emberi kulcsokat írunk vissza, UUID
+soha nem kerül CSV-be. Kategória: ➡️ DOKUMENTÁCIÓ / DATA-MODEL-FILOZÓFIA
+
+🟦 RegistryManager és audit / lookup filozófia Érintett fájlok: -
+common/registry/base/registry_base.* -
+common/registry/feature/registry_base.* -
+common/registry/registry_manager.* Mai eredmények: - RegistryManager
+auditReport működésének áttekintése: összes registry elemszám,
+összegzés, zEvent nyugta. - lookupRegistry és findByTypeName
+viselkedésének megértése (többszörös typeName, hiányzó registry,
+dynamic_cast hibák auditálása). - Megerősítettük, hogy a StartupManager
+felelőssége a registry-k egyszeri, konzisztens feltöltése. Kategória: ➡️
+ARCHITEKTÚRA / REGISTRY-LIFECYCLE
+
+🟩 Összegzés – a mai nap 4 nagy eredménye
+
+1.  Letisztáztuk és dokumentáltuk a CutCalculator Data Model Philosophy
+    alapelveit (emberi kulcsok + runtime UUID).
+2.  A NeedCalculation és NeedCalculationDetail importot átállítottuk /
+    megterveztük Three‑Phase Import 2.0 szerint, reláció-feloldással.
+3.  Feltártuk a dupla CSV logolás okát (FileContext életciklus +
+    manuális collector hívás).
+4.  A ProductRepository / MaterialRepository mintáját etalonként
+    rögzítettük minden jövőbeli CSV-import refaktorhoz.
+
+------------------------------------------------------------------------
+
+📝 Mai nap összefoglalója
+
+-   [✅ ELKÉSZÜLT] A CutCalculator Data Model Philosophy első, koherens
+    verziója: emberi kulcsok, runtime UUID-k, reláció-feloldás,
+    export-filozófia.
+-   [✅ ELKÉSZÜLT] A Three‑Phase Import 2.0 dokumentum friss, kóddal
+    szinkronban lévő értelmezése (Convert / Validate / Build /
+    Assemble).
+-   [🚧 HALADT] NeedCalculationRepository 3‑fázisú, barcode‑alapú
+    importterve (Row → Build → ProductRegistry lookup) – kódvázlat kész,
+    integráció még hátra.
+-   [🚧 HALADT] NeedCalculationDetailRepository 3‑fázisú,
+    NeedCalculation‑név + Material‑barcode alapú importterve – kulcsok
+    tisztázva, implementáció finomhangolása még folyamatban.
+-   [✅ ELKÉSZÜLT] A duplikált CSV összefoglaló logok okának
+    diagnosztikája (FileContext destruktor + manuális
+    onContextDestroyed).
+-   [🚧 HALADT] RegistryManager és StartupManager szerepének pontosítása
+    a teljes adatbázis (CSV‑halmaz) runtime összeállításában.
+
+🐞 BUG lista (életciklus-kezeléssel)
+
+-   [🐞 BUG] NeedCalculationDetail CSV hiányzik (needcalc_details.csv
+    nem található)
+    Állapot: továbbra is fennáll, a logban hibával jelzett, a fájl még
+    nem került létrehozásra / feltöltésre.
+
+-   [🐞 BUG] NeedCalculation import: CSV‑ben UUID, modellben runtime
+    UUID → nincs stabil megfelelés
+    Állapot: ma az okot feltártuk, a megoldási irány (barcode‑alapú,
+    ProductRegistry‑lookup) definiálva, de a régi CSV‑formátum még él.
+    Következő lépés: CSV formátum váltás productBarcode;modeName sémára,
+    régi UUID‑os fájl migrálása.
+
+-   [🐞 BUG] NeedCalculationDetail import: relációk UUID‑alapú
+    beolvasása CSV‑ből
+    Állapot: ma kiderült, hogy ez ellentétes a Data Model
+    Philosophy-val; új, emberi kulcsos (NeedCalculation.name +
+    Material.barcode) modell megtervezve, implementáció részben kész.
+
+-   [🐞 BUG] Dupla CSV import összefoglaló sorok (NeedCalculation /
+    NeedCalculationDetail)
+    Állapot: ok azonosítva – FileContext destruktor + manuális
+    FileContextCollector::onContextDestroyed hívás → dupla log.
+    Státusz: logikai hiba feltárva, fix (dupla hívás eltávolítása) még
+    végrehajtandó.
+
+-   [✅ KÉSZ] „Betölt, de nincs sehol” jelenség NeedCalculation esetén
+    Állapot: ma megértettük, hogy a jelenség oka a UUID‑alapú CSV →
+    runtime UUID mismatch; a jövőbeni barcode‑alapú modell ezt
+    megszünteti. A hiba okilag lezárt, megoldási terv rögzítve.
+
+milyen ötletek születtek
+
+Ma megszületett a gondolat, hogy a CutCalculator teljes adatmodelljét
+érdemes filozófiai szinten rögzíteni: emberi kulcsok, runtime UUID-k,
+reláció-feloldás, exportkör. Felmerült, hogy minden CSV-importot
+egységesen a Three‑Phase Import 2.0 mintára kell átírni, a
+MaterialRepository és ProductRepository etalonként szolgálva. Ötletként
+megfogalmazódott, hogy a NeedCalculation és NeedCalculationDetail
+relációi ne UUID‑ra, hanem barcode + name kombinációra épüljenek, így a
+rendszer természetes, emberi kulcsokkal marad konzisztens. Emellett
+kialakult egy tiszta kép arról, hogy a StartupManager a „runtime
+adatbázis inicializálója”, és hogy a FileContextCollector auditja a
+teljes CSV‑pipeline nyugtája.
+
+milyen problémák merültek fel
+
+Felszínre került, hogy a jelenlegi NeedCalculation és
+NeedCalculationDetail importok nem illeszkednek a rendszer
+filozófiájához: UUID‑okat olvasnak CSV‑ből, miközben a runtime UUID-k
+futásonként változnak. Ez okozta a „betölt, de nincs sehol” jellegű
+anomáliákat. Probléma volt az is, hogy a FileContext életciklusa nem
+volt teljesen átlátható: a destruktor automatikus collector-hívása
+mellett kézi hívás is történt, ami duplikált logokat eredményezett.
+Kiderült továbbá, hogy a NeedCalculationDetail kulcsnevezése
+(needCalculationBarcode) félrevezető, mert a NeedCalculation valójában
+névvel azonosított, nem barcode-dal.
+
+milyen döntések születtek
+
+Döntés született arról, hogy a CutCalculator Data Model Philosophy lesz
+a forrása minden további import/export és relációs döntésnek.
+Eldöntöttük, hogy minden CSV-importot Three‑Phase Import 2.0 szerint
+egységesítünk, és hogy a relációkat emberi kulcsokkal (barcode, name)
+fejezzük ki, a Build Phase-ben feloldva UUID‑ra. Megállapodtunk abban
+is, hogy a NeedCalculation és NeedCalculationDetail CSV-formátumát át
+kell alakítani: NeedCalculation esetén productBarcode;modeName,
+NeedCalculationDetail esetén NeedCalculation‑név + Material‑barcode
+alapú hivatkozás lesz a cél. Végül döntés született arról, hogy a
+FileContextCollector dupla hívását megszüntetjük, és a FileContext
+destruktor lesz az egyetlen, auditot indító pont.
+
+📁 Érintett fájlok / modulok
+
+-   materials/repository/material_repository.{h,cpp}
+    Változás / fókusz: Etalonként elemeztük a háromfázisú importot
+    (Convert → Validate → Build → Assemble), a Row‑struktúra, a
+    NamedColor validáció és a BarcodeCollisionHelper használata alapján.
+
+-   products/repository/product_repository.{h,cpp}
+    Változás / fókusz: Részletesen átnéztük a ProductRow → ProductMaster
+    pipeline-t, a parentBarcode → parentId feloldást, a resolveParents
+    kétfázisú logikáját, és ezt vettük mintának a NeedCalculation/Detail
+    refaktorhoz.
+
+-   common/csv/filecontext.{h,cpp}
+    Változás / fókusz: Megértettük a FileContext életciklusát, a
+    destruktorban történő FileContextCollector::onContextDestroyed
+    hívást, és az ebből fakadó dupla logolási lehetőséget.
+
+-   calcmodes/repository/need_calculation_repository.{h,cpp}
+    Változás / fókusz: A régi, UUID‑alapú importot elemeztük, és
+    megterveztük az új, barcode‑alapú, 3‑fázisú verziót (Row:
+    productBarcode;modeName, Build: ProductRegistry lookup).
+
+-   calculation/repository/need_calculation_detail_repository.{h,cpp}
+    Változás / fókusz: A jelenlegi UUID‑beolvasó implementációt
+    vizsgáltuk, és megterveztük az új, NeedCalculation‑név +
+    Material‑barcode alapú, 3‑fázisú importot.
+
+-   common/registry/registry_manager.*
+    Változás / fókusz: Áttekintettük a registry-k auditReportját, a
+    lookupRegistry és findByTypeName viselkedését, és a
+    StartupManager-rel való együttműködést.
+
+-   Dokumentumok: „Three Phase Import 2.0”, „CutCalculator Data Model
+    Philosophy”
+    Változás / fókusz: Friss, kóddal szinkronban lévő leírás készült az
+    import pipeline-ról és az adatmodell filozófiájáról.
+
+💡 Új ötletek / megfigyelések
+
+-   Minden CSV-importot érdemes egységesen Three‑Phase Import 2.0
+    szerint refaktorálni, a MaterialRepository / ProductRepository
+    mintájára.
+-   A Data Model Philosophy külön, önálló dokumentumként szolgálhat
+    minden jövőbeli döntés alapjául (onboarding, review, refaktor).
+-   A NeedCalculation természetes azonosítója valójában (Product,
+    modeName) páros, amit később akár összetett emberi kulcsként is
+    formalizálhatunk.
+-   A FileContext destruktor-alapú audit jó, de tilos mellé kézi
+    collector-hívást tenni, mert az duplikált logot eredményez.
+-   A CSV‑kben soha nem szabad UUID-t tárolni relációs kulcsként, ha a
+    runtime UUID futásonként változik.
+-   A StartupManager gyakorlatilag a rendszer „runtime adatbázis
+    inicializálója”, ezt érdemes dokumentálni és vizuálisan is
+    ábrázolni.
+-   A mai „mókus-mentés” jó példa arra, hogy egy konkrét anomália
+    (eltűnő mód) hogyan vezet el egy teljes adatmodell-filozófia
+    tisztázásához.
+
+------------------------------------------------------------------------
+
+Szép lezárása ez a napnak: a rendszer ma beljebb került a tanítható,
+auditálható, emberi állapot felé. A textilvágó gép jöhet nyugodtan – a
+szoftveres vágóélek ma nagyon szépen letisztultak.
+
+------------------------------------------------------------------------
+------------------------------------------------------------------------
 ------------------------------------------------------------------------
 
 🎯 A hiba lényege (diagnózis)

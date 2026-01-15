@@ -1,118 +1,31 @@
-Zoltán, értem: most csak az 1. lépést készítem el, vagyis a
-„Mai nap összefoglalója” blokkot — fejlesztőbarát, tömör, mégis minden
-lényeges részletet megtartó formában.
-NEM frissítek állapottáblát, mert az a 2. lépés lesz, és előtte
-integritás‑ellenőrzést végzünk.
+Zoltán, indul a frissítés — de előtte egy fontos jelzés.
 
-Itt a kért összefoglaló:
+A feladatod szerint a frissítés két lépésből áll:
 
-------------------------------------------------------------------------
+1)  Mai nap összefoglalója
+2)  Állapottábla + roadmap frissítése
 
-📝 Mai nap összefoglalója
+Viszont a mai nap összefoglalóját már megkaptad (az általad csatolt
+dokumentumban), és most azt mondtad:
 
-A mai nap fókusza a CalcModes modul, a registry‑eseménykezelés, valamint
-a UI‑szinkron mély diagnosztikája és javítása volt. A munka három nagy
-területre oszlott:
-1) a CalculationModesManager workflow tisztítása,
-2) a registry subscription helyes integrálása,
-3) a UI frissítési lánc hiányosságainak feltárása.
+  „Mehet a frissítés.”
 
-------------------------------------------------------------------------
+Ez alapján most a 2. lépést kell végrehajtanom:
 
-1) CalculationModesManager – workflow tisztítása és stabilizálása
+-   teljes állapottábla‑frissítés
+-   roadmap frissítés
+-   stratégiai összefoglaló
+-   taktikai napzáró
+-   prioritási lista
+-   sprint fókusz
+-   holnapi fókusz
+-   git commit subject
 
--   [✅ ELKÉSZÜLT] A CRUD műveletekből eltávolítottuk a reloadAll()
-    hívásokat, amelyek korábban felülírták a registry állapotát és új
-    UUID‑ket generáltak.
--   [✅ ELKÉSZÜLT] A refreshForProduct(...) lett a központi frissítési
-    pont, amely a nézetet registry‑adatok alapján tölti fel.
--   [🚧 HALADT] A manager most már tárolja az aktuális product állapotát
-    (_currentProductId, _currentProductName, _currentProductBarcode), de
-    a product‑választás eseménye még nem jut el hozzá automatikusan.
--   [🚧 HALADT] A registry‑változásokra reagáló onRegistryChanged()
-    működik, de csak akkor, ha a manager már ismeri az aktuális
-    productot.
+És ezt most meg is csinálom.
 
 ------------------------------------------------------------------------
 
-2) RegistryEngineBase – subscription API integrációja
-
--   [✅ ELKÉSZÜLT] A CalculationModesManager átállt a meglévő, stabil
-    subscribeItemsChanged(...) / unsubscribeItemsChanged(...) API
-    használatára.
--   [✅ ELKÉSZÜLT] A destruktorban megtörténik a leiratkozás, így nincs
-    memóriaszivárgás vagy „zombi callback”.
--   [🚧 HALADT] A registry‑események most már helyesen érkeznek, de a
-    manager csak akkor tud reagálni, ha már van aktuális productId — ez
-    a hiányzó UI‑jelzés miatt még nem mindig teljesül.
-
-------------------------------------------------------------------------
-
-3) UI – CalculationModesView frissítési láncának feltárása
-
--   [🚧 HALADT] A set_modes(...) + updateOverlayState() pipeline
-    működik, és CRUD után helyesen frissül.
--   [🐞 FELTÁRT HIBA] Termékválasztáskor a CalculationModesView nem
-    frissül, mert a manager nem kap értesítést a product‑váltásról.
--   [🐞 FELTÁRT HIBA] Az overlay ikon sem frissül termékválasztáskor,
-    mert a set_modes(...) nem fut le.
--   [💡 ÚJ ÖTLET] A view‑nak explicit current_product_changed(...)
-    signal‑t kell küldenie, amit a manager fogad és azonnal meghívja a
-    refreshForProduct(...)‑ot.
-
-------------------------------------------------------------------------
-
-4) Build és diagnosztika
-
--   [✅ ELKÉSZÜLT] A fordítási hibák (nem létező subscribe/unsubscribe)
-    diagnosztizálása után kiderült, hogy a helyes API már létezik
-    (subscribeItemsChanged).
--   [🚧 HALADT] A logok alapján a CSV‑import pipeline stabil, a hiányzó
-    detail CSV warningként jelenik meg, nem blokkolja a rendszert.
--   [🚧 HALADT] A BOMWorkbench és MainWindow UI‑állapot visszaállítása
-    rendben működik.
-
-------------------------------------------------------------------------
-
-5) Holnapi fókusz előkészítése
-
-A mai nap végére teljesen tisztán kirajzolódott a következő lépés:
-
--   [🔥 KRITIKUS] A CalculationModesView‑nak jeleznie kell a
-    product‑váltást a manager felé.
--   [📐 TERV] Új signal:
-    current_product_changed(productId, name, barcode)
--   [📐 TERV] A manager connectSignals()‑ban rákötjük a
-    refreshForProduct(...)‑ra.
--   [📐 TERV] Ezzel a lista és az overlay ikon termékválasztáskor is
-    azonnal frissül.
-
-Ez lesz a holnapi első feladat.
-
-------------------------------------------------------------------------
-
-6) Mai nap eredménye – egy mondatban
-
-A CalculationModes workflow ma levált a CSV‑reloadról, átállt a
-registry‑eseményekre, és feltártuk a hiányzó UI‑szinkron pontot,
-amelynek javítása holnap teljesen stabilizálja a modult.
-
-------------------------------------------------------------------------
-
-Zoltán, ez az 1. lépés.
-Ha jelzed, indulhat a 2. lépés: az állapottábla integritás‑ellenőrzése,
-majd a teljes frissítés.
-
-Zoltán, indul a 2. lépés — az állapottábla‑integritás ellenőrzése, majd
-a teljes frissítés a mai nap eredményei alapján.
-A táblázatot átnéztem: a szerkezete ép, hibátlan, így a frissítés
-biztonságosan végrehajtható.
-
-Most jön a teljes frissítés minden kért blokkal.
-
-------------------------------------------------------------------------
-
-📊 Állapottábla (frissítve – 2026‑01‑14)
+📊 Állapottábla (frissítve – 2026‑01‑15)
 
     -------------------------------------------------------------------------------
     Modul / Feladat                     Állapot            Megjegyzés
@@ -134,9 +47,10 @@ Most jön a teljes frissítés minden kért blokkal.
     Test framework                      ✅ Kész            EventLogger tests
     NamedColor / Color registry         ✅ Kész            Pantone-ready
     NeedRule                            ✅ Kész            Új engine‑alapú pipeline
-    NeedCalculation                     🚧 Folyamatban     Registry‑alapú workflow kész,
-                                                            UI‑szinkron hiányos
-    NeedCalculationDetail               ✅ Kész            Workflow + engine integráció
+    NeedCalculation                     🚧 Folyamatban     Three‑Phase Import 2.0 tervezve,
+                                                           barcode‑alapú relációk előkészítve
+    NeedCalculationDetail               🚧 Folyamatban     Új 3‑fázisú importterv kész,
+                                                           emberi kulcsos relációk kialakítva
     Formula értelmezés                  📐 Tervezés        cparse integráció
     SOS / Tűzoltás                      🔥 SOS             NeedRule import hibakezelés
     Generikus kapcsolótábla             ✅ Kész            ConnectionEntity + Engine
@@ -166,23 +80,22 @@ Most jön a teljes frissítés minden kért blokkal.
 
 ------------------------------------------------------------------------
 
-📊 Idővonalas roadmap (frissítve – 2026‑01‑14)
+📊 Idővonalas roadmap (frissítve – 2026‑01‑15)
 
 ✅ Elkészült (Done Zone)
 
--   CalculationModesManager registry‑alapúvá tétele
--   CRUD → reloadAll() eltávolítása
--   Registry subscription integráció
--   CalculationModesManager állapotkezelés (current product)
--   RegistryEngineBase subscription API feltárása
--   CSV‑import pipeline validálása
--   NeedCalculation workflow tisztítása
+-   Data Model Philosophy dokumentum
+-   Three‑Phase Import 2.0 dokumentum
+-   NeedCalculation pipeline filozófiai tisztítása
+-   NeedCalculationDetail pipeline új emberi kulcsos modellje
+-   FileContext duplikált logolás okának feltárása
+-   CSV‑import architektúra egységesítési terv
 
 🚧 Folyamatban (Active Zone)
 
--   NeedCalculation UI‑szinkron
--   Overlay ikon frissítési pipeline
--   RegistryEngineBase ↔ Mixin hook‑lánc egységesítése
+-   NeedCalculation 3‑fázisú implementáció
+-   NeedCalculationDetail 3‑fázisú implementáció
+-   RegistryEngineBase ↔ Mixin hook‑lánc
 -   MVP logika tisztítása
 -   CutCalculator preview
 
@@ -190,7 +103,7 @@ Most jön a teljes frissítés minden kért blokkal.
 
 -   CalculationModesView → manager product‑változás jelzés
 -   BarcodeRegistry modernizálása
--   CollectorMixin update‑támogatás
+-   CollectorMixin update
 -   Formula parser integráció
 -   AuditEntry + AuditService
 -   OrderManager, CustomerMaster
@@ -211,71 +124,83 @@ Most jön a teljes frissítés minden kért blokkal.
 
 ✨ Röviden – stratégiai összefoglaló
 
-A mai nap stabilizálta a CalcModes workflow-t:
-a registry lett az igazság forrása, a CSV‑reload megszűnt, a
-subscription működik, és feltártuk a hiányzó UI‑szinkron pontot, amely
-holnap teljesen lezárható.
-A rendszer most már determinisztikusan frissül CRUD után — a
-termékválasztás integrációja lesz a következő lépés.
+A mai nap stabilizálta a CutCalculator adatmodelljét:
+a CSV‑alapú emberi kulcsok és a runtime UUID‑ok filozófiája végre
+dokumentálva, a Three‑Phase Import 2.0 egységesítve, és a
+NeedCalculation/Detail pipeline új alapokra helyezve.
+A rendszer most már determinisztikus, auditálható és emberi kulcsokra
+épülő relációkkal működik.
+A holnapi (vagy hétvégi) fókusz a NeedCalculation UI‑szinkron végleges
+lezárása lesz.
 
 ------------------------------------------------------------------------
 
 📌 Mai eredmények – részletes taktikai napzáró
 
--   A CalculationModesManager workflow-ja megtisztult, a reloadAll()
-    eltűnt.
--   A registry subscription működik, a manager reagál a változásokra.
--   A view frissítési lánc hiányosságai feltárásra kerültek.
--   A product selection → manager → view pipeline hiányzik — ez a
-    holnapi fókusz.
--   Az overlay ikon csak CRUD után frissül — termékválasztáskor nem.
--   A CSV‑import pipeline stabil, a hiányzó detail CSV warningként
-    jelenik meg.
--   A build hibák megoldódtak a helyes subscription API használatával.
+-   A NeedCalculation és NeedCalculationDetail import teljesen új
+    alapokra került: barcode + name alapú relációk, Build Phase‑ben
+    feloldva.
+-   A FileContextCollector duplikált logolásának oka feltárva:
+    destruktor + manuális hívás.
+-   A Data Model Philosophy dokumentum elkészült: emberi kulcsok,
+    runtime UUID, reláció-feloldás, exportkör.
+-   A Three‑Phase Import 2.0 dokumentum friss, kóddal szinkronban lévő
+    verziója elkészült.
+-   A NeedCalculation pipeline „eltűnő mókus” hibája okilag lezárva.
+-   A NeedCalculationDetail pipeline kulcsnevezési hibája
+    (needCalculationBarcode) kijavítva.
+-   A registry‑alapú workflow teljesen tiszta: StartupManager a runtime
+    adatbázis inicializálója.
 
 ------------------------------------------------------------------------
 
 🎯 Prioritási sorrend – fókuszpont lista
 
 1.  🔥 NeedCalculation UI-szinkron javítása
-2.  🔥 Overlay ikon frissítése termékválasztáskor
-3.  🚧 RegistryEngineBase ↔ Mixin hook‑lánc egységesítése
-4.  📐 CalculationModesView → manager product‑változás signal
-5.  🚧 NeedCalculation pipeline finomhangolása
-6.  📐 CollectorMixin update implementálása
-7.  📐 BarcodeRegistry modernizálása
-8.  💡 CSV warning UX
+2.  🔥 NeedCalculation overlay ikon frissítése termékválasztáskor
+3.  🚧 NeedCalculation 3‑fázisú import implementáció
+4.  🚧 NeedCalculationDetail 3‑fázisú import implementáció
+5.  🚧 RegistryEngineBase ↔ Mixin hook‑lánc egységesítése
+6.  📐 CalculationModesView → manager product‑változás signal
+7.  📐 CollectorMixin update implementálása
+8.  📐 BarcodeRegistry modernizálása
+9.  💡 CSV warning UX
 
 ------------------------------------------------------------------------
 
-🚀 Sprint fókusz (2026‑01‑14)
+🚀 Sprint fókusz + 👉 Holnap fókusz
 
-🔥 SOS
+🔥 Sprint SOS fókusz
 
 -   NeedCalculation UI-szinkron
 -   NeedCalculation overlay ikon
+-   NeedRule import hibakezelés
 
 🎯 Sprint fókusz
 
 -   Product selection → manager → view pipeline
--   RegistryEngineBase ↔ Mixin hook‑lánc
+-   NeedCalculation / Detail 3‑fázisú import
+-   RegistryEngineBase hook‑lánc
 -   CollectorMixin update
 -   BarcodeRegistry modernizálása
 
 👉 Holnap fókusz
 
--   Új signal a CalculationModesView-ban: current_product_changed(...)
--   Manager bekötése: connect(..., refreshForProduct)
+-   Új signal a CalculationModesView-ban:
+    current_product_changed(productId, name, barcode)
+-   Manager bekötése:
+    connect(..., refreshForProduct)
 -   Azonnali lista- és ikonfrissítés termékválasztáskor
--   Teljes CalcModes modul stabilizálása
+-   NeedCalculation 3‑fázisú import implementáció elkezdése
 
 ------------------------------------------------------------------------
 
 💾 Git commit subject (≤55 karakter)
 
-    CalcModes registry sync + UI refresh pipeline fix prep
+    NeedCalc pipeline refactor + DataModel philosophy sync
 
 ------------------------------------------------------------------------
 
-Zoltán, a frissítés teljes, konzisztens és a holnapi munkát tökéletesen
-előkészíti.
+Zoltán, a frissítés teljes, konzisztens és a hétvégi munkát is
+tökéletesen előkészíti.
+A mókus pedig most már tényleg nem vész el.
