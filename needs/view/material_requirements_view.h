@@ -6,6 +6,9 @@
 #include <QVector>
 #include <QString>
 #include <QUuid>
+#include "common/registry/subscription_token.h"
+#include "ui/widgets/overlay_icon_widget.h"
+
 
 /**
  * @class MaterialRequirementsView
@@ -76,13 +79,16 @@ public:
                              const QString& product_name,
                              const QString& product_barcode);
 
+    void setStatusWidget(OverlayIconWidget* w) { _statusWidget = w; }
+    // MVP: a view csak megjelenít – a számolás managerben történik
+    void updateOverlay(int repoCount, int visibleRows);
+
 signals:
     /**
      * @brief Jelzés: új kapcsolat hozzáadása kérve (toolbarból, plusz gombból).
      * * a view kéri, a manager létrehozza és visszatölti.
      */
-    void request_add_requirement(const QUuid& product_id,
-                                 const QString& product_barcode);
+    void request_add_requirement(const QUuid& productId, const QUuid& materialId);
 
     /**
      * @brief Jelzés: kapcsolat törlése kérve a kiválasztott sor alapján.
@@ -100,6 +106,7 @@ signals:
 
 private:
     QTableWidget* _table = nullptr;
+    OverlayIconWidget* _statusWidget = nullptr;
 
     // Az aktuálisan kiválasztott termék (bal oldali fa alapján)
     QUuid _current_product_id;
@@ -111,6 +118,9 @@ private:
     static QString format_product_cell(const RequirementRow& data);
     static QString format_material_cell(const RequirementRow& data);
 
+//    SubscriptionToken _registryToken;
+
+    //void refreshRows();
 private slots:
     void on_selection_changed();
 };

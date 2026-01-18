@@ -30,7 +30,7 @@ public:
      * @param calcId A NeedCalculation azonosítója (UUID)
      * @param modeName A mód neve (auditbarát loghoz és tooltipekhez)
      */
-    void refreshForCalculation(const QUuid& calcId, const QString& modeName);
+    QVector<CalculationModeDetailView::DetailRow> refreshForCalculation(const QUuid& calcId, const QString& modeName);
 
 private:
     CalculationModeDetailView* _view = nullptr;

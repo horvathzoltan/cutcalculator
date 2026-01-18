@@ -19,13 +19,16 @@ class MaterialRequirementsManager : public QObject {
 public:
     explicit MaterialRequirementsManager(MaterialRequirementsView* view, QObject* parent = nullptr);
 
-    // explicit refresh egy productra
-    void refreshForProduct(const QUuid& productId,
+    QVector<MaterialRequirementsView::RequirementRow> refreshForProduct(const QUuid& productId,
                            const QString& productName,
                            const QString& productBarcode);
 
 private:
     MaterialRequirementsView* _view = nullptr;
+    size_t _subscriptionId = 0;
+    QUuid _currentProductId;
+    QString _currentProductName;
+    QString _currentProductBarcode;
 
     void connectSignals();
 

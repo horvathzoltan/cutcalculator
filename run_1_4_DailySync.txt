@@ -1,1006 +1,298 @@
-⏱ Mai napi aktivitás – óránkénti ASCII grafikon (21:00–21:59)
-
-21:00 |###+++++++….|
-
-🎯 A mai (2026-01-15) munka egzakt eredménye – kategóriákba rendezve
-
-🟦 CSV import architektúra és Three‑Phase Import 2.0 Érintett fájlok: -
-materials/repository/material_repository.{h,cpp} -
-products/repository/product_repository.{h,cpp} -
-common/csv/filecontext.{h,cpp} - (koncepcionálisan) minden
-*Repository::load CSV-importáló modul Mai eredmények: - Háromfázisú
-import (Convert → Validate → Build → Assemble) mintája
-MaterialRepository és ProductRepository alapján rögzítve, etalonként
-kijelölve. - FileContext életciklus és duplikált logolás okának
-feltárása (destruktor + manuális onContextDestroyed hívás → dupla CSV
-összefoglaló). - CSV-import filozófia és Three‑Phase Import 2.0
-dokumentum szinkronba hozása a tényleges kóddal (readAndConvert +
-buildAll, auditált hibakezelés). Kategória: ➡️
-ARCHITEKTÚRA / CSV-IMPORT-MINTA
-
-🟦 NeedCalculationRepository – 3‑fázisú, barcode‑alapú import Érintett
-fájlok: - calcmodes/repository/need_calculation_repository.{h,cpp} -
-products/registry/product_registry.* - common/utils/filename_helper.*
-Mai eredmények: - A régi, nyers CsvImporter::read-es NeedCalculation
-betöltés logikájának elemzése (UUID‑alapú productId beolvasás
-CSV‑ből). - Új, Three‑Phase Import 2.0 kompatibilis
-NeedCalculationRepository terv:
-- Row: productBarcode;modeName
-- Build Phase:
-productBarcode → ProductRegistry::findByBarcode → productId (UUID)
-- Auditált hibakezelés FileContext-tel. - Megértettük, miért „betölt, de
-nincs sehol”: CSV‑ben UUID, modellben runtime UUID → nincs stabil
-megfelelés, ezért filozófia-váltás emberi kulcsokra. Kategória: ➡️
-DOMAIN / NEEDCALC-PIPELINE-REFORM
-
-🟦 NeedCalculationDetailRepository – 3‑fázisú, reláció-feloldó import
-Érintett fájlok: -
-calculation/repository/need_calculation_detail_repository.{h,cpp} -
-calculation/model/need_calculation_detail.* -
-calcmodes/registry/need_calculation_registry.* -
-materials/registry/material_registry.* Mai eredmények: - A régi
-implementáció elemzése: nyers UUID‑beolvasás CSV‑ből
-(needCalculationId;materialId;formula), FileContextCollector manuális
-hívással. - Új 3‑fázisú verzió megtervezése:
-- Row: needCalculationName;materialBarcode;formula (emberi kulcsok)
-- Build Phase: NeedCalculationRegistry::findByName +
-MaterialRegistry::findByBarcode → UUID-k feloldása.
-- Hibás elnevezés (needCalculationBarcode) azonosítása, helyes kulcs:
-NeedCalculation.name mint emberi azonosító. Kategória: ➡️
-DOMAIN / NEEDCALC-DETAIL-PIPELINE-REFORM
-
-🟦 Data Model Philosophy és dokumentáció Érintett fájlok: - (dokumentum)
-„CutCalculator Data Model Philosophy” - (dokumentum) „Three Phase Import
-2.0” Mai eredmények: - Kimondtuk és formalizáltuk: CutCalculator nem
-adatbázis, hanem CSV‑alapú, emberi kulcsokra épülő rendszer, amely
-runtime UUID‑os entitáshálót épít. - Rögzítettük az „emberi kulcs
-vs. runtime UUID” kettősséget, és azt, hogy relációk mindig emberi
-kulcsokon (barcode, name) alapulnak, Build Phase-ben feloldva. -
-Megfogalmaztuk, hogy exportkor is emberi kulcsokat írunk vissza, UUID
-soha nem kerül CSV-be. Kategória: ➡️ DOKUMENTÁCIÓ / DATA-MODEL-FILOZÓFIA
-
-🟦 RegistryManager és audit / lookup filozófia Érintett fájlok: -
-common/registry/base/registry_base.* -
-common/registry/feature/registry_base.* -
-common/registry/registry_manager.* Mai eredmények: - RegistryManager
-auditReport működésének áttekintése: összes registry elemszám,
-összegzés, zEvent nyugta. - lookupRegistry és findByTypeName
-viselkedésének megértése (többszörös typeName, hiányzó registry,
-dynamic_cast hibák auditálása). - Megerősítettük, hogy a StartupManager
-felelőssége a registry-k egyszeri, konzisztens feltöltése. Kategória: ➡️
-ARCHITEKTÚRA / REGISTRY-LIFECYCLE
-
-🟩 Összegzés – a mai nap 4 nagy eredménye
-
-1.  Letisztáztuk és dokumentáltuk a CutCalculator Data Model Philosophy
-    alapelveit (emberi kulcsok + runtime UUID).
-2.  A NeedCalculation és NeedCalculationDetail importot átállítottuk /
-    megterveztük Three‑Phase Import 2.0 szerint, reláció-feloldással.
-3.  Feltártuk a dupla CSV logolás okát (FileContext életciklus +
-    manuális collector hívás).
-4.  A ProductRepository / MaterialRepository mintáját etalonként
-    rögzítettük minden jövőbeli CSV-import refaktorhoz.
+🎯 A mai (2026-01-18T21:35:00) munka egzakt eredménye – kategóriákba
+rendezve
 
 ------------------------------------------------------------------------
 
-📝 Mai nap összefoglalója
+🟦 Termékfa torony (Presenter + Panel + Overlay) Érintett fájlok: -
+products/presenter/product_tree_presenter.h -
+products/presenter/product_tree_presenter.cpp -
+products/view/product_tree_panel.h -
+products/view/product_tree_panel.cpp -
+products/view/product_tree_view.h -
+products/view/product_tree_view.cpp -
+products/view/product_tree_manager.cpp
 
--   [✅ ELKÉSZÜLT] A CutCalculator Data Model Philosophy első, koherens
-    verziója: emberi kulcsok, runtime UUID-k, reláció-feloldás,
-    export-filozófia.
--   [✅ ELKÉSZÜLT] A Three‑Phase Import 2.0 dokumentum friss, kóddal
-    szinkronban lévő értelmezése (Convert / Validate / Build /
-    Assemble).
--   [🚧 HALADT] NeedCalculationRepository 3‑fázisú, barcode‑alapú
-    importterve (Row → Build → ProductRegistry lookup) – kódvázlat kész,
-    integráció még hátra.
--   [🚧 HALADT] NeedCalculationDetailRepository 3‑fázisú,
-    NeedCalculation‑név + Material‑barcode alapú importterve – kulcsok
-    tisztázva, implementáció finomhangolása még folyamatban.
--   [✅ ELKÉSZÜLT] A duplikált CSV összefoglaló logok okának
-    diagnosztikája (FileContext destruktor + manuális
-    onContextDestroyed).
--   [🚧 HALADT] RegistryManager és StartupManager szerepének pontosítása
-    a teljes adatbázis (CSV‑halmaz) runtime összeállításában.
+Mai eredmények: - A ProductTreePresenter átállt ProductTreePanel-alapú
+működésre: a Presenter már nem közvetlenül a ProductTreeView-val, hanem
+egy panellel dolgozik, amely tartalmazza a fát. - A ProductTreePanel
+létrejött, saját QVBoxLayout-tal, benne a ProductTreeView-val, és egy
+setStatusWidget() metódussal a státusz/overlay widget számára. - A
+ProductTreeView-ból kikerült a hibás layout-kezelés (nem próbáljuk többé
+layoutba tenni a viewport()-ot), így a fa visszatért a natív
+Qt-viselkedéshez. - A ProductTreePresenter::buildToolbar() most már: -
+létrehozza az OverlayIconWidget-et, - a toolbarra teszi
+(tb->addWidget(_status)), - inicializálja az overlayt
+(initialOverlay()), - feliratkozik a registry- és tree-stats
+változásokra (connectRegistry(), connectTreeStats()), - és hozzáadja a
+CRUD-akciókat (gyökér/gyermek hozzáadás, átnevezés, törlés). - A
+ProductTreeManager::populate() és a kapcsolódó logika továbbra is
+helyesen frissíti a fát, és treeStatsChanged-et emitál, amit a Presenter
+overlay-frissítésre használ. - A log alapján a Tree overlay most már
+helyesen frissül (repoCount=25, totalRows=3), és vizuálisan is
+megjelenik a toolbaron.
 
-🐞 BUG lista (életciklus-kezeléssel)
-
--   [🐞 BUG] NeedCalculationDetail CSV hiányzik (needcalc_details.csv
-    nem található)
-    Állapot: továbbra is fennáll, a logban hibával jelzett, a fájl még
-    nem került létrehozásra / feltöltésre.
-
--   [🐞 BUG] NeedCalculation import: CSV‑ben UUID, modellben runtime
-    UUID → nincs stabil megfelelés
-    Állapot: ma az okot feltártuk, a megoldási irány (barcode‑alapú,
-    ProductRegistry‑lookup) definiálva, de a régi CSV‑formátum még él.
-    Következő lépés: CSV formátum váltás productBarcode;modeName sémára,
-    régi UUID‑os fájl migrálása.
-
--   [🐞 BUG] NeedCalculationDetail import: relációk UUID‑alapú
-    beolvasása CSV‑ből
-    Állapot: ma kiderült, hogy ez ellentétes a Data Model
-    Philosophy-val; új, emberi kulcsos (NeedCalculation.name +
-    Material.barcode) modell megtervezve, implementáció részben kész.
-
--   [🐞 BUG] Dupla CSV import összefoglaló sorok (NeedCalculation /
-    NeedCalculationDetail)
-    Állapot: ok azonosítva – FileContext destruktor + manuális
-    FileContextCollector::onContextDestroyed hívás → dupla log.
-    Státusz: logikai hiba feltárva, fix (dupla hívás eltávolítása) még
-    végrehajtandó.
-
--   [✅ KÉSZ] „Betölt, de nincs sehol” jelenség NeedCalculation esetén
-    Állapot: ma megértettük, hogy a jelenség oka a UUID‑alapú CSV →
-    runtime UUID mismatch; a jövőbeni barcode‑alapú modell ezt
-    megszünteti. A hiba okilag lezárt, megoldási terv rögzítve.
-
-milyen ötletek születtek
-
-Ma megszületett a gondolat, hogy a CutCalculator teljes adatmodelljét
-érdemes filozófiai szinten rögzíteni: emberi kulcsok, runtime UUID-k,
-reláció-feloldás, exportkör. Felmerült, hogy minden CSV-importot
-egységesen a Three‑Phase Import 2.0 mintára kell átírni, a
-MaterialRepository és ProductRepository etalonként szolgálva. Ötletként
-megfogalmazódott, hogy a NeedCalculation és NeedCalculationDetail
-relációi ne UUID‑ra, hanem barcode + name kombinációra épüljenek, így a
-rendszer természetes, emberi kulcsokkal marad konzisztens. Emellett
-kialakult egy tiszta kép arról, hogy a StartupManager a „runtime
-adatbázis inicializálója”, és hogy a FileContextCollector auditja a
-teljes CSV‑pipeline nyugtája.
-
-milyen problémák merültek fel
-
-Felszínre került, hogy a jelenlegi NeedCalculation és
-NeedCalculationDetail importok nem illeszkednek a rendszer
-filozófiájához: UUID‑okat olvasnak CSV‑ből, miközben a runtime UUID-k
-futásonként változnak. Ez okozta a „betölt, de nincs sehol” jellegű
-anomáliákat. Probléma volt az is, hogy a FileContext életciklusa nem
-volt teljesen átlátható: a destruktor automatikus collector-hívása
-mellett kézi hívás is történt, ami duplikált logokat eredményezett.
-Kiderült továbbá, hogy a NeedCalculationDetail kulcsnevezése
-(needCalculationBarcode) félrevezető, mert a NeedCalculation valójában
-névvel azonosított, nem barcode-dal.
-
-milyen döntések születtek
-
-Döntés született arról, hogy a CutCalculator Data Model Philosophy lesz
-a forrása minden további import/export és relációs döntésnek.
-Eldöntöttük, hogy minden CSV-importot Three‑Phase Import 2.0 szerint
-egységesítünk, és hogy a relációkat emberi kulcsokkal (barcode, name)
-fejezzük ki, a Build Phase-ben feloldva UUID‑ra. Megállapodtunk abban
-is, hogy a NeedCalculation és NeedCalculationDetail CSV-formátumát át
-kell alakítani: NeedCalculation esetén productBarcode;modeName,
-NeedCalculationDetail esetén NeedCalculation‑név + Material‑barcode
-alapú hivatkozás lesz a cél. Végül döntés született arról, hogy a
-FileContextCollector dupla hívását megszüntetjük, és a FileContext
-destruktor lesz az egyetlen, auditot indító pont.
-
-📁 Érintett fájlok / modulok
-
--   materials/repository/material_repository.{h,cpp}
-    Változás / fókusz: Etalonként elemeztük a háromfázisú importot
-    (Convert → Validate → Build → Assemble), a Row‑struktúra, a
-    NamedColor validáció és a BarcodeCollisionHelper használata alapján.
-
--   products/repository/product_repository.{h,cpp}
-    Változás / fókusz: Részletesen átnéztük a ProductRow → ProductMaster
-    pipeline-t, a parentBarcode → parentId feloldást, a resolveParents
-    kétfázisú logikáját, és ezt vettük mintának a NeedCalculation/Detail
-    refaktorhoz.
-
--   common/csv/filecontext.{h,cpp}
-    Változás / fókusz: Megértettük a FileContext életciklusát, a
-    destruktorban történő FileContextCollector::onContextDestroyed
-    hívást, és az ebből fakadó dupla logolási lehetőséget.
-
--   calcmodes/repository/need_calculation_repository.{h,cpp}
-    Változás / fókusz: A régi, UUID‑alapú importot elemeztük, és
-    megterveztük az új, barcode‑alapú, 3‑fázisú verziót (Row:
-    productBarcode;modeName, Build: ProductRegistry lookup).
-
--   calculation/repository/need_calculation_detail_repository.{h,cpp}
-    Változás / fókusz: A jelenlegi UUID‑beolvasó implementációt
-    vizsgáltuk, és megterveztük az új, NeedCalculation‑név +
-    Material‑barcode alapú, 3‑fázisú importot.
-
--   common/registry/registry_manager.*
-    Változás / fókusz: Áttekintettük a registry-k auditReportját, a
-    lookupRegistry és findByTypeName viselkedését, és a
-    StartupManager-rel való együttműködést.
-
--   Dokumentumok: „Three Phase Import 2.0”, „CutCalculator Data Model
-    Philosophy”
-    Változás / fókusz: Friss, kóddal szinkronban lévő leírás készült az
-    import pipeline-ról és az adatmodell filozófiájáról.
-
-💡 Új ötletek / megfigyelések
-
--   Minden CSV-importot érdemes egységesen Three‑Phase Import 2.0
-    szerint refaktorálni, a MaterialRepository / ProductRepository
-    mintájára.
--   A Data Model Philosophy külön, önálló dokumentumként szolgálhat
-    minden jövőbeli döntés alapjául (onboarding, review, refaktor).
--   A NeedCalculation természetes azonosítója valójában (Product,
-    modeName) páros, amit később akár összetett emberi kulcsként is
-    formalizálhatunk.
--   A FileContext destruktor-alapú audit jó, de tilos mellé kézi
-    collector-hívást tenni, mert az duplikált logot eredményez.
--   A CSV‑kben soha nem szabad UUID-t tárolni relációs kulcsként, ha a
-    runtime UUID futásonként változik.
--   A StartupManager gyakorlatilag a rendszer „runtime adatbázis
-    inicializálója”, ezt érdemes dokumentálni és vizuálisan is
-    ábrázolni.
--   A mai „mókus-mentés” jó példa arra, hogy egy konkrét anomália
-    (eltűnő mód) hogyan vezet el egy teljes adatmodell-filozófia
-    tisztázásához.
+Kategória: ➡️ product-tree-mvp-overlay
 
 ------------------------------------------------------------------------
 
-Szép lezárása ez a napnak: a rendszer ma beljebb került a tanítható,
-auditálható, emberi állapot felé. A textilvágó gép jöhet nyugodtan – a
-szoftveres vágóélek ma nagyon szépen letisztultak.
+🟦 BOMWorkbench layout és tornyok összekötése Érintett fájlok: -
+workbench/view/bom_workbench.h - workbench/view/bom_workbench.cpp
 
-------------------------------------------------------------------------
-------------------------------------------------------------------------
-------------------------------------------------------------------------
+Mai eredmények: - A bal oldali panel most már ProductTreePanel-t
+használ, benne a ProductTreeView-val; a ProductTreeManager a panelből
+kinyert QTreeView-ra épül. - A ProductTreePresenter példányosítása
+átállt: most már a panelt kapja, nem a nyers ProductTreeView-t. - A bal
+oldali layout sorrendje tiszta: először a Tree toolbar
+(_treePresenter->buildToolbar()), alatta a ProductTreePanel. - A jobb
+oldali tornyok (MaterialRequirements, CalculationModes,
+CalculationModeDetail) továbbra is Presenter-alapú toolbarokat
+használnak, a layout pedig percent-based snapshotokkal áll vissza. - A
+showEvent() + QTimer::singleShot(0, ...) kombinációval a BOMWorkbench
+állapota (splitterek, header) stabilan visszaáll, és a logban is szépen
+látszik a snapshot-alapú visszatöltés.
 
-🎯 A hiba lényege (diagnózis)
-
-1) A CalculationModesView ikonja nem frissül
-
-Ez azt jelenti, hogy:
-
--   a updateOverlayState() csak akkor fut le, amikor set_modes() lefut,
--   de set_modes() csak akkor fut, ha a manager meghívja,
--   a manager pedig csak akkor hívja, ha:
-    -   CRUD történik, vagy
-    -   registry subscription érkezik, ÉS van aktuális productId.
-
-Startup után viszont nincs aktuális productId, mert:
-
--   a BOMWorkbench kiválasztja a terméket,
--   de a CalculationModesManager NEM kapja meg ezt az eseményt,
--   így _currentProductId üres marad,
--   ezért onRegistryChanged() → return.
-
-Ezért:
-
-👉 a view nem frissül termékválasztáskor,
-👉 az ikon sem frissül,
-👉 a lista üres marad,
-👉 de CRUD után már van productId, ezért minden működik.
-
-Ez tökéletesen illeszkedik a tünetekhez.
+Kategória: ➡️ bom-workbench-layout-mvp
 
 ------------------------------------------------------------------------
 
-🎯 2) A számítási módok nem jelennek meg termékválasztáskor
+🟦 Számítási módok torony (Presenter + Manager + Overlay) Érintett
+fájlok: - calcmodes/manager/calculation_modes_manager.cpp -
+calcmodes/presenter/calculation_modes_presenter.cpp
 
-Ugyanez az ok:
+Mai eredmények: - A CalculationModesManager most már
+_currentProductId/_currentProductName/_currentProductBarcode állapotot
+tart fenn, és onRegistryChanged() esetén újrahívja a
+refreshForProduct()-ot, ha van aktuális termék. - A connectSignals()-ben
+a request_add_mode kezelés átállt: a dialógus helyett a Presenter adja a
+modeName-et, a Manager pedig csak a domain-objektumot (NeedCalculation)
+hozza létre és szúrja be a registry-be. - A refreshForProduct(): -
+kiszűri az adott termékhez tartozó módokat, - kiszámolja a
+detail-countot NeedCalculationDetailRegistry alapján, - feltölti a
+CalculationModesView-t ModeRow-okkal, - frissíti az overlayt (repoCount,
+visibleRows), - és audit-logot ír a frissítésről. - A
+CalculationModesPresenter: - a currentProductChanged jelre
+refreshForProduct()-ot hív, ha a view isReady(), - a toolbaron
+létrehozza az overlayt, beállítja a status widgetet, és a tree-stats
+alapján frissíti az overlayt, - a ➕ Új mód akcióval dialógust nyit,
+majd request_add_mode(productId, modeName) jelet küld a view-n keresztül
+a Manager felé, - a törlés/átnevezés akciókat a view aktuális
+kiválasztására építi.
 
--   a BOMWorkbench jelzi a termékválasztást a view-nak,
--   a view meghívja: set_current_product(productId, ...),
--   de a manager NEM kap erről értesítést,
--   így nem hívja meg a refreshForProduct()-ot.
-
-Ezért:
-
-👉 a view tudja, melyik product az aktuális,
-👉 a manager NEM tudja,
-👉 a manager nem frissít,
-👉 a lista üres marad,
-👉 CRUD után viszont már tudja → minden működik.
-
-------------------------------------------------------------------------
-
-🧠 A megoldás lényege
-
-A CalculationModesManager-nek kötelező értesülnie arról, hogy:
-
--   melyik product lett kiválasztva,
--   és mikor változik a product.
-
-Ez jelenleg hiányzik.
-
-A view már jelzi a productot:
-
-    void set_current_product(const QUuid& productId, ...)
-
-De a manager nincs rákötve.
+Kategória: ➡️ calculation-modes-mvp-overlay
 
 ------------------------------------------------------------------------
 
-🛠️ Hol kell javítani?
+🟦 Anyagszükséglet torony (Manager + Presenter wiring előkészítés)
+Érintett fájlok: - needs/manager/material_requirements_manager.cpp -
+needs/presenter/material_requirements_presenter.cpp (részben, a toolbar
+és jelzés logikája alapján)
 
-A CalculationModesManager-ben:
+Mai eredmények: - A MaterialRequirementsManager::connectSignals()-ben a
+request_add_requirement jel kezelése jelenleg egy ideiglenes, dialógus
+nélküli ágon áll: -
+NeedRule rule; rule.leftId = productId; rule.rightId = materialId; → itt
+a materialId még nincs definiálva, ez egy tudatosan félbehagyott, jelölt
+adósság. - A MaterialRequirementsPresenter::buildToolbar(): - overlayt
+hoz létre és a view-hoz rendeli, - a ➕ Hozzáadás akcióval
+MaterialPickerDialog-ot nyit, - a kiválasztott anyag alapján
+request_add_requirement(_currentProductId, result.material_id) jelet
+küld a view-n keresztül. - A jelenlegi állapot: a Presenter oldali UX
+már MVP-közeli, de a Manager oldali materialId-kezelés még befejezetlen,
+és a currentProductId-t a Presenter oldalán kell még stabilan vezetni.
 
--   fel kell iratkozni a view set_current_product eseményére,
--   vagy explicit jelezni a managernek, hogy product változott.
-
-A view jelenleg NEM küld jelet product-váltáskor.
-
-Ezért a terv:
-
-------------------------------------------------------------------------
-
-📘 HOLNAPI JAVÍTÁSI TERV (4 lépés, tiszta, SOHO‑léptékű)
-
-1) A CalculationModesView küldjön jelet, amikor product változik
-
-Új signal:
-
-    signals:
-        void current_product_changed(const QUuid& productId,
-                                     const QString& name,
-                                     const QString& barcode);
-
-A set_current_product() végére:
-
-    emit current_product_changed(productId, productName, productBarcode);
-
-------------------------------------------------------------------------
-
-2) A CalculationModesManager kapcsolódjon ehhez a signalhoz
-
-A connectSignals()-ban:
-
-    connect(_view, &CalculationModesView::current_product_changed,
-            this, &CalculationModesManager::refreshForProduct);
-
-Ez biztosítja:
-
--   amikor a BOMWorkbench kiválaszt egy terméket,
--   a view jelzi,
--   a manager frissít,
--   a lista megjelenik,
--   az ikon frissül.
-
-------------------------------------------------------------------------
-
-3) A manager _currentProductId értéke mindig naprakész lesz
-
-Mert a refreshForProduct() elején már mentjük:
-
-    _currentProductId = productId;
-
-Ezután:
-
--   registry subscription → működik,
--   CRUD → működik,
--   ikon → működik,
--   lista → működik.
-
-------------------------------------------------------------------------
-
-4) A reloadAll() végleg eltűnhet a CRUD ágakból
-
-Ez már megtörtént.
-
-------------------------------------------------------------------------
-
-🟢 Mi fog történni a javítás után?
-
--   Termékválasztáskor azonnal megjelennek a számítási módok
--   Az ikon azonnal frissül
--   A registry subscription működik
--   A CRUD működik
--   A mókus nem tűnik el
--   A rendszer teljesen szinkronban lesz
-
-Ez egy nagyon tiszta, kis kockázatú, jól izolált javítás.
-
-------------------------------------------------------------------------
-
-Ha szeretnéd, holnapra előkészítem a diff‑szerű snippeteket is.
-
-***
-***
-***
-
-
-⏱ Mai napi aktivitás – óránkénti ASCII grafikon (19:00–20:30)
-
-19:00 |+++++….++++| 20:00 |….#####++++|
-
-------------------------------------------------------------------------
-
-🎯 A mai (2026-01-14) munka egzakt eredménye – kategóriákba rendezve
-
-🟦 CalculationModes workflow és UI-szinkron Érintett fájlok: -
-calcmodes/manager/calculation_modes_manager.h -
-calcmodes/manager/calculation_modes_manager.cpp -
-calcmodes/view/calculation_modes_view.h -
-calcmodes/view/calculation_modes_view.cpp Mai eredmények: - A
-CalculationModesManager-be bevezetésre került az aktuális product
-állapot tárolása: _currentProductId, _currentProductName,
-_currentProductBarcode. - A CRUD műveletek (add/remove/rename) többé nem
-hívják a reloadAll()-t, hanem a refreshForProduct(...)-on keresztül
-frissítik a nézetet. - A refreshForProduct(...) mostantól mindig elmenti
-az aktuális product metaadatokat, így a későbbi registry-eseményekre is
-konzisztensen tud reagálni. - A CalculationModesView továbbra is a
-set_modes(...) + updateOverlayState() pipeline-on keresztül frissíti a
-táblázatot és az overlay ikont. Kategória: ➡️ CalculationModes /
-UI-szinkron
-
-🟦 Registry eseménykezelés és subscription Érintett fájlok: -
-common/registry/base/registry_engine_base.h -
-calcmodes/registry/need_calculation_registry.h (közvetetten, az öröklés
-miatt) Mai eredmények: - A RegistryEngineBase már meglévő, thread-safe
-subscription API-ja (subscribeItemsChanged, unsubscribeItemsChanged,
-SubscriptionToken) azonosításra és dokumentálásra került. - A
-CalculationModesManager mostantól a
-NeedCalculationRegistry::instance().subscribeItemsChanged(...) API-t
-használja a registry-változások figyelésére. - A destruktorban
-bevezetésre került az unsubscribeItemsChanged(_subscriptionId) hívás,
-így a feliratkozás életciklusa tiszta és leak-mentes. - A
-registry-változásokra reagáló callback a onRegistryChanged() privát
-metódusba került, amely a mentett aktuális product alapján hívja a
-refreshForProduct(...)-ot. Kategória: ➡️ Registry engine / Events
-
-🟦 Build, log és viselkedés-validálás Érintett fájlok: -
-common/registry/feature/registry_base.h -
-common/registry/base/registry_base.cpp - logfájlok:
-CutCalculator_logs/log_20260114_191545.txt - events_20260114_191545.txt
-Mai eredmények: - A fordítási hibák (hiányzó subscribe/unsubscribe
-metódusok) diagnosztizálása után kiderült, hogy a subscription API már
-létezik a RegistryEngineBase-ben, csak más néven. - A NeedCalculation
-CSV és NeedCalculationDetail CSV betöltésének logjai alapján
-megerősítést nyert, hogy a CSV-import pipeline stabil, a hiányzó
-needcalc_details.csv fájl hibája jól logolt, de nem blokkolja az
-alkalmazás indulását. - A BOMWorkbench és MainWindow UI-állapot
-visszaállítása (geometry, splitters, header state) rendben lefutott, a
-logok alapján a UI-lifecycle stabil. Kategória: ➡️ Build / Logging /
-Validálás
+Kategória: ➡️ material-requirements-mvp-wiring-incomplete
 
 ------------------------------------------------------------------------
 
 🟩 Összegzés – a mai nap 3 nagy eredménye
 
-1.  A CalculationModesManager most már registry-eseményekre épül, nem
-    CSV-reloadra, így a workflow tisztább és audit-barátabb.
-2.  A RegistryEngineBase subscription API-ja beemelésre került a
-    gondolkodásba, és a CalculationModesManager integrálja is azt.
-3.  A CSV-import és UI-lifecycle logok alapján a rendszer alapvető
-    stabilitása megerősítést nyert, a hibák jól láthatóan, strukturáltan
-    jelennek meg.
+1.  A ProductTree torony teljesen MVP-kompatibilis lett: külön Panel,
+    Presenter, Manager, és a Tree overlay most már stabilan, vizuálisan
+    is megjelenik a toolbaron.
+2.  A BOMWorkbench bal oldali struktúrája letisztult: a Tree torony
+    ugyanabba az overlayes, Presenter-alapú mintába illeszkedik, mint a
+    jobb oldali tornyok.
+3.  A CalculationModes torony overlay- és refresh-logikája összeért: a
+    registry-változások, tree-választás és overlay frissítés most már
+    konzisztens, auditálható és jól logolt.
 
 ------------------------------------------------------------------------
 
 📝 Mai nap összefoglalója
 
--   [✅ ELKÉSZÜLT] A CalculationModesManager CRUD műveletei többé nem
-    hívják a reloadAll()-t, hanem a refreshForProduct(...)-on keresztül
-    frissítik a nézetet.
--   [✅ ELKÉSZÜLT] Bevezetésre került az aktuális product állapot
-    tárolása a CalculationModesManager-ben (_currentProductId,
-    _currentProductName, _currentProductBarcode).
--   [✅ ELKÉSZÜLT] A NeedCalculationRegistry eseményeire való
-    feliratkozás a subscribeItemsChanged(...) API-val megvalósult,
-    destruktorban leiratkozással.
--   [🚧 HALADT] A CalculationModesView és a CalculationModesManager
-    közötti product-választás szinkronja (product selection → azonnali
-    módlista frissítés) részben működik, de a termékválasztáskor a lista
-    még nem töltődik fel automatikusan.
--   [🚧 HALADT] A registry-állapotot jelző overlay ikon viselkedése
-    részben jó (CRUD után frissül), de termékválasztáskor még nem
-    tükrözi a valós állapotot.
+-   [✅ ELKÉSZÜLT] A ProductTreePresenter átállítása
+    ProductTreePanel-re, a TreeView kicsomagolása egy panelbe, és a
+    toolbar + overlay tiszta, konzisztens felépítése.
+-   [✅ ELKÉSZÜLT] A Tree overlay láthatóvá tétele: az OverlayIconWidget
+    csak a toolbarra kerül, nem a panelre, így nem nyeli el a layout.
+-   [✅ ELKÉSZÜLT] A BOMWorkbench bal oldali paneljének átalakítása úgy,
+    hogy a TreePanel + TreePresenter + TreeManager együtt egy jól
+    strukturált, snapshot-kompatibilis tornyot alkosson.
+-   [✅ ELKÉSZÜLT] A CalculationModesManager és
+    CalculationModesPresenter közötti felelősségmegosztás tisztázása: a
+    Presenter kezeli a dialógust és a user inputot, a Manager a
+    domain-objektumot és a registry-műveleteket.
+-   [🚧 HALADT] A MaterialRequirements torony MVP-szintű wiringja: a
+    Presenter oldali toolbar és jelzéslogika már működőképes, de a
+    Manager oldali materialId-kezelés még félkész.
+-   [🚧 HALADT] A Tree overlay statisztikáinak (repoCount, visibleRows)
+    egységesítése a többi torony overlay-logikájával.
 
 ------------------------------------------------------------------------
 
 🐞 BUG lista (életciklus-kezeléssel)
 
--   [🐞 BUG] CalculationModesView nem frissül termékválasztáskor
-    Leírás: amikor a felhasználó kiválaszt egy terméket, a hozzá tartozó
-    számítási módok nem jelennek meg azonnal a táblázatban. CRUD után
-    már látszanak, tehát a registry subscription működik, de a
-    product-választás → manager → view lánc hiányos.
-    Állapot: aktív, holnapi javításra tervezve (új signal a view-ban,
-    connect a managerben).
+-   [🐞 BUG] MaterialRequirementsManager::connectSignals() – materialId
+    használata definiálatlanul
+    Állapot: ismert, még nem javított.
+    Leírás: a request_add_requirement lambda jelenleg
+    rule.rightId = materialId; sort tartalmaz, ahol materialId nincs
+    definiálva. Ez runtime-hibához vezetne, ha a jel ténylegesen
+    lefutna.
+    Teendő: a Presenter által küldött materialId-t át kell vezetni, vagy
+    vissza kell állítani a dialógus-alapú ágat.
 
--   [🐞 BUG] Registry-állapot overlay ikon nem frissül
-    termékválasztáskor
-    Leírás: az overlay ikon csak akkor frissül, amikor set_modes(...)
-    lefut. Mivel termékválasztáskor nem hívódik meg a
-    refreshForProduct(...), az ikon sem tükrözi az aktuális állapotot.
-    CRUD után már jó.
-    Állapot: aktív, a fenti buggal együtt kezelendő.
+-   [🐞 BUG] Anyagszükséglet torony – _currentProductId kezelése a
+    Presenterben
+    Állapot: részben feltárt, még nincs véglegesített megoldás.
+    Leírás: a MaterialRequirementsPresenter-ben a
+    request_add_requirement jel _currentProductId-re támaszkodik; ennek
+    életciklusa és inicializálása még nincs végigvezetve (hasonlóan a
+    CalculationModesPresenter mintájához).
+    Teendő: a TreeManager currentProductChanged jelére a Presenterben be
+    kell vezetni egy stabil _currentProductId állapotot.
 
--   [✅ KÉSZ] CalculationModesManager reloadAll() túlhasználata CRUD
-    után
-    Leírás: minden CRUD művelet után a manager visszaolvasta a CSV-t és
-    felülírta a registryt, ami workflow-szinten hibás volt.
-    Mai állapot: a CRUD ágakból a reloadAll() hívások eltávolításra
-    kerültek, a frissítés registry-alapú lett.
+-   [🐞 BUG] NeedCalculationDetail CSV hiánya (warning)
+    Állapot: ismert, nem kritikus.
+    Leírás: a log szerint a needcalc_details.csv hiányzik, a repository
+    0 rekordot tölt be, és warningot ír.
+    Teendő: dönteni kell, hogy ez fejlesztői környezetben elfogadott
+    warning marad, vagy szükséges fallback / üres baseline fájl.
 
--   [✅ KÉSZ] Fordítási hiba: NeedCalculationRegistry nem tartalmaz
-    subscribe/unsubscribe metódust
-    Leírás: a kezdeti patch a nem létező subscribe/unsubscribe
-    metódusokra hivatkozott.
-    Mai állapot: átállítás a meglévő subscribeItemsChanged /
-    unsubscribeItemsChanged API-ra, a fordítási hiba megszűnt.
+-   [✅ KÉSZ] Tree overlay nem jelent meg a toolbaron
+    Korábbi állapot: [🐞 BUG] – az OverlayIconWidget egyszerre került a
+    toolbarra és a panelre, a Qt áthelyezte a panelbe, így a toolbaron
+    nem látszott.
+    Mai eredmény: a TreePresenter most már csak a toolbarra teszi az
+    overlayt, a panel nem kapja meg; a log és a vizuális UI is igazolja
+    a javítást.
 
 ------------------------------------------------------------------------
 
 milyen ötletek születtek
 
-Ma kirajzolódott egy tiszta irány: a CalculationModes workflow-nak
-teljesen registry-eseményekre kell épülnie, nem CSV-reloadra. Ennek
-része, hogy a manager legyen a „truth holder” az aktuális product
-állapotáról, és a view csak megjelenítsen. Felmerült az is, hogy a view
-küldjön explicit signal-t product-változáskor, amit a manager fogad, így
-a product selection → registry → view lánc determinisztikusan követhető.
-Az overlay ikon logikája is egyre inkább egy általános „list state”
-indikátor irányába mozdul, ami más moduloknál is újrahasznosítható
-lehet.
+Felmerült az az irány, hogy minden torony (Tree, Materials, Modes,
+Details) overlay-logikája egységes, Presenter-alapú mintát kövessen: a
+Presenter hozza létre az OverlayIconWidget-et, a view/panel csak egy
+setStatusWidget()-et biztosít, és az overlay frissítése mindig a
+Presenterben történik. Az is kirajzolódott, hogy a TreeView-hoz hasonló,
+„nyers” Qt-widgetek esetén érdemes mindig egy panelt bevezetni, amely a
+layoutot és a státusz-widgeteket kezeli, így a domain-specifikus view-k
+nem keverednek a layout-trükkökkel. Ötletként megjelent az is, hogy a
+registry-audit és overlay-számok (repoCount, visibleRows) egy közös
+helperen keresztül legyenek frissítve, hogy a tornyok között még
+kevesebb duplikáció legyen.
+
+------------------------------------------------------------------------
 
 milyen problémák merültek fel
 
-A legfontosabb probléma az volt, hogy a CalculationModesView nem
-frissült termékválasztáskor, csak CRUD után, ami félrevezető UI-élményt
-adott. Emellett a registry subscription API elsőre „láthatatlan” volt,
-mert más néven (subscribeItemsChanged) létezett, így kezdetben nem
-találtuk. A reloadAll() korábbi használata workflow-szinten is
-problémásnak bizonyult, mert a registry-t mindig felülírta a CSV-vel,
-ami hosszú távon adatvesztéshez és nehezen követhető állapothoz vezetett
-volna. Végül az overlay ikon viselkedése is rámutatott arra, hogy a view
-és a manager közötti product-szinkron még nem teljes.
+A leglátványosabb probléma az volt, hogy a Tree overlay nem jelent meg,
+miközben a log egyértelműen mutatta, hogy az OverlayIconWidget frissül –
+ez tipikus „widget rossz parent alatt” jelenség volt. Emellett a
+MaterialRequirements toronyban a félbehagyott materialId-kezelés és a
+_currentProductId-re támaszkodó jelzés logikailag ingatag állapotot
+eredményezett, ami potenciális runtime-hibákat hordoz. A
+NeedCalculationDetail CSV hiánya is problémaként jelent meg a logban,
+bár ez inkább környezeti/baseline kérdés, mint kódszintű bug. A TreeView
+eredeti layout-kísérlete (viewport layoutba rakása) is problémás irány
+volt, amit most sikerült leválasztani egy tiszta panelréteggel.
+
+------------------------------------------------------------------------
 
 milyen döntések születtek
 
-Döntés született arról, hogy a CalculationModesManager többé nem
-használja a reloadAll()-t CRUD után, a registry az igazság forrása, a
-CSV csak startup-kori betöltésre szolgál. Eldőlt, hogy a
-RegistryEngineBase meglévő subscription API-ját használjuk, nem építünk
-párhuzamos mechanizmust. Döntés született arról is, hogy a holnapi lépés
-egy explicit signal bevezetése lesz a CalculationModesView-ban
-product-változáskor, és ennek bekötése a manager refreshForProduct(...)
-metódusába, így a termékválasztás azonnal látható módlistát és friss
-overlay ikont eredményez majd.
+Döntés született arról, hogy a Tree torony is ugyanabba az
+MVP/Presenter/Panel mintába illeszkedik, mint a többi torony: a TreeView
+marad „nyers” Qt-widget, a layoutot és a státusz-widgetet a
+ProductTreePanel kezeli, a logikát pedig a ProductTreePresenter. Eldőlt
+az is, hogy az overlayt a toolbarra tesszük, nem a panelre, így a
+vizuális visszajelzés konzisztens marad a többi toronnyal. A
+CalculationModes toronyban megerősítést nyert az a döntés, hogy a
+dialógusok a Presenter felelősségi körébe tartoznak, a Manager pedig
+tisztán domain- és registry-műveleteket végez. A MaterialRequirements
+torony esetében implicit döntés született: a jelenlegi félkész állapotot
+adósságként tartjuk számon, és egy következő lépésben a Modes mintájára
+fogjuk kitisztítani.
 
 ------------------------------------------------------------------------
 
 📁 Érintett fájlok / modulok
 
--   calcmodes/manager/calculation_modes_manager.h
-    Változás: új privát tagok (_subscriptionId, _currentProductId,
-    _currentProductName, _currentProductBarcode), új privát metódus
-    deklaráció (onRegistryChanged()), a class felelőssége kibővült az
-    aktuális product állapot kezelésével és registry-eseményekre
-    reagálással.
-
+-   products/presenter/product_tree_presenter.h/.cpp
+    Változás: átállás ProductTreePanel-re, overlay létrehozása és
+    frissítése a toolbaron, CRUD-akciók bekötése, registry- és
+    tree-stats alapú overlay-frissítés.
+-   products/view/product_tree_panel.h/.cpp
+    Változás: új panelosztály, amely QVBoxLayout-tal tartalmazza a
+    ProductTreeView-t, és setStatusWidget()-et biztosít a
+    státusz/overlay widget számára.
+-   products/view/product_tree_view.h/.cpp
+    Változás: a korábbi layout-kísérlet (viewport layoutba rakása,
+    setStatusWidget()) kivezetésre került; a view visszatért a natív
+    QTreeView-viselkedéshez, csak a drag&drop és registry-frissítés
+    maradt.
+-   products/view/product_tree_manager.cpp
+    Változás: a TreeManager továbbra is a QTreeView-ra épül, de a
+    populate és treeStatsChanged logika most már a Presenter
+    overlay-frissítésével együtt működik; a kódot a paneles struktúrához
+    igazítottuk (de a fő logika változatlan).
+-   workbench/view/bom_workbench.h/.cpp
+    Változás: a bal oldali panel most már ProductTreePanel-t használ, a
+    Presenter a panelt kapja, a layout sorrendje tiszta (toolbar +
+    panel), a jobb oldali tornyok wiringja változatlan, de a ModesView
+    markReady() hívása is bekerült a stabil overlay-frissítés érdekében.
 -   calcmodes/manager/calculation_modes_manager.cpp
-    Változás: a konstruktorban bevezetésre került a
-    subscribeItemsChanged(...) hívás, a destruktorban az
-    unsubscribeItemsChanged(...). A CRUD ágakban a reloadAll() hívások
-    lecserélésre kerültek refreshForProduct(...) hívásokra. A
-    refreshForProduct(...) mostantól elmenti az aktuális product
-    metaadatokat, és új onRegistryChanged() metódus került be, amely
-    registry-eseményre frissíti a nézetet.
-
--   calcmodes/view/calculation_modes_view.h / .cpp
-    Változás: ma inkább olvasás és viselkedés-analízis történt; a
-    set_modes(...) + updateOverlayState() pipeline megerősítést nyert, a
-    set_current_product(...) jelenlegi viselkedése (csak állapotmentés,
-    jelzés nélkül) azonosításra került, mint a holnapi javítás
-    célpontja.
-
--   common/registry/base/registry_engine_base.h
-    Változás: a meglévő subscription API (subscribeItemsChanged,
-    unsubscribeItemsChanged, SubscriptionToken) viselkedése és
-    integrációja feltérképezésre került, és a CalculationModesManager
-    már erre támaszkodik. A onItemsChanged() belső működése (róka1/2
-    logok, callback-ek másolása, exception swallowing) megerősítette,
-    hogy a registry-események stabilan kezelhetők.
-
--   common/registry/base/registry_base.cpp /
-    common/registry/feature/registry_base.h
-    Változás: tartalmi módosítás nem történt, de a lifecycle
-    (initialize, guardInstanceUsage, logEntityAction) viselkedése a mai
-    logok alapján validálásra került.
+    Változás:
+    _currentProductId/_currentProductName/_currentProductBarcode állapot
+    bevezetése, onRegistryChanged() → refreshForProduct() hívás, a
+    request_add_mode jel kezelése dialógus nélküli, Presenter-alapú
+    inputra állítva.
+-   calcmodes/presenter/calculation_modes_presenter.cpp
+    Változás: overlay létrehozása a toolbaron, tree-stats alapú
+    overlay-frissítés, currentProductChanged jelre refreshForProduct()
+    hívás, dialógus-alapú módnév-kérés és request_add_mode jel küldése.
+-   needs/manager/material_requirements_manager.cpp
+    Változás: a request_add_requirement jel kezelése ideiglenes,
+    dialógus nélküli ágra állt, de a materialId még nincs végigvezetve –
+    ez tudatosan félbehagyott, jelölt adósság.
+-   needs/presenter/material_requirements_presenter.cpp
+    Változás: a toolbar overlay-logikája és a request_add_requirement
+    jel küldése a TreeManager aktuális termékére épül; a teljes
+    MVP-minta felé halad, de még nem végleges.
 
 ------------------------------------------------------------------------
 
 💡 Új ötletek / megfigyelések
 
--   A CalculationModesView-nek érdemes explicit signal-t küldenie
-    product-változáskor, hogy a manager determinisztikusan frissíthesse
-    a módlistát.
--   A registry subscription API már most elég erős ahhoz, hogy más
-    modulok (pl. Materials, Products) is hasonló „live view” frissítést
-    kapjanak.
--   Az overlay ikon logikája általánosítható egy „list state overlay”
-    komponenssé, amely több nézetben is ugyanazt a mintát követi (NoData
-    / NoFilteredData / Ok).
--   A reloadAll()-t érdemes szigorúan csak startup-kori, vagy explicit
-    „hard reload” műveletre fenntartani, nem CRUD utáni automatikus
-    lépésként.
--   A róka-logok (róka1/2/3/4) nagyon jól láthatóvá teszik a registry
-    pipeline-t; érdemes ezt a mintát más kritikus útvonalakon is
-    alkalmazni.
+-   [💡] A „nyers” Qt-view-k (QTreeView, QTableView, stb.) fölé érdemes
+    mindig egy panelt tenni, amely a layoutot és a státusz-widgeteket
+    kezeli – így a view tiszta marad, a layout pedig rugalmas.
+-   [💡] Az overlayek egységes kezelése (Presenter hozza létre,
+    view/panel csak fogadja) nagyon jól skálázódik, és auditálhatóvá
+    teszi a repoCount/visibleRows logikát.
+-   [💡] A logban megjelenő OverlayIconWidget::updateOverlayState2 sorok
+    kiváló diagnosztikai eszközt adnak: akkor is látjuk, hogy a logika
+    fut, ha a widget vizuálisan eltűnik.
+-   [💡] A markReady() jellegű flag-ek hasznosak a Presenter-oldali „ne
+    frissíts, amíg a view nincs kész” típusú versenyhelyzetek
+    elkerülésére.
+-   [💡] A MaterialRequirements toronyban érdemes lesz a
+    CalculationModes mintáját követni: Presenter → dialógus + jel,
+    Manager → domain-objektum + registry, így a két torony viselkedése
+    taníthatóan azonos lesz.
+-   [💡] A NeedCalculationDetail CSV hiánya jó jelölt egy „baseline üres
+    fájl” vagy „soft-fallback” megoldásra, hogy a log ne legyen tele
+    figyelmeztetésekkel fejlesztői környezetben.
 
 ------------------------------------------------------------------------
-
-
-***
-***
-****
-
-
-Így van, Zoltán — ez egy igazi mókus‑hadművelet nap volt, és rengeteg
-fontos hibát sikerült feltárni.
-Összeszedem neked pontokba rendezve, tisztán, átláthatóan, hogy lásd a
-teljes képet.
-
-------------------------------------------------------------------------
-
-🧩 A mai napon feltárt problémák – összefoglaló, pontokba szedve
-
-1) Végtelen rekurzió a ProductRegistry update‑workflow-ban
-
-Tünet: Segmentation fault, QString refcount crash.
-Ok:
-- ProductRegistry::update() → updateWithWorkflow()
-- CrudWorkflowMixin::updateWithWorkflow() → reg.update()
-- ami újra ProductRegistry::update() → végtelen ciklus.
-Megoldás:
-- A workflow közvetlenül a CrudMixin update‑jét hívja, nem a host public
-API‑ját.
-
-------------------------------------------------------------------------
-
-2) A NeedCalculationRegistry nem volt része a startup pipeline-nak
-
-Tünet:
-- A registry induláskor üres.
-- A mókus mód eltűnik a táblázatból.
-- A UI nem látja a registry változásait.
-Ok:
-- A StartupManager NEM tölti be a NeedCalculation CSV‑t.
-Megoldás:
-- initNeedCalculationRegistry() és initNeedCalculationDetailRegistry()
-hozzáadása a startup pipeline‑hoz.
-
-------------------------------------------------------------------------
-
-3) A CalculationModesManager::reloadAll() minden CRUD után felülírta a registryt
-
-Tünet:
-- A mókus mód megjelenik → majd azonnal eltűnik.
-- A táblázat nem frissül.
-- A registry UUID‑jei minden reload után megváltoznak.
-Ok:
-- A reloadAll() újraolvassa a CSV‑t, és új UUID‑eket generál.
-Megoldás:
-- A reloadAll() csak programindításkor fusson.
-- CRUD után csak refreshForProduct() fusson.
-
-------------------------------------------------------------------------
-
-4) A NeedCalculationRepository nem írta ki a fájl nevét a logba
-
-Tünet:
-- Nehéz követni, melyik CSV-be ment.
-Ok:
-- A save() és load() logok nem tartalmazták a fájl elérési útját.
-Megoldás:
-- Log kiegészítése: … → /path/to/needcalculations.csv.
-
-------------------------------------------------------------------------
-
-5) A CalculationModesView táblázata nem frissült registry változásra
-
-Tünet:
-- A mókus mód nem jelent meg a táblázatban.
-Ok:
-- A táblázat csak refreshForProduct() hívásra frissül.
-- A reloadAll() felülírta a registryt, de a UI nem kapott eseményt.
-Megoldás:
-- A registry notifyItemsChanged eseménye most már helyesen fut.
-- A reloadAll() eltávolítása után a táblázat frissülni fog.
-
-------------------------------------------------------------------------
-
-6) A NeedCalculationRepository load() új UUID‑eket generált minden betöltéskor
-
-Tünet:
-- A registryben lévő entitások ID‑jei minden reload után megváltoztak.
-- A UI elvesztette a kijelölést.
-Ok:
-- A CSV nem tartalmaz ID mezőt.
-- A load() minden sorhoz új UUID‑et generál.
-Megoldás:
-- A reloadAll() eltávolítása után ez már nem okoz problémát.
-- (Később érdemes lehet ID‑t is menteni.)
-
-------------------------------------------------------------------------
-
-7) A NeedCalculationDetailRegistry CSV hiánya warningot dobott
-
-Tünet:
-- Warning a logban: needcalc_details.csv not found.
-Ok:
-- A fájl még nem létezik.
-Megoldás:
-- Ez normális, amíg nincs detail adat.
-
-------------------------------------------------------------------------
-
-🟢 Összegzés egy mondatban
-
-A mai napon három nagy hibát sikerült megtalálni és megérteni:
-
--   ProductRegistry rekurzió
--   NeedCalculationRegistry nem töltődött be induláskor
--   CalculationModesManager reloadAll() felülírta a registryt
-
-Mindhárom kritikus volt, és mindháromra megvan a tiszta, stabil
-megoldás.
-
-------------------------------------------------------------------------
-
-Ha szeretnéd, a következő lépésben összerakom a hivatalos patch‑listát,
-vagy mehetünk tovább a mókus‑hadművelet következő moduljára.
-
-
-⏱ Mai napi aktivitás – óránkénti ASCII grafikon (20:00–21:00)
-
-20:00 |####++##++..|
-
-------------------------------------------------------------------------
-
-🎯 A mai (2026-01-12 20:56) munka egzakt eredménye – kategóriákba
-rendezve
-
-🟦 Hook-lánc diagnosztika (Róka-hadművelet) Érintett fájlok: -
-common/registry/base/registry_engine_base.cpp -
-common/registry/barcode/barcode_index_mixin.h -
-materials/registry/material_registry.h -
-materials/registry/material_registry.cpp -
-products/registry/product_registry.h -
-products/registry/product_registry.cpp -
-barcodes/registry/barcode_registry.h - (logfilek:
-log_20260112_192716.txt, events_20260112_192716.txt – futási bizonyíték)
-
-Mai eredmények: - A Róka-hadművelet zInfo-alapú logjai bevezették a
-teljes hook-lánc diagnosztikát: róka1 (EngineBase belép), róka2
-(EngineBase kilép), róka3 (BarcodeIndexMixin::buildBarcodeIndex), róka4
-(konkrét registry onItemsChanged() override). - Futási logok alapján
-bizonyítást nyert, hogy: - MaterialRegistry és ProductRegistry esetén a
-mixin hook (róka3) lefut. - BarcodeRegistry esetén a mixin hook NEM fut,
-ami architekturális eltérést és hiányos hook-láncot jelez. - A logokból
-kiolvasható, hogy a RegistryEngineBase működése stabil, a probléma a
-BarcodeRegistry + mixin kapcsolatnál jelentkezik.
-
-Kategória: ➡️ hook-diagnosztika / futásközbeni bizonyítás
-
-🟦 Barcode modul szerepének feltárása Érintett fájlok: -
-barcodes/registry/barcode_registry.h -
-barcodes/registry/barcode_registry.cpp -
-barcodes/model/barcode_record.h -
-barcodes/repository/barcode_repository.h -
-barcodes/repository/barcode_repository.cpp -
-barcodes/validator/barcode_validator.h -
-barcodes/validator/barcode_validator.cpp -
-barcodes/helpers/barcode_collision_helper.h -
-barcodes/helpers/barcode_collision_helper.cpp
-
-Mai eredmények: - Teljes mentális modell épült a barcodes modulról: -
-BarcodeRecord mint auditált életút-modell (code, entityType, entityId,
-introducedAt, retiredAt, status). - BarcodeRepository mint háromlépcsős
-CSV-adapter (Convert → Validate → Build → Assemble + Export). -
-BarcodeValidator mint központi kapu az új barcodes regisztrálásához és
-nyugdíjazásához. - BarcodeCollisionHelper mint emberi-érthető,
-RegistryManager-t is bevonó ütközésreportáló. - Rögzítésre került, hogy
-a BarcodeRegistry nem domain registry, hanem globális életút-könyvelő
-(ledger), ezért természetesen eltér a Material/Product registryk
-szerepétől. - Az is kiderült, hogy a jelenlegi CrudMixin-alapú felépítés
-nem fejezi ki jól a ledger-szerepet, és a BarcodeRegistry „kilógásának”
-oka valójában egy félkész architekturális átmenet.
-
-Kategória: ➡️ domén-feltárás / modul-szintű analízis
-
-🟦 Architekturális dokumentáció és modernizálási tervek Érintett
-„fájlok” (létrehozandó doksik a docs/ könyvtárba): -
-docs/barcodes_module_overview.md - docs/collector_mixin_update_plan.md -
-docs/barcode_registry_modernization_plan.md
-
-Mai eredmények: - Elkészült egy részletes barcodes_module_overview.md
-koncepció: - bemutatja a barcodes modul minden fő komponensét és azok
-szerepét, - expliciten rögzíti a BarcodeRegistry mint globális ledger
-szerepét, - tisztázza, miért nem kell rá BarcodeIndexMixin /
-IdLookupMixin. - Elkészült egy végrehajtható terv a CollectorMixin
-update-támogatással való kibővítésére (collector_mixin_update_plan.md),
-külön kiemelve: - szükséges Host-szerződéseket (beforeUpdate,
-afterUpdate, onUpdateLog, persistRegistry), - a remove hiányának tudatos
-vállalását. - Elkészült egy végrehajtható, lépésről lépésre dokumentált
-modernizálási terv a BarcodeRegistry-hez
-(barcode_registry_modernization_plan.md): - dedikált BarcodeLedgerMixin
-bevezetése, - CrudMixin helyett CollectorMixin használata, - a jelenlegi
-hookok és workflow fokozatos átemelése mixinbe, - végső cél-architektúra
-rögzítése.
-
-Kategória: ➡️ architektúra-dizájn / dokumentáció / jövőbeli refaktor
-roadmap
-
-🟩 Összegzés – a mai nap 3 nagy eredménye - A hook-lánc futásának
-objektív, log-alapú bizonyítása (hol teljes, hol szakad meg). - A
-barcodes modul és különösen a BarcodeRegistry domén-szerepének mély,
-írásban rögzített feltárása. - Egy tiszta, végrehajtható modernizálási
-terv megszületése CollectorMixin + dedikált BarcodeLedgerMixin irányába,
-a CrudMixin-ről való leválással együtt.
-
-------------------------------------------------------------------------
-
-📝 Mai nap összefoglalója
-
--   [✅ ELKÉSZÜLT] A Róka-hadművelet logjai (róka1–4) alapján
-    rekonstruáltad és bizonyítottad a RegistryEngineBase ↔ mixin ↔
-    registry hook-lánc viselkedését, és láthatóvá tetted a
-    BarcodeRegistry eltérését.
--   [✅ ELKÉSZÜLT] Teljesen feltártad a barcodes modul szerkezetét és
-    szerepét (BarcodeRecord, BarcodeRepository, BarcodeValidator,
-    BarcodeCollisionHelper, BarcodeRegistry), és domén-nyelven is
-    megfogalmaztad, mit csinál.
--   [✅ ELKÉSZÜLT] Megszületett a barcodes modulhoz egy részletes,
-    tokenbarát architekturális overview-doksi terve
-    (barcodes_module_overview.md).
--   [✅ ELKÉSZÜLT] Megszületett egy konkrét, pontokba szedett terv a
-    CollectorMixin update-támogatásának bevezetésére
-    (collector_mixin_update_plan.md).
--   [✅ ELKÉSZÜLT] Megszületett egy konkrét, pontokba szedett
-    modernizálási terv a BarcodeRegistry-hez, dedikált
-    BarcodeLedgerMixin-nel és CollectorMixin integrációval
-    (barcode_registry_modernization_plan.md).
--   [🚧 HALADT] A BarcodeRegistry tényleges kód-szintű modernizálása
-    (mixin csere, workflow átemelés) még nem indult el, de a terv kész,
-    végrehajtható.
--   [🚧 HALADT] A CollectorMixin tényleges átalakítása (update
-    beépítése) még nem történt meg, de a szerződés és a szükséges
-    lépések már tiszták.
-
-------------------------------------------------------------------------
-
-🐞 BUG lista (életciklus-kezeléssel)
-
--   [🐞 BUG] Hiányos hook-lánc a BarcodeRegistry és mixinek között
-    Leírás: A futási logok alapján a MaterialRegistry és ProductRegistry
-    esetén lefut a BarcodeIndexMixin::buildBarcodeIndex (róka3), míg a
-    BarcodeRegistry esetén nem. A BarcodeRegistry nem használja a
-    mixin-architektúrát (nincs BarcodeIndexMixin, CollectorMixin helyett
-    CrudMixin), ezért a hook-lánc architekturálisan megakad ezen az
-    ágon.
-    Állapot: újonnan azonosított, architekturális jellegű hiba. Javítási
-    irány: dedikált BarcodeLedgerMixin + CollectorMixin-re való átállás.
-
--   [🐞 BUG] CollectorMixin koncepciója nem teljes: hiányzó update
-    use-case
-    Leírás: a gyűjtő táblákról korábban azt feltételeztük, hogy nincs
-    update, csak append. A BarcodeRegistry és a valós hibajavítási
-    igények alapján kiderült, hogy a Collector jellegű registrykben
-    igenis szükség van update-re (életút frissítés, hibajavítás),
-    miközben remove továbbra sem kell.
-    Állapot: újonnan azonosított, tervezési hiba. Javítási irány:
-    CollectorMixin bővítése update-tel, egységes, auditálható
-    workflow-val.
-
-(Jelenleg egyik hiba sem [✅ KÉSZ], mindkettő terv szintjén
-előkészített, de még nem implementált.)
-
-------------------------------------------------------------------------
-
-milyen ötletek születtek
-Ma megszületett az az ötlet, hogy a BarcodeRegistry-t nem kivételként,
-hanem tudatosan külön típusú registryként kell kezelni: globális
-ledgerként, amely saját, dedikált mixint kap (BarcodeLedgerMixin).
-Emellett átkristályosodott a CollectorMixin szerepe: nem a „soha nincs
-update”, hanem a „nincs remove, de lehet update” a valódi definíció.
-Ötletként megjelent az is, hogy a docs/ könyvtárba olyan tokenbarát,
-architekturális overview-k kerüljenek, amelyeket te vagy egy másik AI is
-fel tud használni későbbi refaktorokhoz.
-
-milyen problémák merültek fel
-A fő probléma az volt, hogy a BarcodeRegistry viselkedése látszólag
-kilógott a Material/Product registryk architektúrájából, és a hook-lánc
-logok is ezt a szakítást mutatták. Ez kezdetben úgy tűnhetett, mintha
-egy „random kivétel” lenne, ami aláássa az egységes
-registry-mentálmodellt. További probléma, hogy a CollectorMixin eredeti,
-update nélküli koncepciója nem illeszkedett a valós, hibajavítással és
-életút-módosítással járó use-case-ekhez.
-
-milyen döntések születtek
-Döntés született arról, hogy a BarcodeRegistry-t ledgerként
-pozicionálod, és ehhez dedikált mixint tervezel (BarcodeLedgerMixin), a
-CrudMixin helyett CollectorMixin-re építve. Eldőlt, hogy a
-CollectorMixin koncepciója frissül: egyetlen CollectorMixin lesz, amely
-támogatja az update-et, de továbbra sem hoz be remove-ot. Döntés
-született arról is, hogy a barcodes modul szerepét és a modernizálási
-terveket írásban, doc-fájlok formájában rögzíted, hogy a jövőbeni
-implementációk token- és emberbarát referenciát kapjanak.
-
-------------------------------------------------------------------------
-
-📁 Érintett fájlok / modulok
-
--   common/registry/base/registry_engine_base.cpp
-    Rövid róka-logok kerültek be az onItemsChanged() elejére és végére
-    (róka1/róka2), hogy a RegistryEngineBase hook-lánc belépési és
-    kilépési pontja futás közben is jól látható legyen.
-
--   common/registry/barcode/barcode_index_mixin.h
-    Kiegészült egy zInfo-alapú diagnosztikai loggal a
-    buildBarcodeIndex() elején (róka3), így bizonyítható, mikor épül
-    újra az index, és mely registryk hívják meg ténylegesen a mixin
-    hookját.
-
--   materials/registry/material_registry.h /
-    materials/registry/material_registry.cpp
-    Bevezetésre került egy explicit onItemsChanged() override (róka4),
-    amely logol és továbbhívja a base implementációt. Ez tette
-    láthatóvá, hogy a MaterialRegistry része a teljes hook-láncnak, és
-    mikor kap értesítést.
-
--   products/registry/product_registry.h /
-    products/registry/product_registry.cpp
-    A MaterialRegistry-hez hasonlóan explicit onItemsChanged() override
-    született, a róka4 loggal és base-hívással együtt, ami a
-    ProductRegistry hook-láncba illeszkedését bizonyítja.
-
--   barcodes/registry/barcode_registry.h /
-    barcodes/registry/barcode_registry.cpp
-    Róka4-es onItemsChanged() override került be (log + base hívás), ami
-    megmutatja, hogy a BarcodeRegistry is kap értesítést, ugyanakkor a
-    futási logokból kiderült: nála a mixin hook (róka3) nem fut, mert
-    architekturálisan eltér (CrudMixin, nincs BarcodeIndexMixin /
-    CollectorMixin).
-
--   barcodes/model/barcode_record.h
-    Ma inkább elemzettük, mint módosítottuk: rögzítetted mentálisan,
-    hogy ez a struktúra a globális életút-modell (ledger-elem), nem
-    pedig egyszerű mező.
-
--   barcodes/repository/barcode_repository.{h,cpp}
-    A kódot végigelemezve rögzítetted a háromlépcsős import
-    (Convert–Validate–Build–Assemble) szerepét, és a CSV-szerződés
-    stabil voltát. Ma nem került bele új logika, de a doksi-tervekben
-    már helyet kapott.
-
--   barcodes/validator/barcode_validator.{h,cpp}
-    Elemzés szintjén rögzítetted, hogy ez a modul a központi kapu az új
-    barcodes regisztrációjához, és hogy a globális uniqueness ellenőrzés
-    most itt történik, a BarcodeRegistry-re támaszkodva.
-
--   barcodes/helpers/barcode_collision_helper.{h,cpp}
-    Feltérképezted, hogyan épít emberi, domain-szintű ütközésüzenetet,
-    RegistryManager-rel karöltve, és hogyan illeszkedik a CSV import
-    hibakezelésébe.
-
--   (Létrehozandó) docs/barcodes_module_overview.md,
-    docs/collector_mixin_update_plan.md,
-    docs/barcode_registry_modernization_plan.md
-    Ma ezek koncepcionális tartalma készült el: a modul overview, a
-    CollectorMixin update-terve, és a BarcodeRegistry modernizálási
-    terv. Ezek a következő lépésben kerülnek ténylegesen a repo-ba.
-
-------------------------------------------------------------------------
-
-💡 Új ötletek / megfigyelések
-
--   A BarcodeRegistry nem kivétel, hanem másik registry-típus: globális
-    ledger, amelynek saját mixinre van szüksége, nem a Material/Product
-    mixinek „nyújtott változatára”.
--   A CollectorMixin valódi definíciója: nem az, hogy „nincs update”,
-    hanem az, hogy „nincs remove, de lehet update”, különösen
-    életút-táblák esetén.
--   A BarcodeIndexMixin csak domain-entitásokra értelmes, ahol a barcode
-    mező egy attribútum, nem maga az entitás identitása.
--   A hook-lánc diagnosztika (róka1–4) tökéletes eszköz arra, hogy
-    architekturális eltéréseket futási időben is bizonyítani lehessen,
-    nem csak kódból kikövetkeztetni.
--   Érdemes a docs/ könyvtárat tudatosan AI-olvasóbarát overview-kkal
-    bővíteni, hogy jövőbeli refaktoroknál egy új „gép-összefoglaló” is
-    azonnal képbe kerülhessen.
--   A BarcodeRegistry modernizálása (CollectorMixin +
-    BarcodeLedgerMixin) nem csak technikai tisztítás, hanem domén-szintű
-    önazonosság: a kód struktúrája végre tükrözni fogja, hogy ez egy
-    életút-könyvelő ledger.

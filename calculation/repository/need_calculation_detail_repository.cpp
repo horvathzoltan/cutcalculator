@@ -19,16 +19,17 @@ NeedCalculationDetailRepository::convertRowToRow(
     const QVector<QString>& parts,
     CsvImporter::FileContext& ctx)
 {
-    if (parts.size() < 3) {
+    if (parts.size() < 4) {
         ctx.addError(ctx.currentLineNumber(),
-                     "⚠️ Kevés mező (3 szükséges: needCalculationBarcode;materialBarcode;formula)");
+                     "⚠️ Kevés mező (4 szükséges: productBarcode;modeName;materialBarcode;formula)");
         return std::nullopt;
     }
 
     Row row {
-        .needCalculationBarcode = parts[0].trimmed(),
-        .materialBarcode        = parts[1].trimmed(),
-        .formula                = parts[2].trimmed()
+        .productBarcode  = parts[0].trimmed(),
+        .modeName        = parts[1].trimmed(),
+        .materialBarcode = parts[2].trimmed(),
+        .formula         = parts[3].trimmed()
     };
 
     return CsvImporter::AuditedRow<Row>{
@@ -45,14 +46,17 @@ NeedCalculationDetailRepository::validateRow(const Row& row, int lineNumber)
 {
     QVector<CsvImporter::RowError> errors;
 
-    if (row.needCalculationBarcode.isEmpty())
-        errors.append({ lineNumber, "⚠️ Hiányzó needCalculationBarcode", row.needCalculationBarcode, row.formula });
+    if (row.productBarcode.isEmpty())
+        errors.append({ lineNumber, "⚠️ Hiányzó productBarcode", row.productBarcode, row.formula });
+
+    if (row.modeName.isEmpty())
+        errors.append({ lineNumber, "⚠️ Hiányzó modeName", row.productBarcode, row.formula });
 
     if (row.materialBarcode.isEmpty())
         errors.append({ lineNumber, "⚠️ Hiányzó materialBarcode", row.materialBarcode, row.formula });
 
     if (row.formula.isEmpty())
-        errors.append({ lineNumber, "⚠️ Hiányzó formula", row.needCalculationBarcode, row.formula });
+        errors.append({ lineNumber, "⚠️ Hiányzó formula", row.productBarcode, row.formula });
 
     return errors;
 }
@@ -70,20 +74,34 @@ NeedCalculationDetailRepository::buildFromRow(
     if (!rowErrors.isEmpty())
         return std::nullopt;
 
-    // 🔥 Reláció feloldása: NeedCalculation barcode → UUID
-    const auto* calc =
-        NeedCalculationRegistry::instance().findByName(row.needCalculationBarcode);
+    // 1) Product lookup
+    const auto* product =
+        ProductRegistry::instance().findByBarcode(row.productBarcode);
 
-    if (!calc) {
+    if (!product) {
         ctx.addError(ctx.currentLineNumber(),
-                     QString("⚠️ Ismeretlen NeedCalculation barcode: %1")
-                         .arg(row.needCalculationBarcode),
-                     row.needCalculationBarcode,
+                     QString("⚠️ Ismeretlen productBarcode: %1")
+                         .arg(row.productBarcode),
+                     row.productBarcode,
                      row.formula);
         return std::nullopt;
     }
 
-    // 🔥 Reláció feloldása: Material barcode → UUID
+    // 2) NeedCalculation lookup (productId + modeName)
+    const auto* calc =
+        NeedCalculationRegistry::instance()
+            .findByProductAndName(product->id, row.modeName);
+
+    if (!calc) {
+        ctx.addError(ctx.currentLineNumber(),
+                     QString("⚠️ Ismeretlen NeedCalculation: %1 / %2")
+                         .arg(row.productBarcode, row.modeName),
+                     row.modeName,
+                     row.formula);
+        return std::nullopt;
+    }
+
+    // 3) Material lookup
     const auto* mat =
         MaterialRegistry::instance().findByBarcode(row.materialBarcode);
 
@@ -159,15 +177,25 @@ bool NeedCalculationDetailRepository::save(const QVector<NeedCalculationDetail>&
     QTextStream out(&file);
     out.setEncoding(QStringConverter::Utf8);
 
-    out << "needCalculationBarcode;materialBarcode;formula\n";
+    out << "productBarcode;modeName;materialBarcode;formula\n";
 
     for (const auto& d : data) {
         const auto* calc = NeedCalculationRegistry::instance().findById(d.needCalculationId);
         const auto* mat  = MaterialRegistry::instance().findById(d.materialId);
 
-        if (calc && mat) {
-            out << calc->name << ";" << mat->barcode << ";" << d.formula << "\n";
-        }
+        if (!calc || !mat)
+            continue;
+
+        const auto* product =
+            ProductRegistry::instance().findById(calc->productId);
+
+        if (!product)
+            continue;
+
+        out << product->barcode << ";"
+            << calc->name << ";"
+            << mat->barcode << ";"
+            << d.formula << "\n";
     }
 
     zInfo(QString("💾 NeedCalculationDetail saved: %1 sor").arg(data.size()));

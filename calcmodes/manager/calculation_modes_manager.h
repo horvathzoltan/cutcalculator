@@ -3,6 +3,7 @@
 #include <QObject>
 #include <QUuid>
 
+
 #include "calcmodes/view/calculation_modes_view.h"
 #include "calcmodes/registry/need_calculation_registry.h"
 #include "calculation/registry/need_calculation_detail_registry.h"
@@ -33,7 +34,7 @@ public:
     /* ============================================================
      * 🧩 Public API
      * ============================================================ */
-    void refreshForProduct(const QUuid& productId,
+    QVector<CalculationModesView::ModeRow> refreshForProduct(const QUuid& productId,
                            const QString& productName,
                            const QString& productBarcode);
 

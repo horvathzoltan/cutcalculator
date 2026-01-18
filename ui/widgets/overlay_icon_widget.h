@@ -45,6 +45,8 @@ public:
     void setIconSize(int px);
 
     void setLogicalSize(int px);
+
+    void updateOverlayState2(int repoCount, int totalRows);
 protected:
     void paintEvent(QPaintEvent* e) override;
 

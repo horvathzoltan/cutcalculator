@@ -69,4 +69,6 @@ signals:
                                const QString& name,
                                const QString& barcode);
 
+    void treeStatsChanged(int repoCount, int visibleRows);
+
 };

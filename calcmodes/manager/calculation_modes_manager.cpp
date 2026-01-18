@@ -46,7 +46,8 @@ void CalculationModesManager::connectSignals() {
      * ➕ Új mód hozzáadása
      * ------------------------------ */
     connect(_view, &CalculationModesView::request_add_mode,
-            this, [this](const QUuid& productId) {
+            this, [this](const QUuid& productId, const QString& modeName) {
+
 
                 // 🧪 Duplikációs ellenőrzés: productId + name egyedisége
                 auto duplicateCheck = [&](const QString& name) {
@@ -58,24 +59,34 @@ void CalculationModesManager::connectSignals() {
                 };
 
                 // 🎨 Dialógus megnyitása
-                ModeNameDialog dlg(_view, "", duplicateCheck);
-                if (dlg.exec() != QDialog::Accepted)
-                    return;
+                // ModeNameDialog dlg(_view, "", duplicateCheck);
+                // if (dlg.exec() != QDialog::Accepted)
+                //     return;
 
-                const QString name = dlg.value();
-                if (name.isEmpty())
-                    return;
+                 //const QString name = dlg.value();
+                // if (name.isEmpty())
+                //     return;
 
-                // 📦 Új entitás
-                NeedCalculation c;
-                c.id = QUuid::createUuid();
-                c.productId = productId;
-                c.name = name;
+                // // 📦 Új entitás
+                // NeedCalculation c;
+                // c.id = QUuid::createUuid();
+                // c.productId = productId;
+                // c.name = name;
 
-                if (NeedCalculationRegistry::instance().insert(c)) {
-                    zEventINFO(QString("➕ New mode added: %1").arg(name));
-                    refreshForProduct(_currentProductId, _currentProductName, _currentProductBarcode);
+                // if (NeedCalculationRegistry::instance().insert(c)) {
+                //     zEventINFO(QString("➕ New mode added: %1").arg(name));
+                // }
+
+                NeedCalculation nc;
+                nc.id = QUuid::createUuid();
+                nc.productId = productId;
+                nc.name = modeName;
+                //NeedCalculationRegistry::instance().insert(nc);
+                //NeedCalculationRepository::save();
+                if (NeedCalculationRegistry::instance().insert(nc)) {
+                     zEventINFO(QString("➕ New mode added: %1").arg(modeName));
                 }
+
             });
 
     /* ------------------------------
@@ -85,7 +96,6 @@ void CalculationModesManager::connectSignals() {
             this, [this](const QUuid& id) {
                 if (NeedCalculationRegistry::instance().remove(id)) {
                     zEventINFO("🗑️ Mode removed");
-                    refreshForProduct(_currentProductId, _currentProductName, _currentProductBarcode);
                 }
             });
 
@@ -121,7 +131,6 @@ void CalculationModesManager::connectSignals() {
 
                 if (NeedCalculationRegistry::instance().update(updated)) {
                     zEventINFO(QString("✏️ Mode renamed: %1 → %2").arg(old->name, newName));
-                    refreshForProduct(_currentProductId, _currentProductName, _currentProductBarcode);
                 }
             });
 }
@@ -129,7 +138,7 @@ void CalculationModesManager::connectSignals() {
 /* ============================================================
  * 🧩 🎨 Nézet frissítése
  * ============================================================ */
-void CalculationModesManager::refreshForProduct(const QUuid& productId,
+QVector<CalculationModesView::ModeRow> CalculationModesManager::refreshForProduct(const QUuid& productId,
                                                 const QString& productName,
                                                 const QString& productBarcode)
 {
@@ -154,8 +163,17 @@ void CalculationModesManager::refreshForProduct(const QUuid& productId,
         rows.append({ m.id, productId, m.name, detailCount });
     }
 
-    _view->set_current_product(productId, productName, productBarcode);
-    _view->set_modes(rows);
+    //_view->set_current_product(productId, productName, productBarcode);
+    // _view->set_modes(rows);
+
+    // int repoCount = NeedCalculationRegistry::instance().size();
+    // int visibleRows = rows.size();
+    // _view->updateOverlay(repoCount, visibleRows);
+
+    // zEventINFO(QString("🔄 Modes refreshed: %1 (%2)").arg(productName, productBarcode));
 
     zEventINFO(QString("🔄 Modes refreshed: %1 (%2)").arg(productName, productBarcode));
+    return rows;
 }
+
+

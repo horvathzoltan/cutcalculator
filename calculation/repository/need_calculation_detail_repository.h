@@ -7,6 +7,7 @@
 #include "calculation/model/need_calculation_detail.h"
 #include "calcmodes/registry/need_calculation_registry.h"
 #include "materials/registry/material_registry.h"
+#include "products/registry/product_registry.h"
 
 class NeedCalculationDetailRepository {
 public:
@@ -15,7 +16,8 @@ public:
 
 private:
     struct Row {
-        QString needCalculationBarcode;
+        QString productBarcode;
+        QString modeName;
         QString materialBarcode;
         QString formula;
     };

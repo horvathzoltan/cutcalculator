@@ -6,7 +6,6 @@
 #include <QClipboard>
 
 /**
- * Hunglish megjegyzés:
  * - C++20 + Qt6.10-compatible implementáció.
  * - A view felelőssége csak a megjelenítés és UI jelek – a mentés/sync a manager/controller dolga.
  */
@@ -26,6 +25,15 @@ MaterialRequirementsView::MaterialRequirementsView(QWidget* parent)
     // Kijelölés változás jelzése – toolbar enable/disable
     connect(_table, &QTableWidget::itemSelectionChanged,
             this, &MaterialRequirementsView::on_selection_changed);
+
+    //updateOverlayState2();
+
+   // _registryToken = {};
+
+    // _registryToken =
+    //     NeedRuleRegistry::instance().subscribeItemsChangedToken([this]() {
+    //         updateOverlayState2();
+    //     });
 }
 
 void MaterialRequirementsView::setup_table() {
@@ -98,6 +106,8 @@ void MaterialRequirementsView::add_requirement(const RequirementRow& data) {
     _table->setItem(row, 1, material_item);
 
     apply_row_visuals(row, data);
+
+    //updateOverlayState2();
 }
 
 void MaterialRequirementsView::remove_selected() {
@@ -119,7 +129,7 @@ void MaterialRequirementsView::remove_selected() {
     emit request_remove_requirement(product_id, product_barcode, material_id, material_barcode);
 
     // * a view optimista törlést végez, a manager visszatölt, ha kell
-    _table->removeRow(row);
+    //_table->removeRow(row);
 }
 
 void MaterialRequirementsView::set_current_product(const QUuid& product_id,
@@ -131,10 +141,12 @@ void MaterialRequirementsView::set_current_product(const QUuid& product_id,
     _current_product_barcode = product_barcode;
 
     // UX: clipboard friendly – egy kattintás, és a barcode copyzható (spacebar trükk nélkül)
-    QGuiApplication::clipboard()->setText(product_barcode);
+    // QGuiApplication::clipboard()->setText(product_barcode);
 
     // * jelezzük, hogy add gomb engedélyezhető
-    emit request_add_requirement(_current_product_id, _current_product_barcode);
+    //emit request_add_requirement(_current_product_id, _current_product_barcode);
+
+    //refreshRows();
 }
 
 void MaterialRequirementsView::apply_row_visuals(int row, const RequirementRow& data) {
@@ -160,3 +172,12 @@ void MaterialRequirementsView::on_selection_changed() {
     const bool has_sel = !_table->selectedRanges().isEmpty();
     emit selection_changed(has_sel);
 }
+
+
+void MaterialRequirementsView::updateOverlay(int repoCount, int visibleRows) {
+    if (!_statusWidget) return;
+    _statusWidget->updateOverlayState2(repoCount, visibleRows);
+}
+
+
+

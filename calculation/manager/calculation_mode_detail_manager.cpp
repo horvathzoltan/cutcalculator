@@ -32,8 +32,6 @@ void CalculationModeDetailManager::connectSignals() {
             return;
         }
         zEventINFO(QString("➕ Detail added for calcId=%1").arg(calcId.toString()));
-        // A refresh triggerelése a felhasználói élmény kedvéért:
-        refreshForCalculation(calcId, "mode");
     });
 
     connect(_view, &CalculationModeDetailView::request_remove_detail, this, [](const QUuid& detailId) {
@@ -45,14 +43,9 @@ void CalculationModeDetailManager::connectSignals() {
     });
 
     connect(_view, &CalculationModeDetailView::request_edit_formula, this, [](const QUuid& detailId) {
-        // Placeholder: itt majd formula editor dialog lesz.
-        const QString newFormula = "fixed:2";
-        if (!NeedCalculationDetailRegistry::instance().updateFormula(detailId, newFormula)) {
-            zWarning(QString("⚠️ Formula update failed for detailId=%1").arg(detailId.toString()));
-        } else {
-            zEventINFO(QString("✏️ Formula updated: %1 → %2").arg(detailId.toString(), newFormula));
-        }
+        // Presenter fogja később átadni a newFormula értékét
     });
+
 }
 
 /**
@@ -64,15 +57,23 @@ void CalculationModeDetailManager::connectSignals() {
  * - Heurisztika: fixed: prefix → kitting (📦), különben cutting (⚙️).
  * - A kész sorokat átadjuk a view-nak.
  */
-void CalculationModeDetailManager::refreshForCalculation(const QUuid& calcId, const QString& modeName) {
+QVector<CalculationModeDetailView::DetailRow> CalculationModeDetailManager::refreshForCalculation(const QUuid& calcId, const QString& modeName) {
     auto details = NeedCalculationDetailRegistry::instance().findByCalculation(calcId);
-    auto rows = makeRows(details);
+    QVector<CalculationModeDetailView::DetailRow> rows = makeRows(details);
 
-    _view->set_current_calculation(calcId, modeName);
-    _view->set_details(rows);
+    //_view->set_current_calculation(calcId, modeName);
+    // _view->set_details(rows);
 
-    zInfo(QString("🔄 Details refreshed for mode: %1, count=%2").arg(modeName).arg(rows.size()));
+    // int repoCount = NeedCalculationDetailRegistry::instance().size();
+    // int visibleRows = rows.size();
+    // _view->updateOverlay(repoCount, visibleRows);
+
+    // zInfo(QString("🔄 Details refreshed for mode: %1, count=%2").arg(modeName).arg(rows.size()));
+
+    return rows;
+
 }
+
 
 /**
  * @brief Material név és barcode feloldása. Ha nem található, jelöljük ismeretlenként.

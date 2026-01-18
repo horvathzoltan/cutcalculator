@@ -17,6 +17,8 @@ SOURCES += \
     barcodes/repository/barcode_repository.cpp \
     barcodes/validator/barcode_validator.cpp \
     calcmodes/dialogs/mode_name_dialog.cpp \
+    calcmodes/presenter/calculation_modes_presenter.cpp \
+    calculation/presenter/calculation_mode_detail_presenter.cpp \
     common/layout/layout_default_store.cpp \
     common/logger/logger_gui.cpp \
     common/snapshot/snapshot_manager.cpp \
@@ -29,6 +31,7 @@ SOURCES += \
     mainwindow.cpp \
     materials/view/color_badge.cpp \
     needs/manager/material_requirements_manager.cpp \
+    needs/presenter/material_requirements_presenter.cpp \
     needs/registry/need_rule_registry.cpp \
     needs/repository/need_rule_repository.cpp \
     needs/view/material_picker_dialog.cpp \
@@ -42,6 +45,8 @@ SOURCES += \
     calculation/service/need_calculator.cpp \
     calculation/view/calculation_mode_detail_view.cpp \
     calcmodes/view/calculation_modes_view.cpp \
+    products/presenter/product_tree_presenter.cpp \
+    products/view/product_tree_panel.cpp \
     test/material_registry_smoke_test.cpp \
     ui/widgets/overlay_icon_widget.cpp \
     workbench/view/bom_workbench.cpp \
@@ -83,7 +88,9 @@ HEADERS += \
     barcodes/helpers/barcode_collision_helper.h \
     barcodes/validator/barcode_validator.h \
     calcmodes/dialogs/mode_name_dialog.h \
+    calcmodes/presenter/calculation_modes_presenter.h \
     calcmodes/repository/need_calculation_traits.h \
+    calculation/presenter/calculation_mode_detail_presenter.h \
     common/layout/layout_default_store.h \
     common/logger/logger_gui.h \
     common/model/barcode_base.h \
@@ -130,6 +137,7 @@ HEADERS += \
     materials/view/color_badge.h \
     needs/manager/material_requirements_manager.h \
     needs/model/need_rule.h \
+    needs/presenter/material_requirements_presenter.h \
     needs/presenter/need_rule_presenter.h \
     needs/registry/need_rule_registry.h \
     needs/repository/need_rule_repository.h \
@@ -147,6 +155,8 @@ HEADERS += \
     calculation/service/need_calculator.h \
     calculation/view/calculation_mode_detail_view.h \
     calcmodes/view/calculation_modes_view.h \
+    products/presenter/product_tree_presenter.h \
+    products/view/product_tree_panel.h \
     test/material_registry_smoke_test.h \
     ui/widgets/overlay_icon_widget.h \
     workbench/view/bom_workbench.h \

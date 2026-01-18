@@ -10,36 +10,55 @@ MaterialRequirementsManager::MaterialRequirementsManager(MaterialRequirementsVie
     : QObject(parent), _view(view)
 {
     connectSignals();
+
+    _subscriptionId =
+        NeedRuleRegistry::instance().subscribeItemsChanged([this]() {
+            if (!_currentProductId.isNull())
+                refreshForProduct(_currentProductId, _currentProductName, _currentProductBarcode);
+        });
+
 }
 
 void MaterialRequirementsManager::connectSignals() {
     // Add: a view jelzi, hogy szeretne új kapcsolatot hozzáadni az aktuális producthoz
     connect(_view, &MaterialRequirementsView::request_add_requirement,
-            this, [this](const QUuid& productId, const QString& productBarcode) {
-                Q_UNUSED(productBarcode);
+             this, [this](const QUuid& productId, const QUuid& materialId) {
+
+                //Q_UNUSED(productBarcode);
 
                 // 🔍 MaterialPickerDialog – user választ anyagot
-                MaterialPickerDialog dlg(_view);
-                if (dlg.exec() == QDialog::Accepted) {
-                    auto result = dlg.result();
+                // MaterialPickerDialog dlg(_view);
+                // if (dlg.exec() == QDialog::Accepted) {
+                //     auto result = dlg.result();
 
-                    NeedRule rule;
-                    rule.leftId = productId;
-                    rule.rightId = result.material_id;
+                //     NeedRule rule;
+                //     rule.leftId = productId;
+                //     rule.rightId = result.material_id;
 
-                    // Registry insert
-                    NeedRuleRegistry::instance().insert(rule);
+                //     // Registry insert
+                //     NeedRuleRegistry::instance().insert(rule);
 
-                    // Audit log
-                    zEventINFO(QString("➕ NeedRule added: Product=%1 Material=%2")
-                                   .arg(productId.toString(), result.material_id.toString()));
+                //     // Audit log
+                //     zEventINFO(QString("➕ NeedRule added: Product=%1 Material=%2")
+                //                    .arg(productId.toString(), result.material_id.toString()));
 
-                    // CSV persist
-                    NeedRuleRepository::save();
+                //     // CSV persist
+                //     NeedRuleRepository::save();
+                // }
+                NeedRule rule;
+                rule.leftId = productId;
+                rule.rightId = materialId;
 
-                    // Refresh view
-                    refreshForProduct(productId, QString(), productBarcode);
+                if (!NeedRuleRegistry::instance().insert(rule)) {
+                    zWarning("⚠️ NeedRule insert failed");
+                    return;
                 }
+
+                /*NeedRuleRepository::save();
+                zEventINFO(QString("➕ NeedRule added: Product=%1 Material=%2")
+                               .arg(productId.toString(), materialId.toString()));*/
+
+
             });
 
     // Remove: a view jelzi a kiválasztott kapcsolat törlését
@@ -53,8 +72,8 @@ void MaterialRequirementsManager::connectSignals() {
 
                 bool ok = NeedRuleRegistry::instance().remove(productId, materialId);
                 if (ok) {
-                    zEventINFO(QString("🗑 NeedRule removed: Product=%1 Material=%2")
-                                   .arg(productId.toString(), materialId.toString()));
+                    // zEventINFO(QString("🗑 NeedRule removed: Product=%1 Material=%2")
+                    //                .arg(productId.toString(), materialId.toString()));
 
                     // CSV persist
                     NeedRuleRepository::save();
@@ -62,18 +81,7 @@ void MaterialRequirementsManager::connectSignals() {
                     zWarning(QString("⚠️ NeedRule remove failed: Product=%1 Material=%2")
                                    .arg(productId.toString(), materialId.toString()));
                 }
-
-                // Refresh az aktuális productra
-                refreshForProduct(productId, QString(), productBarcode);
             });
-}
-
-void MaterialRequirementsManager::refreshForProduct(const QUuid& productId,
-                                                    const QString& productName,
-                                                    const QString& productBarcode)
-{
-    auto rows = makeRowsForProduct(productId, productName, productBarcode);
-    _view->set_requirements(rows);
 }
 
 QVector<MaterialRequirementsView::RequirementRow>
@@ -112,3 +120,26 @@ MaterialRequirementsManager::makeRowsForProduct(const QUuid& productId,
 
     return out;
 }
+
+QVector<MaterialRequirementsView::RequirementRow> MaterialRequirementsManager::refreshForProduct(const QUuid& productId,
+                                                    const QString& productName,
+                                                    const QString& productBarcode)
+{
+    _currentProductId = productId;
+    _currentProductName = productName;
+    _currentProductBarcode = productBarcode;
+
+    QVector<MaterialRequirementsView::RequirementRow> rows =
+        makeRowsForProduct(productId, productName, productBarcode);
+
+    //_view->set_current_product(productId, productName, productBarcode);
+    //_view->set_requirements(rows);
+
+    //int repoCount = NeedRuleRegistry::instance().size();
+    //int visibleRows = rows.size();
+    //_view->updateOverlay(repoCount, visibleRows);
+
+    return rows;
+
+}
+

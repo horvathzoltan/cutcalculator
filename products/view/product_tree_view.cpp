@@ -2,6 +2,7 @@
 #include "products/view/product_tree_view.h"
 #include <QStandardItemModel>
 #include <QDebug>
+#include <QVBoxLayout>
 #include "common/logger/event_logger.h"
 #include "common/logger/logger.h"
 #include "common/utils/font_utils.h"
@@ -11,6 +12,13 @@ ProductTreeView::ProductTreeView(QWidget* parent)
     : QTreeView(parent)
 {
     FontUtils::applySafeMonospaceFont(this);
+
+    // _layout = new QVBoxLayout(this);
+    // _layout->setContentsMargins(0, 0, 0, 0);
+    // _layout->setSpacing(0);
+
+    // _layout->addWidget(this->viewport());   // a QTreeView saját viewportja
+
 }
 
 void ProductTreeView::dropEvent(QDropEvent* event) {
@@ -62,5 +70,19 @@ void ProductTreeView::dropEvent(QDropEvent* event) {
 
     emit productMoved(id, newParentId);
 }
+
+// void ProductTreeView::setStatusWidget(QWidget* w)
+// {
+//     if (_statusWidget) {
+//         _layout->removeWidget(_statusWidget);
+//         _statusWidget->setParent(nullptr);
+//     }
+
+//     _statusWidget = w;
+
+//     if (_statusWidget) {
+//         _layout->insertWidget(0, _statusWidget);
+//     }
+// }
 
 

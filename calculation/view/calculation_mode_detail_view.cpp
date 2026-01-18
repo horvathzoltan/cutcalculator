@@ -7,10 +7,13 @@ CalculationModeDetailView::CalculationModeDetailView(QWidget* parent)
 {
     auto* layout = new QVBoxLayout(this);
     layout->setContentsMargins(0,0,0,0);
+
     _table = new QTableWidget(this);
     setup_table();
     layout->addWidget(_table);
     setLayout(layout);
+
+    //updateOverlay(0, 0);
 }
 
 void CalculationModeDetailView::setup_table() {
@@ -61,5 +64,12 @@ void CalculationModeDetailView::apply_row_visuals(int row, const DetailRow& r) {
 
 void CalculationModeDetailView::set_current_calculation(const QUuid& calcId, const QString&) {
     _current_calcId = calcId;
-    emit request_add_detail(_current_calcId);
+    //emit request_add_detail(_current_calcId);
 }
+
+void CalculationModeDetailView::updateOverlay(int repoCount, int visibleRows)
+{
+    if (!_statusWidget) return;
+    _statusWidget->updateOverlayState2(repoCount, visibleRows);
+}
+

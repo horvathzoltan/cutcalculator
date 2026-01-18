@@ -541,3 +541,33 @@ QString OverlayIconWidget::emojiCacheFileName(const QString& key) const
 
     return QDir(dir).filePath(QString::fromLatin1(hash) + ".png");
 }
+
+
+void OverlayIconWidget::updateOverlayState2(int repoCount, int totalRows)
+{
+    zInfo() << "OverlayIconWidget::updateOverlayState2"
+            << "objectName =" << objectName()
+            << "repoCount =" << repoCount
+            << "totalRows =" << totalRows;
+
+    // Base emoji mindig dokumentum
+    setBaseEmoji("📄");
+
+    // --- Állapotok ---
+
+    // ❌ 1) Nincs adat a repóban → piros X
+    if (repoCount == 0) {
+        setOverlay(OverlayIconWidget::BottomRight, "❌");
+        return;
+    }
+
+    // 🔍 2) Van adat a repóban, de a UI nem mutat semmit → piros nagyító
+    if (totalRows == 0) {
+        //_statusWidget->setOverlay(OverlayIconWidget::BottomRight, "🔍", Qt::red);
+        setOverlay(OverlayIconWidget::BottomRight, "🟡");
+        return;
+    }
+
+    // 🟢 3) Van adat és látszik is → zöld pötty
+    setOverlay(OverlayIconWidget::BottomRight, "🟢");
+}

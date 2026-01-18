@@ -1,21 +1,4 @@
-Kérlek, készítsd el a mai napi ASCII aktivitásgrafikont a következő szabályokkal:
-
-⏱ Mai napi aktivitás – óránkénti ASCII grafikon (<itt legyen egy tól-ig időbélyeg>)
-
-1) A grafikon óránkénti bontású legyen.
-2) Minden óra külön sorban jelenjen meg.
-3) A sorok egymás alatt legyenek, egy blokkban.
-4) Minden karakter kb. 5 percet jelentsen.
-5) Jelölések:
-   - # = mély, intenzív architektúra
-   - + = implementálás / refaktor / kódolás
-   - . = könnyebb munka (log, riport, validálás)
-6) A grafikon a mai első üzenet időpontjától a mai utolsó üzenet időpontjáig tartson.
-7) A sorok formátuma legyen:
-   HH:00 |<ASCII aktivitás>|
-8) A grafikon legyen tiszta, áttekinthető, egységes szélességű.
-
-A grafikon után kérlek, készíts egy EXAKT, MÓDOSULT FÁJL-ALAPÚ, KATEGORIZÁLT,
+A kérlek, készíts egy EXAKT, MÓDOSULT FÁJL-ALAPÚ, KATEGORIZÁLT,
 PONTOKBA SZEDETT összefoglalót a mai munkáról.
 
 A cél:

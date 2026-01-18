@@ -98,6 +98,10 @@ void ProductTreeManager::populate() {
     }
 
     _view->expandAll();
+
+    if (_view && _model)
+        emit treeStatsChanged(ProductRegistry::instance().size(),
+                              _model->rowCount());
 }
 
 /**

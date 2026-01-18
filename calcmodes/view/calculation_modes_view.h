@@ -1,4 +1,5 @@
 #pragma once
+#include "common/registry/subscription_token.h"
 #include "ui/widgets/overlay_icon_widget.h"
 #include <QWidget>
 #include <QTableWidget>
@@ -36,10 +37,18 @@ public:
     std::optional<QUuid> currentModeId() const;
 
     void setStatusWidget(OverlayIconWidget* w) { _statusWidget = w; }
-    void updateOverlayState();
+    void updateOverlay(int repoCount, int visibleRows);
+
+
+    bool isReady() const { return _ready; }
+    void markReady() { _ready = true; }
+
+private:
+    bool _ready = false;
+
 signals:
     void selection_changed(std::optional<QUuid> modeId);
-    void request_add_mode(const QUuid& productId);
+    void request_add_mode(const QUuid& productId, const QString& modeName);
     void request_remove_mode(const QUuid& modeId);
     void request_rename_mode(const QUuid& modeId);
     void current_product_changed(const QUuid& productId,
@@ -54,6 +63,7 @@ private:
     QUuid _current_productId;
 
     OverlayIconWidget* _statusWidget = nullptr;
+
 
     void setup_table();
     void on_selection_changed();
