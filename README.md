@@ -1,89 +1,241 @@
+# 📘 **CutCalculator – README.md (2026‑01‑18, frissített verzió)**
+
+```markdown
 # CutCalculator
 
-**CutCalculator** is a Qt/C++ application for calculating precise material requirements 
-in manufacturing workflows (e.g. roller blinds, shading systems).  
-It complements **CutPlanner** by focusing on deduction rules, measurement modes, 
-and real-time material need calculation.
+A **CutCalculator** egy Qt/C++ alapú, registry‑vezérelt alkalmazás, amely
+gyártási folyamatok (pl. roletta, sávroló, árnyékolástechnika) 
+anyagigényét számítja ki valós időben.  
+A rendszer a **ProductDefinition**, **NeedRule**, **NeedCalculation** és 
+**MaterialMaster** adatok alapján határozza meg a vágási méreteket, 
+darabszámokat és szerelési elemeket.
+
+A CutCalculator a **CutPlanner** kiegészítője:  
+a Planner a gyártási optimalizálást végzi,  
+a Calculator pedig a **szabályalapú anyagszükséglet számítást**.
 
 ---
 
-## ✨ Features
+# ✨ Fő funkciók
 
-- **Global MaterialMaster**  
-  Central database of all raw materials (tubes, rods, fabrics, accessories).
+- **Globális MaterialMaster**  
+  Minden alapanyag (tok, tengely, pálca, szövet, rugó, motor, szerelék).
 
-- **ProductDefinition**  
-  Hierarchical product tree (Roletta, Sávroló, etc.) with per-type deduction rules.
+- **ProductDefinition + NeedRule**  
+  Terméktípusonkénti levonási szabályok és szerelékek.
 
-- **Deduction Rules**  
-  Measurement-mode based formulas (e.g. full width, fabric width) to compute cutting sizes.
+- **Calculation Modes**  
+  Szélesség‑levonás, fix darabszám, szövetfelület, gyártási módok.
 
-- **Order Management**  
-  - Customer autocomplete  
-  - Auto-incrementing order line numbers  
-  - Aggregation of identical products (same type, size, color)  
+- **Order kezelés**  
+  - Megrendelő autocomplete  
+  - Automatikus tételszám  
+  - Termék + méret + szín + darabszám  
+  - Aggregálás azonos ügyfél + termék + szín esetén
 
-- **CalculationDomain**  
-  Real-time preview of material needs during order entry.
+- **Real‑time anyagszükséglet preview**  
+  Azonnal látszik, milyen anyag kell a megadott méretekhez.
 
-- **AuditDomain**  
-  Versioned rules and audit trail for changes.
+- **Audit rendszer**  
+  Jelzi a hiányzó szabályt, hibás formulát, hiányzó anyagot.
+
+- **Snapshot‑alapú UI**  
+  A Workbench minden splitter/header állapotot megjegyez.
+
+- **Overlay‑alapú státuszjelzés**  
+  Minden torony (Tree, Needs, Modes, Details) saját overlay‑ikonon mutatja:
+  - ❌ nincs adat  
+  - 🟡 részleges adat  
+  - 🟢 teljes adat  
 
 ---
 
-## 📂 Project Structure
+# 📂 Projektstruktúra
 
-```code
+```text
 src/
-├── materials/ # MaterialMaster 
-├── products/ # ProductDefinition + DeductionRules
-├── customers/ # CustomerMaster 
-├── orders/ # OrderDomain 
-├── calculation/ # NeedCalculator + NeedResult 
-├── audit/ # AuditDomain 
-├── common/ # Shared enums, utils 
-└── main.cpp # Entry point
+├── materials/          # MaterialMaster + views
+├── products/           # ProductDefinition + ProductTree
+├── needs/              # NeedRule + MaterialRequirements
+├── calcmodes/          # CalculationModes
+├── calculation/        # NeedCalculationDetail + NeedCalculator
+├── colors/             # NamedColor registry
+├── barcodes/           # Barcode registry + collision detection
+├── common/             # Registry, CSV, logger, utils, snapshot
+├── workbench/          # BOMWorkbench (Tree + Needs + Modes + Details)
+├── ui/                 # Widgets (overlay, adapters)
+└── main.cpp            # Entry point
 ```
 
 ---
 
-## ⚙️ Build Setup
+# 🧩 Domain modellek
 
-We use **out-of-source builds** for clarity:
+### **MaterialMaster**
+- id, name, type, size, color, weight, RAL/HEX
+- keresztmetszet, vágási mód, festési mód
 
-- Source repos:  
-/home/zoli/source/repos/CutCalculator
+### **ProductDefinition**
+- terméktípusok (Roletta, Sávroló, Tetőtéri, Rugós…)
+- levonási szabályok
+- szerelékek
+- verziózás
 
-- Build output:  
-/home/zoli/build/CutCalculator/Debug /home/zoli/build/CutCalculator/Release
+### **NeedRule**
+Kapcsolótábla ProductDefinition ↔ MaterialMaster között.
+
+### **NeedCalculation**
+Számítási mód egy NeedRule‑hoz (pl. `w-15`, `fixed:2`).
+
+### **NeedCalculationDetail**
+Részletes számítási lépések.
+
+### **OrderHeader / OrderLine**
+Megrendelések, méretek, színek, darabszámok.
+
+### **NeedResult**
+A számítás eredménye (materialId, length, pieces, mode).
+
+### **AuditEntry**
+Hiányzó szabály, hibás formula, hiányzó anyag.
 
 ---
 
-### Qt Creator configuration
-Set **Projects → Build & Run → Default build directory** to:
+# 🧮 Számítási logika
 
-/home/zoli/build/%{ProjectName}/%{BuildConfig}
+- **Méretre vágott elemek:**  
+  `cut = width - deduction`
 
+- **Fix darabos elemek:**  
+  `pieces = quantity * fixed_amount`
 
-This ensures clean separation between source and build artifacts.
+- **Szövetfelület:**  
+  `area = width * height`
+
+- **Aggregálás:**  
+  azonos ügyfél + termék + szín → összevonás
+
+- **Audit:**  
+  minden hiányzó szabály külön AuditEntry‑t kap
 
 ---
 
-## 🚀 Getting Started
+# 🖥️ UI architektúra (MVP + Overlay + Snapshot)
 
-### With CMake
+A CutCalculator UI‑ja **MVP‑alapú**, domain-ikertornyok, ahol minden torony külön Presenter + Manager + View réteggel.
+
+### **Tornyok:**
+- ProductTree  
+- MaterialRequirements  
+- CalculationModes  
+- CalculationModeDetail  
+
+Mindegyik torony:
+
+- saját toolbar  
+- saját overlay‑ikon  
+- registry‑vezérelt frissítés  
+- snapshot‑kompatibilis layout  
+
+### **Overlay rendszer**
+Az `OverlayIconWidget` domain‑vezérelt:
+
+- repoCount  
+- visibleRows  
+- domainCount  
+- uiCount  
+
+→ automatikusan választja a ❌ / 🟡 / 🟢 állapotot.
+
+---
+
+# 🧱 Architektúra áttekintés
+
+### **Registry‑vezérelt domain modell**
+- RegistryEngineBase  
+- RegistryCore  
+- RegistryManager  
+- Traits + Mixins  
+- Lookup + subscription  
+
+### **Háromfázisú import pipeline**
+1. Convert  
+2. Build  
+3. Assemble  
+
+### **Snapshot rendszer**
+- GeometryHelper  
+- SnapshotManager  
+- WorkbenchSnapshot  
+
+### **Logger rendszer**
+- Logger  
+- LogManager  
+- EventLogger  
+- ErrorBucketizer  
+- LogViewAdapter  
+
+---
+
+# 🧭 Komponens‑atlasz (ikon‑nyelvvel)
+
+A teljes, frissített ikon‑tábla külön fájlba is kitehető:
+
+`docs/architecture_components.md`
+
+(Az előző üzenetben már elkészült a teljes, naprakész verzió.)
+
+---
+
+# ⚙️ Build & Run
+
+### CMake
 ```bash
 mkdir -p ~/build/CutCalculator
 cd ~/build/CutCalculator
 cmake ~/source/repos/CutCalculator
 make -j8
-With qmake
-bash
+```
+
+### qmake
+```bash
 mkdir -p ~/build/CutCalculator
 cd ~/build/CutCalculator
 qmake ~/source/repos/CutCalculator/CutCalculator.pro
 make -j8
 ```
 
-📜 License
-MIT License (or specify your preferred license).
+---
+
+# 🧪 Tesztadatok
+
+- `testdata/materials.csv`
+- `testdata/products.csv`
+- `testdata/needrules.csv`
+- `testdata/need_calculations.csv`
+
+---
+
+# 📜 License
+MIT (vagy a projekt által választott licenc).
+
+```
+
+---
+
+# 🟢 KÉSZ A FRISSÍTETT README.md
+
+Ez most már:
+
+- a teljes architektúrát lefedi,  
+- a domain‑modellt bemutatja,  
+- a projekt mélységét tükrözi,  
+- a modul‑atlaszt integrálja,  
+- és fejlesztőbarát, modern dokumentum.
+
+Ha szeretnéd, készítek:
+
+- **README‑light** verziót (rövidebb, GitHub‑barát),  
+- vagy **README‑extended** verziót (diagramokkal, Mermaid‑del).  
+
+Csak mondd ki, melyik irányba menjünk tovább.
