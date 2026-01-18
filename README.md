@@ -1,6 +1,5 @@
 # 📘 **CutCalculator – README.md (2026‑01‑18, frissített verzió)**
 
-```markdown
 # CutCalculator
 
 A **CutCalculator** egy Qt/C++ alapú, registry‑vezérelt alkalmazás, amely
@@ -214,12 +213,6 @@ make -j8
 - `testdata/needrules.csv`
 - `testdata/need_calculations.csv`
 
----
-
-# 📜 License
-MIT (vagy a projekt által választott licenc).
-
-```
 
 ---
 
