@@ -1,7 +1,6 @@
 #include "calculation/registry/need_calculation_detail_registry.h"
 #include "common/registry/manager/registry_manager.h"
 #include "calculation/repository/need_calculation_detail_repository.h"
-//#include "materials/registry/material_registry.h"
 
 // --- Segédek ---
 
@@ -61,11 +60,31 @@ NeedCalculationDetailRegistry::findByCalculation(const QUuid& calcId) const
 
 // --- Domain hookok ---
 
+bool NeedCalculationDetailRegistry::beforeValidate(NeedCalculationDetail& d)
+{
+    d.formula = d.formula.trimmed();
+    return true;
+}
+
+
 bool NeedCalculationDetailRegistry::validateDomain(const NeedCalculationDetail& d) const
 {
-    return isFormulaValid(d.formula)
-    && !d.materialId.isNull()
-        && !d.needCalculationId.isNull();
+    if(!isFormulaValid(d.formula)) return false;
+    if(d.materialId.isNull()) return false;
+    if(d.needCalculationId.isNull()) return false;
+
+    const NeedCalculation *nc =
+        NeedCalculationRegistry::instance().findById(d.needCalculationId);
+
+    if(!nc) return false;
+
+    auto m = MaterialRegistry::instance().findById(d.materialId);
+    if(!m) return false;
+
+    auto p = ProductRegistry::instance().findById(nc->productId);
+    if(!p) return false;
+
+    return true;
 }
 
 bool NeedCalculationDetailRegistry::validateDuplicate(const NeedCalculationDetail& d) const

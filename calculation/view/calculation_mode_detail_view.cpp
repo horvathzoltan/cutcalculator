@@ -47,20 +47,28 @@ void CalculationModeDetailView::set_details(const QVector<DetailRow>& rows) {
     }
 }
 
-void CalculationModeDetailView::apply_row_visuals(int row, const DetailRow& r) {
+void CalculationModeDetailView::apply_row_visuals(int row, const DetailRow& r)
+{
+    if (!r.materialValid) {
+        for (int col = 0; col < _table->columnCount(); ++col) {
+            _table->item(row, col)->setBackground(QColor("#ffcccc")); // halvány piros
+        }
+        return;
+    }
+
     if (!r.formulaValid) {
-        for (int col=0; col<3; ++col) {
-            if (auto* item = _table->item(row,col)) {
-                item->setBackground(QColor("#ffcccc"));
-                item->setToolTip("⚠️ Invalid formula — edit required");
-            }
+        for (int col = 0; col < _table->columnCount(); ++col) {
+            _table->item(row, col)->setBackground(QColor("#ffe0e0"));
         }
-    } else {
-        if (auto* item = _table->item(row,2)) {
-            item->setToolTip(r.isCutting ? "Cutting request – vágási művelet" : "Kitting request – összeállítási művelet");
-        }
+        return;
+    }
+
+    // ha minden oké → alap háttér
+    for (int col = 0; col < _table->columnCount(); ++col) {
+        _table->item(row, col)->setBackground(Qt::NoBrush);
     }
 }
+
 
 void CalculationModeDetailView::set_current_calculation(const QUuid& calcId, const QString&) {
     _current_calcId = calcId;
@@ -73,3 +81,14 @@ void CalculationModeDetailView::updateOverlay(int repoCount, int visibleRows)
     _statusWidget->updateOverlayState2(repoCount, visibleRows);
 }
 
+void CalculationModeDetailView::reset()
+{
+    _table->clearContents();
+    _table->setRowCount(0);
+    _current_calcId = QUuid();
+}
+
+int CalculationModeDetailView::rowCount() const
+{
+    return _table ? _table->rowCount() : 0;
+}

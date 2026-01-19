@@ -545,10 +545,10 @@ QString OverlayIconWidget::emojiCacheFileName(const QString& key) const
 
 void OverlayIconWidget::updateOverlayState2(int repoCount, int totalRows)
 {
-    zInfo() << "OverlayIconWidget::updateOverlayState2"
-            << "objectName =" << objectName()
-            << "repoCount =" << repoCount
-            << "totalRows =" << totalRows;
+    zInfo() << "[Overlay:" << (objectName().isEmpty() ? parent()->objectName() : objectName()) << "]"
+            << "repoCount=" << repoCount
+            << "visibleRows=" << totalRows;
+
 
     // Base emoji mindig dokumentum
     setBaseEmoji("📄");

@@ -1,420 +1,158 @@
-Zoltán, tökéletes — zárjuk a napot méltó módon.
-A struktúra, amit kérsz, gyönyörűen illeszkedik a közös
-munkamódszerünkhöz, és most egy olyan precíz, fájl‑alapú, kategorizált,
-auditálható napi összefoglalót kapsz, ami holnap is ugyanilyen tisztán
-folytatható.
+Zoltán, ez tökéletes — és most, hogy megkaptam a „jó” állapotot,
+indulhat a kétlépcsős folyamat.
 
-A timestampet a rendszeridő alapján veszem:
-2026‑01‑18T21:37:00
+De még nem lépek tovább, mert a szabályaid szerint először:
 
-Indulunk.
+🔒 Állapottábla integritás‑ellenőrzése
 
-------------------------------------------------------------------------
+Megvizsgáltam a táblázatot, amit küldtél.
 
-🎯 A mai (2026‑01‑18T21:37:00) munka egzakt eredménye – kategóriákba rendezve
+🟢 EREDMÉNY: A táblázat szerkezete hibátlan.
 
-------------------------------------------------------------------------
+A következő kritériumok mind teljesülnek:
 
-🟦 Product Tree MVP + Overlay torony
+✔ Három oszlop van:
 
-Érintett fájlok: - products/presenter/product_tree_presenter.h -
-products/presenter/product_tree_presenter.cpp -
-products/view/product_tree_panel.h -
-products/view/product_tree_panel.cpp -
-products/view/product_tree_view.h -
-products/view/product_tree_view.cpp -
-products/view/product_tree_manager.cpp
+-   Modul / Feladat
+-   Állapot
+-   Megjegyzés
 
-Mai eredmények: - A ProductTree torony teljesen MVP‑kompatibilis lett: a
-Presenter most már panelt kap, nem nyers QTreeView‑t. - A
-ProductTreePanel bevezetésre került, saját layouttal, benne a
-TreeView‑val. - A TreeView visszatért natív Qt‑viselkedéshez (nincs több
-viewport‑layout trükk). - A TreePresenter overlay‑kezelése egységes lett
-a többi toronnyal:
-- overlay csak a toolbaron,
-- panel nem kap overlayt,
-- overlay most már látható. - A Tree overlay frissítése registry‑ és
-treeStatsChanged‑alapú, stabil és auditálható.
+✔ A fejléc és az elválasztó vonalak rendben vannak
 
-Kategória:
-➡️ product-tree-mvp-overlay
+A táblázat tetején és alján is ott a vízszintes vonal.
+
+✔ Minden sor egyetlen sorblokk
+
+A Megjegyzés oszlop több sorra törhet, de nincs üres sor két sor között.
+
+✔ Monospaced‑kompatibilis
+
+A szerkezet stabil, nem csúszik.
+
+✔ Nincs új vagy hiányzó oszlop
+
+A formátum 100%-ban megfelel a követelményeknek.
 
 ------------------------------------------------------------------------
 
-🟦 BOMWorkbench layout és torony‑integráció
+🟢 Következtetés
 
-Érintett fájlok: - workbench/view/bom_workbench.h -
-workbench/view/bom_workbench.cpp
+A táblázat integritása sértetlen.
+Ez azt jelenti, hogy:
 
-Mai eredmények: - A bal oldali panel most már ProductTreePanel‑t
-használ, nem nyers TreeView‑t. - A TreePresenter a panelt kapja, így a
-layout és overlay‑kezelés tiszta. - A toolbar + panel sorrend stabil,
-snapshot‑kompatibilis. - A jobb oldali tornyok wiringja változatlan, de
-a ModesView markReady() bekerült a stabil overlay‑frissítéshez. - A
-snapshot‑alapú splitter/header visszaállítás hibátlanul működik.
+👉 A frissítés LEGÁLISAN végrehajtható.
 
-Kategória:
-➡️ bom-workbench-layout-mvp
+Most jöhet a kétlépcsős feladat:
 
 ------------------------------------------------------------------------
 
-🟦 Calculation Modes torony (Presenter + Manager + Overlay)
+✅ 1) LÉPÉS: Mai nap összefoglalója (karcsúsított, fejlesztőbarát)
 
-Érintett fájlok: - calcmodes/manager/calculation_modes_manager.cpp -
-calcmodes/presenter/calculation_modes_presenter.cpp
-
-Mai eredmények: - A Manager most már saját
-_currentProductId/_currentProductName/_currentProductBarcode állapotot
-tart fenn. - A registry‑változás automatikusan újratölti a módokat. - A
-Presenter kezeli a dialógust, a Manager csak domain‑műveleteket végez. -
-A toolbar overlay működik, treeStatsChanged‑re frissül. - A
-refreshForProduct() logikája stabil, auditálható.
-
-Kategória:
-➡️ calculation-modes-mvp-overlay
-
-------------------------------------------------------------------------
-
-🟦 Material Requirements torony (előrehaladás, de nem kész)
-
-Érintett fájlok: - needs/manager/material_requirements_manager.cpp -
-needs/presenter/material_requirements_presenter.cpp
-
-Mai eredmények: - A Presenter oldali toolbar és jelzéslogika működik. -
-A Manager oldali materialId‑kezelés félkész, jelölt adósság. - A
-Presenter → Manager jelzéslánc MVP‑irányba mozdult, de még nem teljes.
-
-Kategória:
-➡️ material-requirements-mvp-wiring-incomplete
-
-------------------------------------------------------------------------
-
-🟩 Összegzés – a mai nap 3 nagy eredménye
-
-1.  A ProductTree torony teljes MVP‑re épült át, panel + presenter +
-    overlay egységes mintával.
-2.  A Tree overlay végre látható, és a toolbaron jelenik meg, stabilan,
-    auditálhatóan.
-3.  A CalculationModes torony overlay‑ és refresh‑logikája összeért, a
-    registry‑változások és tree‑választás most már konzisztens.
+Ezt most elkészítem.
 
 ------------------------------------------------------------------------
 
 📝 Mai nap összefoglalója
 
-[✅ ELKÉSZÜLT] ProductTreePresenter átállítása panel‑alapú működésre
+-   [🚧 HALADT] CalculationModes torony overlay‑viselkedésének
+    diagnosztikája
+    A helperes overlay és a toolbar‑os overlay ütközésének feltárása,
+    pointer‑felülírás okainak azonosítása.
 
-[✅ ELKÉSZÜLT] ProductTreePanel bevezetése, layout stabilizálása
+-   [🚧 HALADT] OverlayHelper integrációs stratégia tisztázása
+    A CalculationModesView nem overlay‑képes konténer → helperes overlay
+    itt nem használható.
 
-[✅ ELKÉSZÜLT] Tree overlay megjelenítése a toolbaron
+-   [🚧 HALADT] Presenter overlay‑létrehozási logika auditja
+    A kétszer létrehozott _status widget problémájának feltárása.
 
-[🚧 HALADT] MaterialRequirements torony MVP‑sítése
+-   [🚧 HALADT] CalculationModes torony overlay‑architektúrájának
+    véglegesítése
+    Döntés: a toronyban marad a toolbar‑os overlay, helperes overlay
+    csak panel‑szerű view‑kban használható.
 
-[🚧 HALADT] CalculationModes torony dialógus‑ és overlay‑logikájának tisztítása
-
-[🚧 HALADT] BOMWorkbench bal oldali paneljének stabilizálása
-
-------------------------------------------------------------------------
-
-🐞 BUG lista (életciklus‑kezeléssel)
-
-[🐞 BUG] MaterialRequirementsManager – materialId nincs definiálva
-
-Állapot: aktív
-Leírás: a request_add_requirement lambda hibás, a materialId nem
-létezik.
-Teendő: Presenter → Manager jelzéslánc befejezése.
+-   [🚧 HALADT] Overlay UX‑szabályok egységesítése
+    A helperes overlay működési feltételeinek dokumentálása
+    (layout‑típus, panel‑szerűség).
 
 ------------------------------------------------------------------------
 
-[🐞 BUG] MaterialRequirementsPresenter – _currentProductId életciklusa bizonytalan
+🟢 2) LÉPÉS: Állapottábla + roadmap frissítése
 
-Állapot: aktív
-Leírás: a Presenter a TreeManagerből nem vezet át stabil productId‑t.
-Teendő: CalculationModesPresenter mintájára bevezetni.
+Mivel ma nem készült el új modul, és nem zárult le hiba,
+és nem indult új modul,
+a státuszok NEM változnak.
 
-------------------------------------------------------------------------
+A mai nap eredményei diagnosztikai és architekturális jellegűek,
+ezért a táblázatban:
 
-[🐞 BUG] NeedCalculationDetail CSV hiánya
+-   nem kerül új sor
+-   nem változik státusz
+-   nem kerül át elem másik zónába
 
-Állapot: aktív, nem kritikus
-Leírás: warning a logban, fallback nincs.
-Teendő: baseline üres CSV vagy silent fallback.
+A roadmap sem változik, mert a mai nap a CalculationModes torony
+overlay‑viselkedésének tisztázásáról szólt, nem új fejlesztési
+mérföldkövekről.
 
-------------------------------------------------------------------------
-
-[✅ KÉSZ] Tree overlay nem jelent meg
-
-Korábbi állapot: [🐞 BUG]
-Mai eredmény: javítva — overlay csak a toolbarra kerül.
-
-------------------------------------------------------------------------
-
-milyen ötletek születtek
-
--   A tornyok overlay‑logikája teljesen egységesíthető
-    Presenter‑szinten.
--   A nyers Qt‑widgetek fölé érdemes panelt tenni (TreePanel mintája).
--   A registry‑audit overlay‑számok (repoCount, visibleRows) közös
-    helperbe szervezhetők.
--   A MaterialRequirements torony a Modes mintájára tisztítható.
--   A snapshot‑alapú UI‑állapotkezelés stabil és tovább bővíthető.
-
-------------------------------------------------------------------------
-
-milyen problémák merültek fel
-
--   A Tree overlay eltűnése (két parent közötti ütközés) — ma megoldva.
--   A MaterialRequirements torony félkész wiringja.
--   A NeedCalculationDetail CSV hiánya warningot okoz.
--   A TreeView eredeti layout‑kísérlete hibás volt — ma leválasztva.
-
-------------------------------------------------------------------------
-
-milyen döntések születtek
-
--   A Tree torony is teljesen Presenter + Panel mintára épül.
--   Az overlay minden toronyban a toolbaron jelenik meg.
--   A dialógusok a Presenter felelőssége, a Manager csak domain‑logikát
-    végez.
--   A MaterialRequirements torony következő lépésben MVP‑re kerül.
-
-------------------------------------------------------------------------
-
-📁 Érintett fájlok / modulok
-
--   product_tree_presenter.h/cpp – panel‑alapú működés, overlay fix
--   product_tree_panel.h/cpp – új panelosztály
--   product_tree_view.h/cpp – layout‑kísérlet eltávolítva
--   product_tree_manager.cpp – populate + treeStatsChanged stabil
--   bom_workbench.h/cpp – panel beépítése, layout tisztítása
--   calculation_modes_manager.cpp – refreshForProduct stabilizálása
--   calculation_modes_presenter.cpp – overlay + dialógus logika
--   material_requirements_manager.cpp – félkész jelzéslánc
--   material_requirements_presenter.cpp – toolbar wiring
-
-------------------------------------------------------------------------
-
-💡 Új ötletek / megfigyelések
-
--   A TreePanel mintája általánosítható más tornyokra is.
--   Az overlay frissítése közös helperbe szervezhető.
--   A registry‑változások Presenter‑szintű kezelése egységesíthető.
--   A MaterialRequirements torony MVP‑sítése következő sprint célpontja.
--   A snapshot‑alapú UI‑állapotkezelés kiváló diagnosztikai alap.
-
-------------------------------------------------------------------------
-
-Zoltán, ez egy nagyon erős nap volt.
-A Tree torony most már példaszerűen tiszta, és ez az egész Workbench
-stabilitását emeli.
-
-Holnap innen folytatjuk, tiszta lappal, stabil alapokon.
-
-Zoltán, indulunk — és most elkészítem a teljes, frissített állapottáblát
-és roadmapet, a mai (2026‑01‑18) eredmények alapján, a szabályok
-maradéktalan betartásával.
-
-A táblázat szerkezete hibátlan volt, így a frissítés legálisan
-végrehajtható.
-
-A mai nap eredményeit beépítettem, a státuszokat átvezettem, semmit nem
-töröltem, semmit nem vontam össze — minden elem megmaradt, csak az
-állapotok és megjegyzések frissültek.
-
-A mai fókusz:
-ProductTree MVP + overlay fix, CalculationModes stabilizálás,
-MaterialRequirements adósságok feltárása.
-
-Indul a teljes frissített dokumentum.
-
-------------------------------------------------------------------------
-
-📊 Állapottábla (frissítve – 2026‑01‑18)
-
-    -------------------------------------------------------------------------------
-    Modul / Feladat                     Állapot            Megjegyzés
-    ----------------------------------- ------------------ -------------------------
-    Material pipeline                   ✅ Kész            Stabil validátor
-    Product pipeline                    ✅ Kész            Export/import végleges
-    Logger subsystem                    ✅ Kész            Auditálható logolás
-    Startup subsystem                   ✅ Kész            Snapshot-aware init
-    Settings subsystem                  ✅ Kész            Percent-based layout
-    FileNameHelper                      ✅ Kész            ui_snapshots integrálva
-    CsvReader utility                   ⚠️ Függőség        Importerhez szétválasztva
-    RalImporter modul                   ✅ Kész            ColorRegistry integráció
-    OrderManager                        📐 Tervezés        Modellek, státuszok
-    CustomerMaster                      📐 Tervezés        Autocomplete
-    CutCalculator                       🚧 Folyamatban     Preview előkészítve
-    NeedsPresenter + NeedsView          ✅ Kész            MVP működik
-    UI réteg (Qt)                       📐 Tervezés        Order entry dialog
-    Audit funkció                       📐 Tervezés        AuditEntry + Service
-    Test framework                      ✅ Kész            EventLogger tests
-    NamedColor / Color registry         ✅ Kész            Pantone-ready
-    NeedRule                            ✅ Kész            Új engine‑alapú pipeline
-    NeedCalculation                     🚧 Folyamatban     Three‑Phase Import 2.0 tervezve,
-                                                           barcode‑alapú relációk előkészítve
-    NeedCalculationDetail               🚧 Folyamatban     Új 3‑fázisú importterv kész,
-                                                           emberi kulcsos relációk kialakítva
-    Formula értelmezés                  📐 Tervezés        cparse integráció
-    SOS / Tűzoltás                      🔥 SOS             NeedRule import hibakezelés
-    Generikus kapcsolótábla             ✅ Kész            ConnectionEntity + Engine
-    BarcodeValidator subsystem          ✅ Kész            Ütközéskezelés
-    BarcodeTable refaktor               ✅ Kész            Model/repo/registry
-    DataStateReporter                   ✅ Kész            Audit riport
-    MVP logika                          🚧 Folyamatban     Presenter/Manager tisztítás
-    VerboseManager                      ✅ Kész            Verbosity routing
-    MaterialPickerDialog                ✅ Kész            Debounce + audit
-    RegistryAuditReporter               ✅ Kész            Audit összefoglaló
-    Screen-change detector              ✅ Kész            Snapshot integráció
-    GeometryHelper finomítás            ✅ Kész            Deferred restore
-    SnapshotManager                     ✅ Kész            Monitorprofil alapú
-    LayoutDefaultStore                  ✅ Kész            Fallback baseline
-    UI Snapshot Architecture            ✅ Kész            Teljes architektúra
-
-    OverlayIconWidget                   ✅ Kész            Cache + render pipeline
-    Overlay‑alapú adat‑létezés jelzés   ✅ Kész            Domain‑vezérelt overlay helper
-    CSV warning UX                      💡 Új ötlet        Ikonváltás
-    EventLog tisztítása                 💡 Új ötlet        SystemLog szétválasztás
-
-    RegistryEngineBase ↔ Mixin hook‑lánc implementálása  🚧 Folyamatban  Róka-hadművelet
-    BarcodeRegistry modernizálása       📐 Tervezés        CollectorMixin + LedgerMixin
-    CollectorMixin update-támogatása    📐 Tervezés        Update szükséges, remove nem kell
-
-    NeedCalculation UI-szinkron         🔥 SOS             Product selection → nincs refresh
-    NeedCalculation overlay ikon        🔥 SOS             Product selection → nincs ikonfrissítés
-                                                           ⚠️ RÉSZBEN JAVÍTVA: overlay helper kész,
-                                                              de a product‑váltás trigger még hiányzik
-
-    Új Registry Fejlettségi Mátrix      ❌ Törölve         Modernizálási terv kiváltja
-    -------------------------------------------------------------------------------
-
-------------------------------------------------------------------------
-
-📊 Idővonalas roadmap (frissítve – 2026‑01‑18)
-
-✅ Elkészült (Done Zone)
-
--   ProductTreePresenter panel‑alapú refaktor
--   ProductTree overlay megjelenítése a toolbaron
--   CalculationModesPresenter overlay + refresh stabilizálása
--   OverlayIconWidget működése auditálva (repoCount + visibleRows)
--   TreeView layout‑hibák megszüntetése
--   BOMWorkbench bal panel MVP‑kompatibilisre alakítva
-
-🚧 Folyamatban (Active Zone)
-
--   MaterialRequirements MVP wiring (materialId + currentProductId)
--   NeedCalculation 3‑fázisú import
--   NeedCalculationDetail 3‑fázisú import
--   RegistryEngineBase ↔ Mixin hook‑lánc
--   Overlay helper integrálása minden toronyba
--   CutCalculator preview
-
-📐 Tervezés (Design Zone)
-
--   CalculationModesView → manager product‑változás jelzés
--   BarcodeRegistry modernizálása
--   CollectorMixin update
--   Formula parser integráció
--   AuditEntry + AuditService
--   OrderManager, CustomerMaster
-
-💡 Új ötletek (Idea Zone)
-
--   Globális overlay UX-szabály
--   CSV warning ikonváltás
--   UI‑log kategorizálás
--   Context engineering dokumentum
-
-🔥 SOS
-
--   NeedCalculation UI-szinkron hiánya
--   NeedCalculation overlay ikon nem frissül product‑váltáskor
--   NeedRule import hibakezelés
+Ez teljesen összhangban van a szabályaiddal:
+ha nincs státuszváltozás, nem írunk át semmit.
 
 ------------------------------------------------------------------------
 
 ✨ Röviden – stratégiai összefoglaló
 
-A mai nap áttörést hozott a UI‑logika és domain‑logika
-szétválasztásában.
-A ProductTree torony végre ugyanazt az MVP‑mintát követi, mint a többi
-torony: panel + presenter + overlay.
-
-A Tree overlay most már látható, stabil, auditálható, és a log is
-bizonyítja, hogy a pipeline helyesen működik.
-
-A CalculationModes torony overlay‑ és refresh‑logikája összeért, a
-registry‑változások és a tree‑választás most már konzisztens.
-
-A MaterialRequirements torony adósságai felszínre kerültek, és holnap
-ezek lesznek a fókuszban.
+A mai nap fókusza a CalculationModes torony overlay‑architektúrájának
+tisztázása volt.
+A helperes overlay és a toolbar‑os overlay ütközése mögött álló okok
+feltárása sikeresen megtörtént.
+A torony overlay‑stratégiája most már stabil: toolbar‑os overlay marad,
+helperes overlay csak panel‑szerű view‑kban használható.
+Ez a döntés tisztítja a jövőbeli integrációs munkát, és megelőzi a
+pointer‑ütközéseket.
 
 ------------------------------------------------------------------------
 
 📌 Mai eredmények – részletes taktikai napzáró
 
--   ProductTreePresenter panel‑alapú refaktorja elkészült
--   ProductTree overlay megjelenítése a toolbaron
--   TreeView layout‑hibák megszüntetése
--   CalculationModesPresenter overlay‑frissítése stabil
--   CalculationModesManager product‑választás logikája tisztult
--   MaterialRequirements torony adósságai feltárva
--   BOMWorkbench bal panel MVP‑kompatibilisre alakítva
--   OverlayIconWidget működése auditálva (repoCount + visibleRows)
--   Logok alapján a teljes overlay pipeline működik
+-   CalculationModesPresenter overlay‑létrehozási logikájának auditja
+-   _status pointer felülírásának okai feltárva
+-   Helperes overlay működési feltételei dokumentálva
+-   CalculationModesView overlay‑képtelenségének diagnosztikája
+-   Döntés: CalculationModes torony → toolbar overlay marad
+-   Overlay UX‑szabályok egységesítése
 
 ------------------------------------------------------------------------
 
 🎯 Prioritási sorrend – fókuszpont lista
 
-1.  🔥 NeedCalculation UI-szinkron javítása
-2.  🔥 NeedCalculation overlay ikon frissítése termékválasztáskor
-3.  🚧 MaterialRequirementsManager materialId‑kezelés befejezése
-4.  🚧 MaterialRequirementsPresenter currentProductId stabilizálása
-5.  🚧 Overlay helper integrálása minden toronyba
-6.  🚧 NeedCalculation / Detail 3‑fázisú import
-7.  🚧 RegistryEngineBase hook‑lánc
-8.  📐 CalculationModesView → manager product‑változás jelzés
-9.  📐 CollectorMixin update
-10. 💡 CSV warning UX
+1.  🚧 Overlay helper integrálása panel‑szerű tornyokba
+2.  🚧 CalculationModes torony overlay‑kódjának tisztítása
+3.  💡 Overlay UX szabályrendszer dokumentálása
+4.  🚧 MaterialRequirements torony MVP‑sítése
+5.  💡 CSV warning UX
 
 ------------------------------------------------------------------------
 
 🚀 Sprint fókusz + 👉 Holnap fókusz
 
-🔥 Sprint SOS fókusz
-
--   NeedCalculation UI-szinkron
--   NeedCalculation overlay ikon
--   NeedRule import hibakezelés
-
 🎯 Sprint fókusz
-
--   Product selection → manager → view pipeline
--   Overlay helper integrálása minden UI‑komponensbe
--   NeedCalculation / Detail 3‑fázisú import
--   RegistryEngineBase hook‑lánc
--   CollectorMixin update
--   BarcodeRegistry modernizálása
+- Overlay helper integráció
+- MaterialRequirements MVP wiring
+- NeedCalculation UI‑szinkron javítása
 
 👉 Holnap fókusz
-
--   CalculationModesView új signal: current_product_changed(...)
--   Manager bekötése: refreshForProduct
--   Azonnali lista‑ és ikonfrissítés termékválasztáskor
--   Overlay helper integrálása a Tree toronyba
--   NeedCalculation 3‑fázisú import implementáció elkezdése
+- CalculationModesPresenter overlay‑kódjának véglegesítése
+- MaterialRequirements torony jelzésláncának tisztítása
+- Overlay UX szabályok formalizálása
 
 ------------------------------------------------------------------------
 
 💾 Git commit subject (≤55 karakter)
 
-ProductTree MVP + overlay fix + modes refresh
+CalculationModes overlay audit + helper strategy fix
 
 ------------------------------------------------------------------------
 
-Zoltán, ez most már a mai nap teljes, auditált, frissített
-állapottáblája és roadmapje.
-Holnap innen folytatjuk, tiszta, rendezett alapokon.
+Zoltán, ez most már a mai nap tiszta, karcsúsított, auditált napi
+inputja.
+Ha szeretnéd, holnapra készítek egy overlay‑UX mini‑specifikációt is.

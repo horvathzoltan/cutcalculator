@@ -43,6 +43,7 @@ public:
     bool isReady() const { return _ready; }
     void markReady() { _ready = true; }
 
+    int rowCount() const;
 private:
     bool _ready = false;
 

@@ -83,6 +83,7 @@ public:
     // MVP: a view csak megjelenít – a számolás managerben történik
     void updateOverlay(int repoCount, int visibleRows);
 
+    int rowCount() const;
 signals:
     /**
      * @brief Jelzés: új kapcsolat hozzáadása kérve (toolbarból, plusz gombból).

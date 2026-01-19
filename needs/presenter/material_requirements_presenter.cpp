@@ -28,6 +28,7 @@ QToolBar* MaterialRequirementsPresenter::buildToolbar(QWidget* parent)
     _status->setBaseEmoji("📄");
     tb->addWidget(_status);
     _view->setStatusWidget(_status);
+    _status->setObjectName("MaterialOverlay");
 
     initialOverlay();
     connectTreeStats();
@@ -77,7 +78,17 @@ void MaterialRequirementsPresenter::refreshForProduct(const QUuid& productId,
 {
     auto rows = _manager->refreshForProduct(productId, name, barcode);
     _view->set_requirements(rows);
+
+    // 🔥 Stabilizált overlay frissítés
+    QMetaObject::invokeMethod(this, [this]() {
+        refreshOverlayOnly();
+    }, Qt::QueuedConnection);
+
+}
+
+void MaterialRequirementsPresenter::refreshOverlayOnly()
+{
     int repo = NeedRuleRegistry::instance().size();
-    int visible = rows.size();
+    int visible = _view->rowCount();
     _status->updateOverlayState2(repo, visible);
 }

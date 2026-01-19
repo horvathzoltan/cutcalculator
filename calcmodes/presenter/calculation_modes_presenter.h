@@ -21,6 +21,8 @@ public:
                            const QString& name,
                            const QString& barcode);
 
+    void refreshOverlayOnly();
+
 signals:
     void modeSelected(std::optional<QUuid> modeId);
 

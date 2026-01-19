@@ -179,5 +179,9 @@ void MaterialRequirementsView::updateOverlay(int repoCount, int visibleRows) {
     _statusWidget->updateOverlayState2(repoCount, visibleRows);
 }
 
+int MaterialRequirementsView::rowCount() const
+{
+    return _table ? _table->rowCount() : 0;
+}
 
 

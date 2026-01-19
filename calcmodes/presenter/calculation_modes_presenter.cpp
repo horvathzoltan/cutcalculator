@@ -2,6 +2,8 @@
 #include "calcmodes/registry/need_calculation_registry.h"
 #include "calcmodes/dialogs/mode_name_dialog.h"
 
+#include <ui/helpers/overlay_helper.h>
+
 CalculationModesPresenter::CalculationModesPresenter(
     CalculationModesView* view,
     CalculationModesManager* manager,
@@ -16,6 +18,7 @@ CalculationModesPresenter::CalculationModesPresenter(
             this, [this](const QUuid& id, const QString& name, const QString& barcode) {
                 if (_view->isReady())      // vagy saját flag
                     refreshForProduct(id, name, barcode);
+                emit modeSelected(std::nullopt);
             });
 
 
@@ -23,6 +26,9 @@ CalculationModesPresenter::CalculationModesPresenter(
                      this, [this](std::optional<QUuid> modeId) {
                          emit modeSelected(modeId);
                      });
+
+    // _status = OverlayHelper::createStatusWidget("📄");
+    // OverlayHelper::attachToView(_view, _status);
 
 }
 
@@ -34,6 +40,7 @@ QToolBar* CalculationModesPresenter::buildToolbar(QWidget* parent)
     _status->setBaseEmoji("📄");
     tb->addWidget(_status);
     _view->setStatusWidget(_status);
+    _status->setObjectName("ModesOverlay");
 
     initialOverlay();
     connectTreeStats();
@@ -66,20 +73,15 @@ QToolBar* CalculationModesPresenter::buildToolbar(QWidget* parent)
 
 void CalculationModesPresenter::initialOverlay()
 {
-    int repo = NeedCalculationRegistry::instance().size();
-    _status->updateOverlayState2(repo, 0);
+    refreshOverlayOnly();
 }
 
 void CalculationModesPresenter::connectTreeStats()
 {
     QObject::connect(_treeManager, &ProductTreeManager::treeStatsChanged,
                      this, [this](int, int) {
-                         int repo = NeedCalculationRegistry::instance().size();
-                         _status->updateOverlayState2(repo, 0);
+                         refreshOverlayOnly();
                      });
-
-
-
 }
 
 void CalculationModesPresenter::refreshForProduct(const QUuid& productId,
@@ -88,7 +90,14 @@ void CalculationModesPresenter::refreshForProduct(const QUuid& productId,
 {
     auto rows = _manager->refreshForProduct(productId, name, barcode);
     _view->set_modes(rows);
+    // int repo = NeedCalculationRegistry::instance().size();
+    // int visible = rows.size();
+    // _status->updateOverlayState2(repo, visible);
+    refreshOverlayOnly();
+}
+
+void CalculationModesPresenter::refreshOverlayOnly()
+{
     int repo = NeedCalculationRegistry::instance().size();
-    int visible = rows.size();
-    _status->updateOverlayState2(repo, visible);
+    OverlayHelper::update(_status,repo,_view->rowCount());
 }

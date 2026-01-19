@@ -23,8 +23,8 @@ CalculationModeDetailPresenter::CalculationModeDetailPresenter(
     //                      refreshForCalculation(*modeId, modeName);
     //                  });
 
-    // QObject::connect(this, &CalculationModeDetailPresenter::modeSelected,
-    //                  this, &CalculationModeDetailPresenter::onModeSelected);
+     QObject::connect(this, &CalculationModeDetailPresenter::modeSelected,
+                      this, &CalculationModeDetailPresenter::onModeSelected);
 
 }
 
@@ -36,6 +36,7 @@ QToolBar* CalculationModeDetailPresenter::buildToolbar(QWidget* parent)
     _status->setBaseEmoji("📄");
     tb->addWidget(_status);
     _view->setStatusWidget(_status);
+    _status->setObjectName("DetailsOverlay");
 
     initialOverlay();
 
@@ -86,9 +87,10 @@ void CalculationModeDetailPresenter::refreshForCalculation(const QUuid& calcId,
 {
     auto rows = _manager->refreshForCalculation(calcId, modeName);
     _view->set_details(rows);
-    int repo = NeedCalculationDetailRegistry::instance().size();
-    int visible = rows.size();
-    _status->updateOverlayState2(repo, visible);
+    // int repo = NeedCalculationDetailRegistry::instance().size();
+    // int visible = rows.size();
+    // _status->updateOverlayState2(repo, visible);
+    refreshOverlayOnly();
 }
 
 void CalculationModeDetailPresenter::onModeSelected(std::optional<QUuid> modeId)
@@ -101,4 +103,11 @@ void CalculationModeDetailPresenter::onModeSelected(std::optional<QUuid> modeId)
         NeedCalculationRegistry::instance().findById(*modeId);
     QString modeName = mode ? mode->name : QString("unknown");
     refreshForCalculation(*modeId, modeName);
+}
+
+void CalculationModeDetailPresenter::refreshOverlayOnly()
+{
+    int repo = NeedCalculationDetailRegistry::instance().size();
+    int visible = _view->rowCount();
+    _status->updateOverlayState2(repo, visible);
 }

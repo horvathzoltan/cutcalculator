@@ -101,6 +101,15 @@ NeedCalculationDetailRepository::buildFromRow(
         return std::nullopt;
     }
 
+    if(calc->productId != product->id) {
+        ctx.addError(ctx.currentLineNumber(),
+                     QString("⚠️ NeedCalculation nem illeszkedik a Product-hoz: %1 / %2")
+                         .arg(row.productBarcode, row.modeName),
+                     row.modeName,
+                     row.formula);
+        return std::nullopt;
+    }
+
     // 3) Material lookup
     const auto* mat =
         MaterialRegistry::instance().findByBarcode(row.materialBarcode);

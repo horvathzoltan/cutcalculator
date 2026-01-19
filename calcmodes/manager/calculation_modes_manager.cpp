@@ -39,9 +39,6 @@ void CalculationModesManager::onRegistryChanged()
  * ============================================================ */
 void CalculationModesManager::connectSignals() {
 
-    // connect(_view, &CalculationModesView::current_product_changed, this,
-    //         &CalculationModesManager::refreshForProduct);
-
     /* ------------------------------
      * ➕ Új mód hozzáadása
      * ------------------------------ */
@@ -146,29 +143,42 @@ QVector<CalculationModesView::ModeRow> CalculationModesManager::refreshForProduc
     _currentProductName = productName;
     _currentProductBarcode = productBarcode;
 
+    QHash<QUuid,int> detailCountByCalc;
+    auto allDetails = NeedCalculationDetailRegistry::instance().findAll(
+        [](const NeedCalculationDetail&) { return true; }
+        );
+    for (const auto& d : allDetails) {
+        ++detailCountByCalc[d.needCalculationId];
+    }
+
     auto modes = NeedCalculationRegistry::instance().findAll(
         [&](const NeedCalculation& c) {
             return c.productId == productId;
         }
         );
 
+    // auto modes = NeedCalculationRegistry::instance().findAll(
+    //     [&](const NeedCalculation& c) {
+    //         return c.productId == productId;
+    //     }
+    //     );
+
 
     QVector<CalculationModesView::ModeRow> rows;
     rows.reserve(modes.size());
 
     for (const auto& m : modes) {
-        int detailCount =
-            NeedCalculationDetailRegistry::instance().findByCalculation(m.id).size();
-
+        int detailCount = detailCountByCalc.value(m.id, 0);
         rows.append({ m.id, productId, m.name, detailCount });
     }
 
-    //_view->set_current_product(productId, productName, productBarcode);
+
+    _view->set_current_product(productId, productName, productBarcode);
     // _view->set_modes(rows);
 
-    // int repoCount = NeedCalculationRegistry::instance().size();
-    // int visibleRows = rows.size();
-    // _view->updateOverlay(repoCount, visibleRows);
+    int repoCount = NeedCalculationRegistry::instance().size();
+    int visibleRows = rows.size();
+    _view->updateOverlay(repoCount, visibleRows);
 
     // zEventINFO(QString("🔄 Modes refreshed: %1 (%2)").arg(productName, productBarcode));
 

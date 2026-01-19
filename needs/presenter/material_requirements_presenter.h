@@ -21,6 +21,7 @@ public:
                            const QString& name,
                            const QString& barcode);
 
+    void refreshOverlayOnly();
 private:
     MaterialRequirementsView* _view = nullptr;
     MaterialRequirementsManager* _manager = nullptr;

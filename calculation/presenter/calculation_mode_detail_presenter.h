@@ -18,6 +18,8 @@ public:
     void refreshForCalculation(const QUuid& calcId,
                                const QString& modeName);
 
+    void refreshOverlayOnly();
+
 signals:
     void modeSelected(std::optional<QUuid> modeId);
 

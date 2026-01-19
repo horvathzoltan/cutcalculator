@@ -20,7 +20,7 @@ QToolBar* ProductTreePresenter::buildToolbar(QWidget* parent)
     //_status->setBaseEmoji("🌳");
     _status->setBaseEmoji("📄");
     tb->addWidget(_status);
-    //_panel->setStatusWidget(_status);
+    _status->setObjectName("TreeOverlay");
 
     initialOverlay();
     connectRegistry();

@@ -28,6 +28,7 @@ public:
         QString formula;
         bool isCutting = true; // ⚙️ vs 📦
         bool formulaValid = true;
+        bool materialValid = true;
     };
 
     void set_details(const QVector<DetailRow>& rows);
@@ -36,7 +37,9 @@ public:
     void updateOverlay(int repoCount, int visibleRows);
 
     QUuid currentCalculationId() const { return _current_calcId; }
+    void reset();
 
+    int rowCount() const;
 
 signals:
     void request_add_detail(const QUuid& calcId);

@@ -1,70 +1,112 @@
-A kérlek, készíts egy EXAKT, MÓDOSULT FÁJL-ALAPÚ, KATEGORIZÁLT,
-PONTOKBA SZEDETT összefoglalót a mai munkáról.
+Nagyon örülök, hogy tetszik az új, karcsúsított napi‑input formátum,
+Zoltán.
+A következő lépés teljesen logikus: frissítsük az eredeti, túlméretezett
+promptot úgy, hogy ezt az új, hatékony, olvasható, token‑barát
+struktúrát használja.
 
-A cél:
-1) egzakt elszámolás a ténylegesen módosult fájlok alapján
-(ezeket az alábbi script adja: ./aipack.sh -m 24 ~/source/repos/CutCalculator 1200)
-2) áttekintő, strukturált összefoglaló a fejlesztési napról
-3) minden ötlet, probléma, döntés és BUG írásos nyoma megmaradjon
-4) a BUG-ok életciklusa követhető legyen (nem törlődnek, csak státuszt váltanak)
+Most megalkotom a frissített, optimalizált napi‑input promptot, amely:
 
-A struktúra legyen kötelező:
+-   megtartja az auditálhatóságot
+-   nem terheli túl sem téged, sem engem
+-   nem eszi meg a kontextust
+-   nem válik monstrummá
+-   mégis minden fontos információt megőriz
 
-🎯 A mai(<itt legyen egy időbélyeg>) munka egzakt eredménye – kategóriákba rendezve
+Ez lesz az új, hivatalos verzió.
+
+------------------------------------------------------------------------
+
+🟢 FRISSÍTETT, OPTIMALIZÁLT NAPI‑INPUT PROMPT
+
+Kérlek, készíts egy karcsúsított, fejlesztőbarát, kategorizált napi
+inputot a mai munkáról.
+A cél: auditálhatóság, átláthatóság, minimális terhelés.
+
+A struktúra legyen a következő:
+
+------------------------------------------------------------------------
+
+🎯 A mai () munka eredménye – kategóriákba rendezve
 
 Minden kategória így nézzen ki:
 
-🟦 <Kategória neve>
-Érintett fájlok:
-- <fájlok>
-Mai eredmények:
-- <a módosult fájlok tartalma alapján, konkrét pontok>
-Kategória:
-➡️ <rövid címke>
+🟦
 
-A végén kérek egy:
+Érintett fájlok:
+-
+
+Mai eredmények:
+- <konkrét, tömör pontok a módosult fájlok alapján>
+
+Kategória:
+➡️
+
+A végén legyen:
 
 🟩 Összegzés – a mai nap X nagy eredménye
 
-
-Ezek után kérlek, készítsd el a részletes napi inputot a következő blokkokkal:
-
+------------------------------------------------------------------------
 
 📝 Mai nap összefoglalója
-- mi készült el → minden pont elején legyen: [✅ ELKÉSZÜLT]
-- mi haladt → minden pont elején legyen: [🚧 HALADT]
 
-A felsorolások legyenek pontokba szedve,
-és minden pont elején szerepeljen a megfelelő állapot-emoji.
+Minden pont elején legyen státusz:
 
+-   [✅ ELKÉSZÜLT]
+-   [🚧 HALADT]
 
-🐞 BUG lista (életciklus-kezeléssel)
-- minden ma feltárt hiba kerüljön ide
-- súlyos hiba → [🔥 SOS]
-- normál hiba → [🐞 BUG]
-- javítva, de hibásan → [🔴 ÚJRAJAVÍTÁS]
-- ha egy korábbi hiba ma megszűnt → [✅ KÉSZ] jelöléssel kerüljön a lista végére
-- ha egy korábbi hiba ma újra előjött → állapota váltson vissza [🐞 BUG], [🔥 SOS] vagy [🔴 ÚJRAJAVÍTÁS]
-- a hibákat SOHA nem töröljük, csak státuszt váltunk
+Tömör, pontokba szedett lista.
 
+------------------------------------------------------------------------
 
-A következő három bekezdés külön-külön, folyószövegben jelenjen meg:
-- milyen ötletek születtek
-- milyen problémák merültek fel
-- milyen döntések születtek
+🐞 BUG lista (életciklus‑kezeléssel)
 
-
-📁 Érintett fájlok / modulok
-- felsorolásban add meg a ma módosult fájlokat
-- a fájlok tartalma alapján fogalmazd meg, hogy melyik fájlban mi változott
-
-
-💡 Új ötletek / megfigyelések
-- rövid, tömör bulletpontokban
-- minden gondolat maradjon meg, semmit ne hagyj ki
-
+-   [🔥 SOS] súlyos hiba
+-   [🐞 BUG] normál hiba
+-   [🔴 ÚJRAJAVÍTÁS] hibás javítás
+-   [✅ KÉSZ] ma megszűnt hiba
 
 Fontos:
-- Ez még NEM az állapottábla frissítése.
-- Ez csak a napi input, amit a következő lépésben használunk.
-- A válasz legyen fejlesztőbarát, strukturált, precíz és teljes.
+A hibákat soha nem töröljük, csak státuszt váltunk.
+
+------------------------------------------------------------------------
+
+🧠 Ötletek
+
+Folyószöveg, tömören.
+
+⚠️ Problémák
+
+Folyószöveg, tömören.
+
+✅ Döntések
+
+Folyószöveg, tömören.
+
+------------------------------------------------------------------------
+
+📁 Érintett fájlok / modulok
+
+-   felsorolás
+-   minden fájlhoz 1 mondatos változásleírás
+
+------------------------------------------------------------------------
+
+💡 Új ötletek / megfigyelések
+
+-   tömör bulletpontok
+-   minden gondolat maradjon meg
+
+------------------------------------------------------------------------
+
+🟢 Ez a teljes, frissített prompt.
+
+Ez a verzió:
+
+-   nem terheli túl a kontextust
+-   nem fárasztja le a csapatot
+-   megőrzi az auditálhatóságot
+-   tökéletesen illeszkedik a te workflow‑dhoz
+-   és a mai output mintájára készül
+
+Ha szeretnéd, készítek hozzá egy mini‑cheatsheetet is, amit bármikor be
+tudsz dobni a nap végén.

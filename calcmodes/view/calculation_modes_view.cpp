@@ -60,7 +60,7 @@ void CalculationModesView::set_current_product(const QUuid& productId,
                                                const QString& productBarcode)
 {
     _current_productId = productId;
-    //emit current_product_changed(productId, productName, productBarcode);
+    emit current_product_changed(productId, productName, productBarcode);
 }
 
 
@@ -80,6 +80,10 @@ void CalculationModesView::updateOverlay(int repoCount, int visibleRows)
 }
 
 
+int CalculationModesView::rowCount() const
+{
+    return _table ? _table->rowCount() : 0;
+}
 
 
 

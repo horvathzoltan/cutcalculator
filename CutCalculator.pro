@@ -48,6 +48,7 @@ SOURCES += \
     products/presenter/product_tree_presenter.cpp \
     products/view/product_tree_panel.cpp \
     test/material_registry_smoke_test.cpp \
+    ui/helpers/overlay_helper.cpp \
     ui/widgets/overlay_icon_widget.cpp \
     workbench/view/bom_workbench.cpp \
     colors/model/named_color.cpp \
@@ -158,6 +159,7 @@ HEADERS += \
     products/presenter/product_tree_presenter.h \
     products/view/product_tree_panel.h \
     test/material_registry_smoke_test.h \
+    ui/helpers/overlay_helper.h \
     ui/widgets/overlay_icon_widget.h \
     workbench/view/bom_workbench.h \
     colors/model/named_color.h \

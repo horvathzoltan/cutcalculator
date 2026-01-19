@@ -328,11 +328,11 @@ void BOMWorkbench::buildRightPanel() {
     //             if (_modesManager) _modesManager->refreshForProduct(id, name, barcode);
     //         });
 
-    // connect(_treeManager, &ProductTreeManager::currentProductChanged,
-    //         this, [this](const QUuid& id, const QString& name, const QString& barcode) {
-    //             if (_matPresenter) _matPresenter->refreshForProduct(id, name, barcode);
-    //             if (_modesPresenter) _modesPresenter->refreshForProduct(id, name, barcode);
-    //         });
+    connect(_treeManager, &ProductTreeManager::currentProductChanged,
+             this, [this]() {
+                 if (_matPresenter) _matPresenter->refreshOverlayOnly();
+                 if (_modesPresenter) _modesPresenter->refreshOverlayOnly();
+             });
 
 
 

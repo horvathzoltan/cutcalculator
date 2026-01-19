@@ -27,6 +27,12 @@ NeedCalculationRegistry::findByProductAndName(const QUuid& productId,
 
 // --- Domain hookok ---
 
+bool NeedCalculationRegistry::beforeValidate(NeedCalculation& nc) {
+    nc.name = nc.name.trimmed();
+    return true;
+}
+
+
 bool NeedCalculationRegistry::validateDomain(const NeedCalculation& nc) const
 {
     return !nc.name.isEmpty();
@@ -40,36 +46,32 @@ bool NeedCalculationRegistry::validateDuplicate(const NeedCalculation& nc) const
     });
 }
 
-// bool NeedCalculationRegistry::beforeInsert(NeedCalculation&)
-// {
-//     return true;
-// }
-
-// void NeedCalculationRegistry::afterInsert(const NeedCalculation&)
-// {
-// }
-
-void NeedCalculationRegistry::onInsertLog(const NeedCalculation& nc)
-{
-    zInfo(QString("NeedCalculation inserted: %1").arg(nc.name));
-}
-
 void NeedCalculationRegistry::persist() const
 {
     NeedCalculationRepository::save(readAll());
 }
 
-void NeedCalculationRegistry::onLoadLog()
+
+void NeedCalculationRegistry::onInsertLog(const NeedCalculation& nc)
 {
-    zInfo(QString("📊 NeedCalculationRegistry: %1 mód betöltve").arg(size()));
+    zInfo(QString("➕ NeedCalculation INSERT: id=%1 name=%2")
+              .arg(nc.id.toString(), nc.name));
 }
 
 void NeedCalculationRegistry::onUpdateLog(const NeedCalculation& nc)
 {
-    zInfo(QString("NeedCalculation updated: %1").arg(nc.name));
+    zInfo(QString("✏️ NeedCalculation UPDATE: id=%1 name=%2")
+              .arg(nc.id.toString(), nc.name));
 }
 
 void NeedCalculationRegistry::onRemoveLog(const NeedCalculation& nc)
 {
-    zInfo(QString("NeedCalculation removed: %1").arg(nc.name));
+    zInfo(QString("🗑️ NeedCalculation REMOVE: id=%1 name=%2")
+              .arg(nc.id.toString(), nc.name));
+}
+
+
+void NeedCalculationRegistry::onLoadLog()
+{
+    zInfo(QString("📊 NeedCalculationRegistry: %1 mód betöltve").arg(size()));
 }

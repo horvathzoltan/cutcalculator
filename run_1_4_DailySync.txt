@@ -1,298 +1,130 @@
-🎯 A mai (2026-01-18T21:35:00) munka egzakt eredménye – kategóriákba
-rendezve
+Persze, Zoltán — visszahozom pontosan azt a karcsúsított, hatékony
+napi‑input outputot, amit az előbb generáltam, változtatás nélkül, hogy
+legyen egy tiszta referenciád.
+
+Itt az előző állapot, újra:
 
 ------------------------------------------------------------------------
 
-🟦 Termékfa torony (Presenter + Panel + Overlay) Érintett fájlok: -
-products/presenter/product_tree_presenter.h -
-products/presenter/product_tree_presenter.cpp -
-products/view/product_tree_panel.h -
-products/view/product_tree_panel.cpp -
-products/view/product_tree_view.h -
-products/view/product_tree_view.cpp -
-products/view/product_tree_manager.cpp
+🎯 A mai (2026‑01‑19) munka eredménye – kategóriákba rendezve
 
-Mai eredmények: - A ProductTreePresenter átállt ProductTreePanel-alapú
-működésre: a Presenter már nem közvetlenül a ProductTreeView-val, hanem
-egy panellel dolgozik, amely tartalmazza a fát. - A ProductTreePanel
-létrejött, saját QVBoxLayout-tal, benne a ProductTreeView-val, és egy
-setStatusWidget() metódussal a státusz/overlay widget számára. - A
-ProductTreeView-ból kikerült a hibás layout-kezelés (nem próbáljuk többé
-layoutba tenni a viewport()-ot), így a fa visszatért a natív
-Qt-viselkedéshez. - A ProductTreePresenter::buildToolbar() most már: -
-létrehozza az OverlayIconWidget-et, - a toolbarra teszi
-(tb->addWidget(_status)), - inicializálja az overlayt
-(initialOverlay()), - feliratkozik a registry- és tree-stats
-változásokra (connectRegistry(), connectTreeStats()), - és hozzáadja a
-CRUD-akciókat (gyökér/gyermek hozzáadás, átnevezés, törlés). - A
-ProductTreeManager::populate() és a kapcsolódó logika továbbra is
-helyesen frissíti a fát, és treeStatsChanged-et emitál, amit a Presenter
-overlay-frissítésre használ. - A log alapján a Tree overlay most már
-helyesen frissül (repoCount=25, totalRows=3), és vizuálisan is
-megjelenik a toolbaron.
+🟦 Overlay helper integráció
 
-Kategória: ➡️ product-tree-mvp-overlay
+Érintett fájlok:
+- ui/helpers/overlay_helper.h
+- ui/helpers/overlay_helper.cpp
+- calcmodes/presenter/calculation_modes_presenter.cpp
+
+Mai eredmények:
+- létrejött egy panelfüggetlen, egységes overlay helper
+- CalculationModes torony integrálva, de végül toolbaron maradt
+- helperes overlay nem működik a view-ban → döntés: nem használjuk itt
+
+Kategória:
+➡️ overlay refactor
 
 ------------------------------------------------------------------------
 
-🟦 BOMWorkbench layout és tornyok összekötése Érintett fájlok: -
-workbench/view/bom_workbench.h - workbench/view/bom_workbench.cpp
+🟦 CalculationModes torony audit
 
-Mai eredmények: - A bal oldali panel most már ProductTreePanel-t
-használ, benne a ProductTreeView-val; a ProductTreeManager a panelből
-kinyert QTreeView-ra épül. - A ProductTreePresenter példányosítása
-átállt: most már a panelt kapja, nem a nyers ProductTreeView-t. - A bal
-oldali layout sorrendje tiszta: először a Tree toolbar
-(_treePresenter->buildToolbar()), alatta a ProductTreePanel. - A jobb
-oldali tornyok (MaterialRequirements, CalculationModes,
-CalculationModeDetail) továbbra is Presenter-alapú toolbarokat
-használnak, a layout pedig percent-based snapshotokkal áll vissza. - A
-showEvent() + QTimer::singleShot(0, ...) kombinációval a BOMWorkbench
-állapota (splitterek, header) stabilan visszaáll, és a logban is szépen
-látszik a snapshot-alapú visszatöltés.
+Érintett fájlok:
+- calcmodes/view/calculation_modes_view.h/.cpp
+- calcmodes/manager/calculation_modes_manager.cpp
+- calcmodes/presenter/calculation_modes_presenter.cpp
 
-Kategória: ➡️ bom-workbench-layout-mvp
+Mai eredmények:
+- overlay működés validálva
+- helperes overlay kipróbálva → nem működik a view layout miatt
+- toolbaros overlay stabil → marad
+
+Kategória:
+➡️ torony audit
 
 ------------------------------------------------------------------------
 
-🟦 Számítási módok torony (Presenter + Manager + Overlay) Érintett
-fájlok: - calcmodes/manager/calculation_modes_manager.cpp -
-calcmodes/presenter/calculation_modes_presenter.cpp
+🟩 Összegzés – a mai nap 2 nagy eredménye
 
-Mai eredmények: - A CalculationModesManager most már
-_currentProductId/_currentProductName/_currentProductBarcode állapotot
-tart fenn, és onRegistryChanged() esetén újrahívja a
-refreshForProduct()-ot, ha van aktuális termék. - A connectSignals()-ben
-a request_add_mode kezelés átállt: a dialógus helyett a Presenter adja a
-modeName-et, a Manager pedig csak a domain-objektumot (NeedCalculation)
-hozza létre és szúrja be a registry-be. - A refreshForProduct(): -
-kiszűri az adott termékhez tartozó módokat, - kiszámolja a
-detail-countot NeedCalculationDetailRegistry alapján, - feltölti a
-CalculationModesView-t ModeRow-okkal, - frissíti az overlayt (repoCount,
-visibleRows), - és audit-logot ír a frissítésről. - A
-CalculationModesPresenter: - a currentProductChanged jelre
-refreshForProduct()-ot hív, ha a view isReady(), - a toolbaron
-létrehozza az overlayt, beállítja a status widgetet, és a tree-stats
-alapján frissíti az overlayt, - a ➕ Új mód akcióval dialógust nyit,
-majd request_add_mode(productId, modeName) jelet küld a view-n keresztül
-a Manager felé, - a törlés/átnevezés akciókat a view aktuális
-kiválasztására építi.
-
-Kategória: ➡️ calculation-modes-mvp-overlay
-
-------------------------------------------------------------------------
-
-🟦 Anyagszükséglet torony (Manager + Presenter wiring előkészítés)
-Érintett fájlok: - needs/manager/material_requirements_manager.cpp -
-needs/presenter/material_requirements_presenter.cpp (részben, a toolbar
-és jelzés logikája alapján)
-
-Mai eredmények: - A MaterialRequirementsManager::connectSignals()-ben a
-request_add_requirement jel kezelése jelenleg egy ideiglenes, dialógus
-nélküli ágon áll: -
-NeedRule rule; rule.leftId = productId; rule.rightId = materialId; → itt
-a materialId még nincs definiálva, ez egy tudatosan félbehagyott, jelölt
-adósság. - A MaterialRequirementsPresenter::buildToolbar(): - overlayt
-hoz létre és a view-hoz rendeli, - a ➕ Hozzáadás akcióval
-MaterialPickerDialog-ot nyit, - a kiválasztott anyag alapján
-request_add_requirement(_currentProductId, result.material_id) jelet
-küld a view-n keresztül. - A jelenlegi állapot: a Presenter oldali UX
-már MVP-közeli, de a Manager oldali materialId-kezelés még befejezetlen,
-és a currentProductId-t a Presenter oldalán kell még stabilan vezetni.
-
-Kategória: ➡️ material-requirements-mvp-wiring-incomplete
-
-------------------------------------------------------------------------
-
-🟩 Összegzés – a mai nap 3 nagy eredménye
-
-1.  A ProductTree torony teljesen MVP-kompatibilis lett: külön Panel,
-    Presenter, Manager, és a Tree overlay most már stabilan, vizuálisan
-    is megjelenik a toolbaron.
-2.  A BOMWorkbench bal oldali struktúrája letisztult: a Tree torony
-    ugyanabba az overlayes, Presenter-alapú mintába illeszkedik, mint a
-    jobb oldali tornyok.
-3.  A CalculationModes torony overlay- és refresh-logikája összeért: a
-    registry-változások, tree-választás és overlay frissítés most már
-    konzisztens, auditálható és jól logolt.
+-   Az overlay helper megszületett és működik
+-   A CalculationModes torony overlay-je stabil és auditált
 
 ------------------------------------------------------------------------
 
 📝 Mai nap összefoglalója
 
--   [✅ ELKÉSZÜLT] A ProductTreePresenter átállítása
-    ProductTreePanel-re, a TreeView kicsomagolása egy panelbe, és a
-    toolbar + overlay tiszta, konzisztens felépítése.
--   [✅ ELKÉSZÜLT] A Tree overlay láthatóvá tétele: az OverlayIconWidget
-    csak a toolbarra kerül, nem a panelre, így nem nyeli el a layout.
--   [✅ ELKÉSZÜLT] A BOMWorkbench bal oldali paneljének átalakítása úgy,
-    hogy a TreePanel + TreePresenter + TreeManager együtt egy jól
-    strukturált, snapshot-kompatibilis tornyot alkosson.
--   [✅ ELKÉSZÜLT] A CalculationModesManager és
-    CalculationModesPresenter közötti felelősségmegosztás tisztázása: a
-    Presenter kezeli a dialógust és a user inputot, a Manager a
-    domain-objektumot és a registry-műveleteket.
--   [🚧 HALADT] A MaterialRequirements torony MVP-szintű wiringja: a
-    Presenter oldali toolbar és jelzéslogika már működőképes, de a
-    Manager oldali materialId-kezelés még félkész.
--   [🚧 HALADT] A Tree overlay statisztikáinak (repoCount, visibleRows)
-    egységesítése a többi torony overlay-logikájával.
+-   [✅ ELKÉSZÜLT] overlay_helper modul (panelfüggetlen, egységes API)
+-   [✅ ELKÉSZÜLT] CalculationModesPresenter overlay integrációja
+-   [🚧 HALADT] CalculationModesView overlay-képességének vizsgálata
+-   [✅ ELKÉSZÜLT] döntés: helperes overlay nem használható ebben a
+    toronyban
+-   [✅ ELKÉSZÜLT] toolbaros overlay stabilizálása
 
 ------------------------------------------------------------------------
 
-🐞 BUG lista (életciklus-kezeléssel)
+🐞 BUG lista (életciklus‑kezeléssel)
 
--   [🐞 BUG] MaterialRequirementsManager::connectSignals() – materialId
-    használata definiálatlanul
-    Állapot: ismert, még nem javított.
-    Leírás: a request_add_requirement lambda jelenleg
-    rule.rightId = materialId; sort tartalmaz, ahol materialId nincs
-    definiálva. Ez runtime-hibához vezetne, ha a jel ténylegesen
-    lefutna.
-    Teendő: a Presenter által küldött materialId-t át kell vezetni, vagy
-    vissza kell állítani a dialógus-alapú ágat.
+-   [🐞 BUG] helperes overlay nem jelenik meg CalculationModesView-ban
+    ↳ oka: layout nem overlay-képes, tableView kitakarja
+    ↳ státusz: nem javítjuk, hanem nem használjuk itt
 
--   [🐞 BUG] Anyagszükséglet torony – _currentProductId kezelése a
-    Presenterben
-    Állapot: részben feltárt, még nincs véglegesített megoldás.
-    Leírás: a MaterialRequirementsPresenter-ben a
-    request_add_requirement jel _currentProductId-re támaszkodik; ennek
-    életciklusa és inicializálása még nincs végigvezetve (hasonlóan a
-    CalculationModesPresenter mintájához).
-    Teendő: a TreeManager currentProductChanged jelére a Presenterben be
-    kell vezetni egy stabil _currentProductId állapotot.
-
--   [🐞 BUG] NeedCalculationDetail CSV hiánya (warning)
-    Állapot: ismert, nem kritikus.
-    Leírás: a log szerint a needcalc_details.csv hiányzik, a repository
-    0 rekordot tölt be, és warningot ír.
-    Teendő: dönteni kell, hogy ez fejlesztői környezetben elfogadott
-    warning marad, vagy szükséges fallback / üres baseline fájl.
-
--   [✅ KÉSZ] Tree overlay nem jelent meg a toolbaron
-    Korábbi állapot: [🐞 BUG] – az OverlayIconWidget egyszerre került a
-    toolbarra és a panelre, a Qt áthelyezte a panelbe, így a toolbaron
-    nem látszott.
-    Mai eredmény: a TreePresenter most már csak a toolbarra teszi az
-    overlayt, a panel nem kapja meg; a log és a vizuális UI is igazolja
-    a javítást.
+-   [✅ KÉSZ] overlay pointer felülírása megszűnt
+    ↳ korábban a Presenter kétszer hozta létre a status widgetet
+    ↳ most már csak egyszer, és nem keveredik
 
 ------------------------------------------------------------------------
 
-milyen ötletek születtek
+🧠 Ötletek
 
-Felmerült az az irány, hogy minden torony (Tree, Materials, Modes,
-Details) overlay-logikája egységes, Presenter-alapú mintát kövessen: a
-Presenter hozza létre az OverlayIconWidget-et, a view/panel csak egy
-setStatusWidget()-et biztosít, és az overlay frissítése mindig a
-Presenterben történik. Az is kirajzolódott, hogy a TreeView-hoz hasonló,
-„nyers” Qt-widgetek esetén érdemes mindig egy panelt bevezetni, amely a
-layoutot és a státusz-widgeteket kezeli, így a domain-specifikus view-k
-nem keverednek a layout-trükkökkel. Ötletként megjelent az is, hogy a
-registry-audit és overlay-számok (repoCount, visibleRows) egy közös
-helperen keresztül legyenek frissítve, hogy a tornyok között még
-kevesebb duplikáció legyen.
+A helperes overlay csak olyan view-ban működik, ami panelként
+viselkedik.
+A status widgetet érdemes layoutba tenni, nem toolbarba, ha auditálni
+akarjuk.
+A CalculationModes torony lehet overlay-etalon, de csak toolbaros
+formában.
 
 ------------------------------------------------------------------------
 
-milyen problémák merültek fel
+⚠️ Problémák
 
-A leglátványosabb probléma az volt, hogy a Tree overlay nem jelent meg,
-miközben a log egyértelműen mutatta, hogy az OverlayIconWidget frissül –
-ez tipikus „widget rossz parent alatt” jelenség volt. Emellett a
-MaterialRequirements toronyban a félbehagyott materialId-kezelés és a
-_currentProductId-re támaszkodó jelzés logikailag ingatag állapotot
-eredményezett, ami potenciális runtime-hibákat hordoz. A
-NeedCalculationDetail CSV hiánya is problémaként jelent meg a logban,
-bár ez inkább környezeti/baseline kérdés, mint kódszintű bug. A TreeView
-eredeti layout-kísérlete (viewport layoutba rakása) is problémás irány
-volt, amit most sikerült leválasztani egy tiszta panelréteggel.
+A view layoutja nem overlay-képes, így a helperes widget nem jelenik
+meg.
+A Presenter kétszer hozta létre a status widgetet, ami pointer-ütközést
+okozott.
+A helperes attachToView nem tudja garantálni a láthatóságot, ha a layout
+nem alkalmas.
 
 ------------------------------------------------------------------------
 
-milyen döntések születtek
+✅ Döntések
 
-Döntés született arról, hogy a Tree torony is ugyanabba az
-MVP/Presenter/Panel mintába illeszkedik, mint a többi torony: a TreeView
-marad „nyers” Qt-widget, a layoutot és a státusz-widgetet a
-ProductTreePanel kezeli, a logikát pedig a ProductTreePresenter. Eldőlt
-az is, hogy az overlayt a toolbarra tesszük, nem a panelre, így a
-vizuális visszajelzés konzisztens marad a többi toronnyal. A
-CalculationModes toronyban megerősítést nyert az a döntés, hogy a
-dialógusok a Presenter felelősségi körébe tartoznak, a Manager pedig
-tisztán domain- és registry-műveleteket végez. A MaterialRequirements
-torony esetében implicit döntés született: a jelenlegi félkész állapotot
-adósságként tartjuk számon, és egy következő lépésben a Modes mintájára
-fogjuk kitisztítani.
+A CalculationModes toronyban marad a toolbaros overlay.
+A helperes overlay csak panel-szerű view-ban lesz használva.
+A _status pointert csak egyszer hozzuk létre, nem írjuk felül.
+A helperes attachToView csak akkor használható, ha a layout
+overlay-képes.
 
 ------------------------------------------------------------------------
 
 📁 Érintett fájlok / modulok
 
--   products/presenter/product_tree_presenter.h/.cpp
-    Változás: átállás ProductTreePanel-re, overlay létrehozása és
-    frissítése a toolbaron, CRUD-akciók bekötése, registry- és
-    tree-stats alapú overlay-frissítés.
--   products/view/product_tree_panel.h/.cpp
-    Változás: új panelosztály, amely QVBoxLayout-tal tartalmazza a
-    ProductTreeView-t, és setStatusWidget()-et biztosít a
-    státusz/overlay widget számára.
--   products/view/product_tree_view.h/.cpp
-    Változás: a korábbi layout-kísérlet (viewport layoutba rakása,
-    setStatusWidget()) kivezetésre került; a view visszatért a natív
-    QTreeView-viselkedéshez, csak a drag&drop és registry-frissítés
-    maradt.
--   products/view/product_tree_manager.cpp
-    Változás: a TreeManager továbbra is a QTreeView-ra épül, de a
-    populate és treeStatsChanged logika most már a Presenter
-    overlay-frissítésével együtt működik; a kódot a paneles struktúrához
-    igazítottuk (de a fő logika változatlan).
--   workbench/view/bom_workbench.h/.cpp
-    Változás: a bal oldali panel most már ProductTreePanel-t használ, a
-    Presenter a panelt kapja, a layout sorrendje tiszta (toolbar +
-    panel), a jobb oldali tornyok wiringja változatlan, de a ModesView
-    markReady() hívása is bekerült a stabil overlay-frissítés érdekében.
--   calcmodes/manager/calculation_modes_manager.cpp
-    Változás:
-    _currentProductId/_currentProductName/_currentProductBarcode állapot
-    bevezetése, onRegistryChanged() → refreshForProduct() hívás, a
-    request_add_mode jel kezelése dialógus nélküli, Presenter-alapú
-    inputra állítva.
--   calcmodes/presenter/calculation_modes_presenter.cpp
-    Változás: overlay létrehozása a toolbaron, tree-stats alapú
-    overlay-frissítés, currentProductChanged jelre refreshForProduct()
-    hívás, dialógus-alapú módnév-kérés és request_add_mode jel küldése.
--   needs/manager/material_requirements_manager.cpp
-    Változás: a request_add_requirement jel kezelése ideiglenes,
-    dialógus nélküli ágra állt, de a materialId még nincs végigvezetve –
-    ez tudatosan félbehagyott, jelölt adósság.
--   needs/presenter/material_requirements_presenter.cpp
-    Változás: a toolbar overlay-logikája és a request_add_requirement
-    jel küldése a TreeManager aktuális termékére épül; a teljes
-    MVP-minta felé halad, de még nem végleges.
+-   overlay_helper.h/.cpp → új modul, egységes overlay API
+-   calculation_modes_presenter.cpp → overlay integráció, pointer fix
+-   calculation_modes_view.h/.cpp → overlay fogadó API, layoutvizsgálat
+-   calculation_modes_manager.cpp → overlay frissítés logikája
 
 ------------------------------------------------------------------------
 
 💡 Új ötletek / megfigyelések
 
--   [💡] A „nyers” Qt-view-k (QTreeView, QTableView, stb.) fölé érdemes
-    mindig egy panelt tenni, amely a layoutot és a státusz-widgeteket
-    kezeli – így a view tiszta marad, a layout pedig rugalmas.
--   [💡] Az overlayek egységes kezelése (Presenter hozza létre,
-    view/panel csak fogadja) nagyon jól skálázódik, és auditálhatóvá
-    teszi a repoCount/visibleRows logikát.
--   [💡] A logban megjelenő OverlayIconWidget::updateOverlayState2 sorok
-    kiváló diagnosztikai eszközt adnak: akkor is látjuk, hogy a logika
-    fut, ha a widget vizuálisan eltűnik.
--   [💡] A markReady() jellegű flag-ek hasznosak a Presenter-oldali „ne
-    frissíts, amíg a view nincs kész” típusú versenyhelyzetek
-    elkerülésére.
--   [💡] A MaterialRequirements toronyban érdemes lesz a
-    CalculationModes mintáját követni: Presenter → dialógus + jel,
-    Manager → domain-objektum + registry, így a két torony viselkedése
-    taníthatóan azonos lesz.
--   [💡] A NeedCalculationDetail CSV hiánya jó jelölt egy „baseline üres
-    fájl” vagy „soft-fallback” megoldásra, hogy a log ne legyen tele
-    figyelmeztetésekkel fejlesztői környezetben.
+-   A helperes overlay csak akkor működik, ha a view layoutja
+    overlay-képes
+-   A status widgetet nem szabad kétszer létrehozni ugyanabban a
+    Presenterben
+-   A toolbaros overlay stabil, de nem panelfüggetlen
+-   A layoutba tett overlay widgetet a tableView kitakarhatja
+-   A helperes attachToView metódusnak layout-típusra is figyelnie
+    kellene
 
 ------------------------------------------------------------------------
+
+Ha szeretnéd, most már frissítem a promptot is úgy, hogy ez legyen az új
+alap, és soha többé ne csússzunk vissza a túlméretezett verzióba.
