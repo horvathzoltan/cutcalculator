@@ -240,19 +240,14 @@ void BOMWorkbench::buildLeftPanel() {
     auto* leftWidget = new QWidget(_splitter);
     auto* leftLayout = new QVBoxLayout(leftWidget);
 
-    _treePanel = new ProductTreePanel(leftWidget);
-    _treeView = _treePanel->tree();
-
-    //_treeView = new ProductTreeView(leftWidget);
+    _treeView = new ProductTreeView(leftWidget);
     _treeManager = new ProductTreeManager(_treeView, this);
-    _treePresenter = new ProductTreePresenter(_treePanel, _treeManager, this);
+    _treePresenter = new ProductTreePresenter(_treeView, _treeManager, this);//_treePanel
 
     _treeManager->populate();
 
-    //leftLayout->addWidget(buildTreeToolbar(leftWidget));
-
     leftLayout->addWidget(_treePresenter->buildToolbar(leftWidget));
-    leftLayout->addWidget(_treePanel);
+    leftLayout->addWidget(_treeView);
     leftWidget->setLayout(leftLayout);
     _splitter->addWidget(leftWidget);
 }
@@ -302,7 +297,7 @@ void BOMWorkbench::buildRightPanel() {
     _detailPresenter = new CalculationModeDetailPresenter(_detailView, _detailManager, this);
     _detailsToolbar = buildDetailsToolbar(_rightMainSplitter, _detailView);
     _detailView->set_details({});
-    _detailView->updateOverlay(NeedCalculationDetailRegistry::instance().size(), 0);
+    _detailPresenter->refreshOverlayOnly();
 
     auto* rightContainer = new QWidget(_rightMainSplitter);
     auto* rightLayout = new QVBoxLayout(rightContainer);

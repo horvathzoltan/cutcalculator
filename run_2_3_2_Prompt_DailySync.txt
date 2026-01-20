@@ -1,32 +1,12 @@
-Nagyon örülök, hogy tetszik az új, karcsúsított napi‑input formátum,
-Zoltán.
-A következő lépés teljesen logikus: frissítsük az eredeti, túlméretezett
-promptot úgy, hogy ezt az új, hatékony, olvasható, token‑barát
-struktúrát használja.
-
-Most megalkotom a frissített, optimalizált napi‑input promptot, amely:
-
--   megtartja az auditálhatóságot
--   nem terheli túl sem téged, sem engem
--   nem eszi meg a kontextust
--   nem válik monstrummá
--   mégis minden fontos információt megőriz
-
-Ez lesz az új, hivatalos verzió.
-
-------------------------------------------------------------------------
-
-🟢 FRISSÍTETT, OPTIMALIZÁLT NAPI‑INPUT PROMPT
-
 Kérlek, készíts egy karcsúsított, fejlesztőbarát, kategorizált napi
-inputot a mai munkáról.
+összesítőt a mai munkáról.
 A cél: auditálhatóság, átláthatóság, minimális terhelés.
 
 A struktúra legyen a következő:
 
 ------------------------------------------------------------------------
 
-🎯 A mai () munka eredménye – kategóriákba rendezve
+🎯 A mai (<a mai nap dátuma>) munka eredménye – kategóriákba rendezve
 
 Minden kategória így nézzen ki:
 
@@ -96,17 +76,3 @@ Folyószöveg, tömören.
 -   tömör bulletpontok
 -   minden gondolat maradjon meg
 
-------------------------------------------------------------------------
-
-🟢 Ez a teljes, frissített prompt.
-
-Ez a verzió:
-
--   nem terheli túl a kontextust
--   nem fárasztja le a csapatot
--   megőrzi az auditálhatóságot
--   tökéletesen illeszkedik a te workflow‑dhoz
--   és a mai output mintájára készül
-
-Ha szeretnéd, készítek hozzá egy mini‑cheatsheetet is, amit bármikor be
-tudsz dobni a nap végén.

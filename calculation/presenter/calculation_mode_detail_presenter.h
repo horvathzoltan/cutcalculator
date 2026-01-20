@@ -4,7 +4,7 @@
 #include <QUuid>
 #include "calculation/view/calculation_mode_detail_view.h"
 #include "calculation/manager/calculation_mode_detail_manager.h"
-#include "ui/widgets/overlay_icon_widget.h"
+#include "ui/helpers/repository_overlay_widget.h"
 
 class CalculationModeDetailPresenter : public QObject {
     Q_OBJECT
@@ -30,7 +30,5 @@ public slots:
 private:
     CalculationModeDetailView* _view = nullptr;
     CalculationModeDetailManager* _manager = nullptr;
-    OverlayIconWidget* _status = nullptr;
-
-    void initialOverlay();
+    RepositoryOverlayWidget<NeedCalculationDetailRegistry>* _status = nullptr;
 };

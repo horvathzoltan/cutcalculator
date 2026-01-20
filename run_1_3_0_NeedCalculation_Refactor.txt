@@ -1,0 +1,326 @@
+Zoltán, most, hogy minden torony teljes kódbázisa megérkezett, végre
+lehetőség van egy precíz, lépésről‑lépésre végrehajtható, hibamentes,
+auditálható tervet adni a NeedCalculation UI‑szinkron teljes javítására.
+
+A terv nem elméleti, hanem konkrét műveleti lista, amelyet egymás után
+végrehajtva a NeedCalculation torony UI‑szinkronja 100%-ban helyreáll.
+
+------------------------------------------------------------------------
+
+🎯 NeedCalculation UI‑szinkron javítása – végrehajtható műveleti terv
+
+A szinkron három fő jelzésláncból áll:
+
+1)  ProductTree → CalculationModes
+2)  CalculationModes → CalculationModeDetail
+3)  Registry változás → mindkét panel frissítése
+
+Mindhárom láncban van hiányosság.
+A következő terv ezeket rendezi.
+
+------------------------------------------------------------------------
+
+🟦 1. LÉPÉS – CalculationModesView „ready” jelzésének bevezetése
+
+Miért kell?
+
+A CalculationModesPresenter csak akkor frissít product váltáskor, ha:
+
+    if (_view->isReady())
+        refreshForProduct(...)
+
+De a view soha nem hívja meg markReady()‑t → emiatt a product váltás
+néha nem frissít.
+
+Teendő
+
+A CalculationModesView konstruktorának végére:
+
+    markReady();
+
+Eredmény
+
+-   ProductTree váltás → CalculationModes mindig frissül
+-   A szinkronlánc első fele stabil
+
+------------------------------------------------------------------------
+
+🟦 2. LÉPÉS – CalculationModesPresenter továbbítsa a modeSelected jelet a DetailPresenter felé
+
+Miért kell?
+
+A CalculationModeDetailPresenter nem kapja meg, hogy a user másik módot
+választott.
+
+Teendő
+
+A BOMWorkbench‑ben (vagy ahol a két presenter példányosul):
+
+    connect(modesPresenter, &CalculationModesPresenter::modeSelected,
+            detailsPresenter, &CalculationModeDetailPresenter::onModeSelected);
+
+Eredmény
+
+-   Mode váltás → Detail panel automatikusan frissül
+-   A szinkronlánc második fele stabil
+
+------------------------------------------------------------------------
+
+🟦 3. LÉPÉS – CalculationModesPresenter küldje tovább a kiválasztott módot
+
+A CalculationModesPresenter már küldi:
+
+    emit modeSelected(modeId);
+
+Ez jó.
+A hiányosság az volt, hogy senki nem hallgatta.
+
+A 2. lépés után ez megoldódik.
+
+------------------------------------------------------------------------
+
+🟦 4. LÉPÉS – CalculationModeDetailPresenter: onModeSelected javítása
+
+A jelenlegi kód:
+
+    if (!modeId) {
+        _view->set_details({});
+        return;
+    }
+    const NeedCalculation* mode = NeedCalculationRegistry::instance().findById(*modeId);
+    QString modeName = mode ? mode->name : QString("unknown");
+    refreshForCalculation(*modeId, modeName);
+
+Ez jó, de a view nem kapja meg a calcId‑t:
+
+Teendő
+
+Egészítsd ki:
+
+    _view->set_current_calculation(*modeId, modeName);
+
+Eredmény
+
+-   A detail panel tudja, melyik calcId‑hoz tartozik
+-   Add/remove műveletek helyesen működnek
+
+------------------------------------------------------------------------
+
+🟦 5. LÉPÉS – CalculationModeDetailManager: refreshForCalculation hívása a view felé
+
+A jelenlegi kódban:
+
+    // _view->set_details(rows);
+
+→ ki van kommentelve, ezért a detail panel nem frissül.
+
+Teendő
+
+Vedd ki a kommentet:
+
+    _view->set_details(rows);
+
+Eredmény
+
+-   Detail panel mindig frissül
+-   A szinkronlánc harmadik fele stabil
+
+------------------------------------------------------------------------
+
+🟦 6. LÉPÉS – ProductTreeManager → CalculationModesPresenter → DetailPresenter lánc lezárása
+
+A ProductTreeManager már küldi:
+
+    emit currentProductChanged(id, name, barcode);
+
+A CalculationModesPresenter fogadja → jó.
+
+A CalculationModeDetailPresenter viszont nem reagál product váltásra.
+
+Teendő
+
+A BOMWorkbench‑ben:
+
+    connect(treeManager, &ProductTreeManager::currentProductChanged,
+            modesPresenter, &CalculationModesPresenter::refreshForProduct);
+
+És opcionálisan:
+
+    connect(treeManager, &ProductTreeManager::currentProductChanged,
+            detailsPresenter, [](...) { detailsPresenter->reset(); });
+
+Eredmény
+
+-   Product váltás → Modes frissül
+-   Modes frissül → Detail frissül
+-   Detail resetelődik, ha nincs mód
+
+------------------------------------------------------------------------
+
+🟦 7. LÉPÉS – Overlay frissítések összehangolása
+
+Minden torony overlay‑e működik, de a NeedCalculation toronyban:
+
+-   CalculationModesPresenter → OK
+-   CalculationModeDetailPresenter → OK
+-   CalculationModesManager → overlay hívások ki vannak kommentelve
+
+Teendő
+
+A CalculationModesManager‑ben:
+
+    // _view->updateOverlay(repoCount, visibleRows);
+
+Ezt vagy töröld, vagy állítsd át az új overlay helperre:
+
+    // nincs teendő, a Presenter kezeli
+
+Eredmény
+
+-   Overlay frissítés egységes
+-   Nincs duplikált overlay logika
+
+------------------------------------------------------------------------
+
+🟩 Összegzés – végrehajtási sorrend
+
+1.  CalculationModesView::markReady() hívása
+2.  ModesPresenter → DetailPresenter jelzés bekötése
+3.  DetailPresenter::onModeSelected kiegészítése
+4.  DetailManager::refreshForCalculation → set_details()
+    visszakapcsolása
+5.  ProductTreeManager → ModesPresenter bekötése
+6.  ModesPresenter → DetailPresenter lánc lezárása
+7.  Overlay logika tisztítása
+
+------------------------------------------------------------------------
+
+🟢 Ha szeretnéd, elkészítem a teljes diff‑patch csomagot is
+
+-   minden módosítás pontos fájl‑ és sorhivatkozással
+-   copy‑paste‑elhető patch formában
+-   auditálható, visszavonható, atomic commitokra bontva
+
+Csak szólj, és megcsinálom.
+
+********
+*
+*
+*
+*
+*
+*
+*
+********
+Íme egy tiszta, pontonként végrehajtható, holnap reggel azonnal
+indítható terv, kizárólag a három fókuszpontra szabva.
+Nem túl hosszú, nem túl általános — tényleg végrehajtható lépések.
+
+------------------------------------------------------------------------
+
+1) CalculationModesPresenter overlay‑kódjának véglegesítése
+
+Cél: a CalculationModes torony overlay‑lánca legyen ugyanolyan stabil, egységes és formalizált, mint a MaterialRequirements és ProductTree tornyoké.
+
+Lépések
+
+1.  Ellenőrizd a refreshOverlayOnly() hívási pontokat
+    -   Startup után: buildToolbar() → OK
+    -   Product váltás után: refreshForProduct() → OK
+    -   TreeStats után: connectTreeStats() → OK
+    -   Hiányzó: registry változás → manager már hívja a view‑t, de
+        presenter overlay‑t nem frissít külön.
+2.  Adj hozzá egy registry‑szintű overlay frissítést
+    -   CalculationModesManager már subscribe‑ol a
+        NeedCalculationRegistry‑re.
+    -   Presenterben is kell egy connectRegistry() mint a
+        ProductTreePresenter-ben.
+3.  Implementáld a connectRegistry() metódust
+    -   Mint a ProductTreePresenter-ben:
+
+            void CalculationModesPresenter::connectRegistry() {
+                NeedCalculationRegistry::instance().subscribeItemsChangedToken(
+                    [this]() { refreshOverlayOnly(); });
+            }
+
+    -   Hívd meg a buildToolbar() végén.
+4.  Teszteld a három overlay állapotot
+    -   Repo empty → ❌
+    -   Repo >0, de UI empty → 🟡
+    -   Repo >0, UI >0 → 🟢
+5.  Tisztítsd a kódot
+    -   Töröld a kommentelt régi overlay kódot (initialOverlay,
+        updateOverlayState2 maradványok).
+
+------------------------------------------------------------------------
+
+2) MaterialRequirements torony jelzésláncának tisztítása — KÉSZ
+
+Teendő: nincs.
+
+A torony overlay‑lánca már stabil, egységes, és a presenter oldalon a
+QMetaObject::invokeMethod(..., Qt::QueuedConnection) is megoldja a race
+conditiont.
+
+------------------------------------------------------------------------
+
+3) Overlay UX szabályok formalizálása
+
+Cél: legyen egy egyetlen, minden toronyra érvényes dokumentált UX‑szabályrendszer, amit a fejlesztők követhetnek.
+
+Lépések
+
+1.  Hozz létre egy rövid, 1 oldalas szabályfájlt
+    -   docs/ui/overlay_ux_rules.md
+2.  Fogalmazd meg a három állapotot és jelentésüket
+    -   EmptyRepo → ❌
+    -   NoVisibleRows → 🟡
+    -   Normal → 🟢
+3.  Rögzítsd a hívási szabályokat
+    -   Presenter felel a refreshOverlayOnly() hívásért
+    -   View soha nem tartalmaz overlay logikát
+    -   Registry változás → presenter overlay frissítés
+    -   TreeStats → presenter overlay frissítés
+    -   Product váltás → presenter overlay frissítés
+4.  Rögzítsd a widget‑szintű szabályokat
+    -   Base emoji mindig: 📄
+    -   Overlay mindig BottomRight
+    -   Méretezés: 70% base, 50–75% overlay ratio
+    -   Padding: 1 px
+5.  Adj példát minden toronyra
+    -   ProductTreePresenter
+    -   MaterialRequirementsPresenter
+    -   CalculationModesPresenter
+    -   CalculationModeDetailPresenter
+6.  Zárd le a dokumentumot egy “Checklist for new towers” résszel
+    -   6–8 pontos ellenőrzőlista új tornyokhoz.
+
+------------------------------------------------------------------------
+
+Összegző, végrehajtható roadmap
+
+1. CalculationModesPresenter overlay véglegesítése
+
+-   ☐ connectRegistry() implementálása
+-   ☐ buildToolbar() végén meghívni
+-   ☐ overlay frissítés registry változásra
+-   ☐ régi overlay kód maradványainak törlése
+-   ☐ három állapot manuális tesztje
+
+2. MaterialRequirements — kész
+
+-   ☒ nincs további teendő
+
+3. Overlay UX szabályok formalizálása
+
+-   ☐ új overlay_ux_rules.md létrehozása
+-   ☐ állapotok és ikonok rögzítése
+-   ☐ presenter‑szintű hívási szabályok rögzítése
+-   ☐ widget‑szintű szabályok rögzítése
+-   ☐ példák hozzáadása
+-   ☐ új tornyokhoz checklist készítése
+
+------------------------------------------------------------------------
+
+Ha szeretnéd, megírom neked készen a teljes overlay_ux_rules.md
+dokumentumot is, tiszta, baseline‑barát formában.

@@ -64,9 +64,9 @@ QVector<CalculationModeDetailView::DetailRow> CalculationModeDetailManager::refr
     //_view->set_current_calculation(calcId, modeName);
     // _view->set_details(rows);
 
-    int repoCount = NeedCalculationDetailRegistry::instance().size();
-    int visibleRows = rows.size();
-    _view->updateOverlay(repoCount, visibleRows);
+    // int repoCount = NeedCalculationDetailRegistry::instance().size();
+    // int visibleRows = rows.size();
+    // _view->updateOverlay(repoCount, visibleRows);
 
     // zInfo(QString("🔄 Details refreshed for mode: %1, count=%2").arg(modeName).arg(rows.size()));
 

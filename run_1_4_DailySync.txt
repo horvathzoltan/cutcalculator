@@ -1,130 +1,140 @@
-Persze, Zoltán — visszahozom pontosan azt a karcsúsított, hatékony
-napi‑input outputot, amit az előbb generáltam, változtatás nélkül, hogy
-legyen egy tiszta referenciád.
+Értettem, Zoltán — most nem a sablont kéred vissza, hanem azt, hogy
+töltsem ki a mai munkánk alapján.
+Összegyűjtöttem mindent, amit ma együtt csináltunk: az
+overlay‑architektúra teljes refaktorát, a RepositoryOverlayWidget
+bevezetését, a Presenter‑tisztítást, a helper‑szétválasztást, a
+ProductTree integráció előkészítését, és a napi‑input prompt
+optimalizálását.
 
-Itt az előző állapot, újra:
+Az alábbi összesítő a mai nap tényleges eredményeit tartalmazza, a kért
+formátumban.
 
 ------------------------------------------------------------------------
 
-🎯 A mai (2026‑01‑19) munka eredménye – kategóriákba rendezve
+🎯 A mai (2026‑01‑20) munka eredménye – kategóriákba rendezve
 
-🟦 Overlay helper integráció
+------------------------------------------------------------------------
 
-Érintett fájlok:
-- ui/helpers/overlay_helper.h
-- ui/helpers/overlay_helper.cpp
-- calcmodes/presenter/calculation_modes_presenter.cpp
+🟦 Overlay‑architektúra refaktor
 
-Mai eredmények:
-- létrejött egy panelfüggetlen, egységes overlay helper
-- CalculationModes torony integrálva, de végül toolbaron maradt
-- helperes overlay nem működik a view-ban → döntés: nem használjuk itt
+Érintett fájlok: - overlay_status_helper.h/.cpp -
+overlay_helper.h/.cpp - repository_overlay_widget.h -
+calculation_modes_presenter.cpp
+
+Mai eredmények: - Bevezettük a RepositoryOverlayWidget<T> generikus
+overlay‑komponenst. - A Presenter overlay‑logikája egyetlen sorra
+egyszerűsödött (_status->refresh()). - A OverlayStatusHelper tiszta
+Presenter‑policy lett. - A OverlayHelper UI‑helper szerepe letisztult. -
+A base emoji és overlay‑policy egységesítve lett minden torony számára.
 
 Kategória:
-➡️ overlay refactor
+➡️ Architektúra‑tisztítás, overlay‑policy egységesítés
 
 ------------------------------------------------------------------------
 
-🟦 CalculationModes torony audit
+🟦 Presenter‑tisztítás (CalculationModes)
 
-Érintett fájlok:
-- calcmodes/view/calculation_modes_view.h/.cpp
-- calcmodes/manager/calculation_modes_manager.cpp
-- calcmodes/presenter/calculation_modes_presenter.cpp
+Érintett fájlok: - calculation_modes_presenter.cpp
 
-Mai eredmények:
-- overlay működés validálva
-- helperes overlay kipróbálva → nem működik a view layout miatt
-- toolbaros overlay stabil → marad
+Mai eredmények: - Eltávolítottuk a régi overlay‑létrehozó kódot. - A
+Presenter már nem számol repoCount‑ot. - A Presenter nem hív közvetlen
+widget‑logikát. - A toolbar‑építés letisztult, csak a
+widget‑példányosítás maradt.
 
 Kategória:
-➡️ torony audit
+➡️ Presenter‑réteg tisztítása, MVP‑helyreállítás
 
 ------------------------------------------------------------------------
 
-🟩 Összegzés – a mai nap 2 nagy eredménye
+🟦 Napi‑input prompt optimalizálása
 
--   Az overlay helper megszületett és működik
--   A CalculationModes torony overlay-je stabil és auditált
+Érintett fájlok: - (prompt‑szöveg, workflow dokumentáció)
+
+Mai eredmények: - Megszületett a karcsúsított, kategorizált napi‑input
+formátum. - A struktúra auditálható, token‑barát, fejlesztőbarát lett. -
+A sablon és a kitöltött verzió különvált.
+
+Kategória:
+➡️ Workflow‑optimalizálás, dokumentáció‑tisztítás
+
+------------------------------------------------------------------------
+
+🟩 Összegzés – a mai nap 3 nagy eredménye
+
+-   Az overlay‑architektúra teljesen egységes, toronyfüggetlen és tiszta
+    lett.
+-   A Presenter‑réteg végre mentes minden UI‑boilerplate‑től.
+-   Megszületett a végleges, karcsú napi‑input formátum.
 
 ------------------------------------------------------------------------
 
 📝 Mai nap összefoglalója
 
--   [✅ ELKÉSZÜLT] overlay_helper modul (panelfüggetlen, egységes API)
--   [✅ ELKÉSZÜLT] CalculationModesPresenter overlay integrációja
--   [🚧 HALADT] CalculationModesView overlay-képességének vizsgálata
--   [✅ ELKÉSZÜLT] döntés: helperes overlay nem használható ebben a
-    toronyban
--   [✅ ELKÉSZÜLT] toolbaros overlay stabilizálása
+-   [✅ ELKÉSZÜLT] RepositoryOverlayWidget bevezetése
+-   [✅ ELKÉSZÜLT] OverlayStatusHelper dokumentálása és tisztítása
+-   [✅ ELKÉSZÜLT] CalculationModesPresenter overlay‑refaktor
+-   [🚧 HALADT] ProductTree torony integráció előkészítése
+-   [🚧 HALADT] Napi‑input workflow finomítása
 
 ------------------------------------------------------------------------
 
 🐞 BUG lista (életciklus‑kezeléssel)
 
--   [🐞 BUG] helperes overlay nem jelenik meg CalculationModesView-ban
-    ↳ oka: layout nem overlay-képes, tableView kitakarja
-    ↳ státusz: nem javítjuk, hanem nem használjuk itt
-
--   [✅ KÉSZ] overlay pointer felülírása megszűnt
-    ↳ korábban a Presenter kétszer hozta létre a status widgetet
-    ↳ most már csak egyszer, és nem keveredik
+-   [🐞 BUG] ProductTree torony még a régi overlay‑logikát használja
+-   [🐞 BUG] MaterialRequirements torony overlay‑logikája még nem
+    egységes
+-   [✅ KÉSZ] CalculationModes overlay‑logika régi verziója eltávolítva
 
 ------------------------------------------------------------------------
 
 🧠 Ötletek
 
-A helperes overlay csak olyan view-ban működik, ami panelként
-viselkedik.
-A status widgetet érdemes layoutba tenni, nem toolbarba, ha auditálni
-akarjuk.
-A CalculationModes torony lehet overlay-etalon, de csak toolbaros
-formában.
+-   A RepositoryOverlayWidget lehetne több overlay‑típusú factory alapja
+    (dirty, sync, warning).
+-   A Presenter‑ek overlay‑frissítése teljesen egységesíthető minden
+    toronyban.
+-   A registry‑alapú overlay‑policy akár unit‑tesztelhető is lenne.
 
 ------------------------------------------------------------------------
 
 ⚠️ Problémák
 
-A view layoutja nem overlay-képes, így a helperes widget nem jelenik
-meg.
-A Presenter kétszer hozta létre a status widgetet, ami pointer-ütközést
-okozott.
-A helperes attachToView nem tudja garantálni a láthatóságot, ha a layout
-nem alkalmas.
+-   A ProductTree és MaterialRequirements tornyok még a régi
+    overlay‑mintát használják.
+-   A View‑kban maradhatnak régi overlay‑függvények, ezeket fel kell
+    deríteni.
 
 ------------------------------------------------------------------------
 
 ✅ Döntések
 
-A CalculationModes toronyban marad a toolbaros overlay.
-A helperes overlay csak panel-szerű view-ban lesz használva.
-A _status pointert csak egyszer hozzuk létre, nem írjuk felül.
-A helperes attachToView csak akkor használható, ha a layout
-overlay-képes.
+-   A RepositoryOverlayWidget lesz a hivatalos overlay‑komponens minden
+    toronyban.
+-   A Presenter csak a visibleRows‑t adja át, semmi mást.
+-   A napi‑input sablon karcsúsított verziója lesz a hivatalos workflow.
 
 ------------------------------------------------------------------------
 
 📁 Érintett fájlok / modulok
 
--   overlay_helper.h/.cpp → új modul, egységes overlay API
--   calculation_modes_presenter.cpp → overlay integráció, pointer fix
--   calculation_modes_view.h/.cpp → overlay fogadó API, layoutvizsgálat
--   calculation_modes_manager.cpp → overlay frissítés logikája
+-   overlay_status_helper.* – teljes dokumentáció és tisztítás
+-   repository_overlay_widget.h – új generikus overlay‑komponens
+-   calculation_modes_presenter.cpp – overlay‑refaktor,
+    Presenter‑tisztítás
+-   overlay_helper.* – UI‑helper szerepének tisztázása
 
 ------------------------------------------------------------------------
 
 💡 Új ötletek / megfigyelések
 
--   A helperes overlay csak akkor működik, ha a view layoutja
-    overlay-képes
--   A status widgetet nem szabad kétszer létrehozni ugyanabban a
-    Presenterben
--   A toolbaros overlay stabil, de nem panelfüggetlen
--   A layoutba tett overlay widgetet a tableView kitakarhatja
--   A helperes attachToView metódusnak layout-típusra is figyelnie
-    kellene
+-   A torony‑független overlay‑policy most már annyira tiszta, hogy akár
+    külön modul is lehetne.
+-   A Presenter‑ek overlay‑kódja mostantól egyetlen sor — ez hosszú
+    távon rengeteg hibát előz meg.
+-   A napi‑input sablon most már tényleg használható, nem terheli túl a
+    kontextust.
 
 ------------------------------------------------------------------------
 
-Ha szeretnéd, most már frissítem a promptot is úgy, hogy ez legyen az új
-alap, és soha többé ne csússzunk vissza a túlméretezett verzióba.
+Ha szeretnéd, holnapra megcsináljuk a ProductTree torony teljes
+integrációját is, ugyanilyen tisztán.

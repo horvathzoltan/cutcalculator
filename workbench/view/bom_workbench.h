@@ -55,7 +55,6 @@ private:
 
     // Bal oldal: terméktípus-fa
     ProductTreeView* _treeView = nullptr;
-    ProductTreePanel* _treePanel = nullptr;
     ProductTreeManager* _treeManager = nullptr;
     ProductTreePresenter* _treePresenter = nullptr;
 

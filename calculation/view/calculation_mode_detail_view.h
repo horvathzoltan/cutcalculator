@@ -3,8 +3,6 @@
 #include <QTableWidget>
 #include <QVBoxLayout>
 #include <QUuid>
-//#include "common/registry/subscription_token.h"
-#include "ui/widgets/overlay_icon_widget.h"
 
 /**
  * @class CalculationModeDetailView
@@ -33,9 +31,6 @@ public:
 
     void set_details(const QVector<DetailRow>& rows);
 
-    void setStatusWidget(OverlayIconWidget* w) { _statusWidget = w; }
-    void updateOverlay(int repoCount, int visibleRows);
-
     QUuid currentCalculationId() const { return _current_calcId; }
     void reset();
 
@@ -52,7 +47,6 @@ public slots:
 private:
     QTableWidget* _table = nullptr;
     QUuid _current_calcId;
-    OverlayIconWidget* _statusWidget = nullptr;
 
     void setup_table();
     void apply_row_visuals(int row, const DetailRow& r);

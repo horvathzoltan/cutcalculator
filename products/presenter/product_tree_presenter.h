@@ -4,25 +4,24 @@
 #include "products/view/product_tree_panel.h"
 #include "products/view/product_tree_view.h"
 #include "products/view/product_tree_manager.h"
-#include "ui/widgets/overlay_icon_widget.h"
-//#include "products/registry/product_registry.h"
+#include "products/registry/product_registry.h"
+#include "ui/helpers/repository_overlay_widget.h"
 
 class ProductTreePresenter : public QObject {
     Q_OBJECT
 public:
-    explicit ProductTreePresenter(ProductTreePanel* panel,
+    explicit ProductTreePresenter(ProductTreeView* view,
                                   ProductTreeManager* manager,
                                   QObject* parent = nullptr);
 
     QToolBar* buildToolbar(QWidget* parent);
 
 private:    
-    ProductTreePanel* _panel = nullptr;
-    ProductTreeView* _view = nullptr; // a panelből szerezzük
+    ProductTreeView* _view = nullptr;
     ProductTreeManager* _manager = nullptr;
-    OverlayIconWidget* _status = nullptr;
+    RepositoryOverlayWidget<ProductRegistry>* _status = nullptr;
 
-    void initialOverlay();
+    void refreshOverlayOnly();
     void connectRegistry();
     void connectTreeStats();
 };

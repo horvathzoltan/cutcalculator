@@ -2,7 +2,8 @@
 #include "calcmodes/registry/need_calculation_registry.h"
 #include "calcmodes/dialogs/mode_name_dialog.h"
 
-#include <ui/helpers/overlay_helper.h>
+#include <ui/helpers/repository_overlay_widget.h>
+#include <ui/helpers/overlay_status_helper.h>
 
 CalculationModesPresenter::CalculationModesPresenter(
     CalculationModesView* view,
@@ -26,23 +27,15 @@ CalculationModesPresenter::CalculationModesPresenter(
                      this, [this](std::optional<QUuid> modeId) {
                          emit modeSelected(modeId);
                      });
-
-    // _status = OverlayHelper::createStatusWidget("📄");
-    // OverlayHelper::attachToView(_view, _status);
-
 }
 
 QToolBar* CalculationModesPresenter::buildToolbar(QWidget* parent)
 {
     auto* tb = new QToolBar("Számítási módok", parent);
 
-    _status = new OverlayIconWidget();
-    _status->setBaseEmoji("📄");
-    tb->addWidget(_status);
-    _view->setStatusWidget(_status);
-    _status->setObjectName("ModesOverlay");
+    _status = new RepositoryOverlayWidget<NeedCalculationRegistry>(tb, "ModesOverlay");
 
-    initialOverlay();
+    refreshOverlayOnly();
     connectTreeStats();
 
     QAction* addAct    = tb->addAction("➕ Új mód");
@@ -71,10 +64,6 @@ QToolBar* CalculationModesPresenter::buildToolbar(QWidget* parent)
     return tb;
 }
 
-void CalculationModesPresenter::initialOverlay()
-{
-    refreshOverlayOnly();
-}
 
 void CalculationModesPresenter::connectTreeStats()
 {
@@ -90,14 +79,11 @@ void CalculationModesPresenter::refreshForProduct(const QUuid& productId,
 {
     auto rows = _manager->refreshForProduct(productId, name, barcode);
     _view->set_modes(rows);
-    // int repo = NeedCalculationRegistry::instance().size();
-    // int visible = rows.size();
-    // _status->updateOverlayState2(repo, visible);
     refreshOverlayOnly();
 }
 
 void CalculationModesPresenter::refreshOverlayOnly()
 {
-    int repo = NeedCalculationRegistry::instance().size();
-    OverlayHelper::update(_status,repo,_view->rowCount());
+    _status->refresh(_view->rowCount());
 }
+

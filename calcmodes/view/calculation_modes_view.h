@@ -1,6 +1,4 @@
 #pragma once
-#include "common/registry/subscription_token.h"
-#include "ui/widgets/overlay_icon_widget.h"
 #include <QWidget>
 #include <QTableWidget>
 #include <QVBoxLayout>
@@ -36,10 +34,6 @@ public:
     void set_modes(const QVector<ModeRow>& rows);
     std::optional<QUuid> currentModeId() const;
 
-    void setStatusWidget(OverlayIconWidget* w) { _statusWidget = w; }
-    void updateOverlay(int repoCount, int visibleRows);
-
-
     bool isReady() const { return _ready; }
     void markReady() { _ready = true; }
 
@@ -62,9 +56,6 @@ public slots:
 private:
     QTableWidget* _table = nullptr;
     QUuid _current_productId;
-
-    OverlayIconWidget* _statusWidget = nullptr;
-
 
     void setup_table();
     void on_selection_changed();

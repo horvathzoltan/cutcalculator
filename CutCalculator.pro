@@ -48,7 +48,7 @@ SOURCES += \
     products/presenter/product_tree_presenter.cpp \
     products/view/product_tree_panel.cpp \
     test/material_registry_smoke_test.cpp \
-    ui/helpers/overlay_helper.cpp \
+    ui/helpers/overlay_status_helper.cpp \
     ui/widgets/overlay_icon_widget.cpp \
     workbench/view/bom_workbench.cpp \
     colors/model/named_color.cpp \
@@ -159,7 +159,8 @@ HEADERS += \
     products/presenter/product_tree_presenter.h \
     products/view/product_tree_panel.h \
     test/material_registry_smoke_test.h \
-    ui/helpers/overlay_helper.h \
+    ui/helpers/overlay_status_helper.h \
+    ui/helpers/repository_overlay_widget.h \
     ui/widgets/overlay_icon_widget.h \
     workbench/view/bom_workbench.h \
     colors/model/named_color.h \
@@ -230,7 +231,7 @@ DISTFILES += \
     docs/registry_matrix.md \
     run_1_1_AllapotTabla.txt \
     run_1_2_BugList.txt \
-    run_1_3_0_CollectorMixin_Refactor.txt \
+    run_1_3_0_NeedCalculation_Refactor.txt \
     run_1_3_1_BarcodeRegistry_Refactor.txt \
     run_1_4_DailySync.txt \
     run_2_1_AIDevelopmentHandbook.txt \

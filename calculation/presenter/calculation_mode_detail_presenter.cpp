@@ -1,6 +1,7 @@
 #include "calculation/presenter/calculation_mode_detail_presenter.h"
 #include "calculation/registry/need_calculation_detail_registry.h"
 #include "calcmodes/registry/need_calculation_registry.h"
+#include "ui/helpers/repository_overlay_widget.h"
 
 CalculationModeDetailPresenter::CalculationModeDetailPresenter(
     CalculationModeDetailView* view,
@@ -32,13 +33,9 @@ QToolBar* CalculationModeDetailPresenter::buildToolbar(QWidget* parent)
 {
     auto* tb = new QToolBar("Formula műveletek", parent);
 
-    _status = new OverlayIconWidget();
-    _status->setBaseEmoji("📄");
-    tb->addWidget(_status);
-    _view->setStatusWidget(_status);
-    _status->setObjectName("DetailsOverlay");
+    _status = new RepositoryOverlayWidget<NeedCalculationDetailRegistry>(tb, "DetailsOverlay");
 
-    initialOverlay();
+    refreshOverlayOnly();
 
     QAction* addAct    = tb->addAction("➕ Új formula");
     QAction* removeAct = tb->addAction("🗑️ Törlés");
@@ -76,20 +73,12 @@ QToolBar* CalculationModeDetailPresenter::buildToolbar(QWidget* parent)
     return tb;
 }
 
-void CalculationModeDetailPresenter::initialOverlay()
-{
-    int repo = NeedCalculationDetailRegistry::instance().size();
-    _status->updateOverlayState2(repo, 0);
-}
 
 void CalculationModeDetailPresenter::refreshForCalculation(const QUuid& calcId,
                                                            const QString& modeName)
 {
     auto rows = _manager->refreshForCalculation(calcId, modeName);
     _view->set_details(rows);
-    // int repo = NeedCalculationDetailRegistry::instance().size();
-    // int visible = rows.size();
-    // _status->updateOverlayState2(repo, visible);
     refreshOverlayOnly();
 }
 
@@ -107,7 +96,5 @@ void CalculationModeDetailPresenter::onModeSelected(std::optional<QUuid> modeId)
 
 void CalculationModeDetailPresenter::refreshOverlayOnly()
 {
-    int repo = NeedCalculationDetailRegistry::instance().size();
-    int visible = _view->rowCount();
-    _status->updateOverlayState2(repo, visible);
+    _status->refresh(_view->rowCount());
 }

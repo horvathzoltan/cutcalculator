@@ -71,18 +71,6 @@ void ProductTreeView::dropEvent(QDropEvent* event) {
     emit productMoved(id, newParentId);
 }
 
-// void ProductTreeView::setStatusWidget(QWidget* w)
-// {
-//     if (_statusWidget) {
-//         _layout->removeWidget(_statusWidget);
-//         _statusWidget->setParent(nullptr);
-//     }
 
-//     _statusWidget = w;
-
-//     if (_statusWidget) {
-//         _layout->insertWidget(0, _statusWidget);
-//     }
-// }
 
 

@@ -2,27 +2,22 @@
 
 #include <products/registry/product_registry.h>
 
-ProductTreePresenter::ProductTreePresenter(ProductTreePanel* panel,
+ProductTreePresenter::ProductTreePresenter(ProductTreeView* view,
                                            ProductTreeManager* manager,
                                            QObject* parent)
     : QObject(parent)
-    , _panel(panel)
     , _manager(manager)
 {
-    _view = panel->tree(); // a TreeView innen jön
+    _view = view;
 }
 
 QToolBar* ProductTreePresenter::buildToolbar(QWidget* parent)
 {
     auto* tb = new QToolBar("Termékfa", parent);
 
-    _status = new OverlayIconWidget();
-    //_status->setBaseEmoji("🌳");
-    _status->setBaseEmoji("📄");
-    tb->addWidget(_status);
-    _status->setObjectName("TreeOverlay");
+    _status = new RepositoryOverlayWidget<ProductRegistry>(tb, "ProductTreeOverlay");
 
-    initialOverlay();
+    refreshOverlayOnly();
     connectRegistry();
     connectTreeStats();
 
@@ -40,26 +35,20 @@ QToolBar* ProductTreePresenter::buildToolbar(QWidget* parent)
     return tb;
 }
 
-void ProductTreePresenter::initialOverlay()
+void ProductTreePresenter::refreshOverlayOnly()
 {
-    int repo = ProductRegistry::instance().size();
     int visible = _view->model() ? _view->model()->rowCount() : 0;
-    _status->updateOverlayState2(repo, visible);
+    _status->refresh(visible);
 }
 
 void ProductTreePresenter::connectRegistry()
 {
-    ProductRegistry::instance().subscribeItemsChangedToken([this]() {
-        int repo = ProductRegistry::instance().size();
-        int visible = _view->model() ? _view->model()->rowCount() : 0;
-        _status->updateOverlayState2(repo, visible);
-    });
+    ProductRegistry::instance().subscribeItemsChangedToken(
+        [this]() { refreshOverlayOnly(); });
 }
 
 void ProductTreePresenter::connectTreeStats()
 {
     QObject::connect(_manager, &ProductTreeManager::treeStatsChanged,
-                     this, [this](int repoCount, int visibleRows) {
-                         _status->updateOverlayState2(repoCount, visibleRows);
-                     });
+                     this, [this]() { refreshOverlayOnly(); });
 }

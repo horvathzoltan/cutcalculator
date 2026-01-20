@@ -1,13 +1,4 @@
-Kérlek, két lépésben dolgozzunk:
-
-1)  Először készíts egy minden részletre kiterjedő, ám mégis tömör,
-    fejlesztőbarát összefoglalót a mai napról
-    az alapján, amit leírok vagy amit a fájlok/diff mutatnak.
-    Ez legyen a “Mai nap összefoglalója” blokk.
-
-------------------------------------------------------------------------
-
-🔒 Állapottábla integritás‑ellenőrzése (új szabály)
+🔒 Állapottábla integritás‑ellenőrzése
 
 Mielőtt bármilyen állapottábla‑frissítést végrehajtanál, ellenőrizd a
 felhasználó által megadott állapottábla szerkezetét.
@@ -68,6 +59,11 @@ előállítani:
 6.  A táblázatnak vizuálisan egységesnek, monospaced‑kompatibilisnek
     kell lennie.
 
+7. a táblázat megadása kötelező. ha nem megy át, kérned kell
+
+8. a vizsgálat eredményét nem kell részletesen kiírni:
+    elég annyit mondani, hogy "a táblázat megfelel/nem felel meg
+    a formátumkövetelményeknek".
 ------------------------------------------------------------------------
 
 2)  A második lépésben frissítsd az állapottáblát és a roadmapet
@@ -80,6 +76,7 @@ előállítani:
 -   ami új ötlet → 💡 Új ötlet
 -   semmit ne törölj és ne vonj össze
 -   minden státuszváltozást vezess át
+-   ha nincsen olyan sor, amihez a mai munkánk köthető, vegyünk fel egy ilyen sort
 
 Emoji‑készlet:
 📐 = Tervezés

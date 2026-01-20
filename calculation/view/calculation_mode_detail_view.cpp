@@ -75,11 +75,11 @@ void CalculationModeDetailView::set_current_calculation(const QUuid& calcId, con
     //emit request_add_detail(_current_calcId);
 }
 
-void CalculationModeDetailView::updateOverlay(int repoCount, int visibleRows)
-{
-    if (!_statusWidget) return;
-    _statusWidget->updateOverlayState2(repoCount, visibleRows);
-}
+// void CalculationModeDetailView::updateOverlay(int repoCount, int visibleRows)
+// {
+//     if (!_statusWidget) return;
+//     _statusWidget->updateOverlayState2(repoCount, visibleRows);
+// }
 
 void CalculationModeDetailView::reset()
 {

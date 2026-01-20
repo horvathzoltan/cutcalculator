@@ -79,9 +79,9 @@ public:
                              const QString& product_name,
                              const QString& product_barcode);
 
-    void setStatusWidget(OverlayIconWidget* w) { _statusWidget = w; }
+    //void setStatusWidget(OverlayIconWidget* w) { _statusWidget = w; }
     // MVP: a view csak megjelenít – a számolás managerben történik
-    void updateOverlay(int repoCount, int visibleRows);
+    //void updateOverlay(int repoCount, int visibleRows);
 
     int rowCount() const;
 signals:
@@ -107,7 +107,7 @@ signals:
 
 private:
     QTableWidget* _table = nullptr;
-    OverlayIconWidget* _statusWidget = nullptr;
+    //OverlayIconWidget* _statusWidget = nullptr;
 
     // Az aktuálisan kiválasztott termék (bal oldali fa alapján)
     QUuid _current_product_id;

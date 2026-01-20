@@ -73,11 +73,11 @@ std::optional<QUuid> CalculationModesView::currentModeId() const {
     return item->data(Qt::UserRole).toUuid();
 }
 
-void CalculationModesView::updateOverlay(int repoCount, int visibleRows)
-{
-    if (!_statusWidget) return;
-    _statusWidget->updateOverlayState2(repoCount, visibleRows);
-}
+// void CalculationModesView::updateOverlay(int repoCount, int visibleRows)
+// {
+//     if (!_statusWidget) return;
+//     _statusWidget->updateOverlayState2(repoCount, visibleRows);
+// }
 
 
 int CalculationModesView::rowCount() const

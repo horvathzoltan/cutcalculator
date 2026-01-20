@@ -5,7 +5,7 @@
 #include "needs/view/material_requirements_view.h"
 #include "needs/manager/material_requirements_manager.h"
 #include "products/view/product_tree_manager.h"
-#include "ui/widgets/overlay_icon_widget.h"
+#include "ui/helpers/repository_overlay_widget.h"
 
 class MaterialRequirementsPresenter : public QObject {
     Q_OBJECT
@@ -26,8 +26,7 @@ private:
     MaterialRequirementsView* _view = nullptr;
     MaterialRequirementsManager* _manager = nullptr;
     ProductTreeManager* _treeManager = nullptr;
-    OverlayIconWidget* _status = nullptr;
+    RepositoryOverlayWidget<NeedRuleRegistry>* _status = nullptr;
 
-    void initialOverlay();
     void connectTreeStats();
 };

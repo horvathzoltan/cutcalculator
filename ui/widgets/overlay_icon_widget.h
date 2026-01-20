@@ -1,5 +1,6 @@
 #pragma once
 
+#include "common/logger/logger.h"
 #include <QWidget>
 #include <QIcon>
 #include <optional>
@@ -46,7 +47,7 @@ public:
 
     void setLogicalSize(int px);
 
-    void updateOverlayState2(int repoCount, int totalRows);
+    //void updateOverlayState2(int repoCount, int totalRows){zTrace();};
 protected:
     void paintEvent(QPaintEvent* e) override;
 

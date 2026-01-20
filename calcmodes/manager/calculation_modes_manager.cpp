@@ -176,9 +176,9 @@ QVector<CalculationModesView::ModeRow> CalculationModesManager::refreshForProduc
     _view->set_current_product(productId, productName, productBarcode);
     // _view->set_modes(rows);
 
-    int repoCount = NeedCalculationRegistry::instance().size();
-    int visibleRows = rows.size();
-    _view->updateOverlay(repoCount, visibleRows);
+    //int repoCount = NeedCalculationRegistry::instance().size();
+    //int visibleRows = rows.size();
+    //_view->updateOverlay(repoCount, visibleRows);
 
     // zEventINFO(QString("🔄 Modes refreshed: %1 (%2)").arg(productName, productBarcode));
 

@@ -5,10 +5,11 @@
 #include "calcmodes/view/calculation_modes_view.h"
 #include "calcmodes/manager/calculation_modes_manager.h"
 #include "products/view/product_tree_manager.h"
-#include "ui/widgets/overlay_icon_widget.h"
+#include "ui/helpers/repository_overlay_widget.h"
 
 class CalculationModesPresenter : public QObject {
     Q_OBJECT
+
 public:
     explicit CalculationModesPresenter(CalculationModesView* view,
                                        CalculationModesManager* manager,
@@ -30,8 +31,8 @@ private:
     CalculationModesView* _view = nullptr;
     CalculationModesManager* _manager = nullptr;
     ProductTreeManager* _treeManager = nullptr;
-    OverlayIconWidget* _status = nullptr;
+    RepositoryOverlayWidget<NeedCalculationRegistry>* _status = nullptr;
 
-    void initialOverlay();
+    //void initialOverlay();
     void connectTreeStats();
 };

@@ -174,10 +174,10 @@ void MaterialRequirementsView::on_selection_changed() {
 }
 
 
-void MaterialRequirementsView::updateOverlay(int repoCount, int visibleRows) {
-    if (!_statusWidget) return;
-    _statusWidget->updateOverlayState2(repoCount, visibleRows);
-}
+// void MaterialRequirementsView::updateOverlay(int repoCount, int visibleRows) {
+//     if (!_statusWidget) return;
+//     _statusWidget->updateOverlayState2(repoCount, visibleRows);
+// }
 
 int MaterialRequirementsView::rowCount() const
 {

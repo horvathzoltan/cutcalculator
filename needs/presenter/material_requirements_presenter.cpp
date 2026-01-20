@@ -24,13 +24,16 @@ QToolBar* MaterialRequirementsPresenter::buildToolbar(QWidget* parent)
 {
     auto* tb = new QToolBar("Anyagszükséglet", parent);
 
-    _status = new OverlayIconWidget();
-    _status->setBaseEmoji("📄");
-    tb->addWidget(_status);
-    _view->setStatusWidget(_status);
-    _status->setObjectName("MaterialOverlay");
+    // _status = new OverlayIconWidget();
+    // _status->setBaseEmoji("📄");
+    // tb->addWidget(_status);
+    // _view->setStatusWidget(_status);
+    // _status->setObjectName("MaterialOverlay");
 
-    initialOverlay();
+    _status = new RepositoryOverlayWidget<NeedRuleRegistry>(tb, "MaterialRequirementsOverlay");
+    //_view->setStatusWidget(_status);
+
+    refreshOverlayOnly();
     connectTreeStats();
 
     QAction* addAct    = tb->addAction("➕ Hozzáadás");
@@ -54,22 +57,10 @@ QToolBar* MaterialRequirementsPresenter::buildToolbar(QWidget* parent)
     return tb;
 }
 
-void MaterialRequirementsPresenter::initialOverlay()
-{
-    int repo = NeedRuleRegistry::instance().size();
-    _status->updateOverlayState2(repo, 0);
-}
-
 void MaterialRequirementsPresenter::connectTreeStats()
 {
     QObject::connect(_treeManager, &ProductTreeManager::treeStatsChanged,
-                     this, [this](int, int) {
-                         int repo = NeedRuleRegistry::instance().size();
-                         _status->updateOverlayState2(repo, 0);
-                     });
-
-
-
+                     this, [this]() { refreshOverlayOnly(); });
 }
 
 void MaterialRequirementsPresenter::refreshForProduct(const QUuid& productId,
@@ -88,7 +79,5 @@ void MaterialRequirementsPresenter::refreshForProduct(const QUuid& productId,
 
 void MaterialRequirementsPresenter::refreshOverlayOnly()
 {
-    int repo = NeedRuleRegistry::instance().size();
-    int visible = _view->rowCount();
-    _status->updateOverlayState2(repo, visible);
+    _status->refresh(_view->rowCount());
 }
