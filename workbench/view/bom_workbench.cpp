@@ -324,12 +324,12 @@ void BOMWorkbench::buildRightPanel() {
     //         });
 
     connect(_treeManager, &ProductTreeManager::currentProductChanged,
-             this, [this]() {
-                 if (_matPresenter) _matPresenter->refreshOverlayOnly();
-                 if (_modesPresenter) _modesPresenter->refreshOverlayOnly();
-             });
-
-
+            this, [this]() {
+                if (_matPresenter) _matPresenter->refreshOverlayOnly();
+                if (_modesPresenter) _modesPresenter->refreshOverlayOnly();
+                if (_detailView) _detailView->set_details({});
+                if (_detailPresenter) _detailPresenter->refreshOverlayOnly();
+            });
 
     // wiring: mode selection → details refresh
     // connect(_modesView, &CalculationModesView::selection_changed,

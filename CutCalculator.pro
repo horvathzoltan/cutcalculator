@@ -227,6 +227,7 @@ DISTFILES += \
     docs/barcodes_module_overview.md \
     docs/entity_contract.md \
     docs/entity_matrix.md \
+    docs/overlay_ux_rules.md \
     docs/registry_contract.md \
     docs/registry_matrix.md \
     run_1_1_AllapotTabla.txt \

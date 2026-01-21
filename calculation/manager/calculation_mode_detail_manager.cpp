@@ -61,8 +61,11 @@ QVector<CalculationModeDetailView::DetailRow> CalculationModeDetailManager::refr
     auto details = NeedCalculationDetailRegistry::instance().findByCalculation(calcId);
     QVector<CalculationModeDetailView::DetailRow> rows = makeRows(details);
 
-    //_view->set_current_calculation(calcId, modeName);
-    // _view->set_details(rows);
+    // 🔧 ÚJ: a view tudja, melyik calcId aktív
+    _view->set_current_calculation(calcId, modeName);
+
+    // 🔄 Detail sorok átadása a view-nak
+    _view->set_details(rows);
 
     // int repoCount = NeedCalculationDetailRegistry::instance().size();
     // int visibleRows = rows.size();

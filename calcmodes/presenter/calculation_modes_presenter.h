@@ -35,4 +35,6 @@ private:
 
     //void initialOverlay();
     void connectTreeStats();
+    void connectRegistry();
+
 };

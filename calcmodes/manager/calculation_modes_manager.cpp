@@ -157,13 +157,6 @@ QVector<CalculationModesView::ModeRow> CalculationModesManager::refreshForProduc
         }
         );
 
-    // auto modes = NeedCalculationRegistry::instance().findAll(
-    //     [&](const NeedCalculation& c) {
-    //         return c.productId == productId;
-    //     }
-    //     );
-
-
     QVector<CalculationModesView::ModeRow> rows;
     rows.reserve(modes.size());
 
@@ -172,15 +165,7 @@ QVector<CalculationModesView::ModeRow> CalculationModesManager::refreshForProduc
         rows.append({ m.id, productId, m.name, detailCount });
     }
 
-
     _view->set_current_product(productId, productName, productBarcode);
-    // _view->set_modes(rows);
-
-    //int repoCount = NeedCalculationRegistry::instance().size();
-    //int visibleRows = rows.size();
-    //_view->updateOverlay(repoCount, visibleRows);
-
-    // zEventINFO(QString("🔄 Modes refreshed: %1 (%2)").arg(productName, productBarcode));
 
     zEventINFO(QString("🔄 Modes refreshed: %1 (%2)").arg(productName, productBarcode));
     return rows;

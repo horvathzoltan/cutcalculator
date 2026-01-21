@@ -91,6 +91,8 @@ void CalculationModeDetailPresenter::onModeSelected(std::optional<QUuid> modeId)
     const NeedCalculation* mode =
         NeedCalculationRegistry::instance().findById(*modeId);
     QString modeName = mode ? mode->name : QString("unknown");
+
+    _view->set_current_calculation(*modeId, modeName);
     refreshForCalculation(*modeId, modeName);
 }
 

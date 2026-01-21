@@ -17,11 +17,12 @@ CalculationModesPresenter::CalculationModesPresenter(
 {
     connect(_treeManager, &ProductTreeManager::currentProductChanged,
             this, [this](const QUuid& id, const QString& name, const QString& barcode) {
-                if (_view->isReady())      // vagy saját flag
+                _view->set_modes({});
+                refreshOverlayOnly();
+                if (_view->isReady())
                     refreshForProduct(id, name, barcode);
                 emit modeSelected(std::nullopt);
             });
-
 
     QObject::connect(_view, &CalculationModesView::selection_changed,
                      this, [this](std::optional<QUuid> modeId) {
@@ -61,6 +62,7 @@ QToolBar* CalculationModesPresenter::buildToolbar(QWidget* parent)
         if (id) emit _view->request_rename_mode(*id);
     });
 
+    connectRegistry();
     return tb;
 }
 
@@ -80,10 +82,21 @@ void CalculationModesPresenter::refreshForProduct(const QUuid& productId,
     auto rows = _manager->refreshForProduct(productId, name, barcode);
     _view->set_modes(rows);
     refreshOverlayOnly();
+    _status->refresh(_view->rowCount());
 }
 
 void CalculationModesPresenter::refreshOverlayOnly()
 {
     _status->refresh(_view->rowCount());
 }
+
+void CalculationModesPresenter::connectRegistry()
+{
+    NeedCalculationRegistry::instance().subscribeItemsChangedToken(
+        [this]() {
+            refreshOverlayOnly();
+        });
+
+}
+
 

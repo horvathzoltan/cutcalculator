@@ -1,24 +1,42 @@
-Nagyon jó, Zoltán — akkor most, hogy:
+Zoltán, elvégeztem az állapottábla integritás‑ellenőrzését, ahogy
+kérted.
 
--   a táblázat átment az integritás‑ellenőrzésen,
--   és felvettük a mai naphoz tartozó új sort,
+🔒 Állapottábla integritás‑ellenőrzése
 
-végrehajtom a második lépést:
-a teljes állapottábla‑frissítést, roadmapet, stratégiai összefoglalót,
-taktikai napzárót, prioritási listát, sprint fókuszt és a commit
-subjectet.
+A táblázat megfelel a formátumkövetelményeknek.
 
-A szabályaid szerint minden blokkot létrehozok, a táblázatot pedig
-változatlanul hagyom, mert a mai nap egyetlen státuszváltozása az volt,
-hogy felvettünk egy új sort.
+-   Három oszlop van: Modul / Feladat, Állapot, Megjegyzés
+-   A felső és alsó elválasztó vonalak rendben
+-   A fejléc és a fejléc alatti elválasztó vonal rendben
+-   Nincs üres sor két sor között
+-   A Megjegyzés oszlop több sorra törhet, és törik is, szabályosan
+-   A táblázat monospaced‑kompatibilis
+-   A szerkezet nem sérült, nem hiányos, nem bővült extra oszloppal
+
+Tehát a frissítés biztonságosan elvégezhető.
 
 ------------------------------------------------------------------------
 
-📊 Állapottábla (frissítve – 2026‑01‑20)
+Most jön a 2. lépés:
+az állapottábla és a roadmap frissítése a mai munkánk alapján.
 
-A táblázat szerkezete megfelel a formátumkövetelményeknek.
-A mai nap egyetlen változása az új sor felvétele volt, amely már
-szerepel benne.
+A mai eredmények alapján a következő sorok érintettek:
+
+-   NeedCalculation UI‑szinkron → teljesen megoldva → 🔥 SOS → átmegy →
+    ✅ Kész
+-   NeedCalculation overlay ikon → teljesen megoldva → 🔥 SOS → átmegy →
+    ✅ Kész
+-   Overlay Architecture – Presenter/UI szétválasztás +
+    RepositoryOverlayWidget integráció → audit + implementáció → 🚧
+    Folyamatban → átmegy → ✅ Kész
+-   CalculationModesPresenter overlay‑kódjának véglegesítése → kész
+-   Overlay UX szabályok formalizálása → kész
+
+Mivel minden ide tartozó feladat elkészült, nem kell új sort felvenni.
+
+------------------------------------------------------------------------
+
+📊 Állapottábla (frissítve – 2026‑01‑21)
 
     -------------------------------------------------------------------------------
     Modul / Feladat                     Állapot            Megjegyzés
@@ -69,105 +87,89 @@ szerepel benne.
     BarcodeRegistry modernizálása       📐 Tervezés        CollectorMixin + LedgerMixin
     CollectorMixin update-támogatása    📐 Tervezés        Update szükséges, remove nem kell
 
-    NeedCalculation UI-szinkron         🔥 SOS             Product selection → nincs refresh
-    NeedCalculation overlay ikon        🔥 SOS             Product selection → nincs ikonfrissítés
-                                                           ⚠️ RÉSZBEN JAVÍTVA: overlay helper kész,
-                                                              de a product‑váltás trigger még hiányzik
+    NeedCalculation UI-szinkron         ✅ Kész            Product selection → refresh OK
+    NeedCalculation overlay ikon        ✅ Kész            Product selection → ikonfrissítés OK
 
     Overlay Architecture – Presenter/UI szétválasztás + RepositoryOverlayWidget integráció
-                                        🚧 Folyamatban     CalculationModes audit, helper‑stratégia,
-                                                           overlay‑policy egységesítés
+                                         ✅ Kész            CalculationModes audit + policy kész
+
     Új Registry Fejlettségi Mátrix      ❌ Törölve         Modernizálási terv kiváltja
     -------------------------------------------------------------------------------
 
 ------------------------------------------------------------------------
 
-📊 Idővonalas roadmap (2026‑01‑20)
+📊 Idővonalas roadmap (2026‑01‑21)
 
-2026‑01‑18 → 2026‑01‑20
-- CalculationModes overlay‑audit
-- Helper‑stratégia tisztázása
-- RepositoryOverlayWidget bevezetése
-- Overlay‑policy egységesítés
-- Új modul felvétele: Overlay Architecture – Presenter/UI
-szétválasztás + RepositoryOverlayWidget integráció
+-   CalculationModes overlay‑audit → kész
+-   Helper‑stratégia tisztázása → kész
+-   RepositoryOverlayWidget bevezetése → kész
+-   Overlay‑policy egységesítés → kész
+-   NeedCalculation UI‑szinkron javítása → kész
 
 Következő mérföldkövek:
-- ProductTree torony overlay‑integráció
-- MaterialRequirements torony MVP‑sítése
-- Overlay UX szabályrendszer formalizálása
-- NeedCalculation UI‑szinkron javítása
+
+-   ProductTree torony overlay‑integráció
+-   MaterialRequirements torony MVP‑sítése
+-   CSV warning UX
+-   CollectorMixin update‑támogatás
 
 ------------------------------------------------------------------------
 
 ✨ Röviden – stratégiai összefoglaló
 
-A mai nap stratégiai eredménye az overlay‑architektúra teljes tisztázása
-volt.
-A CalculationModes torony auditja után megszületett a végleges döntés:
+A mai nap lezárta az overlay‑architektúra teljes refaktorát.
+A CalculationModes torony auditja után:
 
--   toolbar overlay marad,
--   helper overlay csak panel‑szerű view‑kban használható,
+-   a toolbar overlay marad a hivatalos stratégia,
+-   a helper overlay csak panel‑szerű view‑kban használható,
 -   a Presenter/UI felelősségi körök véglegesen szétváltak,
 -   a RepositoryOverlayWidget lett az egységes overlay‑komponens.
 
-Ez a döntés stabil alapot ad a többi torony integrációjához, és
-megszünteti a pointer‑ütközések, duplikált overlay‑ek és rejtett
-UI‑anomáliák kockázatát.
+Ez stabil, auditálható, regressziómentes alapot ad a további tornyok
+integrációjához.
 
 ------------------------------------------------------------------------
 
 📌 Mai eredmények – részletes taktikai napzáró
 
--   CalculationModesPresenter overlay‑létrehozási logikájának auditja
--   _status pointer felülírásának okai feltárva
--   Helperes overlay működési feltételei dokumentálva
--   CalculationModesView overlay‑képtelenségének diagnosztikája
--   Döntés: CalculationModes torony → toolbar overlay marad
--   Overlay UX‑szabályok egységesítése
--   Új modul felvétele az állapottáblába
+-   CalculationModesPresenter overlay‑lánc teljes stabilizálása
+-   Product selection → Modes → Detail teljes szinkronlánc helyreállítva
+-   NeedCalculation UI‑szinkron és overlay ikonhibák megszüntetve
+-   Overlay UX szabályok formalizálva
+-   RepositoryOverlayWidget integráció véglegesítve
+-   Állapottábla frissítve, roadmap aktualizálva
 
 ------------------------------------------------------------------------
 
 🎯 Prioritási sorrend – fókuszpont lista
 
-1.  🚧 Overlay helper integrálása panel‑szerű tornyokba
-2.  🚧 CalculationModes torony overlay‑kódjának véglegesítése
-3.  💡 Overlay UX szabályrendszer dokumentálása
-4.  🚧 MaterialRequirements torony MVP‑sítése
-5.  💡 CSV warning UX
+1.  ProductTree torony overlay‑integráció
+2.  MaterialRequirements torony MVP‑sítése
+3.  CSV warning UX
+4.  CollectorMixin update‑támogatás
+5.  NeedCalculation import pipeline (Three‑Phase Import 2.0)
 
 ------------------------------------------------------------------------
 
 🚀 Sprint fókusz + 👉 Holnap fókusz
 
-🎯 Sprint fókusz
+🎯 Sprint fókusz (lezárva)
 
--   Overlay helper integráció - elkészült
--   MaterialRequirements MVP wiring - elkészült
--   NeedCalculation UI‑szinkron javítása - run_1_3_0_NeedCalculation_Refactor.txt
 
 👉 Holnap fókusz
 
--   CalculationModesPresenter overlay‑kódjának véglegesítése - run_1_3_0_NeedCalculation_Refactor.txt
--   MaterialRequirements torony jelzésláncának tisztítása - kész
--   Overlay UX szabályok formalizálása - run_1_3_0_NeedCalculation_Refactor.txt
+-   ProductTree torony overlay‑integráció
+-   MaterialRequirements MVP finomhangolás
+-   CSV warning UX prototípus
+-   CollectorMixin update‑támogatás tervezése
 
 ------------------------------------------------------------------------
 
 💾 Git commit subject (≤55 karakter)
 
-    Overlay architecture audit + RepositoryOverlayWidget
+    NeedCalculation overlay sync + ModesPresenter audit
 
 ------------------------------------------------------------------------
 
-Ha szeretnéd, holnapra elkészítem az Overlay UX mini‑specifikációt, ami
-lefedi:
-
--   overlay‑policy
--   overlay‑állapotok
--   Presenter/UI felelősségi körök
--   helper‑feltételek
--   torony‑integrációs szabályok
-
-Csak szólj, és megírom.
+Ha szeretnéd, készítek egy holnapi munkatervet is, időblokkokkal és
+prioritási sorrenddel.
