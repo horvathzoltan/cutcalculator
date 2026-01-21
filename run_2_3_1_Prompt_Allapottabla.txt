@@ -77,6 +77,12 @@ előállítani:
 -   semmit ne törölj és ne vonj össze
 -   minden státuszváltozást vezess át
 -   ha nincsen olyan sor, amihez a mai munkánk köthető, vegyünk fel egy ilyen sort
+-   ha a tábla nem változik, akkor változatlanul vissza kell azt adni
+-   a ⭐ NAPI FÓKUSZRA OPTIMALIZÁLT FELADATLISTA meglévő pontjai nem változtathatóak meg:
+-   ha mégis meg kellene valamit változtatni, akkor azt emiatt csak egy új pontban lehet jelezni
+-   törölni pőontot nem lehet - ha törölni kellene, az is egy új feladat új pontban felvéve
+-   felvenni csak új pontot lehet  - például új rendszerkomponens tervezése vagy régi újratervezése
+miatt keletkezhet új pontunk.
 
 Emoji‑készlet:
 📐 = Tervezés
@@ -87,6 +93,7 @@ Emoji‑készlet:
 
 A frissítés során készítsd el a következő blokkokat:
 
+⭐ NAPI FÓKUSZRA OPTIMALIZÁLT FELADATLISTA
 📊 Állapottábla
 📊 Idővonalas roadmap
 ✨ Röviden – stratégiai összefoglaló
