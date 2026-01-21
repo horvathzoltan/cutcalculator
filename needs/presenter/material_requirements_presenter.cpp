@@ -54,6 +54,7 @@ QToolBar* MaterialRequirementsPresenter::buildToolbar(QWidget* parent)
         _view->remove_selected();
     });
 
+    connectRegistry();
     return tb;
 }
 
@@ -80,4 +81,11 @@ void MaterialRequirementsPresenter::refreshForProduct(const QUuid& productId,
 void MaterialRequirementsPresenter::refreshOverlayOnly()
 {
     _status->refresh(_view->rowCount());
+}
+
+
+void MaterialRequirementsPresenter::connectRegistry() {
+    _needRuleToken =
+        NeedRuleRegistry::instance().subscribeItemsChangedToken(
+            [this]() { refreshOverlayOnly(); });
 }

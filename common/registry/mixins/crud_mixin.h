@@ -2,9 +2,9 @@
 #pragma once
 
 #include "../core/registry_core.h"
-#include "contract_checks.h"
+//#include "contract_checks.h"
 #include <QString>
-#include <functional>
+//#include <functional>
 #include <exception>
 #include "common/logger/logger.h"
 

@@ -27,6 +27,8 @@ private:
     MaterialRequirementsManager* _manager = nullptr;
     ProductTreeManager* _treeManager = nullptr;
     RepositoryOverlayWidget<NeedRuleRegistry>* _status = nullptr;
+    SubscriptionToken _needRuleToken; // <<< ÚJ
 
     void connectTreeStats();
+    void connectRegistry();
 };

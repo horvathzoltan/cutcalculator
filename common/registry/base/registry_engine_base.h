@@ -30,21 +30,6 @@ public:
         onItemsChanged();
     }
 
-    //void persistRegistry() const { persist(); }
-
-    // Public wrappers for store*Impl so non-derived mixins (RegistryCore) can call them.
-        // bool storeAddPublicImpl(const TEntity& e) { return storeAddImpl(e); }
-    // bool storeAddAllPublicImpl(const QVector<TEntity>& v) { return storeAddAllImpl(v); }
-    // void storeSetAllPublicImpl(const QVector<TEntity>& v) { storeSetAllImpl(v); }
-    // QVector<TEntity> storeReadAllPublicImpl() const { return storeReadAllImpl(); }
-    // const TEntity* storeFindByIdPublicImpl(const IdType& id) const { return storeFindByIdImpl(id); }
-    // const TEntity* storeFindByPairPublicImpl(const IdType& leftId, const IdType& rightId) const { return storeFindByPairImpl(leftId, rightId); }
-    // bool storeUpdatePublicImpl(const TEntity& e) { return storeUpdateImpl(e); }
-    // bool storeRemovePublicImpl(const IdType& id) { return storeRemoveImpl(id); }
-    // bool storeRemovePairPublicImpl(const IdType& leftId, const IdType& rightId) { return storeRemovePairImpl(leftId, rightId); }
-
-
-
     // --- Event subscription API (thread-safe) ---
 
     SubscriptionId subscribeItemsChanged(ItemsChangedEvent cb) {
@@ -85,30 +70,6 @@ public:
         });
     }
 
-    // --- DOMAIN HOOKS (alapértelmezésben no-op) ---
-//    virtual bool validateDomain(const TEntity&) const { return true; }
-//    virtual bool validateDuplicate(const TEntity&) const { return true; }
-
-    // javasolt: non-const referencia, mert a hookok gyakran módosítanak entitást
- //   virtual bool beforeInsert(TEntity&) { return true; }
- //   virtual void afterInsert(const TEntity&) {}
-
-    // javasolt: non-const referencia, mert a hookok gyakran módosítanak entitást
- //   virtual bool beforeUpdate(TEntity&) { return true; }
- //   virtual void afterUpdate(const TEntity&) {}
-
-  //  virtual bool beforeRemove(const TEntity&) { return true; }
- //   virtual void afterRemove(const TEntity&) {}
-
- //   virtual void onInsertLog(const TEntity&) {}
- //   virtual void onUpdateLog(const TEntity&) {}
- //   virtual void onRemoveLog(const TEntity&) {}
-
-  //  virtual void onLoadLog() {}
-  //  virtual void persist() const {}
-
- //   virtual bool validateConnection(const TEntity&) const { return true; }
-
 public:
     const QString& registryName() const { return _registryName; }
 
@@ -140,12 +101,6 @@ public:
         QReadLocker r(&_rwLock);
         return _items.data().isEmpty();
     }
-
-    // auto begin() const { guardInstanceUsage(); QReadLocker r(&_rwLock); return _items.data().begin(); }
-    // auto end()   const { guardInstanceUsage(); QReadLocker r(&_rwLock); return _items.data().end(); }
-
-    // auto cbegin() const { guardInstanceUsage(); QReadLocker r(&_rwLock); return _items.data().cbegin(); }
-    // auto cend()   const { guardInstanceUsage(); QReadLocker r(&_rwLock); return _items.data().cend(); }
 
     template<typename Predicate>
     const TEntity* findIf(Predicate&& pred) const {

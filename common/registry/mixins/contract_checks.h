@@ -22,9 +22,10 @@ struct CrudContractChecks {
 
 template<typename Host, typename Entity>
 concept HasCollectorStoreApi = requires(Host h, const Entity& e, const QVector<Entity>& v) {
-    { h.storeAddImpl(e) } -> std::convertible_to<bool>;
-    { h.storeAddAllImpl(v) } -> std::convertible_to<bool>;
-    { h.storeReadAllImpl() } -> std::convertible_to<QVector<Entity>>;
+    { h.storeAddImpl(e) }      -> std::convertible_to<bool>;
+    { h.storeAddAllImpl(v) }   -> std::convertible_to<bool>;
+    { h.storeReadAllImpl() }   -> std::convertible_to<QVector<Entity>>;
+    { h.storeUpdateImpl(e) }   -> std::convertible_to<bool>;   // 🔥 új elvárás
 };
 
 template<typename Host, typename Entity>
