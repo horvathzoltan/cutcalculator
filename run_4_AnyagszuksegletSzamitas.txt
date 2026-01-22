@@ -362,11 +362,32 @@ NP-CK,NP-C,Kurblis
 
 ────────────────────────────────────────────
 
-roletta - rugós:(w*h)60*100
+roletta - rugós:(w*h)115*150cm
 
-tengely 57mm -> levonás= w-3.0mm
-vászon 56mm -> levonás= w-4.0mm
-alsópálca 57,3mm -> levonás= w-2,7
+tengely 112 -3 cm
+vászon 111 -4 cm
+alsópálca 112.3 -2.7 cm
 záróléc
 tok
 ────────────────────────────────────────────
+
+roletta - tetőtéri 64.7*120 cm
+
+tengely: 62.2 -2,5 cm
+vászon 62.0 -2,7 cm
+alsópálca 62.0 -2,7 cm
+--------
+
+roletta - tetőtéri-NagyK 130*160cm
+
+tengely: 127 -3 cm
+vászon 126 -4 cm
+alsópálca 127.3 -2.7 cm
+
+----
+roletta - alap 45*40.5cm
+
+tengely: 41.5 -3.5 cm
+vászon 40.5 -4.5 cm
+alsópálca 40.5 -4.5 cm
+

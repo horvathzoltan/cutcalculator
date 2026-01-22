@@ -68,6 +68,7 @@ void FileNameHelper::setBinaryPath(const char* argv0) {
 
 void FileNameHelper::setDataRootPath(const QString& path) {
     _dataRoot.setRootPath(path, InitSource::Setter);
+    _dataRoot_MAIN.setRootPath(path, InitSource::Setter);
 }
 
 QString FileNameHelper::getSettingsFilePath(bool forWrite) {
@@ -109,7 +110,7 @@ QString FileNameHelper::getLogFolder() const {
 
 /* Material */
 QString FileNameHelper::getMaterialCsvFile() const {
-    return _dataRoot.filePath("materials.csv");
+    return _dataRoot_MAIN.filePath("materials.csv");
 }
 
 /* Product */
@@ -159,7 +160,7 @@ QString FileNameHelper::getNeedCalculationDetailCsvFile() const {
 /* RAL Colors */
 
 QString FileNameHelper::getRalColorsFilePath(const QString& path) const {
-    return QDir(_dataRoot.filePath("ral_colors")).filePath(path);
+    return QDir(_dataRoot_MAIN.filePath("ral_colors")).filePath(path);
 }
 
 QString FileNameHelper::getRalClassicCsvFile() const {
@@ -178,13 +179,13 @@ QString FileNameHelper::getRalPlastic2CsvFile() const {
     return getRalColorsFilePath("p2.csv");
 }
 
-QString FileNameHelper::dataRootPath() const {
-    return _dataRoot.filePath("");
-}
+// QString FileNameHelper::dataRootPath() const {
+//     return _dataRoot.filePath("");
+// }
 
 
 QString FileNameHelper::uiSnapshotDirectory() const {
-    const QString root = dataRootPath();   // <-- EZ a helyes, publikus API
+    const QString root = _dataRoot.filePath("");
 
     if (root.isEmpty()) {
         zWarning("⚠️ uiSnapshotDirectory: dataRootPath is empty");
@@ -222,7 +223,7 @@ QString FileNameHelper::uiSnapshotFilePath(const QString& profile) const {
 
 QString FileNameHelper::getCacheDirectory(const QString& subfolder) const
 {
-    QString root = dataRootPath();
+    QString root =  _dataRoot.filePath("");
     if (root.isEmpty())
         root = QStandardPaths::writableLocation(QStandardPaths::CacheLocation);
 

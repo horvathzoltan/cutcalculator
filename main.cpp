@@ -74,6 +74,7 @@ int main(int argc, char *argv[])
         zInfo("***  ENTERING TEST MODE  ***");
         zInfo("***                      ***");
         zInfo("****************************");
+        FileNameHelper::instance().setTestMode(true);
         //zInfo("testProfile: "+SettingsManager::instance().testProfile());
         bool ok = TestManager::instance().runBusinessLogicTests(SettingsManager::instance().testProfile());
         return ok ? 0 : 1;

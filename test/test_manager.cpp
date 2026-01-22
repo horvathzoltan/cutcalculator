@@ -3,6 +3,8 @@
 
 #include "eventlogger_tests.h"
 #include "material_registry_smoke_test.h"
+#include "filenamehelper_tests.h"
+
 
 TestManager& TestManager::instance() {
     static TestManager inst;
@@ -29,6 +31,11 @@ bool TestManager::runBusinessLogicTests(const QString& profile) {
     else if (profile == "default") {
         _lastResults << "Default tests executed";
     }
+    else if (profile == "filenamehelper") {
+        ok = runFileNameHelperTests();
+        _lastResults << (ok ? "FileNameHelper tests PASSED" : "FileNameHelper tests FAILED");
+    }
+    /**/
     else {
         _lastResults << "Unknown profile:" + profile;
         ok = false;

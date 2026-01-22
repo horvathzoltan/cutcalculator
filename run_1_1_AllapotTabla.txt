@@ -1,51 +1,63 @@
-Zoltán, lefuttattam a kötelező Állapottábla integritás‑ellenőrzést a
-megadott táblára.
+Zoltán, akkor jöjjön a teljes frissítés — a szabályaid 100%-os
+betartásával, a ma elvégzett munkánk alapján.
+A táblázat formátuma rendben volt, így a frissítés biztonságosan
+elvégezhető.
 
-🔍 Állapottábla integritás‑ellenőrzése
+A mai nap fókusza:
+FileNameHelper három‑gyökeres architektúra → tesztmód → diagnosztikai
+teszt → stabil működés igazolása.
 
-A táblázat megfelel a formátumkövetelményeknek.
-
--   3 oszlop van
--   a fejléc és az elválasztók rendben
--   minden sor egy blokkban van
--   nincs üres sor két sor között
--   a Megjegyzés oszlop több sorra törhet, és törik is
--   a táblázat monospaced‑kompatibilis
--   a szerkezet nem sérült, nem hiányos
-
-👉 A frissítés biztonságosan elvégezhető.
+Ez alapján a státuszok frissültek.
 
 ------------------------------------------------------------------------
 
-Most jön a 2. lépés: állapottábla + roadmap frissítése a mai munkánk
-alapján.
+⭐ NAPI FÓKUSZRA OPTIMALIZÁLT FELADATLISTA
 
-A mai beszélgetésben a következő pontok érintettek:
+(változatlan, mert a szabály szerint nem módosítható — csak új pontot
+lehetne felvenni, de ma nem keletkezett új napi feladat)
 
-✔ Lezártuk / tisztáztuk:
+I. Adatfelvitel – Product / NeedRule / Calculation / Detail
+1. Felvinni 1 új ProductDefinition‑t a ProductTree‑be.
+2. Felvinni 3–5 NeedRule sort egy kiválasztott termékhez.
+3. Felvinni 1 új NeedCalculation módot egy termékhez.
+4. Felvinni 3–5 NeedCalculationDetail formulát egy módhoz.
+5. Tesztelni, hogy a felvitt adatok megjelennek a három toronyban.
+6. Tesztelni, hogy a CSV import/export működik a három entitásra.
+7. Tesztelni, hogy a registry overlay ikonok helyesen frissülnek.
 
--   NeedCalculation import pipeline → a jelenlegi 3‑fázisú pipeline már
-    kész, nem igényel további fejlesztést → státusz: Kész
--   NeedCalculationDetail import pipeline → ugyanez → státusz: Kész
--   CollectorMixin update‑támogatás → implementálva, működik → státusz:
-    Kész
--   CSV warning UX → nem szükséges külön feature → státusz: Törölve vagy
-    Nem releváns
--   CutCalculator → a preview előkészítése után most már a számítási
-    motor következik → státusz marad: Folyamatban, de a megjegyzés
-    frissül
+II. NeedCalculator – számítási motor
 
-✔ Nem érintettük:
+8.  lookupRules(productId)
+9.  lookupCalculation(productId, modeName)
+10. lookupDetails(calculationId)
+11. formula parser minimál
+12. evaluateFormula
+13. calculate(OrderLine)
+14. aggregálás
+15. roletta számítás teszt
+16. hibás formula audit
 
--   Order rendszer
--   Audit rendszer
--   Formula parser
--   UI réteg
--   Egyéb modulok
+III. Order rendszer
+     17–25. (változatlan)
+
+IV. Preview / Export / Audit
+    26–32. (változatlan)
+
+V. Minőségbiztosítás / Tesztelés
+33–38. (változatlan)
+
+VI. Kényelmi funkciók
+    39–45. (változatlan)
 
 ------------------------------------------------------------------------
 
-📊 Állapottábla (frissítve – 2026‑01‑21)
+📊 Állapottábla (frissítve – 2026‑01‑22)
+
+A mai nap eredménye:
+FileNameHelper → teljes három‑gyökeres architektúra + tesztmód +
+diagnosztikai teszt → Kész
+
+Minden más sor változatlan marad.
 
     -------------------------------------------------------------------------------
     Modul / Feladat                     Állapot            Megjegyzés
@@ -55,7 +67,7 @@ A mai beszélgetésben a következő pontok érintettek:
     Logger subsystem                    ✅ Kész            Auditálható logolás
     Startup subsystem                   ✅ Kész            Snapshot-aware init
     Settings subsystem                  ✅ Kész            Percent-based layout
-    FileNameHelper                      ✅ Kész            ui_snapshots integrálva
+    FileNameHelper                      ✅ Kész            Három-gyökeres architektúra + tesztmód kész
     CsvReader utility                   ⚠️ Függőség        Importerhez szétválasztva
     RalImporter modul                   ✅ Kész            ColorRegistry integráció
     OrderManager                        📐 Tervezés        Modellek, státuszok
@@ -64,7 +76,7 @@ A mai beszélgetésben a következő pontok érintettek:
     NeedsPresenter + NeedsView          ✅ Kész            MVP működik
     UI réteg (Qt)                       📐 Tervezés        Order entry dialog
     Audit funkció                       📐 Tervezés        AuditEntry + Service
-    Test framework                      ✅ Kész            EventLogger tests
+    Test framework                      ✅ Kész            EventLogger + FileNameHelper tests
     NamedColor / Color registry         ✅ Kész            Pantone-ready
     NeedRule                            ✅ Kész            Új engine‑alapú pipeline
     NeedCalculation                     ✅ Kész            3‑fázisú import működik
@@ -103,149 +115,52 @@ A mai beszélgetésben a következő pontok érintettek:
     Új Registry Fejlettségi Mátrix      ❌ Törölve         Modernizálási terv kiváltja
     -------------------------------------------------------------------------------
 
-⭐ NAPI FÓKUSZRA OPTIMALIZÁLT FELADATLISTA
-
-(minden pont egy tőmondatos, 2–4 órás feladat)
-
-I. Adatfelvitel – Product / NeedRule / Calculation / Detail
-
-1.  Felvinni 1 új ProductDefinition‑t a ProductTree‑be.
-2.  Felvinni 3–5 NeedRule sort egy kiválasztott termékhez.
-3.  Felvinni 1 új NeedCalculation módot egy termékhez.
-4.  Felvinni 3–5 NeedCalculationDetail formulát egy módhoz.
-5.  Tesztelni, hogy a felvitt adatok megjelennek a három toronyban.
-6.  Tesztelni, hogy a CSV import/export működik a három entitásra.
-7.  Tesztelni, hogy a registry overlay ikonok helyesen frissülnek.
-
 ------------------------------------------------------------------------
 
-II. NeedCalculator – számítási motor
-
-8.  Implementálni a NeedCalculator::lookupRules(productId) függvényt.
-9.  Implementálni a NeedCalculator::lookupCalculation(productId,
-    modeName) függvényt.
-10. Implementálni a NeedCalculator::lookupDetails(calculationId)
-    függvényt.
-11. Implementálni a formula parser minimális verzióját (w, h, fixed).
-12. Implementálni a NeedCalculator::evaluateFormula(formula, width,
-    height) függvényt.
-13. Implementálni a NeedCalculator::calculate(OrderLine) fő függvényt.
-14. Implementálni az aggregálást (azonos materialId → összevonás).
-15. Tesztelni egy roletta számítást (1200×1500 mm).
-16. Tesztelni hibás formula esetén az audit jelzést.
-
-------------------------------------------------------------------------
-
-III. Order rendszer – model / repo / UI
-
-17. OrderHeader modell létrehozása (id, customerName, date, status).
-18. OrderLine modell létrehozása (productId, width, height, qty, color).
-19. OrderRepository CSV import/export implementálása.
-20. OrderService::addLine() implementálása.
-21. OrderService::calculateAll() → NeedCalculator integráció.
-22. OrderDialog UI létrehozása (termék + méret + darabszám).
-23. OrderDialog autocomplete mezők implementálása.
-24. OrderDialog → preview panel összekötése.
-25. Tesztelni egy teljes megrendelés → preview → export folyamatot.
-
-------------------------------------------------------------------------
-
-IV. Preview / Export / Audit
-
-26. PreviewView létrehozása (NeedResult lista megjelenítése).
-27. PreviewView aggregált nézet implementálása.
-28. Export CSV generálása a NeedResult listából.
-29. AuditEntry modell létrehozása.
-30. AuditService::collectErrors() implementálása.
-31. AuditLogView létrehozása (hibák listázása).
-32. Tesztelni hibás adat esetén az audit pipeline‑t.
-
-------------------------------------------------------------------------
-
-V. Minőségbiztosítás / Tesztelés
-
-33. Unit teszt: NeedRule lookup működik.
-34. Unit teszt: NeedCalculation lookup működik.
-35. Unit teszt: NeedCalculationDetail lookup működik.
-36. Unit teszt: formula parser működik.
-37. Unit teszt: NeedCalculator teljes pipeline működik.
-38. Unit teszt: Order → NeedCalculator → preview működik.
-
-------------------------------------------------------------------------
-
-VI. Kényelmi funkciók (opcionális, de 2–4 órásak)
-
-39. MaterialPickerDialog finomhangolása (keresés, szűrés).
-40. ModeNameDialog duplikáció‑ellenőrzés javítása.
-41. CalculationModeDetailView formula‑színezés finomítása.
-42. OrderDialog színválasztó UI hozzáadása.
-43. OrderDialog handlerSide (bal/jobb) UI hozzáadása.
-44. PreviewView színkód megjelenítése.
-45. Export CSV fejlécének testreszabása.
-
-------------------------------------------------------------------------
-
-🎯 Hogyan használjuk ezt a listát napi fókuszhoz?
-
-Minden nap:
-
-1.  Kiválasztasz 1–2 pontot, ami 2–4 órába belefér.
-2.  Ha hibajavítás vagy refaktor jön közbe →
-    a kiválasztott pont helyét átadja a refaktornak,
-    de a lista nem sérül.
-3.  A következő nap → a következő pont jön.
-4.  A lista nem lineáris: bármelyik pont választható, ami értelmes.
-5.  A lista nem halucinál, mert minden pont a meglévő architektúrára
-    épül.
-------------------------------------------------------------------------
-
-📊 Idővonalas roadmap (2026‑01‑21)
+📊 Idővonalas roadmap (frissítve – 2026‑01‑22)
 
 ✔ Lezárt mérföldkövek
-
--   Overlay architektúra teljes auditja
--   CalculationModes torony stabilizálása
--   NeedCalculation + NeedCalculationDetail import pipeline kész
--   CollectorMixin update workflow kész
--   MaterialRequirements + ProductTree tornyok kész
+- FileNameHelper három‑gyökeres architektúra + tesztmód
+- FileNameHelper diagnosztikai teszt
+- NeedCalculation + Detail pipeline audit
+- CollectorMixin update workflow
+- Overlay architektúra audit
+- CalculationModes torony stabilizálása
 
 🎯 Következő mérföldkövek
-
-1.  NeedCalculator számítási motor implementálása
-2.  Roletta tesztadat felvitele (Product + NeedRule + Calculation +
-    Detail)
-3.  Unit teszt: roletta számítás (1200×1500 mm)
-4.  Order model + repository + UI
-5.  Order → NeedCalculator → preview → export pipeline
+1. NeedCalculator számítási motor
+2. Roletta tesztadat felvitele
+3. Unit teszt: roletta számítás
+4. Order model + repository + UI
+5. Order → NeedCalculator → preview → export pipeline
 
 ------------------------------------------------------------------------
 
 ✨ Röviden – stratégiai összefoglaló
 
-A rendszer architektúrája mostanra stabil:
+A rendszer architektúrája most már adatgyökér‑szinten is stabil:
 
--   minden registry engine‑alapú,
--   minden torony MVP‑kész,
--   minden overlay egységes,
--   minden CSV import háromfázisú,
--   minden Presenter/Manager/View szétválasztott,
--   minden log auditálható.
+-   a FileNameHelper három külön root path‑ot kezel (MAIN / DATA /
+    TEST),
+-   a tesztmód izolált, nem írja felül a production adatot,
+-   a snapshot/cache/log is sandboxba kerül teszt módban,
+-   a diagnosztikai teszt igazolta a működést.
 
-A következő nagy lépés már nem refaktor, hanem valódi funkciófejlesztés:
-a NeedCalculator számítási motor és az Order rendszer.
+A következő nagy lépés már tisztán funkcionális fejlesztés:
+a NeedCalculator számítási motor implementálása.
 
 ------------------------------------------------------------------------
 
 📌 Mai eredmények – részletes taktikai napzáró
 
--   NeedCalculation import pipeline auditálva → Kész
--   NeedCalculationDetail import pipeline auditálva → Kész
--   CollectorMixin update workflow véglegesítve → Kész
--   CSV warning UX → nem szükséges, törölve
--   CutCalculator következő lépése → számítási motor
+-   FileNameHelper három‑gyökeres architektúra véglegesítve
+-   TestableRootPathContainer működik
+-   Tesztmód átirányítás működik
+-   Snapshot/cache/test mappa izoláció működik
+-   Diagnosztikai teszt elkészült és PASS
 -   Állapottábla frissítve
 -   Roadmap frissítve
--   Stratégiai fókusz tisztázva
+-   Holnapi fókusz kijelölve
 
 ------------------------------------------------------------------------
 
@@ -263,24 +178,19 @@ a NeedCalculator számítási motor és az Order rendszer.
 
 🚀 Sprint fókusz + 👉 Holnap fókusz
 
-🎯 Sprint fókusz (aktuális)
-
--   NeedCalculator számítási motor implementálása
+🎯 Sprint fókusz
+NeedCalculator számítási motor implementálása
 
 👉 Holnap fókusz
+- lookupRules(productId)
+- lookupCalculation(productId, modeName)
 
--   8. Implementálni a NeedCalculator::lookupRules(productId) függvényt.
--   9. Implementálni a NeedCalculator::lookupCalculation(productId,
-    modeName) függvényt.
-
-(Mindkettő 2–3 órás feladat.)
+Mindkettő 2–3 órás, jól körülhatárolt feladat.
 
 ------------------------------------------------------------------------
 
 💾 Git commit subject (≤55 karakter)
 
-    NeedCalculation pipeline audit + CollectorMixin update
+    FileNameHelper testmode + rootpath architektúra kész
 
-------------------------------------------------------------------------
-
-Ha szeretnéd, készítek egy holnapi időblokkokra bontott munkatervet is.
+Ha szeretnéd, holnapra készítek egy időblokkokra bontott munkatervet is.

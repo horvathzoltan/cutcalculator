@@ -9,6 +9,7 @@
 //3. 🧠 Lehetőség singletonná alakításra
 // 📁 Tesztfájl elérési segédfüggvények
 class FileNameHelper{
+    friend bool runFileNameHelperTests(); // csak a teszt fér hozzá
 public:
     enum InitSource { None, CompileTime, SourceFileHeuristic, AppDirFallback , Setter};
     //InitSource initSource() const { return _initSource_testdataPath; }
@@ -55,9 +56,28 @@ private:
             bool isEmpty() const { return _rootPath.isEmpty(); }
     };
 
-    RootPathContainer _dataRoot_TEST;
+    class TestableRootPathContainer : public RootPathContainer {
+    private:
+        bool _testMode = false;
 
-    RootPathContainer _dataRoot;
+    public:
+        void setTestMode(bool enabled) { _testMode = enabled; }
+
+        QString filePath(const QString& fileName) const {
+            if (_testMode) {
+                // automatikus test mappa
+                QDir dir(RootPathContainer::filePath("test"));
+                if (!dir.exists()) dir.mkpath(".");
+                return dir.filePath(fileName);
+            }
+            return RootPathContainer::filePath(fileName);
+        }
+    };
+
+
+    RootPathContainer _dataRoot_TEST;
+    TestableRootPathContainer _dataRoot;
+    RootPathContainer _dataRoot_MAIN;
 
     static RootPathContainer _brc;
     // static QString _binaryPath;
@@ -79,11 +99,16 @@ public:
     void setDataRootPath(const QString& path);
     //QString dataRootPath() const;
 
-    bool isTestMode() const { return _isTest; }
+
     bool isInitialized() const { return _dataRoot_TEST.isInitialized(); }
 
     // ⚙️ Beállítások
-    //void setTestMode(bool v) { _isTest = v; }
+    void setTestMode(bool v) {
+        _isTest = v;
+        _dataRoot.setTestMode(v);
+    }
+
+    bool isTestMode() const { return _isTest; }
 
     // 📁 Elérési utak
     //QString getTestFolderPath() const;
@@ -114,6 +139,6 @@ public:
 
     // Új: snapshot file path monitorprofil alapján
     QString uiSnapshotFilePath(const QString& profile) const;
-    QString dataRootPath() const;
+    //QString dataRootPath() const;
     QString getCacheDirectory(const QString &subfolder) const;
 };

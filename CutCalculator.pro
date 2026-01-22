@@ -47,6 +47,7 @@ SOURCES += \
     calcmodes/view/calculation_modes_view.cpp \
     products/presenter/product_tree_presenter.cpp \
     products/view/product_tree_panel.cpp \
+    test/filenamehelper_tests.cpp \
     test/material_registry_smoke_test.cpp \
     ui/helpers/overlay_status_helper.cpp \
     ui/widgets/overlay_icon_widget.cpp \
@@ -158,6 +159,7 @@ HEADERS += \
     calcmodes/view/calculation_modes_view.h \
     products/presenter/product_tree_presenter.h \
     products/view/product_tree_panel.h \
+    test/filenamehelper_tests.h \
     test/material_registry_smoke_test.h \
     ui/helpers/overlay_status_helper.h \
     ui/helpers/repository_overlay_widget.h \
