@@ -1,11 +1,9 @@
 Zoltán, akkor jöjjön a teljes frissítés — a szabályaid 100%-os
-betartásával, a ma elvégzett munkánk alapján.
-A táblázat formátuma rendben volt, így a frissítés biztonságosan
-elvégezhető.
+betartásával, a ma elvégzett munkánk alapján. A táblázat formátuma
+rendben volt, így a frissítés biztonságosan elvégezhető.
 
-A mai nap fókusza:
-FileNameHelper három‑gyökeres architektúra → tesztmód → diagnosztikai
-teszt → stabil működés igazolása.
+A mai nap fókusza: FileNameHelper három‑gyökeres architektúra → tesztmód
+→ diagnosztikai teszt → stabil működés igazolása.
 
 Ez alapján a státuszok frissültek.
 
@@ -16,14 +14,13 @@ Ez alapján a státuszok frissültek.
 (változatlan, mert a szabály szerint nem módosítható — csak új pontot
 lehetne felvenni, de ma nem keletkezett új napi feladat)
 
-I. Adatfelvitel – Product / NeedRule / Calculation / Detail
-1. Felvinni 1 új ProductDefinition‑t a ProductTree‑be.
-2. Felvinni 3–5 NeedRule sort egy kiválasztott termékhez.
-3. Felvinni 1 új NeedCalculation módot egy termékhez.
-4. Felvinni 3–5 NeedCalculationDetail formulát egy módhoz.
-5. Tesztelni, hogy a felvitt adatok megjelennek a három toronyban.
-6. Tesztelni, hogy a CSV import/export működik a három entitásra.
-7. Tesztelni, hogy a registry overlay ikonok helyesen frissülnek.
+I. Adatfelvitel – Product / NeedRule / Calculation / Detail 1. Felvinni
+1 új ProductDefinition‑t a ProductTree‑be. 2. Felvinni 3–5 NeedRule sort
+egy kiválasztott termékhez. 3. Felvinni 1 új NeedCalculation módot egy
+termékhez. 4. Felvinni 3–5 NeedCalculationDetail formulát egy módhoz. 5.
+Tesztelni, hogy a felvitt adatok megjelennek a három toronyban. 6.
+Tesztelni, hogy a CSV import/export működik a három entitásra. 7.
+Tesztelni, hogy a registry overlay ikonok helyesen frissülnek.
 
 II. NeedCalculator – számítási motor
 
@@ -37,25 +34,20 @@ II. NeedCalculator – számítási motor
 15. roletta számítás teszt
 16. hibás formula audit
 
-III. Order rendszer
-     17–25. (változatlan)
+III. Order rendszer 17–25. (változatlan)
 
-IV. Preview / Export / Audit
-    26–32. (változatlan)
+IV. Preview / Export / Audit 26–32. (változatlan)
 
-V. Minőségbiztosítás / Tesztelés
-33–38. (változatlan)
+V. Minőségbiztosítás / Tesztelés 33–38. (változatlan)
 
-VI. Kényelmi funkciók
-    39–45. (változatlan)
+VI. Kényelmi funkciók 39–45. (változatlan)
 
 ------------------------------------------------------------------------
 
 📊 Állapottábla (frissítve – 2026‑01‑22)
 
-A mai nap eredménye:
-FileNameHelper → teljes három‑gyökeres architektúra + tesztmód +
-diagnosztikai teszt → Kész
+A mai nap eredménye: FileNameHelper → teljes három‑gyökeres
+architektúra + tesztmód + diagnosztikai teszt → Kész
 
 Minden más sor változatlan marad.
 
@@ -119,20 +111,14 @@ Minden más sor változatlan marad.
 
 📊 Idővonalas roadmap (frissítve – 2026‑01‑22)
 
-✔ Lezárt mérföldkövek
-- FileNameHelper három‑gyökeres architektúra + tesztmód
-- FileNameHelper diagnosztikai teszt
-- NeedCalculation + Detail pipeline audit
-- CollectorMixin update workflow
-- Overlay architektúra audit
-- CalculationModes torony stabilizálása
+✔ Lezárt mérföldkövek - FileNameHelper három‑gyökeres architektúra +
+tesztmód - FileNameHelper diagnosztikai teszt - NeedCalculation + Detail
+pipeline audit - CollectorMixin update workflow - Overlay architektúra
+audit - CalculationModes torony stabilizálása
 
-🎯 Következő mérföldkövek
-1. NeedCalculator számítási motor
-2. Roletta tesztadat felvitele
-3. Unit teszt: roletta számítás
-4. Order model + repository + UI
-5. Order → NeedCalculator → preview → export pipeline
+🎯 Következő mérföldkövek 1. NeedCalculator számítási motor 2. Roletta
+tesztadat felvitele 3. Unit teszt: roletta számítás 4. Order model +
+repository + UI 5. Order → NeedCalculator → preview → export pipeline
 
 ------------------------------------------------------------------------
 
@@ -146,8 +132,8 @@ A rendszer architektúrája most már adatgyökér‑szinten is stabil:
 -   a snapshot/cache/log is sandboxba kerül teszt módban,
 -   a diagnosztikai teszt igazolta a működést.
 
-A következő nagy lépés már tisztán funkcionális fejlesztés:
-a NeedCalculator számítási motor implementálása.
+A következő nagy lépés már tisztán funkcionális fejlesztés: a
+NeedCalculator számítási motor implementálása.
 
 ------------------------------------------------------------------------
 
@@ -178,12 +164,10 @@ a NeedCalculator számítási motor implementálása.
 
 🚀 Sprint fókusz + 👉 Holnap fókusz
 
-🎯 Sprint fókusz
-NeedCalculator számítási motor implementálása
+🎯 Sprint fókusz NeedCalculator számítási motor implementálása
 
-👉 Holnap fókusz
-- lookupRules(productId)
-- lookupCalculation(productId, modeName)
+👉 Holnap fókusz - lookupRules(productId) - lookupCalculation(productId,
+modeName)
 
 Mindkettő 2–3 órás, jól körülhatárolt feladat.
 

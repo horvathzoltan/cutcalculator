@@ -117,6 +117,8 @@ QString FileNameHelper::getMaterialCsvFile() const {
 QString FileNameHelper::getProductCsvFile() const {
     QString path = _dataRoot.filePath("products.csv");
 
+    if(_isTest) return path;
+
     if (!QFile::exists(path)) {
         // fallback fejlesztéshez
         path = _dataRoot_TEST.filePath("products.csv");
@@ -129,6 +131,8 @@ QString FileNameHelper::getProductCsvFile() const {
 QString FileNameHelper::getNeedRuleCsvFile() const {
     QString path = _dataRoot.filePath("needrules.csv");
 
+    if(_isTest) return path;
+
     if (!QFile::exists(path)) {
         // fallback fejlesztéshez
         path = _dataRoot_TEST.filePath("needrules.csv");
@@ -139,6 +143,8 @@ QString FileNameHelper::getNeedRuleCsvFile() const {
 /* Barcode */
 QString FileNameHelper::getBarcodeCsvFile() const {
     QString path = _dataRoot.filePath("barcodes.csv");
+
+    if(_isTest) return path;
 
     if (!QFile::exists(path)) {
         // fallback fejlesztéshez
@@ -185,7 +191,7 @@ QString FileNameHelper::getRalPlastic2CsvFile() const {
 
 
 QString FileNameHelper::uiSnapshotDirectory() const {
-    const QString root = _dataRoot.filePath("");
+    const QString root = _dataRoot_MAIN.filePath("");
 
     if (root.isEmpty()) {
         zWarning("⚠️ uiSnapshotDirectory: dataRootPath is empty");
@@ -223,7 +229,7 @@ QString FileNameHelper::uiSnapshotFilePath(const QString& profile) const {
 
 QString FileNameHelper::getCacheDirectory(const QString& subfolder) const
 {
-    QString root =  _dataRoot.filePath("");
+    QString root =  _dataRoot_MAIN.filePath("");
     if (root.isEmpty())
         root = QStandardPaths::writableLocation(QStandardPaths::CacheLocation);
 
