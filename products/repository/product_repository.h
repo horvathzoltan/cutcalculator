@@ -19,6 +19,8 @@
  */
 
 class ProductRepository {
+    friend class test_ProductRepository;
+
 public:
     static bool load(QVector<ProductMaster>& out);
     //static bool loadFromCSV(ProductRegistry& registry);
@@ -47,4 +49,8 @@ private:
     static void resolveParents(QVector<ProductMaster> &defs, const QVector<CsvImporter::AuditedRow<ProductRepository::ProductRow> > &rows, CsvImporter::FileContext &ctx);
     //static void validateProductRows(const QVector<CsvImporter::AuditedRow<ProductRepository::ProductRow> > &rows, CsvImporter::FileContext &ctx);
     static CsvImporter::RowError makeError(int lineNumber, const QString &message, const ProductRepository::ProductRow &row);
+
+    // Helper a CSV-sor generálásához
+    // CSV export helper (teszt is használja)
+    static QString toCsvLine(const ProductMaster& pm);
 };

@@ -47,8 +47,12 @@ SOURCES += \
     calcmodes/view/calculation_modes_view.cpp \
     products/presenter/product_tree_presenter.cpp \
     products/view/product_tree_panel.cpp \
+    test/calcmode/need_calculation_registry_tester.cpp \
+    test/common/test_data_builder.cpp \
     test/filenamehelper_tests.cpp \
-    test/material_registry_smoke_test.cpp \
+    test/material/material_registry_smoke_test.cpp \
+    test/need/need_rule_registry_tester.cpp \
+    test/product/product_registry_tester.cpp \
     ui/helpers/overlay_status_helper.cpp \
     ui/widgets/overlay_icon_widget.cpp \
     workbench/view/bom_workbench.cpp \
@@ -159,8 +163,12 @@ HEADERS += \
     calcmodes/view/calculation_modes_view.h \
     products/presenter/product_tree_presenter.h \
     products/view/product_tree_panel.h \
+    test/calcmode/need_calculation_registry_tester.h \
+    test/common/test_data_builder.h \
     test/filenamehelper_tests.h \
-    test/material_registry_smoke_test.h \
+    test/material/material_registry_smoke_test.h \
+    test/need/need_rule_registry_tester.h \
+    test/product/product_registry_tester.h \
     ui/helpers/overlay_status_helper.h \
     ui/helpers/repository_overlay_widget.h \
     ui/widgets/overlay_icon_widget.h \

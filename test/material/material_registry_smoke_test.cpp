@@ -1,4 +1,4 @@
-#include "test_manager.h"
+#include "../test_manager.h"
 #include "common/logger/logger.h"
 #include <QUuid>
 #include "materials/model/material_master.h"

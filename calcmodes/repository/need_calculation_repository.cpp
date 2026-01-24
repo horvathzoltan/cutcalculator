@@ -145,11 +145,17 @@ bool NeedCalculationRepository::save(const QVector<NeedCalculation>& data)
     out << "productBarcode;modeName\n";
 
     for (const auto& c : data) {
-        if (auto* p = ProductRegistry::instance().findById(c.productId)) {
-            out << p->barcode << ";" << c.name << "\n";
-        }
+        out << toCsvLine(c) << "\n";
     }
 
     zInfo(QString("💾 NeedCalculation saved: %1 sor").arg(data.size()));
     return true;
+}
+
+QString NeedCalculationRepository::toCsvLine(const NeedCalculation &c)
+{
+    auto* p = ProductRegistry::instance().findById(c.productId);
+    QString b = p ? p->barcode : "???";
+    QString out = b + ";" + c.name;
+    return out;
 }

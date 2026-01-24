@@ -8,9 +8,11 @@
 #include "products/registry/product_registry.h"
 
 class NeedCalculationRepository {
+    friend class test_NeedRuleRepository;
 public:
     static bool load(QVector<NeedCalculation>& out);
     static bool save(const QVector<NeedCalculation>& data);
+    static QString toCsvLine(const NeedCalculation& e);
 
 private:
     struct Row {

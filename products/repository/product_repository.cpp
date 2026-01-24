@@ -301,34 +301,73 @@ void ProductRepository::resolveParents(QVector<ProductMaster>& defs,
 
 
 
+/**
+ * @brief Egy ProductMaster objektumot CSV-sorrá alakít.
+ *
+ * A CSV export egységes formátumát biztosítja:
+ *     barcode,parentBarcode,name
+ *
+ * - A parentBarcode mező a parentId alapján kerül feloldásra.
+ * - Ha a parentId üres vagy a parent nem található, a mező üres marad.
+ *
+ * Ezt a függvényt használja:
+ *   - a saveToCSV() exportáláskor
+ *   - a unit tesztek a CSV tartalom ellenőrzésére
+ *
+ * @param pm A termék definíciója.
+ * @return A CSV-sor, fejléc nélkül.
+ */
 
+QString ProductRepository::toCsvLine(const ProductMaster& pm)
+{
+    QString parentBarcode;
+
+    if (!pm.parentId.isNull()) {
+        if (auto* parent = ProductRegistry::instance().findById(pm.parentId)) {
+            parentBarcode = parent->barcode;
+        }
+    }
+
+    const QString X = ",";
+    QString e = pm.barcode % X % parentBarcode % X % pm.name;
+
+    return e;
+}
+
+/**
+ * @brief A teljes ProductMaster lista CSV fájlba írása.
+ *
+ * A fájl formátuma:
+ *     barcode,parentBarcode,name
+ * majd minden sorra a toCsvLine() által generált érték kerül.
+ *
+ * A függvény:
+ *   - felülírja a megadott fájlt,
+ *   - UTF-8 kódolással ír,
+ *   - minden CRUD művelet után automatikusan meghívódik
+ *     a ProductRegistry::persist() workflow részeként.
+ *
+ * A tesztek a generált CSV-t QStringList-ként olvassák vissza,
+ * és a toCsvLine() által generált sorokkal hasonlítják össze.
+ *
+ * @param data A registry aktuális tartalma.
+ * @param path A célfájl elérési útja.
+ * @return true siker esetén, false ha a fájl nem nyitható meg.
+ */
 
 bool ProductRepository::saveToCSV(const QVector<ProductMaster>& data, const QString& path) {
     QFile file(path);
     QIODevice::OpenMode mode = QIODevice::WriteOnly | QIODevice::Text;
     if (!file.open(mode)) {
-        //zWarning(QString("⚠️ Nem sikerült megnyitni a fájlt írásra: %1").arg(path));
         FileHelper::logFileError(file, "CSV SAVE", mode);
         return false;
     }
 
     QTextStream out(&file);
-    // Fejléc
-    out << "barcode,parentBarcode,name\n";
+    out << "barcode,parentBarcode,name\n";     // Fejléc
 
     for (const auto& pm : data) {
-        out << pm.barcode << ",";
-        if (pm.parentId.isNull()) {
-            out << ",";
-        } else {
-            // parent barcode lookup
-            if (auto* parent = ProductRegistry::instance().findById(pm.parentId)) {
-                out << parent->barcode << ",";
-            } else {
-                out << ",";
-            }
-        }
-        out << pm.name << "\n";
+        out << ProductRepository::toCsvLine(pm) << "\n";
     }
 
     zInfo(QString("💾 ProductRepository: %1 terméktípus mentve → %2")

@@ -26,7 +26,7 @@ protected:
         auto* self = static_cast<const Derived*>(this);
 
         // FONTOS: stabil pointerek a belső tárolóból
-        const auto allPtrs = self->all();
+        const auto allPtrs = self->readAll_ptr();
 
         for (const Entity* e : allPtrs) {
             if (!e->barcode.isEmpty())

@@ -2,8 +2,11 @@
 #include <QDebug>
 
 #include "eventlogger_tests.h"
-#include "material_registry_smoke_test.h"
+#include "material/material_registry_smoke_test.h"
 #include "filenamehelper_tests.h"
+#include "product/product_registry_tester.h"
+#include "test/calcmode/need_calculation_registry_tester.h"
+#include "test/need/need_rule_registry_tester.h"
 
 
 TestManager& TestManager::instance() {
@@ -34,6 +37,18 @@ bool TestManager::runBusinessLogicTests(const QString& profile) {
     else if (profile == "filenamehelper") {
         ok = runFileNameHelperTests();
         _lastResults << (ok ? "FileNameHelper tests PASSED" : "FileNameHelper tests FAILED");
+    }
+    else if (profile == "product") { // --test product
+        ok = runProductRegistryTests();
+        _lastResults << (ok ? "Product tests PASSED" : "Product tests FAILED");
+    }
+    else if (profile == "needrule") { // --test needrule
+        ok = runNeedRuleRegistryTests();
+        _lastResults << (ok ? "Product tests PASSED" : "Product tests FAILED");
+    }
+    else if (profile == "calcmode") { // --test needrule
+        ok = runNeedCalculationRegistryTests();
+        _lastResults << (ok ? "Product tests PASSED" : "Product tests FAILED");
     }
     /**/
     else {

@@ -144,28 +144,45 @@ public:
         const auto data = registry.readAll();
 
         for (const auto& c : data) {
-            QString leftBarcode;
-            QString rightBarcode;
+            // QString leftBarcode;
+            // QString rightBarcode;
 
             // 🔍 Bal oldali entitás barcode-ja
-            if (auto opt = c.left()) {
-                leftBarcode = opt->barcode;
-            } else {
-                leftBarcode.clear();
-            }
+            // if (auto opt = c.left()) {
+            //     leftBarcode = opt->barcode;
+            // } else {
+            //     leftBarcode.clear();
+            // }
 
-            // 🔍 Jobb oldali entitás barcode-ja
-            if (auto opt = c.right()) {
-                rightBarcode = opt->barcode;
-            } else {
-                rightBarcode.clear();
-            }
+            // // 🔍 Jobb oldali entitás barcode-ja
+            // if (auto opt = c.right()) {
+            //     rightBarcode = opt->barcode;
+            // } else {
+            //     rightBarcode.clear();
+            // }
 
-            out << leftBarcode << "," << rightBarcode << "\n";
+            // out << leftBarcode << "," << rightBarcode << "\n";
+
+            out << toCsvLine(c) << "\n";
         }
 
         zInfo(QStringLiteral("💾 ConnectionRepository: %1 kapcsolat mentve → %2")
                   .arg(data.size()).arg(Traits::filePath()));
         return true;
     }
+
+    static QString toCsvLine(const ConnectionType& c)
+    {
+        QString leftBarcode;
+        QString rightBarcode;
+
+        if (auto opt = c.left())
+            leftBarcode = opt->barcode;
+
+        if (auto opt = c.right())
+            rightBarcode = opt->barcode;
+
+        return leftBarcode + "," + rightBarcode;
+    }
+
 };

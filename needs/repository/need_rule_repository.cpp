@@ -16,3 +16,9 @@ bool NeedRuleRepository::save()
         NeedRuleRegistry::instance()
         );
 }
+
+QString NeedRuleRepository::toCsvLine(const NeedRule &r)
+{
+    QString e = ConnectionRepository<NeedRule, NeedRuleTraits>::toCsvLine(r);
+    return e;
+}

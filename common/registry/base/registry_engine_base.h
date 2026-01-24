@@ -74,32 +74,34 @@ public:
     const QString& registryName() const { return _registryName; }
 
     // --- READ APIs (delegáló thin wrappers) ---
+
+    // az items referenciáit adja
     QVector<TEntity> readAll() const {
         guardInstanceUsage();
         return storeReadAllImpl();
     }
 
-    QVector<const TEntity*> all() const {
+    // az itemsre ad readonly pointereket
+    QVector<const TEntity*> readAll_ptr() const {
         guardInstanceUsage();
         QReadLocker r(&_rwLock);
-        QVector<const TEntity*> out;
         const auto& raw = _items.data();
-        out.reserve(raw.size());
-        for (const auto& item : raw)
-            out.append(&item);
+        QVector<const TEntity*> out(raw.size());
+        for (int i = 0; i < raw.size(); ++i)
+            out[i] = &raw[i];
         return out;
     }
 
     int size() const override {
         guardInstanceUsage();
         QReadLocker r(&_rwLock);
-        return _items.data().size();
+        return _items.size();
     }
 
     bool isEmpty() const {
         guardInstanceUsage();
         QReadLocker r(&_rwLock);
-        return _items.data().isEmpty();
+        return _items.isEmpty();
     }
 
     template<typename Predicate>
@@ -189,6 +191,12 @@ public:
         return true;
     }
 
+    bool clear(){
+        guardInstanceUsage();
+        if(!storeClearImpl()) return false;
+        onItemsChanged();
+        return true;
+    }
 protected:
     // --- Central event trigger (thread-safe, reentrancy-safe) ---
     virtual void onItemsChanged(){
@@ -256,6 +264,12 @@ protected:
         return false;
     }
 
+    bool storeClearImpl() {
+        QWriteLocker w(&_rwLock);
+        _items.clear();
+        return false;
+    }
+
     bool storeRemoveImpl(const IdType& id) {
         QWriteLocker w(&_rwLock);
         auto& raw = _items.data();
@@ -295,6 +309,18 @@ protected:
 
         void removeAt(int i) {
             _items.removeAt(i);
+        }
+
+        void clear(){
+            _items.clear();
+        }
+
+        int size() const {
+            return _items.size();
+        }
+
+        bool isEmpty() const {
+            return _items.isEmpty();
         }
 
         QVector<TEntity>& data() { return _items; }
