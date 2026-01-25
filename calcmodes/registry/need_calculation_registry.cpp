@@ -42,9 +42,11 @@ bool NeedCalculationRegistry::validateDuplicate(const NeedCalculation& nc) const
 {
     return !existsBy([&](const NeedCalculation& x){
         return x.productId == nc.productId
-               && x.name == nc.name;
+               && x.name == nc.name
+               && x.id != nc.id;
     });
 }
+
 
 void NeedCalculationRegistry::persist() const
 {

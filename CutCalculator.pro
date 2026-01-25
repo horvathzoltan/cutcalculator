@@ -48,9 +48,12 @@ SOURCES += \
     products/presenter/product_tree_presenter.cpp \
     products/view/product_tree_panel.cpp \
     test/calcmode/need_calculation_registry_tester.cpp \
+    test/calculation/need_calculation_detail_registry_tester.cpp \
     test/common/test_data_builder.cpp \
-    test/filenamehelper_tests.cpp \
-    test/material/material_registry_smoke_test.cpp \
+    test/common/test_file_helper.cpp \
+    test/eventlogger/event_logger_tester.cpp \
+    test/filenamehelper/filenamehelper_tests.cpp \
+    test/material/material_registry_tester.cpp \
     test/need/need_rule_registry_tester.cpp \
     test/product/product_registry_tester.cpp \
     ui/helpers/overlay_status_helper.cpp \
@@ -77,7 +80,6 @@ SOURCES += \
     materials/view/material_table_widget.cpp \
     materials/model/crosssectionshape.cpp \
     materials/model/material_type.cpp \
-    materials/registry/material_registry.cpp \
     materials/repository/material_repository.cpp \
     materials/view/material_table_manager.cpp \
     products/registry/product_registry.cpp \
@@ -164,9 +166,13 @@ HEADERS += \
     products/presenter/product_tree_presenter.h \
     products/view/product_tree_panel.h \
     test/calcmode/need_calculation_registry_tester.h \
+    test/calculation/need_calculation_detail_registry_tester.h \
     test/common/test_data_builder.h \
-    test/filenamehelper_tests.h \
-    test/material/material_registry_smoke_test.h \
+    test/common/test_file_helper.h \
+    test/common/test_module_base.h \
+    test/eventlogger/event_logger_tester.h \
+    test/filenamehelper/filenamehelper_tests.h \
+    test/material/material_registry_tester.h \
     test/need/need_rule_registry_tester.h \
     test/product/product_registry_tester.h \
     ui/helpers/overlay_status_helper.h \
@@ -219,7 +225,6 @@ HEADERS += \
     products/repository/product_repository.h \
     products/view/product_tree_manager.h \
     products/view/product_tree_view.h \
-    test/eventlogger_tests.h \
     test/test_manager.h \
     ui/adapters/log_view_adapter.h \
     ui/style/color_helper.h
@@ -242,7 +247,7 @@ DISTFILES += \
     docs/registry_matrix.md \
     run_1_1_AllapotTabla.txt \
     run_1_2_BugList.txt \
-    run_1_3_0_NeedCalculation_Refactor.txt \
+    run_1_3_0_OsszesitettHibajegyzek_Refactor.txt \
     run_1_3_1_BarcodeRegistry_Refactor.txt \
     run_1_4_DailySync.txt \
     run_2_1_AIDevelopmentHandbook.txt \

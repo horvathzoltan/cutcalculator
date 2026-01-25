@@ -1,19 +1,20 @@
-Zoltán, akkor jöjjön a teljes frissítés — a szabályaid 100%-os
-betartásával, a ma elvégzett munkánk alapján. A táblázat formátuma
-rendben volt, így a frissítés biztonságosan elvégezhető.
+Természetesen, Zoltán — frissítem a napzárót a mai tényleges munkánk
+alapján:
+✔ NeedCalculation UI‑szinkron audit
+✔ Overlay‑lánc audit
+✔ Registry‑workflow audit
+✔ Hibák feltárása + javítási javaslatok
+✔ Teszt‑infrastruktúra áttekintése
+✔ Minden torony (Modes, Details, Material, ProductTree) állapotának
+konszolidálása
 
-A mai nap fókusza: FileNameHelper három‑gyökeres architektúra → tesztmód
-→ diagnosztikai teszt → stabil működés igazolása.
-
-Ez alapján a státuszok frissültek.
+A struktúrát megtartom, csak a tartalmat frissítem a mai eredményekkel.
 
 ------------------------------------------------------------------------
 
 ⭐ NAPI FÓKUSZRA OPTIMALIZÁLT FELADATLISTA
 
-(változatlan, mert a szabály szerint nem módosítható — csak új pontot
-lehetne felvenni, de ma nem keletkezett új napi feladat)
-
+(változatlan – szabály szerint nem módosítható)
 I. Adatfelvitel – Product / NeedRule / Calculation / Detail 1. Felvinni
 1 új ProductDefinition‑t a ProductTree‑be. 2. Felvinni 3–5 NeedRule sort
 egy kiválasztott termékhez. 3. Felvinni 1 új NeedCalculation módot egy
@@ -41,15 +42,15 @@ IV. Preview / Export / Audit 26–32. (változatlan)
 V. Minőségbiztosítás / Tesztelés 33–38. (változatlan)
 
 VI. Kényelmi funkciók 39–45. (változatlan)
-
 ------------------------------------------------------------------------
 
-📊 Állapottábla (frissítve – 2026‑01‑22)
+📊 Állapottábla (frissítve – 2026‑01‑26)
 
-A mai nap eredménye: FileNameHelper → teljes három‑gyökeres
-architektúra + tesztmód + diagnosztikai teszt → Kész
-
-Minden más sor változatlan marad.
+A mai nap eredménye:
+NeedCalculation UI‑szinkron + Overlay‑lánc + Registry‑workflow audit →
+Kész
+A CalculationModes / CalculationDetails torony teljes jelzéslánca
+stabilizálva.
 
     -------------------------------------------------------------------------------
     Modul / Feladat                     Állapot            Megjegyzés
@@ -91,6 +92,12 @@ Minden más sor változatlan marad.
 
     OverlayIconWidget                   ✅ Kész            Cache + render pipeline
     Overlay‑alapú adat‑létezés jelzés   ✅ Kész            Domain‑vezérelt overlay helper
+
+    NeedCalculation UI-szinkron         ✅ Kész            Teljes jelzéslánc auditálva
+    NeedCalculation overlay ikon        ✅ Kész            Presenter‑szintű policy kész
+    CalculationModesPresenter audit     ✅ Kész            Registry + TreeStats + ViewReady fixek
+    CalculationModeDetailPresenter audit✅ Kész            ModeSelected → DetailRefresh stabil
+
     CSV warning UX                      ❌ Törölve         Nem szükséges külön feature
     EventLog tisztítása                 💡 Új ötlet        SystemLog szétválasztás
 
@@ -98,55 +105,63 @@ Minden más sor változatlan marad.
     BarcodeRegistry modernizálása       📐 Tervezés        CollectorMixin + LedgerMixin
     CollectorMixin update-támogatása    ✅ Kész            Update workflow implementálva
 
-    NeedCalculation UI-szinkron         ✅ Kész            Product selection → refresh OK
-    NeedCalculation overlay ikon        ✅ Kész            Product selection → ikonfrissítés OK
-
-    Overlay Architecture – Presenter/UI szétválasztás + RepositoryOverlayWidget integráció
-                                         ✅ Kész            CalculationModes audit + policy kész
-
     Új Registry Fejlettségi Mátrix      ❌ Törölve         Modernizálási terv kiváltja
     -------------------------------------------------------------------------------
 
 ------------------------------------------------------------------------
 
-📊 Idővonalas roadmap (frissítve – 2026‑01‑22)
+📊 Idővonalas roadmap (frissítve – 2026‑01‑26)
 
-✔ Lezárt mérföldkövek - FileNameHelper három‑gyökeres architektúra +
-tesztmód - FileNameHelper diagnosztikai teszt - NeedCalculation + Detail
-pipeline audit - CollectorMixin update workflow - Overlay architektúra
-audit - CalculationModes torony stabilizálása
+✔ Lezárt mérföldkövek
+- NeedCalculation UI‑szinkron audit
+- CalculationModesPresenter overlay audit
+- CalculationModeDetailPresenter jelzéslánc audit
+- Registry‑workflow audit (NeedCalculation + Detail)
+- Overlay architektúra konzisztencia
+- Teszt‑infrastruktúra áttekintés
 
-🎯 Következő mérföldkövek 1. NeedCalculator számítási motor 2. Roletta
-tesztadat felvitele 3. Unit teszt: roletta számítás 4. Order model +
-repository + UI 5. Order → NeedCalculator → preview → export pipeline
+🎯 Következő mérföldkövek
+1. NeedCalculator számítási motor
+2. Roletta tesztadat felvitele
+3. Unit teszt: roletta számítás
+4. Order model + repository + UI
+5. Order → NeedCalculator → preview → export pipeline
 
 ------------------------------------------------------------------------
 
 ✨ Röviden – stratégiai összefoglaló
 
-A rendszer architektúrája most már adatgyökér‑szinten is stabil:
+A NeedCalculation torony három kritikus jelzéslánca ma teljesen
+helyreállt:
 
--   a FileNameHelper három külön root path‑ot kezel (MAIN / DATA /
-    TEST),
--   a tesztmód izolált, nem írja felül a production adatot,
--   a snapshot/cache/log is sandboxba kerül teszt módban,
--   a diagnosztikai teszt igazolta a működést.
+-   ProductTree → Modes
+-   Modes → Details
+-   Registry változás → Overlay + ViewRefresh
 
-A következő nagy lépés már tisztán funkcionális fejlesztés: a
-NeedCalculator számítási motor implementálása.
+A rendszer most már determinista, nincs több „néha frissül / néha nem”
+állapot.
+A Presenter‑szintű overlay‑policy egységes, minden torony ugyanazt a
+szabályrendszert követi.
+
+A következő nagy lépés: NeedCalculator implementálása, immár stabil
+UI‑alapokon.
 
 ------------------------------------------------------------------------
 
 📌 Mai eredmények – részletes taktikai napzáró
 
--   FileNameHelper három‑gyökeres architektúra véglegesítve
--   TestableRootPathContainer működik
--   Tesztmód átirányítás működik
--   Snapshot/cache/test mappa izoláció működik
--   Diagnosztikai teszt elkészült és PASS
--   Állapottábla frissítve
+-   CalculationModesView → markReady() auditálva
+-   CalculationModesPresenter → registry + treestats + selection lánc
+    javítva
+-   CalculationModeDetailPresenter → onModeSelected teljesen
+    helyreállítva
+-   DetailManager → set_details() visszakapcsolva
+-   Overlay‑lánc → minden toronyban konzisztens
+-   Registry‑workflow → NeedCalculation + Detail auditálva
+-   TesztManager → áttekintve, működő modul‑szintű teszt pipeline
+-   Hibák listázva + javítási javaslatok elkészítve
 -   Roadmap frissítve
--   Holnapi fókusz kijelölve
+-   Állapottábla frissítve
 
 ------------------------------------------------------------------------
 
@@ -164,17 +179,20 @@ NeedCalculator számítási motor implementálása.
 
 🚀 Sprint fókusz + 👉 Holnap fókusz
 
-🎯 Sprint fókusz NeedCalculator számítási motor implementálása
+🎯 Sprint fókusz
+NeedCalculator számítási motor implementálása
 
-👉 Holnap fókusz - lookupRules(productId) - lookupCalculation(productId,
-modeName)
+👉 Holnap fókusz
+- lookupRules(productId)
+- lookupCalculation(productId, modeName)
+- lookupDetails(calculationId)
 
-Mindkettő 2–3 órás, jól körülhatárolt feladat.
+Mindhárom stabil, jól körülhatárolt, 2–3 órás feladat.
 
 ------------------------------------------------------------------------
 
 💾 Git commit subject (≤55 karakter)
 
-    FileNameHelper testmode + rootpath architektúra kész
+    NeedCalculation UI-sync + overlay + registry audit kész
 
-Ha szeretnéd, holnapra készítek egy időblokkokra bontott munkatervet is.
+Ha szeretnéd, készítek egy holnapi időblokkokra bontott munkatervet is.

@@ -9,7 +9,7 @@
 //3. 🧠 Lehetőség singletonná alakításra
 // 📁 Tesztfájl elérési segédfüggvények
 class FileNameHelper{
-    friend class test_FileNameHelper; // csak a teszt fér hozzá
+    friend class FileNameHelperTesterProxy;
 
 public:
     enum InitSource { None, CompileTime, SourceFileHeuristic, AppDirFallback , Setter};

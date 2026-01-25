@@ -13,7 +13,7 @@ struct ParsedLine {
 };
 
 class LogViewAdapter {
-    friend bool runEventLoggerTests();  // <-- tesztfüggvény barátként
+    friend class EventLoggerTester;
 
 public:
     explicit LogViewAdapter(QPlainTextEdit* target);

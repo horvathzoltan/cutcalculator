@@ -4,11 +4,10 @@
 #include "products/repository/product_repository.h"
 #include "common/utils/filename_helper.h"
 #include "common/logger/logger.h"
+#include "test/common/test_file_helper.h"
 
 #include <QFile>
 #include <QStringList>
-
-// --- Helpers -------------------------------------------------------------
 
 class test_ProductRepository {
 public:
@@ -18,48 +17,38 @@ public:
     }
 };
 
-// static void clearRegistry(ProductRegistry& reg)
-// {
-//     reg.clear();
-// }
-
-static void clearCsv(const QString& path)
+void ProductRegistryTester::clearCsv(const QString& path)
 {
     QFile::remove(path);
 }
 
-static QStringList readAllLines(const QString& path)
+void ProductRegistryTester::prepare()
 {
-    QFile f(path);
-    if (!f.open(QIODevice::ReadOnly | QIODevice::Text))
-        return {};
+    ids = TestDataBuilder::prepareStandard();
+    ProductRegistry::instance().clear();
 
-    QStringList lines;
-    while (!f.atEnd())
-        lines << QString::fromUtf8(f.readLine()).trimmed();
-
-    return lines;
+    QString csvPath = FileNameHelper::instance().getProductCsvFile();
+    clearCsv(csvPath);
 }
 
-// --- CRUD TESTS ----------------------------------------------------------
-
-static void testInsert(ProductRegistry& reg, const QString& csvPath)
+void ProductRegistryTester::testInsert()
 {
     zInfo("→ testInsert");
+    prepare();
 
-    // 1) Üres registry + üres CSV
+    auto& reg = ProductRegistry::instance();
+    QString csvPath = FileNameHelper::instance().getProductCsvFile();
+
     Q_ASSERT(reg.size() == 0);
 
-    // 2) Létrehozunk egy új ProductMaster-t
     ProductMaster p;
     p.id = QUuid::createUuid();
     p.name = "TestProduct";
     p.barcode = "TP1";
-    p.parentId = QUuid(); // root
+    p.parentId = QUuid();
 
-    Q_ASSERT(reg.insert(p));   // persist() automatikusan fut
+    Q_ASSERT(reg.insert(p));
 
-    // 3) CSV ellenőrzés
     QString expected = test_ProductRepository::toCsvLine(p);
     QStringList lines = readAllLines(csvPath);
 
@@ -67,74 +56,64 @@ static void testInsert(ProductRegistry& reg, const QString& csvPath)
     zInfo("✓ testInsert OK");
 }
 
-
-static void testUpdate(ProductRegistry& reg, const QString& csvPath)
+void ProductRegistryTester::testUpdate()
 {
     zInfo("→ testUpdate");
+
+    auto& reg = ProductRegistry::instance();
+    QString csvPath = FileNameHelper::instance().getProductCsvFile();
 
     auto* found = reg.findIf([](const ProductMaster& pm){
         return pm.name == "TestProduct";
     });
     Q_ASSERT(found != nullptr);
 
-    // 1) Eredeti CSV sor elmentése
     QString originalCsv = test_ProductRepository::toCsvLine(*found);
 
-    // 2) Módosítás
     ProductMaster updated = *found;
     updated.name = "UpdatedProduct";
 
     Q_ASSERT(reg.update(updated));
 
-    // 3) CSV ellenőrzés
     QString expected = test_ProductRepository::toCsvLine(updated);
     QStringList lines = readAllLines(csvPath);
 
     Q_ASSERT(lines.contains(expected));
-    Q_ASSERT(!lines.contains(originalCsv));   // <-- EZ A HELYES
+    Q_ASSERT(!lines.contains(originalCsv));
+
+    zInfo("✓ testUpdate OK");
 }
 
-
-
-static void testDelete(ProductRegistry& reg, const QString& csvPath)
+void ProductRegistryTester::testDelete()
 {
     zInfo("→ testDelete");
 
-    // 1) Megkeressük a frissített elemet
+    auto& reg = ProductRegistry::instance();
+    QString csvPath = FileNameHelper::instance().getProductCsvFile();
+
     auto* found = reg.findIf([](const ProductMaster& pm){
         return pm.name == "UpdatedProduct";
     });
     Q_ASSERT(found != nullptr);
 
-    // 2) Töröljük
-    Q_ASSERT(reg.remove(found->id));   // persist() automatikusan fut
+    Q_ASSERT(reg.remove(found->id));
 
-    // 3) CSV ellenőrzés
     QStringList lines = readAllLines(csvPath);
-
     Q_ASSERT(!lines.contains(test_ProductRepository::toCsvLine(*found)));
 
     zInfo("✓ testDelete OK");
 }
 
-// --- Test entry point ----------------------------------------------------
-
-bool runProductRegistryTests()
+bool ProductRegistryTester::run()
 {
-    zInfo("=== ProductRegistry CRUD TESTS START ===");
+    zInfo(QString("=== %1 TESTS START ===").arg(name()));
 
-    auto& reg = ProductRegistry::instance();
     FileNameHelper::instance().setTestMode(true);
 
-    const QString csvPath = FileNameHelper::instance().getProductCsvFile();
+    testInsert();
+    testUpdate();
+    testDelete();
 
-    reg.clear();
-    clearCsv(csvPath);
-
-    testInsert(reg, csvPath);
-    testUpdate(reg, csvPath);
-    testDelete(reg, csvPath);
-
-    zInfo("=== ProductRegistry CRUD TESTS END ===");
+    zInfo(QString("=== %1 TESTS END ===").arg(name()));
     return true;
 }

@@ -1,140 +1,184 @@
-Értettem, Zoltán — most nem a sablont kéred vissza, hanem azt, hogy
-töltsem ki a mai munkánk alapján.
-Összegyűjtöttem mindent, amit ma együtt csináltunk: az
-overlay‑architektúra teljes refaktorát, a RepositoryOverlayWidget
-bevezetését, a Presenter‑tisztítást, a helper‑szétválasztást, a
-ProductTree integráció előkészítését, és a napi‑input prompt
-optimalizálását.
+Természetesen, Zoltán — a mai összesítő kiegészíthető a teszteléssel
+töltött munka teljes auditjával, hiszen a TestManager‑alapú moduláris
+tesztfuttatás a rendszer egyik legfontosabb minőségbiztosítási pillére.
 
-Az alábbi összesítő a mai nap tényleges eredményeit tartalmazza, a kért
-formátumban.
+Az alábbiakban beépítem a tesztelési tevékenységet a már kialakított
+napi riportstruktúrába, úgy hogy:
+
+-   külön kategóriát kap,
+-   látszik, mely tesztek futottak,
+-   látszik, milyen hibák derültek ki,
+-   látszik, milyen fejlesztési igények születtek a tesztkód alapján.
+
+A teljes riportot újragenerálom, immár a tesztelési munkával együtt.
 
 ------------------------------------------------------------------------
 
-🎯 A mai (2026‑01‑20) munka eredménye – kategóriákba rendezve
+🎯 A mai (2026‑01‑26) munka eredménye – kategóriákba rendezve
 
-------------------------------------------------------------------------
+(tesztelési munka integrálva)
 
-🟦 Overlay‑architektúra refaktor
+🟦 1) UI‑szinkron lánc audit
 
-Érintett fájlok: - overlay_status_helper.h/.cpp -
-overlay_helper.h/.cpp - repository_overlay_widget.h -
-calculation_modes_presenter.cpp
+Érintett fájlok: - calculation_modes_view / presenter -
+calculation_mode_detail_view / presenter -
+calculation_mode_detail_manager - bom_workbench
 
-Mai eredmények: - Bevezettük a RepositoryOverlayWidget<T> generikus
-overlay‑komponenst. - A Presenter overlay‑logikája egyetlen sorra
-egyszerűsödött (_status->refresh()). - A OverlayStatusHelper tiszta
-Presenter‑policy lett. - A OverlayHelper UI‑helper szerepe letisztult. -
-A base emoji és overlay‑policy egységesítve lett minden torony számára.
+Mai eredmények: - A teljes jelzéslánc feltárva (product → modes →
+details). - markReady() hiányosság azonosítva. - DetailPresenter nem
+állította be a calcId‑t → add/remove hibák. - DetailManager frissítés ki
+volt kommentelve → panel nem frissült. - Product váltáskor detail panel
+nem resetelt.
 
 Kategória:
-➡️ Architektúra‑tisztítás, overlay‑policy egységesítés
+➡️ UI‑szinkron stabilizálása
 
 ------------------------------------------------------------------------
 
-🟦 Presenter‑tisztítás (CalculationModes)
+🟦 2) Overlay‑lánc audit
 
-Érintett fájlok: - calculation_modes_presenter.cpp
+Érintett fájlok: - overlay_status_helper - overlay_icon_widget - minden
+presenter overlay‑hívásai
 
-Mai eredmények: - Eltávolítottuk a régi overlay‑létrehozó kódot. - A
-Presenter már nem számol repoCount‑ot. - A Presenter nem hív közvetlen
-widget‑logikát. - A toolbar‑építés letisztult, csak a
-widget‑példányosítás maradt.
+Mai eredmények: - CalculationModesPresenter registry‑frissítésre nem
+reagált → feltárva. - Régi overlay kódmaradványok azonosítva. - Overlay
+UX szabályok hiányoztak → dokumentáció igénye megfogalmazva.
 
 Kategória:
-➡️ Presenter‑réteg tisztítása, MVP‑helyreállítás
+➡️ Overlay‑policy egységesítése
 
 ------------------------------------------------------------------------
 
-🟦 Napi‑input prompt optimalizálása
+🟦 3) Registry‑workflow audit
 
-Érintett fájlok: - (prompt‑szöveg, workflow dokumentáció)
+Érintett fájlok: - product_registry - need_calculation_registry -
+need_calculation_detail_registry - need_rule_registry -
+product_tree_view (explicit persist)
 
-Mai eredmények: - Megszületett a karcsúsított, kategorizált napi‑input
-formátum. - A struktúra auditálható, token‑barát, fejlesztőbarát lett. -
-A sablon és a kitöltött verzió különvált.
+Mai eredmények: - Persist‑policy inkonzisztens (pl. ProductRegistry
+dropEvent). - Demo insert domain‑hibás (invalid materialId). -
+Domain‑validációk több helyen implicit függőségekre támaszkodnak. -
+NeedRuleRegistry workflow audit hiányzott → pótlási igény.
 
 Kategória:
-➡️ Workflow‑optimalizálás, dokumentáció‑tisztítás
+➡️ Registry‑workflow konzisztencia
 
 ------------------------------------------------------------------------
 
-🟩 Összegzés – a mai nap 3 nagy eredménye
+🟦 4) Tesztelési munka audit (ÚJ)
 
--   Az overlay‑architektúra teljesen egységes, toronyfüggetlen és tiszta
-    lett.
--   A Presenter‑réteg végre mentes minden UI‑boilerplate‑től.
--   Megszületett a végleges, karcsú napi‑input formátum.
+Érintett fájlok: - test_manager.cpp - material_registry_tester.* -
+product_registry_tester.* - need_calculation_registry_tester.* -
+need_calculation_detail_registry_tester.* -
+need_rule_registry_tester.* - filenamehelper_tests.* -
+event_logger_tester.*
+
+Mai eredmények: - A TestManager moduláris tesztfuttatása áttekintve. - A
+tesztprofilok (material, product, calcmode, calcdetail, needrule stb.)
+működése validálva. - Feltárva: több régi teszt a korábbi mixines API‑ra
+épült → frissítés szükséges. - Feltárva: MaterialRegistryTester elavult
+insert/update/remove API‑t hívott → javítandó. - Feltárva:
+NeedCalculationDetailRegistryTester domain‑hibás demo adatokkal
+dolgozik. - Tesztfuttatás logjai alapján a registry‑workflow hibák jól
+reprodukálhatók.
+
+Kategória:
+➡️ Tesztkód modernizálása és a registry‑workflow‑val való összehangolása
+
+------------------------------------------------------------------------
+
+🟩 Összegzés – a mai nap 4 nagy eredménye
+
+1.  UI‑szinkron lánc teljes auditja
+2.  Overlay‑lánc egységesítése és hibák feltárása
+3.  Registry‑workflow teljes átvilágítása
+4.  Tesztkódok auditja és modernizálási terv kialakítása ← ÚJ
 
 ------------------------------------------------------------------------
 
 📝 Mai nap összefoglalója
 
--   [✅ ELKÉSZÜLT] RepositoryOverlayWidget bevezetése
--   [✅ ELKÉSZÜLT] OverlayStatusHelper dokumentálása és tisztítása
--   [✅ ELKÉSZÜLT] CalculationModesPresenter overlay‑refaktor
--   [🚧 HALADT] ProductTree torony integráció előkészítése
--   [🚧 HALADT] Napi‑input workflow finomítása
+-   [✅ ELKÉSZÜLT] UI‑szinkron hibák feltárása
+-   [🚧 HALADT] Overlay‑lánc egységesítése
+-   [🚧 HALADT] Registry‑workflow audit
+-   [🚧 HALADT] Tesztkódok átvilágítása
+-   [🐞 BUG] Több teszt régi API‑t hív → frissítés szükséges
+-   [🐞 BUG] MaterialRegistryTester insert/update/remove hívásai hibásak
+-   [🐞 BUG] NeedCalculationDetailRegistryTester domain‑hibás demo
+    adatokkal dolgozik
+-   [🚧 HALADT] TestManager profil‑alapú futtatásának tisztítása
 
 ------------------------------------------------------------------------
 
 🐞 BUG lista (életciklus‑kezeléssel)
 
--   [🐞 BUG] ProductTree torony még a régi overlay‑logikát használja
--   [🐞 BUG] MaterialRequirements torony overlay‑logikája még nem
-    egységes
--   [✅ KÉSZ] CalculationModes overlay‑logika régi verziója eltávolítva
+Tesztkódhoz kapcsolódó új hibák:
+
+-   [🐞 BUG] MaterialRegistryTester régi API‑t hív
+    (insert/update/remove)
+-   [🐞 BUG] NeedCalculationDetailRegistryTester invalid materialId‑t
+    generál
+-   [🐞 BUG] NeedRuleRegistryTester nem ellenőrzi a domain‑validációt
+-   [🐞 BUG] TestManager nem jelzi a sikertelen teszteket → csak logol
+-   [🐞 BUG] Több teszt nem inicializálja a FileNameHelper‑t → import
+    hibák
+
+Korábbi hibák (összefoglalva):
+
+-   [🐞 BUG] CalculationModesPresenter registry‑frissítésre nem reagált
+-   [🐞 BUG] DetailManager frissítés ki volt kommentelve
+-   [🐞 BUG] DetailPresenter nem állította be a calcId‑t
+-   [🐞 BUG] Product váltáskor detail panel nem resetelt
+-   [🐞 BUG] Persist‑policy inkonzisztens
+-   [🐞 BUG] Overlay kódmaradványok
 
 ------------------------------------------------------------------------
 
 🧠 Ötletek
 
--   A RepositoryOverlayWidget lehetne több overlay‑típusú factory alapja
-    (dirty, sync, warning).
--   A Presenter‑ek overlay‑frissítése teljesen egységesíthető minden
-    toronyban.
--   A registry‑alapú overlay‑policy akár unit‑tesztelhető is lenne.
-
-------------------------------------------------------------------------
+-   A TestManager kaphatna egy összesített hibaszámlálót, hogy a
+    CLI‑kimenet egyértelmű legyen.
+-   A tesztmodulokhoz érdemes mock registry réteget bevezetni, hogy ne
+    kelljen fájlba írni.
+-   A tesztfuttatás eredményeit érdemes JSON‑ba is kiírni (auditbarát).
 
 ⚠️ Problémák
 
--   A ProductTree és MaterialRequirements tornyok még a régi
-    overlay‑mintát használják.
--   A View‑kban maradhatnak régi overlay‑függvények, ezeket fel kell
-    deríteni.
-
-------------------------------------------------------------------------
+-   A tesztek egy része implicit környezetre támaszkodik
+    (FileNameHelper, SettingsManager).
+-   A registry‑workflow tesztelése nehéz, mert a domain‑validáció több
+    registrytől függ.
 
 ✅ Döntések
 
--   A RepositoryOverlayWidget lesz a hivatalos overlay‑komponens minden
-    toronyban.
--   A Presenter csak a visibleRows‑t adja át, semmi mást.
--   A napi‑input sablon karcsúsított verziója lesz a hivatalos workflow.
+-   A tesztkódok modernizálása bekerül a következő sprintbe.
+-   A TestManager hibakezelése bővül (fail‑fast vagy fail‑collect mód).
+-   A registry‑workflow tesztekhez külön testdata készül.
 
 ------------------------------------------------------------------------
 
 📁 Érintett fájlok / modulok
 
--   overlay_status_helper.* – teljes dokumentáció és tisztítás
--   repository_overlay_widget.h – új generikus overlay‑komponens
--   calculation_modes_presenter.cpp – overlay‑refaktor,
-    Presenter‑tisztítás
--   overlay_helper.* – UI‑helper szerepének tisztázása
+-   test_manager.cpp – profil‑alapú futtatás auditálva
+-   material_registry_tester.* – API‑eltérés feltárva
+-   product_registry_tester.* – működő, de modernizálható
+-   need_calculation_registry_tester.* – domain‑validáció tesztelése
+-   need_calculation_detail_registry_tester.* – hibás demo adatok
+-   need_rule_registry_tester.* – workflow audit hiányzott
+-   filenamehelper_tests.* – környezetfüggő tesztek
+-   event_logger_tester.* – stabil
 
 ------------------------------------------------------------------------
 
 💡 Új ötletek / megfigyelések
 
--   A torony‑független overlay‑policy most már annyira tiszta, hogy akár
-    külön modul is lehetne.
--   A Presenter‑ek overlay‑kódja mostantól egyetlen sor — ez hosszú
-    távon rengeteg hibát előz meg.
--   A napi‑input sablon most már tényleg használható, nem terheli túl a
-    kontextust.
+-   A tesztkódok frissítése után a teljes rendszer auditálhatóvá válik.
+-   A registry‑workflow tesztelése automatikusan feltárja a
+    domain‑hibákat.
+-   A TestManager moduláris felépítése jó alap egy jövőbeli
+    CI‑pipeline‑hoz.
 
 ------------------------------------------------------------------------
 
-Ha szeretnéd, holnapra megcsináljuk a ProductTree torony teljes
-integrációját is, ugyanilyen tisztán.
+Ha szeretnéd, összeállítom a teljes tesztkód‑modernizálási tervet is,
+modulonkénti patch‑listával.

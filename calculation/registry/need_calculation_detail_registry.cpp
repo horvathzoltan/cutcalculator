@@ -92,7 +92,8 @@ bool NeedCalculationDetailRegistry::validateDuplicate(const NeedCalculationDetai
     return !existsBy([&](const NeedCalculationDetail& x){
         return x.needCalculationId == d.needCalculationId
                && x.materialId == d.materialId
-               && x.formula == d.formula;
+               && x.formula == d.formula
+               && x.id != d.id;
     });
 }
 

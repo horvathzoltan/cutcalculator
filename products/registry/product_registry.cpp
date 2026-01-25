@@ -32,8 +32,10 @@ bool ProductRegistry::validateDuplicate(const ProductMaster& p) const
 {
     return !existsBy([&](const ProductMaster& x){
         return x.name == p.name
-               && x.parentId == p.parentId;
+               && x.parentId == p.parentId
+               && x.id != p.id;
     });
+
 }
 
 bool ProductRegistry::beforeInsert( ProductMaster&)

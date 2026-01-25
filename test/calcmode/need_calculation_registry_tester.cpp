@@ -5,29 +5,14 @@
 #include "common/logger/logger.h"
 #include "common/utils/filename_helper.h"
 #include "test/common/test_data_builder.h"
+#include "test/common/test_file_helper.h"
+#include "calcmodes/repository/need_calculation_repository.h"
 
 #include <QFile>
 #include <QStringList>
 
-#include <calcmodes/repository/need_calculation_repository.h>
-
-
-class test_NeedCalculationRepository {
-public:
-    static QString toCsvLine(const NeedCalculation& nc) {
-        return NeedCalculationRepository::toCsvLine(nc);
-    }
-};
-
-
-// ------------------------------------------------------------
-// Helpers
-// ------------------------------------------------------------
-
-static TestDataIds ids;
-
-static NeedCalculation makeNC(const QUuid& productId,
-                              const QString& name)
+NeedCalculation NeedCalculationRegistryTester::makeNC(const QUuid& productId,
+                                                      const QString& name)
 {
     NeedCalculation nc;
     nc.id = QUuid::createUuid();
@@ -36,7 +21,7 @@ static NeedCalculation makeNC(const QUuid& productId,
     return nc;
 }
 
-static void prepare()
+void NeedCalculationRegistryTester::prepare()
 {
     ids = TestDataBuilder::prepareStandard();
     NeedCalculationRegistry::instance().clear();
@@ -45,38 +30,27 @@ static void prepare()
     QFile::remove(csvPath);
 }
 
-
-// ------------------------------------------------------------
-// TEST 1: Valid insert
-// ------------------------------------------------------------
-
-static void testValidInsert()
+void NeedCalculationRegistryTester::testValidInsert()
 {
     zInfo("→ testValidInsert");
     prepare();
 
     auto& reg = NeedCalculationRegistry::instance();
-
     NeedCalculation nc = makeNC(ids.P1, "ModeA");
 
     Q_ASSERT(reg.insert(nc));
     Q_ASSERT(reg.size() == 1);
 
-    // --- CSV ellenőrzés ---
     QString csvPath = FileNameHelper::instance().getNeedCalculationCsvFile();
     QStringList lines = readAllLines(csvPath);
 
-    QString expected = test_NeedCalculationRepository::toCsvLine(nc);
+    QString expected = NeedCalculationRepository::toCsvLine(nc);
     Q_ASSERT(lines.contains(expected));
 
     zInfo("✓ testValidInsert OK");
 }
 
-// ------------------------------------------------------------
-// TEST 2: Duplicate insert tiltása
-// ------------------------------------------------------------
-
-static void testDuplicateInsert()
+void NeedCalculationRegistryTester::testDuplicateInsert()
 {
     zInfo("→ testDuplicateInsert");
     prepare();
@@ -98,11 +72,7 @@ static void testDuplicateInsert()
     zInfo("✓ testDuplicateInsert OK");
 }
 
-// ------------------------------------------------------------
-// TEST 3: Invalid domain (üres név)
-// ------------------------------------------------------------
-
-static void testInvalidDomain()
+void NeedCalculationRegistryTester::testInvalidDomain()
 {
     zInfo("→ testInvalidDomain");
     prepare();
@@ -115,17 +85,12 @@ static void testInvalidDomain()
     QString csvPath = FileNameHelper::instance().getNeedCalculationCsvFile();
     QStringList lines = readAllLines(csvPath);
 
-    Q_ASSERT(lines.size() == 1); // csak header
+    Q_ASSERT(lines.isEmpty());
 
     zInfo("✓ testInvalidDomain OK");
 }
 
-
-// ------------------------------------------------------------
-// TEST 4: Valid update
-// ------------------------------------------------------------
-
-static void testValidUpdate()
+void NeedCalculationRegistryTester::testValidUpdate()
 {
     zInfo("→ testValidUpdate");
     prepare();
@@ -141,42 +106,13 @@ static void testValidUpdate()
     QString csvPath = FileNameHelper::instance().getNeedCalculationCsvFile();
     QStringList lines = readAllLines(csvPath);
 
-    QString expected = test_NeedCalculationRepository::toCsvLine(nc);
+    QString expected = NeedCalculationRepository::toCsvLine(nc);
     Q_ASSERT(lines.contains(expected));
 
     zInfo("✓ testValidUpdate OK");
 }
 
-
-// ------------------------------------------------------------
-// TEST 5: Invalid update (duplicate név)
-// ------------------------------------------------------------
-
-static void testInvalidUpdateDuplicate()
-{
-    zInfo("→ testInvalidUpdateDuplicate");
-    prepare();
-
-    auto& reg = NeedCalculationRegistry::instance();
-
-    NeedCalculation nc1 = makeNC(ids.P1, "ModeA");
-    NeedCalculation nc2 = makeNC(ids.P1, "ModeB");
-
-    Q_ASSERT(reg.insert(nc1));
-    Q_ASSERT(reg.insert(nc2));
-
-    // nc2-t átnevezzük ModeA-ra → duplikáció
-    nc2.name = "ModeA";
-    Q_ASSERT(!reg.update(nc2));
-
-    zInfo("✓ testInvalidUpdateDuplicate OK");
-}
-
-// ------------------------------------------------------------
-// TEST 6: Valid remove
-// ------------------------------------------------------------
-
-static void testInvalidUpdateDuplicate()
+void NeedCalculationRegistryTester::testInvalidUpdateDuplicate()
 {
     zInfo("→ testInvalidUpdateDuplicate");
     prepare();
@@ -201,12 +137,7 @@ static void testInvalidUpdateDuplicate()
     zInfo("✓ testInvalidUpdateDuplicate OK");
 }
 
-
-// ------------------------------------------------------------
-// TEST 7: Invalid remove
-// ------------------------------------------------------------
-
-static void testValidRemove()
+void NeedCalculationRegistryTester::testValidRemove()
 {
     zInfo("→ testValidRemove");
     prepare();
@@ -222,12 +153,13 @@ static void testValidRemove()
     QString csvPath = FileNameHelper::instance().getNeedCalculationCsvFile();
     QStringList lines = readAllLines(csvPath);
 
-    QString removed = test_NeedCalculationRepository::toCsvLine(nc);
+    QString removed = NeedCalculationRepository::toCsvLine(nc);
     Q_ASSERT(!lines.contains(removed));
 
     zInfo("✓ testValidRemove OK");
 }
-static void testInvalidRemove()
+
+void NeedCalculationRegistryTester::testInvalidRemove()
 {
     zInfo("→ testInvalidRemove");
     prepare();
@@ -245,13 +177,7 @@ static void testInvalidRemove()
     zInfo("✓ testInvalidRemove OK");
 }
 
-
-
-// ------------------------------------------------------------
-// TEST 8: findByProductAndName
-// ------------------------------------------------------------
-
-static void testFindByProductAndName()
+void NeedCalculationRegistryTester::testFindByProductAndName()
 {
     zInfo("→ testFindByProductAndName");
     prepare();
@@ -267,19 +193,13 @@ static void testFindByProductAndName()
     QString csvPath = FileNameHelper::instance().getNeedCalculationCsvFile();
     QStringList lines = readAllLines(csvPath);
 
-    Q_ASSERT(lines.contains(test_NeedCalculationRepository::toCsvLine(nc1)));
-    Q_ASSERT(lines.contains(test_NeedCalculationRepository::toCsvLine(nc2)));
+    Q_ASSERT(lines.contains(NeedCalculationRepository::toCsvLine(nc1)));
+    Q_ASSERT(lines.contains(NeedCalculationRepository::toCsvLine(nc2)));
 
     zInfo("✓ testFindByProductAndName OK");
 }
 
-
-
-// ------------------------------------------------------------
-// TEST 9: Subscription működése
-// ------------------------------------------------------------
-
-static void testSubscription()
+void NeedCalculationRegistryTester::testSubscription()
 {
     zInfo("→ testSubscription");
     prepare();
@@ -294,23 +214,19 @@ static void testSubscription()
 
     NeedCalculation nc = makeNC(ids.P1, "ModeA");
 
-    Q_ASSERT(reg.insert(nc));   // counter +1
+    Q_ASSERT(reg.insert(nc));
     nc.name = "ModeA2";
-    Q_ASSERT(reg.update(nc));   // counter +1
-    Q_ASSERT(reg.remove(nc.id)); // counter +1
+    Q_ASSERT(reg.update(nc));
+    Q_ASSERT(reg.remove(nc.id));
 
     Q_ASSERT(counter == 3);
 
     zInfo("✓ testSubscription OK");
 }
 
-// ------------------------------------------------------------
-// Entry point
-// ------------------------------------------------------------
-
-bool runNeedCalculationRegistryTests()
+bool NeedCalculationRegistryTester::run()
 {
-    zInfo("=== NeedCalculationRegistry TESTS START ===");
+    zInfo(QString("=== %1 TESTS START ===").arg(name()));
 
     FileNameHelper::instance().setTestMode(true);
 
@@ -324,6 +240,6 @@ bool runNeedCalculationRegistryTests()
     testFindByProductAndName();
     testSubscription();
 
-    zInfo("=== NeedCalculationRegistry TESTS END ===");
+    zInfo(QString("=== %1 TESTS END ===").arg(name()));
     return true;
 }

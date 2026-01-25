@@ -8,13 +8,13 @@
 #include "common/logger/logger.h"
 #include "common/utils/filename_helper.h"
 
+#include "test/common/test_data_builder.h"
+#include "test/common/test_file_helper.h"
+
 #include <QFile>
 #include <QStringList>
 
-#include "test/common/test_data_builder.h"
-
 #include <needs/repository/need_rule_repository.h>
-
 
 class test_NeedRuleRepository {
 public:
@@ -23,32 +23,14 @@ public:
     }
 };
 
-// --- Helpers -------------------------------------------------------------
-
-static void clearAllRegistries()
+void NeedRuleRegistryTester::clearAllRegistries()
 {
     ProductRegistry::instance().clear();
     MaterialRegistry::instance().clear();
     NeedRuleRegistry::instance().clear();
 }
 
-static QStringList readAllLines(const QString& path)
-{
-    QFile f(path);
-    if (!f.open(QIODevice::ReadOnly | QIODevice::Text))
-        return {};
-
-    QStringList lines;
-    while (!f.atEnd())
-        lines << QString::fromUtf8(f.readLine()).trimmed();
-
-    return lines;
-}
-
-static TestDataIds ids;
-
-
-static void prepare()
+void NeedRuleRegistryTester::prepare()
 {
     ids = TestDataBuilder::prepareStandard();
     NeedRuleRegistry::instance().clear();
@@ -57,10 +39,7 @@ static void prepare()
     QFile::remove(csvPath);
 }
 
-
-// --- Test skeletons ------------------------------------------------------
-
-static void testValidInsert()
+void NeedRuleRegistryTester::testValidInsert()
 {
     zInfo("→ testValidInsert");
     prepare();
@@ -68,13 +47,9 @@ static void testValidInsert()
     auto& reg = NeedRuleRegistry::instance();
 
     Q_ASSERT(reg.size() == 0);
-
-    // valid kapcsolat
     Q_ASSERT(reg.insertRule(ids.P1, ids.M1));
-
     Q_ASSERT(reg.size() == 1);
 
-    // --- CSV ellenőrzés ---
     QString csvPath = FileNameHelper::instance().getNeedRuleCsvFile();
     QStringList lines = readAllLines(csvPath);
 
@@ -82,73 +57,49 @@ static void testValidInsert()
     QString expectedLine = test_NeedRuleRepository::toCsvLine(expected);
 
     Q_ASSERT(lines.contains(expectedLine));
-
-    zInfo("✓ testValidInsert OK");
 }
 
-
-
-static void testDuplicateInsert()
+void NeedRuleRegistryTester::testDuplicateInsert()
 {
     zInfo("→ testDuplicateInsert");
 
     auto& reg = NeedRuleRegistry::instance();
 
-    // már létezik: (P1, M1)
-    Q_ASSERT(!reg.insertRule(ids.P1, ids.M1));   // duplikáció → false
-
+    Q_ASSERT(!reg.insertRule(ids.P1, ids.M1));
     Q_ASSERT(reg.size() == 1);
-
-    // QString csvPath = FileNameHelper::instance().getNeedRuleCsvFile();
-    // QStringList lines = readAllLines(csvPath);
-    // Q_ASSERT(lines.size() == 1); // csak a header + 1 sor
-
-    zInfo("✓ testDuplicateInsert OK");
 }
 
-
-static void testInvalidLeft()
+void NeedRuleRegistryTester::testInvalidLeft()
 {
     zInfo("→ testInvalidLeft");
 
     auto& reg = NeedRuleRegistry::instance();
 
     QUuid badLeft = QUuid::createUuid();
-
-    Q_ASSERT(!reg.insertRule(badLeft, ids.M1));   // bal oldal nem létezik
-
-    Q_ASSERT(reg.size() == 1); // továbbra is csak (P1, M1)
-
-    zInfo("✓ testInvalidLeft OK");
+    Q_ASSERT(!reg.insertRule(badLeft, ids.M1));
+    Q_ASSERT(reg.size() == 1);
 }
 
-
-static void testInvalidRight()
+void NeedRuleRegistryTester::testInvalidRight()
 {
     zInfo("→ testInvalidRight");
 
     auto& reg = NeedRuleRegistry::instance();
 
     QUuid badRight = QUuid::createUuid();
-
-    Q_ASSERT(!reg.insertRule(ids.P1, badRight));  // jobb oldal nem létezik
-
+    Q_ASSERT(!reg.insertRule(ids.P1, badRight));
     Q_ASSERT(reg.size() == 1);
-
-    zInfo("✓ testInvalidRight OK");
 }
 
-static void testValidRemove()
+void NeedRuleRegistryTester::testValidRemove()
 {
     zInfo("→ testValidRemove");
 
     auto& reg = NeedRuleRegistry::instance();
 
-    Q_ASSERT(reg.removeRule(ids.P1, ids.M1));   // létező kapcsolat
-
+    Q_ASSERT(reg.removeRule(ids.P1, ids.M1));
     Q_ASSERT(reg.size() == 0);
 
-    // --- CSV ellenőrzés ---
     QString csvPath = FileNameHelper::instance().getNeedRuleCsvFile();
     QStringList lines = readAllLines(csvPath);
 
@@ -156,27 +107,19 @@ static void testValidRemove()
     QString removedLine = test_NeedRuleRepository::toCsvLine(removed);
 
     Q_ASSERT(!lines.contains(removedLine));
-
-    zInfo("✓ testValidRemove OK");
 }
 
-
-
-static void testInvalidRemove()
+void NeedRuleRegistryTester::testInvalidRemove()
 {
     zInfo("→ testInvalidRemove");
 
     auto& reg = NeedRuleRegistry::instance();
 
-    // nincs ilyen kapcsolat
     Q_ASSERT(!reg.removeRule(ids.P1, ids.M2));
-
     Q_ASSERT(reg.size() == 0);
-
-    zInfo("✓ testInvalidRemove OK");
 }
 
-static void testFindByLeft()
+void NeedRuleRegistryTester::testFindByLeft()
 {
     zInfo("→ testFindByLeft");
 
@@ -188,7 +131,6 @@ static void testFindByLeft()
     auto v = reg.findByLeft(ids.P1);
     Q_ASSERT(v.size() == 2);
 
-    // --- CSV ellenőrzés ---
     QString csvPath = FileNameHelper::instance().getNeedRuleCsvFile();
     QStringList lines = readAllLines(csvPath);
 
@@ -197,13 +139,9 @@ static void testFindByLeft()
 
     Q_ASSERT(lines.contains(test_NeedRuleRepository::toCsvLine(r1)));
     Q_ASSERT(lines.contains(test_NeedRuleRepository::toCsvLine(r2)));
-
-    zInfo("✓ testFindByLeft OK");
 }
 
-
-
-static void testRightConvenience()
+void NeedRuleRegistryTester::testRightConvenience()
 {
     zInfo("→ testRightConvenience");
 
@@ -217,11 +155,9 @@ static void testRightConvenience()
         Q_ASSERT(opt.has_value());
         Q_ASSERT(opt->id == r.rightId);
     }
-
-    zInfo("✓ testRightConvenience OK");
 }
 
-static void testSubscription()
+void NeedRuleRegistryTester::testSubscription()
 {
     zInfo("→ testSubscription");
 
@@ -235,20 +171,15 @@ static void testSubscription()
         counter++;
     });
 
-    Q_ASSERT(reg.insertRule(ids.P1, ids.M1));   // counter +1
-    Q_ASSERT(reg.removeRule(ids.P1, ids.M1));   // counter +1
+    Q_ASSERT(reg.insertRule(ids.P1, ids.M1));
+    Q_ASSERT(reg.removeRule(ids.P1, ids.M1));
 
     Q_ASSERT(counter == 2);
-
-    zInfo("✓ testSubscription OK");
 }
 
-
-// --- Entry point ---------------------------------------------------------
-
-bool runNeedRuleRegistryTests()
+bool NeedRuleRegistryTester::run()
 {
-    zInfo("=== NeedRuleRegistry TESTS START ===");
+    zInfo(QString("=== %1 TESTS START ===").arg(name()));
 
     FileNameHelper::instance().setTestMode(true);
 
@@ -262,7 +193,6 @@ bool runNeedRuleRegistryTests()
     testRightConvenience();
     testSubscription();
 
-    zInfo("=== NeedRuleRegistry TESTS END ===");
+    zInfo(QString("=== %1 TESTS END ===").arg(name()));
     return true;
 }
-

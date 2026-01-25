@@ -25,6 +25,7 @@ struct CrudWorkflowMixin {
         Host& reg = static_cast<Host&>(*this);
 
         if (!reg.validateDomain(e)) return false;
+        if (!reg.validateDuplicate(e)) return false;
         if (!reg.beforeUpdate(e)) return false;
 
         // --- Tényleges update: kifejezetten a CrudMixin update() ---

@@ -1,0 +1,228 @@
+Örömmel összerakom neked a három audit (UI‑szinkron, Overlay‑lánc,
+Registry‑workflow) összesített hibajegyzékét, tiszta, pontokba szedett
+formában, minden ponthoz konkrét javítási javaslattal.
+
+A lista komplett, lefedi mindhárom audit minden releváns megállapítását.
+
+------------------------------------------------------------------------
+
+🔍 Összesített hibajegyzék + javítási javaslatok
+
+1) UI‑szinkron lánc hibái
+
+1.1 CalculationModesView soha nem hívta meg a markReady()‑t
+
+-   Hiba: A presenter csak akkor frissít product váltáskor, ha
+    view->isReady() == true, de a view nem jelölte magát ready‑nek.
+
+-   Következmény: Product váltáskor néha nem frissült a módlista.
+
+-   Javítás:
+    CalculationModesView konstruktorának végére:
+
+        markReady();
+
+------------------------------------------------------------------------
+
+1.2 CalculationModesPresenter → CalculationModeDetailPresenter jelzéslánc hiányzott
+
+-   Hiba: A modeSelected jel nem volt továbbítva a detail presenter
+    felé.
+
+-   Következmény: A detail panel nem frissült módváltáskor.
+
+-   Javítás:
+    BOMWorkbench-ben:
+
+        connect(modesPresenter, &CalculationModesPresenter::modeSelected,
+                detailsPresenter, &CalculationModeDetailPresenter::onModeSelected);
+
+------------------------------------------------------------------------
+
+1.3 DetailPresenter::onModeSelected nem állította be a current_calcId‑t
+
+-   Hiba: A view nem kapta meg, melyik calcId aktív.
+
+-   Következmény: Add/remove műveletek rossz calcId‑ra mentek volna.
+
+-   Javítás:
+
+        _view->set_current_calculation(*modeId, modeName);
+
+------------------------------------------------------------------------
+
+1.4 CalculationModeDetailManager → view.set_details() ki volt kommentelve
+
+-   Hiba: A detail panel nem frissült.
+
+-   Javítás:
+    A kommentelt sort vissza kell tenni:
+
+        _view->set_details(rows);
+
+------------------------------------------------------------------------
+
+1.5 ProductTreeManager → DetailPresenter reset hiányzott
+
+-   Hiba: Product váltáskor a detail panel régi adatokat mutathatott.
+
+-   Javítás:
+
+        connect(treeManager, &ProductTreeManager::currentProductChanged,
+                detailsPresenter, [](){ detailsPresenter->reset(); });
+
+------------------------------------------------------------------------
+
+2) Overlay‑lánc hibái
+
+2.1 CalculationModesPresenter nem frissített overlay‑t registry változásra
+
+-   Hiba: A manager frissítette a view‑t, de a presenter overlay‑e nem
+    reagált.
+
+-   Javítás:
+    Presenterben:
+
+        void CalculationModesPresenter::connectRegistry() {
+            NeedCalculationRegistry::instance().subscribeItemsChangedToken(
+                [this]() { refreshOverlayOnly(); });
+        }
+
+------------------------------------------------------------------------
+
+2.2 Régi overlay kód maradványok több helyen
+
+-   Hiba: Kommentelt, félbehagyott overlay logika (initialOverlay,
+    updateOverlayState2).
+-   Következmény: Zavaró, félrevezető, karbantarthatatlan.
+-   Javítás:
+    Törölni minden régi overlay kódot → csak RepositoryOverlayWidget +
+    OverlayStatusHelper maradjon.
+
+------------------------------------------------------------------------
+
+2.3 Overlay UX szabályok nem voltak dokumentálva
+
+-   Hiba: A három overlay állapot (❌, 🟡, 🟢) nem volt formalizálva.
+-   Javítás:
+    docs/overlay_ux_rules.md létrehozása a következő tartalommal:
+    -   állapotok
+    -   ikonok
+    -   presenter‑szintű hívási szabályok
+    -   widget‑szintű szabályok
+    -   checklist új tornyokhoz
+
+------------------------------------------------------------------------
+
+2.4 MaterialRequirementsPresenter overlay frissítése csak queued módon működött
+
+-   Hiba: A refreshOverlayOnly() néha túl korán futott.
+-   Javítás:
+    A queued connection maradhat, de dokumentálni kell, hogy miért
+    szükséges.
+
+------------------------------------------------------------------------
+
+3) Registry‑workflow hibák
+
+3.1 ProductTreeView::dropEvent explicit persist() hívása nem konzisztens
+
+-   Hiba: A ProductRegistry persist() explicit hívva van, míg más
+    registryk workflow‑ja automatikusan persistel.
+-   Következmény: Inkonzisztens mentési stratégia.
+-   Javítás:
+    -   Dönteni kell:
+        A) minden registry automatikusan persisteljen workflow után
+        B) minden registry explicit persistet igényeljen
+    -   Javaslat: A) (automatikus persist) → ProductTreeView‑ból kivenni
+        a persist() hívást.
+
+------------------------------------------------------------------------
+
+3.2 CalculationModeDetailManager demo insert hibás domainnel
+
+-   Hiba: Demo insert random materialId‑t generál → domain validation
+    miatt hibára fut.
+-   Javítás:
+    -   Jelölni TODO‑val
+
+    -   Vagy ideiglenesen:
+
+            d.materialId = MaterialRegistry::instance().firstId();
+
+------------------------------------------------------------------------
+
+3.3 NeedCalculationDetailRegistry::validateDomain include‑függőségei nem egyértelműek
+
+-   Hiba: A snippetben nem látszik, hogy a registryk headerei be
+    vannak‑e húzva.
+
+-   Következmény: Fordítási hibák vagy rejtett forward‑decl függés.
+
+-   Javítás:
+    Ellenőrizni, hogy a .cpp‑ben szerepeljen:
+
+        #include "calcmodes/registry/need_calculation_registry.h"
+        #include "materials/registry/material_registry.h"
+        #include "products/registry/product_registry.h"
+
+------------------------------------------------------------------------
+
+3.4 NeedRuleRegistry workflow audit hiányzott
+
+-   Hiba: A MaterialRequirements torony overlay‑e a NeedRuleRegistry‑re
+    támaszkodik, de a workflow auditja nem történt meg.
+-   Javítás:
+    Külön audit a NeedRuleRegistry‑re:
+    -   domain rules
+    -   duplicate rules
+    -   CSV import/export
+    -   manager integration
+    -   overlay integration
+
+------------------------------------------------------------------------
+
+3.5 CalculationModesManager és CalculationModeDetailManager nem hívnak persistet
+
+-   Hiba: A workflow után nincs explicit persist.
+-   Következmény: Ha a workflow nem persistel automatikusan, adatvesztés
+    lehet.
+-   Javítás:
+    -   Egységes policy: workflow után automatikus persist
+
+    -   Ha nem automatikus: managerben minden CRUD után:
+
+            NeedCalculationRegistry::instance().persist();
+
+------------------------------------------------------------------------
+
+🟩 Összegző lista – röviden
+
+UI‑szinkron hibák
+
+-   markReady() hiányzott
+-   presenter → detail jelzéslánc hiányzott
+-   detail view nem kapta meg a calcId‑t
+-   detail view frissítés ki volt kommentelve
+-   product váltáskor detail reset hiányzott
+
+Overlay hibák
+
+-   modes presenter nem frissített registry változásra
+-   régi overlay kód maradványok
+-   overlay UX szabályok nem voltak dokumentálva
+-   material overlay queued frissítés nem volt indokolt
+
+Registry workflow hibák
+
+-   ProductRegistry persist hívás inkonzisztens
+-   detail demo insert domain‑hibás
+-   include függőségek nem tiszták
+-   NeedRuleRegistry audit hiányzik
+-   persist policy nem egységes
+
+------------------------------------------------------------------------
+
+Ha szeretnéd, minden egyes hibára készítek külön diff‑patch fájlt,
+atomic commitokra bontva, hogy holnap reggel csak copy‑paste legyen a
+javítás.

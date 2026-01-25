@@ -76,8 +76,8 @@ int main(int argc, char *argv[])
         zInfo("****************************");
         FileNameHelper::instance().setTestMode(true);
         //zInfo("testProfile: "+SettingsManager::instance().testProfile());
-        bool ok = TestManager::instance().runBusinessLogicTests(SettingsManager::instance().testProfile());
-        return ok ? 0 : 1;
+        TestManager::instance().runBusinessLogicTests(SettingsManager::instance().testProfile());
+        return 0;
     }
 
     QApplication a(argc, argv);

@@ -21,17 +21,9 @@ AUTO_REGISTER_REGISTRY
     const NeedCalculation* findByProductAndName(const QUuid& productId,
                                                 const QString& name) const;
 
-    bool insert(const NeedCalculation& nc) {
-        return insertWithWorkflow(nc);
-    }
-
-    bool update(const NeedCalculation& nc) {
-        return updateWithWorkflow(nc);
-    }
-
-    bool remove(const QUuid& id) {
-        return removeWithWorkflow(id);
-    }
+    bool insert(const NeedCalculation& nc) {return insertWithWorkflow(nc);}
+    bool update(const NeedCalculation& nc) {return updateWithWorkflow(nc);}
+    bool remove(const QUuid& id) {return removeWithWorkflow(id);}
 
     bool beforeValidate(NeedCalculation& nc);
     bool validateDomain(const NeedCalculation& nc) const;
