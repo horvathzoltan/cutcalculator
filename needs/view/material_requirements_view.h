@@ -51,6 +51,7 @@ public:
         QString material_barcode;
 
         bool material_exists = true; // ha false → piros háttér, tooltip warning
+        bool matrixComplete = true;
     };
 
     /**
@@ -104,6 +105,9 @@ signals:
      * @brief Jelzés: sor kijelölés változott – toolbar enable/disable.
      */
     void selection_changed(bool has_selection);
+
+    void request_change_material(const QUuid& ruleId);
+
 
 private:
     QTableWidget* _table = nullptr;

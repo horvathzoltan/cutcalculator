@@ -31,4 +31,10 @@ private:
     CalculationModeDetailView* _view = nullptr;
     CalculationModeDetailManager* _manager = nullptr;
     RepositoryOverlayWidget<NeedCalculationDetailRegistry>* _status = nullptr;
+    bool _matrixComplete = true;
+
+
+    void connectRegistry();
+
+    OverlayStatusHelper::State computeMatrixState();
 };

@@ -1,5 +1,10 @@
 #include "needs/registry/need_rule_registry.h"
+#include "calculation/model/need_calculation_detail.h"
 #include "needs/repository/need_rule_repository.h"
+
+#include "calcmodes/registry/need_calculation_registry.h"
+
+#include "calculation/registry/need_calculation_detail_registry.h"
 
 // --- Lookup API ---
 
@@ -35,6 +40,25 @@ bool NeedRuleRegistry::validateDuplicate(const NeedRule& r) const
         return x.leftId  == r.leftId
                && x.rightId == r.rightId;
     });
+}
+
+
+void NeedRuleRegistry::afterInsert(const NeedRule& r)
+{
+    const auto modes =
+        NeedCalculationRegistry::instance().findAll([&](const NeedCalculation& nc){
+            return nc.productId == r.leftId;
+        });
+
+    for (const auto& m : modes) {
+        NeedCalculationDetail d;
+        d.id = QUuid::createUuid();
+        d.needCalculationId = m.id;
+        d.materialId = r.rightId;
+        d.formula = "w-0";
+        d.kind = NeedCalculationDetail::DetailKind::Cutting;
+        NeedCalculationDetailRegistry::instance().insert(d);
+    }
 }
 
 

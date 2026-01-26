@@ -3,6 +3,8 @@
 #include "calcmodes/registry/need_calculation_registry.h"
 #include "ui/helpers/repository_overlay_widget.h"
 
+#include <calculation/service/matrix_validator.h>
+
 CalculationModeDetailPresenter::CalculationModeDetailPresenter(
     CalculationModeDetailView* view,
     CalculationModeDetailManager* manager,
@@ -37,24 +39,24 @@ QToolBar* CalculationModeDetailPresenter::buildToolbar(QWidget* parent)
 
     refreshOverlayOnly();
 
-    QAction* addAct    = tb->addAction("➕ Új formula");
-    QAction* removeAct = tb->addAction("🗑️ Törlés");
+    //QAction* addAct    = tb->addAction("➕ Új formula");
+    //QAction* removeAct = tb->addAction("🗑️ Törlés");
     QAction* editAct   = tb->addAction("✏️ Szerkesztés");
 
-    QObject::connect(addAct, &QAction::triggered, this, [this]() {
-        emit _view->request_add_detail(_view->currentCalculationId());
-    });
+    // QObject::connect(addAct, &QAction::triggered, this, [this]() {
+    //     emit _view->request_add_detail(_view->currentCalculationId());
+    // });
 
-    QObject::connect(removeAct, &QAction::triggered, this, [this]() {
-        auto tables = _view->findChildren<QTableWidget*>();
-        if (tables.isEmpty()) return;
-        auto* t = tables.first();
-        auto r = t->selectedRanges();
-        if (r.isEmpty()) return;
-        auto* item = t->item(r.first().topRow(), 0);
-        if (!item) return;
-        emit _view->request_remove_detail(item->data(Qt::UserRole).toUuid());
-    });
+    // QObject::connect(removeAct, &QAction::triggered, this, [this]() {
+    //     auto tables = _view->findChildren<QTableWidget*>();
+    //     if (tables.isEmpty()) return;
+    //     auto* t = tables.first();
+    //     auto r = t->selectedRanges();
+    //     if (r.isEmpty()) return;
+    //     auto* item = t->item(r.first().topRow(), 0);
+    //     if (!item) return;
+    //     emit _view->request_remove_detail(item->data(Qt::UserRole).toUuid());
+    // });
 
     QObject::connect(editAct, &QAction::triggered, this, [this]() {
         auto tables = _view->findChildren<QTableWidget*>();
@@ -64,11 +66,13 @@ QToolBar* CalculationModeDetailPresenter::buildToolbar(QWidget* parent)
         if (r.isEmpty()) return;
         auto* item = t->item(r.first().topRow(), 0);
         if (!item) return;
-        emit _view->request_edit_formula(item->data(Qt::UserRole).toUuid());
-
+        //emit _view->request_edit_formula(item->data(Qt::UserRole).toUuid());
+        QUuid id = item->data(Qt::UserRole).toUuid();
+        emit _view->request_edit_formula(id);
 
     });
 
+    connectRegistry();
 
     return tb;
 }
@@ -77,7 +81,9 @@ QToolBar* CalculationModeDetailPresenter::buildToolbar(QWidget* parent)
 void CalculationModeDetailPresenter::refreshForCalculation(const QUuid& calcId,
                                                            const QString& modeName)
 {
+    _matrixComplete = MatrixValidator::isCalculationMatrixComplete(calcId);
     auto rows = _manager->refreshForCalculation(calcId, modeName);
+
     _view->set_details(rows);
     refreshOverlayOnly();
 }
@@ -100,3 +106,41 @@ void CalculationModeDetailPresenter::refreshOverlayOnly()
 {
     _status->refresh(_view->rowCount());
 }
+
+void CalculationModeDetailPresenter::connectRegistry()
+{
+    NeedCalculationDetailRegistry::instance().subscribeItemsChangedToken(
+        [this]() {
+            QUuid calcId = _view->currentCalculationId();
+            if (calcId.isNull()) {
+                _view->set_details({});
+                refreshOverlayOnly();
+                return;
+            }
+
+            const NeedCalculation* mode =
+                NeedCalculationRegistry::instance().findById(calcId);
+            QString modeName = mode ? mode->name : QString("unknown");
+
+            refreshForCalculation(calcId, modeName);
+        });
+}
+
+OverlayStatusHelper::State CalculationModeDetailPresenter::computeMatrixState()
+{
+    int repo = NeedCalculationDetailRegistry::instance().size();
+    int visible = _view->rowCount();
+
+    if (repo == 0)
+        return OverlayStatusHelper::State::EmptyRepo;
+
+    if (visible == 0)
+        return OverlayStatusHelper::State::NoVisibleRows;
+
+    if (!_matrixComplete)
+        return OverlayStatusHelper::State::Incomplete;
+
+    return OverlayStatusHelper::State::Normal;
+
+}
+

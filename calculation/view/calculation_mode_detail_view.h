@@ -27,6 +27,7 @@ public:
         bool isCutting = true; // ⚙️ vs 📦
         bool formulaValid = true;
         bool materialValid = true;
+        bool matrixComplete = true;
     };
 
     void set_details(const QVector<DetailRow>& rows);
@@ -37,8 +38,6 @@ public:
     int rowCount() const;
 
 signals:
-    void request_add_detail(const QUuid& calcId);
-    void request_remove_detail(const QUuid& detailId);
     void request_edit_formula(const QUuid& detailId);
 
 public slots:

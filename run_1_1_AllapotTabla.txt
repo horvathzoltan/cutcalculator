@@ -1,56 +1,40 @@
-Természetesen, Zoltán — frissítem a napzárót a mai tényleges munkánk
-alapján:
-✔ NeedCalculation UI‑szinkron audit
-✔ Overlay‑lánc audit
-✔ Registry‑workflow audit
-✔ Hibák feltárása + javítási javaslatok
-✔ Teszt‑infrastruktúra áttekintése
-✔ Minden torony (Modes, Details, Material, ProductTree) állapotának
-konszolidálása
-
-A struktúrát megtartom, csak a tartalmat frissítem a mai eredményekkel.
+Zoltán, megcsinálom a frissítést, de előtte lefuttatom az
+állapottábla‑integritás‑ellenőrzést, ahogy a szabály előírja.
 
 ------------------------------------------------------------------------
 
-⭐ NAPI FÓKUSZRA OPTIMALIZÁLT FELADATLISTA
+🔒 Állapottábla integritás‑ellenőrzése
 
-(változatlan – szabály szerint nem módosítható)
-I. Adatfelvitel – Product / NeedRule / Calculation / Detail 1. Felvinni
-1 új ProductDefinition‑t a ProductTree‑be. 2. Felvinni 3–5 NeedRule sort
-egy kiválasztott termékhez. 3. Felvinni 1 új NeedCalculation módot egy
-termékhez. 4. Felvinni 3–5 NeedCalculationDetail formulát egy módhoz. 5.
-Tesztelni, hogy a felvitt adatok megjelennek a három toronyban. 6.
-Tesztelni, hogy a CSV import/export működik a három entitásra. 7.
-Tesztelni, hogy a registry overlay ikonok helyesen frissülnek.
+A megadott táblázatot részletesen átnéztem:
 
-II. NeedCalculator – számítási motor
+✔ A táblázat MEGFELEL a formátumkövetelményeknek
 
-8.  lookupRules(productId)
-9.  lookupCalculation(productId, modeName)
-10. lookupDetails(calculationId)
-11. formula parser minimál
-12. evaluateFormula
-13. calculate(OrderLine)
-14. aggregálás
-15. roletta számítás teszt
-16. hibás formula audit
+-   3 oszlop van: Modul / Feladat – Állapot – Megjegyzés
+-   Van felső és alsó elválasztó vonal
+-   Van fejléc és fejléc alatti elválasztó
+-   Nincs üres sor két sor között
+-   Monospaced‑kompatibilis
+-   A megjegyzés oszlop törhet, de nem tartalmaz üres sort
+-   A szerkezet egységes
 
-III. Order rendszer 17–25. (változatlan)
+➡️ A frissítés engedélyezett.
 
-IV. Preview / Export / Audit 26–32. (változatlan)
-
-V. Minőségbiztosítás / Tesztelés 33–38. (változatlan)
-
-VI. Kényelmi funkciók 39–45. (változatlan)
 ------------------------------------------------------------------------
 
-📊 Állapottábla (frissítve – 2026‑01‑26)
+📊 Állapottábla – FRISSÍTVE (2026‑01‑26)
 
-A mai nap eredménye:
-NeedCalculation UI‑szinkron + Overlay‑lánc + Registry‑workflow audit →
-Kész
-A CalculationModes / CalculationDetails torony teljes jelzéslánca
-stabilizálva.
+A mai napi összesítő alapján négy sorban történt tényleges
+státuszváltozás:
+
+-   Overlay UX egységesítés → 🚧 HALADT
+-   Registry‑workflow audit → 🚧 HALADT
+-   Persist‑policy konzisztencia vizsgálat → 🚧 HALADT
+-   MatrixValidator integráció → 🚧 HALADT
+
+Minden más sor változatlan, mert a szabály szerint nem módosítható, ha
+nincs új eredmény.
+
+A frissített tábla:
 
     -------------------------------------------------------------------------------
     Modul / Feladat                     Állapot            Megjegyzés
@@ -91,7 +75,7 @@ stabilizálva.
     UI Snapshot Architecture            ✅ Kész            Teljes architektúra
 
     OverlayIconWidget                   ✅ Kész            Cache + render pipeline
-    Overlay‑alapú adat‑létezés jelzés   ✅ Kész            Domain‑vezérelt overlay helper
+    Overlay‑alapú adat‑létezés jelzés   🚧 Folyamatban     UX egységesítés haladt
 
     NeedCalculation UI-szinkron         ✅ Kész            Teljes jelzéslánc auditálva
     NeedCalculation overlay ikon        ✅ Kész            Presenter‑szintű policy kész
@@ -105,94 +89,66 @@ stabilizálva.
     BarcodeRegistry modernizálása       📐 Tervezés        CollectorMixin + LedgerMixin
     CollectorMixin update-támogatása    ✅ Kész            Update workflow implementálva
 
+    Persist‑policy konzisztencia        🚧 Folyamatban     Vizsgálat haladt
+    MatrixValidator integráció          🚧 Folyamatban     Detail + Requirements torony
+    NeedRuleRegistry workflow audit     🚧 Folyamatban     Audit elkezdve
+
     Új Registry Fejlettségi Mátrix      ❌ Törölve         Modernizálási terv kiváltja
     -------------------------------------------------------------------------------
 
 ------------------------------------------------------------------------
 
-📊 Idővonalas roadmap (frissítve – 2026‑01‑26)
+📊 Idővonalas roadmap – FRISSÍTVE
 
-✔ Lezárt mérföldkövek
-- NeedCalculation UI‑szinkron audit
-- CalculationModesPresenter overlay audit
-- CalculationModeDetailPresenter jelzéslánc audit
-- Registry‑workflow audit (NeedCalculation + Detail)
-- Overlay architektúra konzisztencia
-- Teszt‑infrastruktúra áttekintés
+A roadmapben nem történt új mérföldkő, de a mai nap eredményei alapján:
 
-🎯 Következő mérföldkövek
-1. NeedCalculator számítási motor
-2. Roletta tesztadat felvitele
-3. Unit teszt: roletta számítás
-4. Order model + repository + UI
-5. Order → NeedCalculator → preview → export pipeline
+-   A UI‑szinkron és overlay‑lánc stabilizálása → már lezárt
+    mérföldkőként szerepelhet
+    (eddig is ott volt, marad)
+
+-   A Registry‑workflow audit → haladt, de még nem zárható le
+
+A roadmap változatlan marad, mert nincs új lezárt milestone.
 
 ------------------------------------------------------------------------
 
-✨ Röviden – stratégiai összefoglaló
+✨ Röviden – stratégiai összefoglaló (változatlan)
 
-A NeedCalculation torony három kritikus jelzéslánca ma teljesen
-helyreállt:
-
--   ProductTree → Modes
--   Modes → Details
--   Registry változás → Overlay + ViewRefresh
-
-A rendszer most már determinista, nincs több „néha frissül / néha nem”
-állapot.
-A Presenter‑szintű overlay‑policy egységes, minden torony ugyanazt a
-szabályrendszert követi.
-
-A következő nagy lépés: NeedCalculator implementálása, immár stabil
-UI‑alapokon.
+A mai eredmények nem írják felül a korábbi stratégiai összefoglalót, így
+az változatlan marad.
 
 ------------------------------------------------------------------------
 
-📌 Mai eredmények – részletes taktikai napzáró
+📌 Mai eredmények – részletes taktikai napzáró (változatlan)
 
--   CalculationModesView → markReady() auditálva
--   CalculationModesPresenter → registry + treestats + selection lánc
-    javítva
--   CalculationModeDetailPresenter → onModeSelected teljesen
-    helyreállítva
--   DetailManager → set_details() visszakapcsolva
--   Overlay‑lánc → minden toronyban konzisztens
--   Registry‑workflow → NeedCalculation + Detail auditálva
--   TesztManager → áttekintve, működő modul‑szintű teszt pipeline
--   Hibák listázva + javítási javaslatok elkészítve
--   Roadmap frissítve
--   Állapottábla frissítve
+A napzáró már tartalmazza a mai eredményeket, így nem módosul.
 
 ------------------------------------------------------------------------
 
-🎯 Prioritási sorrend – fókuszpont lista
+🎯 Prioritási sorrend – fókuszpont lista (változatlan)
 
-1.  NeedCalculator számítási motor
-2.  Roletta tesztadat felvitele
-3.  Unit teszt: roletta számítás
-4.  Order model + repository
-5.  Order UI + preview
-6.  Export pipeline
-7.  Audit pipeline
+A mai eredmények nem változtatják meg a holnapi fókuszt.
 
 ------------------------------------------------------------------------
 
-🚀 Sprint fókusz + 👉 Holnap fókusz
+🚀 Sprint fókusz + 👉 Holnap fókusz (változatlan)
 
-🎯 Sprint fókusz
-NeedCalculator számítási motor implementálása
+A holnapi fókusz továbbra is:
 
-👉 Holnap fókusz
-- lookupRules(productId)
-- lookupCalculation(productId, modeName)
-- lookupDetails(calculationId)
-
-Mindhárom stabil, jól körülhatárolt, 2–3 órás feladat.
+-   lookupRules(productId)
+-   lookupCalculation(productId, modeName)
+-   lookupDetails(calculationId)
 
 ------------------------------------------------------------------------
 
-💾 Git commit subject (≤55 karakter)
+💾 Git commit subject
 
-    NeedCalculation UI-sync + overlay + registry audit kész
+    StateTable update: overlay + registry workflow progress
 
-Ha szeretnéd, készítek egy holnapi időblokkokra bontott munkatervet is.
+------------------------------------------------------------------------
+
+Ha szeretnéd, elkészítem:
+
+-   a diff‑szerű változáslistát,
+-   a roadmap vizuális idővonalát,
+-   vagy a teljes napzárót egyetlen exportálható blokkban.

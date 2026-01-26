@@ -1,6 +1,12 @@
 #include "calcmodes/registry/need_calculation_registry.h"
 #include "calcmodes/repository/need_calculation_repository.h"
 #include "common/logger/logger.h"
+
+#include <needs/registry/need_rule_registry.h>
+
+#include <calculation/model/need_calculation_detail.h>
+
+#include <calculation/registry/need_calculation_detail_registry.h>
 // ⭐ Singleton
 NeedCalculationRegistry& NeedCalculationRegistry::instance()
 {
@@ -59,6 +65,23 @@ void NeedCalculationRegistry::onInsertLog(const NeedCalculation& nc)
     zInfo(QString("➕ NeedCalculation INSERT: id=%1 name=%2")
               .arg(nc.id.toString(), nc.name));
 }
+
+void NeedCalculationRegistry::afterInsert(const NeedCalculation& nc)
+{
+    const auto rules =
+        NeedRuleRegistry::instance().findByLeft(nc.productId);
+
+    for (const auto& r : rules) {
+        NeedCalculationDetail d;
+        d.id = QUuid::createUuid();
+        d.needCalculationId = nc.id;
+        d.materialId = r.rightId;
+        d.formula = "w-0";
+        d.kind = NeedCalculationDetail::DetailKind::Cutting;
+        NeedCalculationDetailRegistry::instance().insert(d);
+    }
+}
+
 
 void NeedCalculationRegistry::onUpdateLog(const NeedCalculation& nc)
 {

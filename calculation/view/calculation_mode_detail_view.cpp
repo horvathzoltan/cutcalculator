@@ -44,30 +44,55 @@ void CalculationModeDetailView::set_details(const QVector<DetailRow>& rows) {
         _table->setItem(i,2,typeItem);
 
         apply_row_visuals(i, r);
+
+        QString tip;
+        if (!r.materialValid)
+            tip = "Ismeretlen anyag";
+        else if (!r.formulaValid)
+            tip = "Érvénytelen formula";
+        else if (!r.matrixComplete)
+            tip = "Hiányzó detail a mátrixban";
+
+        if (!tip.isEmpty()) {
+            for (int col = 0; col < _table->columnCount(); ++col)
+                _table->item(i, col)->setToolTip(tip);
+        }
+
     }
+
+
 }
 
-void CalculationModeDetailView::apply_row_visuals(int row, const DetailRow& r)
+void CalculationModeDetailView::apply_row_visuals(int row, const DetailRow& d)
 {
-    if (!r.materialValid) {
-        for (int col = 0; col < _table->columnCount(); ++col) {
-            _table->item(row, col)->setBackground(QColor("#ffcccc")); // halvány piros
-        }
-        return;
+    QColor bg;
+    QString tip;
+
+    if (!d.materialValid) {
+        bg = QColor("#ffcccc");
+        tip = "Material not found in MaterialMaster!";
+    }
+    else if (!d.formulaValid) {
+        bg = QColor("#ffcccc");
+        tip = "Invalid formula!";
+    }
+    else if (!d.matrixComplete) {
+        bg = QColor("#fff4c2");
+        tip = "Matrix incomplete for this calculation mode.";
+    }
+    else {
+        bg = Qt::NoBrush;
     }
 
-    if (!r.formulaValid) {
-        for (int col = 0; col < _table->columnCount(); ++col) {
-            _table->item(row, col)->setBackground(QColor("#ffe0e0"));
-        }
-        return;
-    }
-
-    // ha minden oké → alap háttér
     for (int col = 0; col < _table->columnCount(); ++col) {
-        _table->item(row, col)->setBackground(Qt::NoBrush);
+        if (auto* item = _table->item(row, col)) {
+            item->setBackground(bg);
+            if (!tip.isEmpty())
+                item->setToolTip(item->toolTip() + "\n" + tip);
+        }
     }
 }
+
 
 
 void CalculationModeDetailView::set_current_calculation(const QUuid& calcId, const QString&) {

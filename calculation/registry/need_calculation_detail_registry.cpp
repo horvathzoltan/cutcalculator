@@ -9,17 +9,30 @@ bool NeedCalculationDetailRegistry::isFormulaValid(const QString& f) {
     if (trimmed.isEmpty())
         return false;
 
-    if (trimmed.startsWith("w-") || trimmed.startsWith("h-")) {
+    if (trimmed.startsWith("len:w-") || trimmed.startsWith("len:h-")) {
         bool ok = false;
-        trimmed.mid(2).toInt(&ok);
+        trimmed.mid(6).toInt(&ok);
         return ok;
     }
 
-    if (trimmed.startsWith("fixed:")) {
+    if (trimmed.startsWith("qty:fixed:")) {
         bool ok = false;
-        trimmed.mid(QStringLiteral("fixed:").size()).toInt(&ok);
+        trimmed.mid(QStringLiteral("qty:fixed:").size()).toInt(&ok);
         return ok;
     }
+
+    if (trimmed.startsWith("qty:perOrder:")) {
+        bool ok = false;
+        trimmed.mid(QStringLiteral("qty:perOrder:").size()).toInt(&ok);
+        return ok;
+    }
+
+    if (trimmed.startsWith("qty:perArea:")) {
+        bool ok = false;
+        trimmed.mid(QStringLiteral("qty:perArea:").size()).toInt(&ok);
+        return ok;
+    }
+
 
     return false;
 }
@@ -70,6 +83,9 @@ bool NeedCalculationDetailRegistry::beforeValidate(NeedCalculationDetail& d)
 bool NeedCalculationDetailRegistry::validateDomain(const NeedCalculationDetail& d) const
 {
     if(!isFormulaValid(d.formula)) return false;
+    if(d.kind != NeedCalculationDetail::DetailKind::Cutting &&
+        d.kind != NeedCalculationDetail::DetailKind::Kitting) return false;
+
     if(d.materialId.isNull()) return false;
     if(d.needCalculationId.isNull()) return false;
 
@@ -92,7 +108,6 @@ bool NeedCalculationDetailRegistry::validateDuplicate(const NeedCalculationDetai
     return !existsBy([&](const NeedCalculationDetail& x){
         return x.needCalculationId == d.needCalculationId
                && x.materialId == d.materialId
-               && x.formula == d.formula
                && x.id != d.id;
     });
 }

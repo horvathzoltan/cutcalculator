@@ -53,9 +53,7 @@ void ProductTreeView::dropEvent(QDropEvent* event) {
         updated.parentId = newParentId;     // új parent
 
         bool isUpdated = ProductRegistry::instance().update(updated);
-        if (isUpdated){ // audit + persist
-            ProductRegistry::instance().persist();
-
+        if (isUpdated){ // audit
             zEventINFO(QString("🔀 Product moved: %1 → new parent: %2 (was: %3)")
                            .arg(updated.name)
                            .arg(newParentId.toString())

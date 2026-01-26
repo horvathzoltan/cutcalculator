@@ -5,6 +5,8 @@
 #include <ui/helpers/repository_overlay_widget.h>
 #include <ui/helpers/overlay_status_helper.h>
 
+#include <needs/registry/need_rule_registry.h>
+
 CalculationModesPresenter::CalculationModesPresenter(
     CalculationModesView* view,
     CalculationModesManager* manager,
@@ -100,3 +102,43 @@ void CalculationModesPresenter::connectRegistry()
 }
 
 
+OverlayStatusHelper::State CalculationModesPresenter::computeMatrixState()
+{
+    int repo = NeedCalculationRegistry::instance().size();
+    int visible = _view->rowCount();
+
+    if (repo == 0)
+        return OverlayStatusHelper::State::EmptyRepo;
+
+    if (visible == 0)
+        return OverlayStatusHelper::State::NoVisibleRows;
+
+    if (!isMatrixComplete())
+        return OverlayStatusHelper::State::Incomplete;
+
+    return OverlayStatusHelper::State::Normal;
+
+}
+
+bool CalculationModesPresenter::isMatrixComplete() const
+{
+    const auto modes = NeedCalculationRegistry::instance().readAll();
+    const auto rules = NeedRuleRegistry::instance().readAll();
+
+    for (const auto& m : modes) {
+        for (const auto& r : rules) {
+            if (r.leftId != m.productId)
+                continue;
+
+            bool exists = NeedCalculationDetailRegistry::instance()
+                              .existsBy([&](const NeedCalculationDetail& d){
+                                  return d.needCalculationId == m.id &&
+                                         d.materialId == r.rightId;
+                              });
+
+            if (!exists)
+                return false;
+        }
+    }
+    return true;
+}

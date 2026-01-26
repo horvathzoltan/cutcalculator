@@ -6,6 +6,8 @@
 #include "needs/view/material_picker_dialog.h"
 #include "common/logger/event_logger.h"
 
+#include <calculation/service/matrix_validator.h>
+
 MaterialRequirementsManager::MaterialRequirementsManager(MaterialRequirementsView* view, QObject* parent)
     : QObject(parent), _view(view)
 {
@@ -82,6 +84,23 @@ void MaterialRequirementsManager::connectSignals() {
                                    .arg(productId.toString(), materialId.toString()));
                 }
             });
+
+    connect(_view, &MaterialRequirementsView::request_change_material,
+            this, [this](const QUuid& ruleId) {
+
+                const auto* r = NeedRuleRegistry::instance().findById(ruleId);
+                if (!r) return;
+
+                MaterialPickerDialog dlg(_view);
+                if (dlg.exec() != QDialog::Accepted)
+                    return;
+
+                auto updated = *r;
+                updated.rightId = dlg.selectedMaterial();
+
+                NeedRuleRegistry::instance().update(updated);
+            });
+
 }
 
 QVector<MaterialRequirementsView::RequirementRow>
@@ -108,11 +127,11 @@ MaterialRequirementsManager::makeRowsForProduct(const QUuid& productId,
             const auto& mat = *matOpt;
             r.material_name = mat.name;
             r.material_barcode = mat.barcode;
-            r.material_exists = true;
+            r.matrixComplete = MatrixValidator::isProductMatrixComplete(productId);
         } else {
             r.material_name = "UNKNOWN";
             r.material_barcode = "";
-            r.material_exists = false;
+            r.matrixComplete = MatrixValidator::isProductMatrixComplete(productId);
         }
 
         out.append(r);
@@ -142,4 +161,5 @@ QVector<MaterialRequirementsView::RequirementRow> MaterialRequirementsManager::r
     return rows;
 
 }
+
 

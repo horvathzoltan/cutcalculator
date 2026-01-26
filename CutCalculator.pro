@@ -18,7 +18,11 @@ SOURCES += \
     barcodes/validator/barcode_validator.cpp \
     calcmodes/dialogs/mode_name_dialog.cpp \
     calcmodes/presenter/calculation_modes_presenter.cpp \
+    calculation/dialogs/formula_editor_dialog.cpp \
+    calculation/dialogs/material_picker_dialog.cpp \
     calculation/presenter/calculation_mode_detail_presenter.cpp \
+    calculation/service/formula_engine.cpp \
+    calculation/service/matrix_validator.cpp \
     common/layout/layout_default_store.cpp \
     common/logger/logger_gui.cpp \
     common/snapshot/snapshot_manager.cpp \
@@ -98,7 +102,11 @@ HEADERS += \
     calcmodes/dialogs/mode_name_dialog.h \
     calcmodes/presenter/calculation_modes_presenter.h \
     calcmodes/repository/need_calculation_traits.h \
+    calculation/dialogs/formula_editor_dialog.h \
+    calculation/dialogs/material_picker_dialog.h \
     calculation/presenter/calculation_mode_detail_presenter.h \
+    calculation/service/formula_engine.h \
+    calculation/service/matrix_validator.h \
     common/layout/layout_default_store.h \
     common/logger/logger_gui.h \
     common/model/barcode_base.h \

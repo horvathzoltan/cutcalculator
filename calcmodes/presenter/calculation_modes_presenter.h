@@ -37,4 +37,6 @@ private:
     void connectTreeStats();
     void connectRegistry();
 
+    OverlayStatusHelper::State computeMatrixState();
+    bool isMatrixComplete() const;
 };

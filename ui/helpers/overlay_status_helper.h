@@ -26,10 +26,12 @@ class OverlayStatusHelper
 {
 public:
     enum class State {
-        EmptyRepo,      // nincs adat a repóban
-        NoVisibleRows,  // van adat, de a UI nem mutat semmit
-        Normal          // van adat és látszik is
+        EmptyRepo,
+        NoVisibleRows,
+        Normal,
+        Incomplete
     };
+
 
     // Állapot meghatározása
     static State computeState(int repoCount, int visibleRows);

@@ -216,19 +216,4 @@ make -j8
 
 ---
 
-# 🟢 KÉSZ A FRISSÍTETT README.md
 
-Ez most már:
-
-- a teljes architektúrát lefedi,  
-- a domain‑modellt bemutatja,  
-- a projekt mélységét tükrözi,  
-- a modul‑atlaszt integrálja,  
-- és fejlesztőbarát, modern dokumentum.
-
-Ha szeretnéd, készítek:
-
-- **README‑light** verziót (rövidebb, GitHub‑barát),  
-- vagy **README‑extended** verziót (diagramokkal, Mermaid‑del).  
-
-Csak mondd ki, melyik irányba menjünk tovább.

@@ -26,15 +26,14 @@ MaterialRequirementsView::MaterialRequirementsView(QWidget* parent)
     connect(_table, &QTableWidget::itemSelectionChanged,
             this, &MaterialRequirementsView::on_selection_changed);
 
-    //updateOverlayState2();
-
-   // _registryToken = {};
-
-    // _registryToken =
-    //     NeedRuleRegistry::instance().subscribeItemsChangedToken([this]() {
-    //         updateOverlayState2();
-    //     });
+    connect(_table, &QTableWidget::itemDoubleClicked,
+            this, [this](QTableWidgetItem* item) {
+                if (!item) return;
+                QUuid ruleId = item->data(Qt::UserRole).toUuid();
+                emit request_change_material(ruleId);
+            });
 }
+
 
 void MaterialRequirementsView::setup_table() {
     _table->setColumnCount(2);
@@ -149,15 +148,36 @@ void MaterialRequirementsView::set_current_product(const QUuid& product_id,
     //refreshRows();
 }
 
-void MaterialRequirementsView::apply_row_visuals(int row, const RequirementRow& data) {
-    // Hiányzó anyag → piros háttér és figyelmeztető tooltip
-    if (!data.material_exists) {
-        if (auto* item = _table->item(row, 1)) {
-            item->setBackground(QColor("#ffcccc"));
-            item->setToolTip(item->toolTip() + "\nWarning: material not found in MaterialMaster!");
+void MaterialRequirementsView::apply_row_visuals(int row, const RequirementRow& data)
+{
+    const bool materialMissing = !data.material_exists;
+    const bool matrixIncomplete = !data.matrixComplete;
+
+    QColor bgColor;
+    QString tip;
+
+    if (materialMissing) {
+        bgColor = QColor("#ffcccc"); // piros
+        tip = "Material not found in MaterialMaster!";
+    }
+    else if (matrixIncomplete) {
+        bgColor = QColor("#fff4c2"); // sárga
+        tip = "Missing calculation detail for this rule/mode.";
+    }
+    else {
+        bgColor = Qt::NoBrush;
+    }
+
+    for (int col = 0; col < _table->columnCount(); ++col) {
+        if (auto* item = _table->item(row, col)) {
+            item->setBackground(bgColor);
+            if (!tip.isEmpty())
+                item->setToolTip(item->toolTip() + "\n" + tip);
         }
     }
 }
+
+
 
 QString MaterialRequirementsView::format_product_cell(const RequirementRow& data) {
     // Felhasználóbarát + auditbarát – name (barcode)

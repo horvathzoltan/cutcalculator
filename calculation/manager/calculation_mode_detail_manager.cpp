@@ -4,6 +4,14 @@
 #include "common/logger/event_logger.h"
 #include "materials/registry/material_registry.h"
 
+#include <needs/registry/need_rule_registry.h>
+
+#include <calcmodes/registry/need_calculation_registry.h>
+
+#include <calculation/dialogs/formula_editor_dialog.h>
+
+#include <calculation/service/matrix_validator.h>
+
 CalculationModeDetailManager::CalculationModeDetailManager(CalculationModeDetailView* view, QObject* parent)
     : QObject(parent), _view(view)
 {
@@ -19,32 +27,23 @@ CalculationModeDetailManager::CalculationModeDetailManager(CalculationModeDetail
  * A valódi workflow-hoz anyagválasztó és formula szerkesztő dialogokat érdemes beépíteni.
  */
 void CalculationModeDetailManager::connectSignals() {
-    connect(_view, &CalculationModeDetailView::request_add_detail, this, [this](const QUuid& calcId) {
-        // Placeholder: itt majd MaterialPickerDialog + FormulaEditorDialog lesz.
-        NeedCalculationDetail d;
-        d.id = QUuid::createUuid();
-        d.needCalculationId = calcId;
-        d.materialId = QUuid::createUuid();   // szándékosan invalid, hogy jelezze a hiányzó picker szükségességét
-        d.formula = "w-0";                    // demo formula
 
-        if (!NeedCalculationDetailRegistry::instance().insert(d)) {
-            zWarning("⚠️ Detail insert failed – material or formula invalid");
-            return;
-        }
-        zEventINFO(QString("➕ Detail added for calcId=%1").arg(calcId.toString()));
-    });
+    connect(_view, &CalculationModeDetailView::request_edit_formula,
+            this, [this](const QUuid& detailId) {
 
-    connect(_view, &CalculationModeDetailView::request_remove_detail, this, [](const QUuid& detailId) {
-        if (!NeedCalculationDetailRegistry::instance().remove(detailId)) {
-            zWarning(QString("⚠️ Detail remove failed: %1").arg(detailId.toString()));
-        } else {
-            zEventINFO(QString("🗑️ Detail removed: %1").arg(detailId.toString()));
-        }
-    });
+                const auto* d = NeedCalculationDetailRegistry::instance().findById(detailId);
+                if (!d) return;
 
-    connect(_view, &CalculationModeDetailView::request_edit_formula, this, [](const QUuid& detailId) {
-        // Presenter fogja később átadni a newFormula értékét
-    });
+                FormulaEditorDialog dlg(d->formula, _view);
+                if (dlg.exec() != QDialog::Accepted)
+                    return;
+
+                auto updated = *d;
+                updated.formula = dlg.formula();
+
+                NeedCalculationDetailRegistry::instance().update(updated);
+            });
+
 
 }
 
@@ -57,9 +56,30 @@ void CalculationModeDetailManager::connectSignals() {
  * - Heurisztika: fixed: prefix → kitting (📦), különben cutting (⚙️).
  * - A kész sorokat átadjuk a view-nak.
  */
-QVector<CalculationModeDetailView::DetailRow> CalculationModeDetailManager::refreshForCalculation(const QUuid& calcId, const QString& modeName) {
+QVector<CalculationModeDetailView::DetailRow> CalculationModeDetailManager::refreshForCalculation(const QUuid& calcId,
+                                                                                                  const QString& modeName) {
     auto details = NeedCalculationDetailRegistry::instance().findByCalculation(calcId);
-    QVector<CalculationModeDetailView::DetailRow> rows = makeRows(details);
+
+    if (details.isEmpty()) {
+        const auto rules =
+            NeedRuleRegistry::instance().findByLeft(
+                NeedCalculationRegistry::instance().findById(calcId)->productId);
+
+        for (const auto& r : rules) {
+            NeedCalculationDetail d;
+            d.id = QUuid::createUuid();
+            d.needCalculationId = calcId;
+            d.materialId = r.rightId;
+            d.formula = "w-0";
+            d.kind = NeedCalculationDetail::DetailKind::Cutting;
+            NeedCalculationDetailRegistry::instance().insert(d);
+        }
+
+        details = NeedCalculationDetailRegistry::instance().findByCalculation(calcId);
+    }
+
+    bool matrixComplete = MatrixValidator::isCalculationMatrixComplete(calcId);
+    auto rows = makeRows(details, matrixComplete);
 
     // 🔧 ÚJ: a view tudja, melyik calcId aktív
     _view->set_current_calculation(calcId, modeName);
@@ -104,14 +124,14 @@ std::pair<QString, QString> CalculationModeDetailManager::materialLabel(const QU
  * - Material hiány esetén formulaValid=false → piros háttér a view-ban.
  */
 QVector<CalculationModeDetailView::DetailRow>
-CalculationModeDetailManager::makeRows(const QVector<NeedCalculationDetail>& details) {
+CalculationModeDetailManager::makeRows(const QVector<NeedCalculationDetail>& details, bool matrixComplete) {
     QVector<CalculationModeDetailView::DetailRow> rows;
     rows.reserve(details.size());
 
     for (const auto& d : details) {
         auto [name, barcode] = materialLabel(d.materialId);
         const bool materialOk = !name.isEmpty() && name != "(unknown)";
-        const bool isCut = !d.formula.startsWith("fixed:");
+        const bool isCut = (d.kind == NeedCalculationDetail::DetailKind::Cutting);
         const bool formulaValid = materialOk; // formula parse-t a registry már ellenőrzi; itt material hiányt jelzünk
 
         rows.push_back({
@@ -123,7 +143,8 @@ CalculationModeDetailManager::makeRows(const QVector<NeedCalculationDetail>& det
             d.formula,
             isCut,
             formulaValid,
-            materialOk
+            materialOk,
+            matrixComplete
         });
     }
     return rows;

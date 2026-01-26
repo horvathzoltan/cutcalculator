@@ -34,7 +34,4 @@ class NeedCalculator {
 public:
     static QVector<CutItem> makeCutList(const OrderLine& ol, const QString& modeName);
     static QVector<KitItem> makeKitList(const OrderLine& ol, const QString& modeName);
-
-private:
-    static int evalFormula(const QString& f, int w, int h);
 };

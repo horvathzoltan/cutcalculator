@@ -2,6 +2,10 @@
 #include "needs/registry/need_rule_registry.h"
 #include "needs/view/material_picker_dialog.h"
 
+#include <calcmodes/registry/need_calculation_registry.h>
+
+#include <calculation/registry/need_calculation_detail_registry.h>
+
 MaterialRequirementsPresenter::MaterialRequirementsPresenter(
     MaterialRequirementsView* view,
     MaterialRequirementsManager* manager,
@@ -88,4 +92,45 @@ void MaterialRequirementsPresenter::connectRegistry() {
     _needRuleToken =
         NeedRuleRegistry::instance().subscribeItemsChangedToken(
             [this]() { refreshOverlayOnly(); });
+}
+
+OverlayStatusHelper::State MaterialRequirementsPresenter::computeMatrixState()
+{
+    int repo = NeedRuleRegistry::instance().size();
+    int visible = _view->rowCount();
+
+    if (repo == 0)
+        return OverlayStatusHelper::State::EmptyRepo;
+
+    if (visible == 0)
+        return OverlayStatusHelper::State::NoVisibleRows;
+
+    if (!isMatrixComplete())
+        return OverlayStatusHelper::State::Incomplete;
+
+    return OverlayStatusHelper::State::Normal;
+
+}
+
+bool MaterialRequirementsPresenter::isMatrixComplete() const
+{
+    const auto rules = NeedRuleRegistry::instance().readAll();
+    const auto modes = NeedCalculationRegistry::instance().readAll();
+
+    for (const auto& r : rules) {
+        for (const auto& m : modes) {
+            if (m.productId != r.leftId)
+                continue;
+
+            bool exists = NeedCalculationDetailRegistry::instance()
+                              .existsBy([&](const NeedCalculationDetail& d){
+                                  return d.needCalculationId == m.id &&
+                                         d.materialId == r.rightId;
+                              });
+
+            if (!exists)
+                return false;
+        }
+    }
+    return true;
 }

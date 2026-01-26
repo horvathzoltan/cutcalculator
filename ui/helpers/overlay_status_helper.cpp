@@ -13,7 +13,9 @@ OverlayStatusHelper::computeState(int repoCount, int visibleRows)
     if (visibleRows == 0)
         return State::NoVisibleRows;
 
+    // Presenter dönti el, hogy incomplete-e
     return State::Normal;
+
 }
 
 // ------------------------------------------------------------
@@ -39,6 +41,11 @@ void OverlayStatusHelper::apply(OverlayIconWidget* w, State s)
     case State::Normal:
         w->setOverlay(OverlayIconWidget::BottomRight, "🟢");
         break;
+
+    case State::Incomplete:
+        w->setOverlay(OverlayIconWidget::BottomRight, "🔵");
+        break;
     }
+
 }
 

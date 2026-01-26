@@ -33,7 +33,7 @@ AUTO_REGISTER_REGISTRY
     bool beforeUpdate(NeedCalculation&) { return true; }
     bool beforeRemove(NeedCalculation&) { return true; }
 
-    void afterInsert(const NeedCalculation&) {}
+    void afterInsert(const NeedCalculation&);
     void afterUpdate(const NeedCalculation&) {}
     void afterRemove(const NeedCalculation&) {}
 

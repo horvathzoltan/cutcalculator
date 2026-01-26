@@ -123,11 +123,19 @@ NeedCalculationDetailRepository::buildFromRow(
         return std::nullopt;
     }
 
+    // fallback: derive kind from formula if CSV has no kind column
+    NeedCalculationDetail::DetailKind kind =
+        row.formula.startsWith("fixed:")
+            ? NeedCalculationDetail::DetailKind::Kitting
+            : NeedCalculationDetail::DetailKind::Cutting;
+
+
     NeedCalculationDetail d;
     d.id                = QUuid::createUuid();
     d.needCalculationId = calc->id;
     d.materialId        = mat->id;
     d.formula           = row.formula;
+    d.kind = kind;
 
     return d;
 }
