@@ -29,9 +29,19 @@ MaterialRequirementsView::MaterialRequirementsView(QWidget* parent)
     connect(_table, &QTableWidget::itemDoubleClicked,
             this, [this](QTableWidgetItem* item) {
                 if (!item) return;
-                QUuid ruleId = item->data(Qt::UserRole).toUuid();
-                emit request_change_material(ruleId);
+
+                const int row = item->row();
+
+                auto* product_item  = _table->item(row, 0);
+                auto* material_item = _table->item(row, 1);
+                if (!product_item || !material_item) return;
+
+                QUuid productId  = product_item->data(Qt::UserRole).toUuid();
+                QUuid materialId = material_item->data(Qt::UserRole).toUuid();
+
+                emit request_change_material(productId, materialId);
             });
+
 }
 
 

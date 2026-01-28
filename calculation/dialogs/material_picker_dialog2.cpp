@@ -1,10 +1,10 @@
-#include "material_picker_dialog.h"
+#include "material_picker_dialog2.h"
 #include "materials/registry/material_registry.h"
 #include <QVBoxLayout>
 #include <QListWidget>
 #include <QDialogButtonBox>
 
-MaterialPickerDialog::MaterialPickerDialog(QWidget* parent)
+MaterialPickerDialog_2::MaterialPickerDialog_2(QWidget* parent)
     : QDialog(parent)
 {
     auto* layout = new QVBoxLayout(this);
@@ -33,6 +33,6 @@ MaterialPickerDialog::MaterialPickerDialog(QWidget* parent)
     connect(buttons, &QDialogButtonBox::rejected, this, &QDialog::reject);
 }
 
-QUuid MaterialPickerDialog::selectedMaterial() const {
+QUuid MaterialPickerDialog_2::selectedMaterial() const {
     return _selected;
 }

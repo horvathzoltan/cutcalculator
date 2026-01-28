@@ -92,7 +92,11 @@ void MaterialRequirementsPresenter::connectRegistry() {
     _needRuleToken =
         NeedRuleRegistry::instance().subscribeItemsChangedToken(
             [this]() { refreshOverlayOnly(); });
+
+    NeedCalculationDetailRegistry::instance().subscribeItemsChangedToken(
+        [this]() { refreshOverlayOnly(); });
 }
+
 
 OverlayStatusHelper::State MaterialRequirementsPresenter::computeMatrixState()
 {

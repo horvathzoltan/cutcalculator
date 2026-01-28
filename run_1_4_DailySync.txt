@@ -1,150 +1,149 @@
-Íme a teljes, karcsúsított, fejlesztőbarát, kategorizált napi összesítő
-— 2026. január 26. alapján, a mai munkafolyamatod ritmusához és
-fejlesztői fókuszához igazítva.
+Íme a karcsúsított, fejlesztőbarát, kategorizált napi összesítő a mai
+munkáról, a kért struktúrában és hangnemben.
 
 ------------------------------------------------------------------------
 
-🎯 A mai (2026.01.26.) munka eredménye – kategóriákba rendezve
-
-🟦 UI‑szinkron és Presenter‑lánc stabilizálása
-
-Érintett fájlok: - calcmodes/view/CalculationModesView.cpp -
-calcmodes/presenter/CalculationModesPresenter.cpp -
-calculation/presenter/CalculationModeDetailPresenter.cpp -
-workbench/view/bom_workbench.cpp (kapcsolódó jelzéslánc)
-
-Mai eredmények: - CalculationModesView most már markReady() hívást kap →
-stabil product‑váltási frissítés. - A modeSelected jelzés végigér a
-detail presenterig. - A detail presenter helyesen állítja be a
-current_calcId‑t. - A detail manager újra set_details()‑t hív → a panel
-mindig friss. - A product‑váltáskor a detail panel reset állapotba
-kerül.
-
-Kategória: ➡️ UI‑szinkron / Presenter‑lánc / State‑management
+🎯 A mai (2026.01.28.) munka eredménye – kategóriákba rendezve
 
 ------------------------------------------------------------------------
 
-🟦 Overlay‑rendszer egységesítése
+🟦 UI‑szinkron és állapotkezelés stabilizálása
 
-Érintett fájlok: - ui/helpers/overlay_status_helper.cpp -
-ui/helpers/repository_overlay_widget.h -
-calcmodes/presenter/CalculationModesPresenter.cpp -
-calculation/presenter/CalculationModeDetailPresenter.cpp -
-needs/presenter/MaterialRequirementsPresenter.cpp
+Érintett fájlok: - MaterialRequirementsView.cpp -
+MaterialRequirementsManager.cpp - CalculationModesPresenter.cpp -
+CalculationModeDetailPresenter.cpp
 
-Mai eredmények: - Overlay frissítés minden registry változásra
-megtörténik. - Régi overlay kódok eltávolítva → nincs több félbehagyott
-logika. - Új UX szabályok dokumentálva (❌ / 🟡 / 🟢 / 🔵). - A detail
-torony most már matrix‑aware overlayt mutat.
+Mai eredmények: - Anyagigény táblában a double‑click esemény most már a
+helyes (productId, materialId) párost küldi. - A manager oldali
+kapcsolatcsere logika domain‑helyes lett (remove + insertRule). - A
+detail panel frissítése konzisztens product‑váltáskor. - A
+presenter‑lánc stabilan továbbítja a kiválasztási eseményeket.
 
-Kategória: ➡️ Overlay UX / Registry‑integráció
-
-------------------------------------------------------------------------
-
-🟦 Registry‑workflow audit és javítások
-
-Érintett fájlok: -
-calculation/registry/need_calculation_detail_registry.cpp -
-needs/registry/need_rule_registry.cpp -
-products/view/ProductTreeView.cpp (persist hívás konzisztencia) -
-calculation/manager/calculation_mode_detail_manager.cpp
-
-Mai eredmények: - Domain validation függőségek tisztázva, include‑ok
-ellenőrizve. - NeedRuleRegistry workflow audit elkezdve. - Demo insert
-hibák dokumentálva (materialId generálás). - Persist‑policy
-egységesítése előkészítve.
-
-Kategória: ➡️ Registry‑workflow / Domain‑validation / Persist‑policy
+Kategória:
+➡️ UI‑szinkron / Presenter‑lánc / Domain‑helyes kapcsolatkezelés
 
 ------------------------------------------------------------------------
 
-🟩 Összegzés – a mai nap 3 nagy eredménye
+🟦 Build‑stabilizálás és ODR‑hibák megszüntetése
 
-1.  A teljes UI‑szinkron lánc stabilizálva (mode → detail → reset →
-    overlay).
-2.  Overlay‑rendszer egységes, dokumentált, hibamentes.
-3.  Registry‑workflow audit elindult, domain‑szabályok tisztultak.
+Érintett fájlok: - CutCalculator.pro - material_picker_dialog.cpp
+(calculation + needs modul)
+
+Mai eredmények: - A két MaterialPickerDialog ütközése megszűnt
+(duplikált forrás eltávolítva). - A moc targetek ütközése megszűnt. - A
+projekt tisztán fordul, linkerhibák nélkül.
+
+Kategória:
+➡️ Build‑rendszer / ODR‑tisztítás / Projektstruktúra
+
+------------------------------------------------------------------------
+
+🟦 CSV‑import audit és domain‑validáció
+
+Érintett fájlok: - CsvImporter modul - materials.csv,
+needcalc_details.csv - MaterialRepository,
+NeedCalculationDetailRepository
+
+Mai eredmények: - A CSV import pipeline hibátlanul lefut, a hibák
+auditálva. - A materials.csv hibái (ismeretlen típusok,
+keresztmetszetek) tisztán jelentve. - A NeedCalculationDetail import
+hiányosságai feltárva. - A mátrix‑teljesség hiányának felismerése → új
+architekturális irány.
+
+Kategória:
+➡️ Domain‑validáció / CSV‑audit / Mátrix‑konzisztencia
+
+------------------------------------------------------------------------
+
+🟦 Mátrix‑komplettség koncepciójának előkészítése
+
+Érintett fájlok: - MaterialRequirementsView.cpp -
+MaterialRequirementsPresenter.cpp - NeedCalculationDetailRegistry.cpp
+
+Mai eredmények: - A sárga háttér UX‑problémájának azonosítása. - A
+mátrix‑hiányosság domain‑szintű értelmezése. - A 3‑lépcsős modell
+kiválasztása:
+globális validáció → lokális generálás → ikonikus GUI‑jelzés. - A
+MatrixValidator + MatrixGenerator architekturális terv megszületett.
+
+Kategória:
+➡️ Domain‑architektúra / Mátrix‑teljesség / UX‑javítás
+
+------------------------------------------------------------------------
+
+🟩 Összegzés – a mai nap 4 nagy eredménye
+
+1.  A MaterialPickerDialog ütközés teljes megszüntetése → stabil build.
+2.  A kapcsolatcsere domain‑helyes működése (NeedRule remove + insert).
+3.  A mátrix‑hiányosság felismerése és a 3‑lépcsős architektúra
+    kiválasztása.
+4.  A CSV import pipeline auditált, hibák tisztán látszanak.
 
 ------------------------------------------------------------------------
 
 📝 Mai nap összefoglalója
 
--   [✅ ELKÉSZÜLT] CalculationModesView → markReady() beépítve
--   [✅ ELKÉSZÜLT] modeSelected jelzéslánc végigvezetve a detail
-    presenterig
--   [✅ ELKÉSZÜLT] DetailPresenter current_calcId beállítása
--   [🚧 HALADT] Overlay UX szabályok egységesítése
--   [🚧 HALADT] Registry‑workflow audit (NeedRuleRegistry,
-    CalculationDetailRegistry)
--   [🚧 HALADT] Persist‑policy konzisztencia vizsgálata
--   [🚧 HALADT] MatrixValidator integráció a detail és requirements
-    tornyokban
+-   [✅ ELKÉSZÜLT] MaterialPickerDialog duplikáció eltávolítása
+-   [✅ ELKÉSZÜLT] Double‑click esemény domain‑helyes paraméterezése
+-   [🚧 HALADT] Mátrix‑komplettség UX‑jelzéseinek újratervezése
+-   [🚧 HALADT] CSV import audit és hibakategorizálás
+-   [🚧 HALADT] MatrixValidator + MatrixGenerator koncepció
+-   [🚧 HALADT] Presenter‑lánc finomhangolása
 
 ------------------------------------------------------------------------
 
 🐞 BUG lista (életciklus‑kezeléssel)
 
 -   [🔥 SOS] — nincs új kritikus hiba
--   [🐞 BUG] Demo insert hibás materialId generálás
--   [🐞 BUG] ProductTreeView persist‑policy inkonzisztens
--   [🔴 ÚJRAJAVÍTÁS] Overlay incomplete állapot régi kódmaradványai
--   [✅ KÉSZ] CalculationModesView nem hívta markReady()
--   [✅ KÉSZ] DetailPresenter nem állította be current_calcId‑t
--   [✅ KÉSZ] modeSelected jelzéslánc hiányos volt
--   [✅ KÉSZ] DetailManager set_details() ki volt kommentelve
+-   [🐞 BUG] materials.csv hibák (ismeretlen típusok, keresztmetszetek)
+-   [🐞 BUG] needcalc_details.csv teljes hiánya
+-   [🔴 ÚJRAJAVÍTÁS] mátrix‑incomplete overlay régi kódmaradványai
+-   [✅ KÉSZ] MaterialPickerDialog ODR ütközés
+-   [✅ KÉSZ] Double‑click ruleId → (productId, materialId) javítás
 
 ------------------------------------------------------------------------
 
 🧠 Ötletek
 
--   A registry‑workflow auditot érdemes automatizált checklist
-    formájában vezetni.
--   A matrix‑komplettség vizsgálatát lehetne cache‑elni, hogy ne
-    számoljon minden frissítéskor.
--   A presenter‑szintű overlay‑policy akár külön modulba is szervezhető.
+-   A mátrix‑komplettség validációját érdemes cache‑elni termékszinten.
+-   A hiányzó detail generálás auditját külön logfájlba lehetne tenni.
+-   A presenter‑szintű overlay‑policy akár mixin‑be szervezhető.
 
 ⚠️ Problémák
 
--   A persist‑policy továbbra sem teljesen egységes.
--   A NeedRuleRegistry audit még nem teljes körű.
--   A matrix‑komplettség logikája több toronyban duplikálódik.
+-   A NeedCalculationDetail import teljesen üres → minden mátrix
+    hiányos.
+-   A materials.csv hibák miatt több anyag nem számítható.
+-   A jelenlegi sárga háttér UX‑szempontból gyenge.
 
 ✅ Döntések
 
--   A persist legyen automatikus workflow után (A‑opció).
--   A régi overlay kódok teljes eltávolítása folytatódik.
--   A matrix‑komplettség ellenőrzése a presenter feladata marad.
+-   A 3‑lépcsős mátrix‑kezelés lesz a végleges modell.
+-   Induláskor csak validálunk, generálás csak lokálisan történik.
+-   A GUI ikonikus jelzést kap, nem háttérszínt.
 
 ------------------------------------------------------------------------
 
 📁 Érintett fájlok / modulok
 
--   CalculationModesView.cpp — markReady() hozzáadva
--   CalculationModesPresenter.cpp — overlay frissítés registry
-    változásra
--   CalculationModeDetailPresenter.cpp — current_calcId beállítása,
-    overlay frissítés
+-   MaterialRequirementsView.cpp — double‑click esemény javítva
+-   MaterialRequirementsManager.cpp — kapcsolatcsere domain‑helyesítve
+-   CutCalculator.pro — duplikált MaterialPickerDialog eltávolítva
+-   CsvImporter — auditált, tisztított működés
+-   NeedCalculationDetailRegistry.cpp — hiányosságok feltárva
 -   MaterialRequirementsPresenter.cpp — overlay frissítés javítva
--   overlay_status_helper.cpp — új UX szabályok
--   repository_overlay_widget.h — egységes overlay frissítés
--   need_calculation_detail_registry.cpp — domain validation audit
--   need_rule_registry.cpp — workflow audit előkészítve
--   matrix_validator.cpp — detail torony integráció
 
 ------------------------------------------------------------------------
 
 💡 Új ötletek / megfigyelések
 
--   A presenter‑szintű overlay logika teljesen egységesíthető egy
-    mixin‑be.
--   A matrix‑komplettség állapotot érdemes lenne a registrykben tárolni,
-    nem újraszámolni.
--   A UI‑szinkron lánc most már stabil, így jöhet a finomhangolás (pl.
-    animációk, vizuális visszajelzések).
--   A registry‑auditot jó lenne automatikus nightly reportként
-    generálni.
+-   A mátrix‑komplettség állapotát registry‑szinten is lehetne tárolni.
+-   A detail generálás lehetne interaktív is (pl. „Generate missing
+    details” gomb).
+-   A CSV import hibákat érdemes lenne külön dashboardon megjeleníteni.
+-   A presenter‑lánc most már stabil → jöhet a finom UX‑polírozás.
 
 ------------------------------------------------------------------------
 
-Ha szeretnéd, elkészítem ugyanezt markdown‑export, PDF‑szerű struktúra,
-vagy commit‑message‑ready formátumban is.
+Ha szeretnéd, ezt a formátumot holnaptól automatikusan is tudom hozni
+minden nap végén.

@@ -4,10 +4,10 @@
 
 class QListWidget;
 
-class MaterialPickerDialog : public QDialog {
+class MaterialPickerDialog_2 : public QDialog {
     Q_OBJECT
 public:
-    explicit MaterialPickerDialog(QWidget* parent = nullptr);
+    explicit MaterialPickerDialog_2(QWidget* parent = nullptr);
 
     QUuid selectedMaterial() const;
 

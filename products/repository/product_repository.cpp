@@ -145,10 +145,15 @@ bool ProductRepository::load(QVector<ProductMaster>& out)
                      .arg(ctx.errorsSize()));
     }
 
+    if (!ctx.fileError().isEmpty()) {
+        out.clear();
+        return false;
+    }
+
     out = defs;
 
     zInfo(QString("📦 ProductRepository: %1 termék betöltve").arg(defs.size()));
-    return !defs.isEmpty();
+    return true;
 }
 
 

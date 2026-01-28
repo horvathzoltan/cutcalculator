@@ -7,8 +7,10 @@ public:
     enum class Shape {
         Round,
         Rectangular,
-        Custom
+        Custom,
+        Unknown
     };
+
 
     Shape value;
 
@@ -17,6 +19,13 @@ public:
     QString toString() const;                        // Enum → szöveg
     static CrossSectionShape fromString(const QString& str);  // Szöveg → enum
     bool operator==(const CrossSectionShape& other) const;
+
+    bool isValid() const {
+        return value == Shape::Round ||
+               value == Shape::Rectangular ||
+               value == Shape::Custom;
+    }
+
 
     // 💡 Később jöhet: isValid(diameter, width, height)
     // QColor uiColor() const;

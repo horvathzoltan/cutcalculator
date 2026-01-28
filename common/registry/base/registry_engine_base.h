@@ -8,6 +8,7 @@
 #include <memory>
 #include "common/registry/subscription_token.h"
 #include "common/logger/logger.h"
+#include "common/system/verbose_manager.h"
 
 template<typename TEntity>
 class RegistryEngineBase : public RegistryBase {
@@ -200,7 +201,10 @@ public:
 protected:
     // --- Central event trigger (thread-safe, reentrancy-safe) ---
     virtual void onItemsChanged(){
-        zInfo("róka1: RegistryEngineBase::onItemsChanged belépés");
+
+        if(IS_VERBOSE(RegistryEngineBase)){
+            zInfo("róka1: RegistryEngineBase::onItemsChanged belépés");
+        }
 
         QVector<std::pair<SubscriptionId, ItemsChangedEvent>> subsCopy;
         {
@@ -215,7 +219,9 @@ protected:
             }
         }
 
-        zInfo("róka2: RegistryEngineBase::onItemsChanged kilépés");
+        if(IS_VERBOSE(RegistryEngineBase)){
+            zInfo("róka2: RegistryEngineBase::onItemsChanged kilépés");
+        }
     }
 
     // --- Protected store*Impl methods used by RegistryCore and mixins ---
@@ -267,7 +273,7 @@ protected:
     bool storeClearImpl() {
         QWriteLocker w(&_rwLock);
         _items.clear();
-        return false;
+        return true;
     }
 
     bool storeRemoveImpl(const IdType& id) {

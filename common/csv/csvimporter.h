@@ -13,32 +13,56 @@
 
 namespace CsvImporter{
 
-inline QList<CsvRawLine> read(const QString& filepath, QChar separator = QChar()) {
-    QFile file(filepath);
+inline QList<CsvRawLine> read(FileContext& ctx, QChar separator = QChar()) {
+    QFile file(ctx.filepath());
     QIODevice::OpenMode mode = QIODevice::ReadOnly | QIODevice::Text;
     if (!file.open(mode)) {
-        FileHelper::logFileError(file, "CSV READ", mode);
+        ctx.setFileError(L("Nem sikerült megnyitni a fájlt: %1").arg(ctx.filepath()));
         return {};
     }
 
     QTextStream in(&file);
     in.setEncoding(QStringConverter::Utf8);
 
-    // 🔍 Automatikus szeparátor detektálás, ha nincs megadva
     if (separator.isNull()) {
-     //   zInfo("🔍 Automatikus szeparátor keresés...");
         separator = FileHelper::detectSeparatorSmart(&in);
         if (separator.isNull()) {
-            zWarning(L("⚠️ Nem sikerült szeparátort detektálni a fájlban: %1").arg(filepath));
+            ctx.setFileError(L("Nem sikerült szeparátort detektálni a fájlban: %1").arg(ctx.filepath()));
             return {};
         }
-        file.seek(0); // 🔁 Vissza az elejére, újraolvasáshoz
+        file.seek(0);
         in.seek(0);
     }
 
-    const auto rows = FileHelper::parseCSV(&in, separator);
-    return rows;
+    return FileHelper::parseCSV(&in, separator);
 }
+
+// inline QList<CsvRawLine> read(const QString& filepath, QChar separator = QChar()) {
+//     QFile file(filepath);
+//     QIODevice::OpenMode mode = QIODevice::ReadOnly | QIODevice::Text;
+//     if (!file.open(mode)) {
+//         FileHelper::logFileError(file, "CSV READ", mode);
+//         return {};
+//     }
+
+//     QTextStream in(&file);
+//     in.setEncoding(QStringConverter::Utf8);
+
+//     // 🔍 Automatikus szeparátor detektálás, ha nincs megadva
+//     if (separator.isNull()) {
+//      //   zInfo("🔍 Automatikus szeparátor keresés...");
+//         separator = FileHelper::detectSeparatorSmart(&in);
+//         if (separator.isNull()) {
+//             zWarning(L("⚠️ Nem sikerült szeparátort detektálni a fájlban: %1").arg(filepath));
+//             return {};
+//         }
+//         file.seek(0); // 🔁 Vissza az elejére, újraolvasáshoz
+//         in.seek(0);
+//     }
+
+//     const auto rows = FileHelper::parseCSV(&in, separator);
+//     return rows;
+// }
 
 template<typename Row>
 struct AuditedRow {
@@ -51,7 +75,7 @@ static QVector<T> readAndConvert(CsvImporter::FileContext& ctx,
                                  std::function<std::optional<T>(const QVector<QString>&, FileContext&)> converter,
                                  bool skipHeader = true)
 {
-    const auto rows = read(ctx.filepath());
+    const auto rows = read(ctx);
     QVector<T> result;
 
     int readlines =0;
@@ -94,4 +118,6 @@ QVector<Domain> buildAll(const QVector<AuditedRow<Row>>& rows,
     }
     return out;
 }
-}
+
+
+} //end namespace CsvImporter

@@ -9,17 +9,19 @@ QString CrossSectionShape::toString() const {
     case Shape::Rectangular: return "Rectangular";
     case Shape::Round:       return "Round";
     case Shape::Custom:      return "Custom";
+    default: return "Unknown";
     }
-    return "Unknown";
 }
 
 CrossSectionShape CrossSectionShape::fromString(const QString& str) {
     const QString s = str.trimmed().toLower();
     if (s == "rectangular") return CrossSectionShape(Shape::Rectangular);
     if (s == "round")       return CrossSectionShape(Shape::Round);
-    return CrossSectionShape(Shape::Custom);
+    if (s == "custom")       return CrossSectionShape(Shape::Custom);
+    return CrossSectionShape(Shape::Unknown);
 }
 
 bool CrossSectionShape::operator==(const CrossSectionShape& other) const {
     return this->value == other.value;
 }
+

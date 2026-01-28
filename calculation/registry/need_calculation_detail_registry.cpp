@@ -1,6 +1,13 @@
 #include "calculation/registry/need_calculation_detail_registry.h"
 #include "common/registry/manager/registry_manager.h"
 #include "calculation/repository/need_calculation_detail_repository.h"
+#include "calcmodes/registry/need_calculation_registry.h"
+#include "materials/registry/material_registry.h"
+#include "products/registry/product_registry.h"
+#include "calcmodes/registry/need_calculation_registry.h"
+#include "materials/registry/material_registry.h"
+#include "products/registry/product_registry.h"
+
 
 // --- Segédek ---
 

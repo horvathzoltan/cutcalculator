@@ -8,7 +8,8 @@ enum class PaintingMode {
     None,        // 🚫 Nem festhető
     Paintable,   // 🎨 Festhető általánosan
     Coatable,    // 🧪 Szinterezhető / bevonható
-    PreCoated    // 🟦 Már bevonattal érkezik
+    PreCoated,   // 🟦 Már bevonattal érkezik
+    Unknown
 };
 
 namespace PaintingModeUtils {
@@ -18,8 +19,8 @@ namespace PaintingModeUtils {
         case PaintingMode::Paintable: return "Paintable";
         case PaintingMode::Coatable:  return "Coatable";
         case PaintingMode::PreCoated: return "PreCoated";
-        }
-        return "Unknown";
+        default: return "Unknown";
+        };
     }
 
     inline PaintingMode parse(const QString& str) {
@@ -27,7 +28,7 @@ namespace PaintingModeUtils {
         if (str.compare("Paintable", Qt::CaseInsensitive) == 0) return PaintingMode::Paintable;
         if (str.compare("Coatable", Qt::CaseInsensitive) == 0)  return PaintingMode::Coatable;
         if (str.compare("PreCoated", Qt::CaseInsensitive) == 0) return PaintingMode::PreCoated;
-        return PaintingMode::None; // fallback
+        return PaintingMode::Unknown; // fallback
     }
 
 } //end namespace PaintabilityUtils

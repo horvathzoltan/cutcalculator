@@ -19,7 +19,7 @@ SOURCES += \
     calcmodes/dialogs/mode_name_dialog.cpp \
     calcmodes/presenter/calculation_modes_presenter.cpp \
     calculation/dialogs/formula_editor_dialog.cpp \
-    calculation/dialogs/material_picker_dialog.cpp \
+    calculation/dialogs/material_picker_dialog2.cpp \
     calculation/presenter/calculation_mode_detail_presenter.cpp \
     calculation/service/formula_engine.cpp \
     calculation/service/matrix_validator.cpp \
@@ -103,7 +103,7 @@ HEADERS += \
     calcmodes/presenter/calculation_modes_presenter.h \
     calcmodes/repository/need_calculation_traits.h \
     calculation/dialogs/formula_editor_dialog.h \
-    calculation/dialogs/material_picker_dialog.h \
+    calculation/dialogs/material_picker_dialog2.h \
     calculation/presenter/calculation_mode_detail_presenter.h \
     calculation/service/formula_engine.h \
     calculation/service/matrix_validator.h \
@@ -257,6 +257,7 @@ DISTFILES += \
     run_1_2_BugList.txt \
     run_1_3_0_OsszesitettHibajegyzek_Refactor.txt \
     run_1_3_1_BarcodeRegistry_Refactor.txt \
+    run_1_3_2_FeladatLista.txt \
     run_1_4_DailySync.txt \
     run_2_1_AIDevelopmentHandbook.txt \
     run_2_2_JEGYZET.txt \

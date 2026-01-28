@@ -119,6 +119,8 @@ MaterialRepository::buildMaterialFromRow(const MaterialRow& row,
     // Tartalmi validáció hibák gyűjtése
     auto rowErrors = validateMaterialRow(row, ctx.currentLineNumber());
     ctx.addErrors(rowErrors);
+    if (!rowErrors.isEmpty())
+        return std::nullopt;
 
     MaterialMaster m;
     m.id = QUuid::createUuid();
@@ -126,10 +128,27 @@ MaterialRepository::buildMaterialFromRow(const MaterialRow& row,
     m.barcode = row.barcode;
     m.stockLength_mm = row.stockLength;
     m.defaultMachineId = row.machineId;
+
     m.shape = CrossSectionShape::fromString(row.shapeStr);
+    if (!m.shape.isValid()) {
+        ctx.addError(ctx.currentLineNumber(), QString("Ismeretlen keresztmetszet forma: %1").arg(row.shapeStr), row.barcode, row.name);
+    }
+
     m.type = MaterialType::fromString(row.typeStr);
+    if (!m.type.isValid()) {
+        ctx.addError(ctx.currentLineNumber(), QString("Ismeretlen anyagtípus: %1").arg(row.typeStr), row.barcode, row.name);
+    }
+
     m.cuttingMode = CuttingModeUtils::parse(row.cuttingMode);
+    if (m.cuttingMode == CuttingMode::Unknown) {
+        ctx.addError(ctx.currentLineNumber(), QString("Ismeretlen vágási mód: %1").arg(row.cuttingMode), row.barcode, row.name);
+    }
+
     m.paintingMode = PaintingModeUtils::parse(row.paintingMode);
+    if (m.paintingMode == PaintingMode::Unknown) {
+        ctx.addError(ctx.currentLineNumber(), QString("Ismeretlen festési mód: %1").arg(row.paintingMode), row.barcode, row.name);
+    }
+
 
     // Runtime validáció: dimenziók
     if (m.cuttingMode == CuttingMode::Length) {

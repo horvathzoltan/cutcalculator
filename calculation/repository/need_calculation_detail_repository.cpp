@@ -172,12 +172,18 @@ bool NeedCalculationDetailRepository::load(QVector<NeedCalculationDetail>& out)
                      .arg(ctx.errorsSize()));
     }
 
+    if (!ctx.fileError().isEmpty()) {
+        out.clear();
+        return false;
+    }
+
     out = defs;
 
     zInfo(QString("📊 NeedCalculationDetailRepository: %1 rekord betöltve")
               .arg(defs.size()));
 
-    return !defs.isEmpty();
+    return true;
+
 }
 
 // ------------------------------------------------------------

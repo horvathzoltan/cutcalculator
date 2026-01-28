@@ -106,7 +106,9 @@ signals:
      */
     void selection_changed(bool has_selection);
 
-    void request_change_material(const QUuid& ruleId);
+    void request_change_material(const QUuid& productId,
+                                 const QUuid& oldMaterialId);
+
 
 
 private:

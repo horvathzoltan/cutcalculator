@@ -4,7 +4,8 @@
 enum class CuttingMode {
     None,       // 🚫 Nem vágható
     Length,     // 📏 Szálhossz alapú vágás
-    Piece       // 🔩 Darabszám alapú kezelés
+    Piece,      // 🔩 Darabszám alapú kezelés
+    Unknown
 };
 
 namespace CuttingModeUtils{
@@ -14,15 +15,16 @@ inline QString toString(CuttingMode mode) {
     case CuttingMode::None:   return "None";
     case CuttingMode::Length: return "Length";
     case CuttingMode::Piece:  return "Piece";
+    default: return "Unknown";
     }
-    return "Unknown";
+
 }
 
 inline CuttingMode parse(const QString& str) {
     if (str.compare("None", Qt::CaseInsensitive) == 0)   return CuttingMode::None;
     if (str.compare("Length", Qt::CaseInsensitive) == 0) return CuttingMode::Length;
     if (str.compare("Piece", Qt::CaseInsensitive) == 0)  return CuttingMode::Piece;
-    return CuttingMode::None; // 🔧 fallback
+    return CuttingMode::Unknown; // 🔧 fallback
 }
 
 } //end namespace CuttingModeUtils

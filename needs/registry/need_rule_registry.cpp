@@ -57,7 +57,7 @@ void NeedRuleRegistry::afterInsert(const NeedRule& r)
         d.materialId = r.rightId;
         d.formula = "w-0";
         d.kind = NeedCalculationDetail::DetailKind::Cutting;
-        NeedCalculationDetailRegistry::instance().insert(d);
+        NeedCalculationDetailRegistry::instance().insertWithWorkflow(d);
     }
 }
 

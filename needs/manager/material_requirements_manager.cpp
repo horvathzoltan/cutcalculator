@@ -86,21 +86,21 @@ void MaterialRequirementsManager::connectSignals() {
             });
 
     connect(_view, &MaterialRequirementsView::request_change_material,
-            this, [this](const QUuid& ruleId) {
+            this, [this](const QUuid& productId,
+                   const QUuid& oldMaterialId) {
 
-                const auto* r = NeedRuleRegistry::instance().findById(ruleId);
-                if (!r) return;
-
-                MaterialPickerDialog dlg(_view);
-                if (dlg.exec() != QDialog::Accepted)
+                MaterialPickerDialog picker(_view);
+                if (picker.exec() != QDialog::Accepted)
                     return;
 
-                auto updated = *r;
-                updated.rightId = dlg.selectedMaterial();
+                auto pick = picker.result();
+                auto newMaterialId = pick.material_id;
 
-                NeedRuleRegistry::instance().update(updated);
+                NeedRuleRegistry::instance().remove(productId, oldMaterialId);
+                NeedRuleRegistry::instance().insertRule(productId, newMaterialId);
+
+                NeedRuleRepository::save();
             });
-
 }
 
 QVector<MaterialRequirementsView::RequirementRow>
@@ -110,6 +110,7 @@ MaterialRequirementsManager::makeRowsForProduct(const QUuid& productId,
 {
     QVector<MaterialRequirementsView::RequirementRow> out;
     const auto rulesByProduct = NeedRuleRegistry::instance().findByLeft(productId);
+    bool matrixComplete = MatrixValidator::isProductMatrixComplete(productId);
 
     for (const auto& rule : rulesByProduct) {
         MaterialRequirementsView::RequirementRow r;
@@ -127,11 +128,13 @@ MaterialRequirementsManager::makeRowsForProduct(const QUuid& productId,
             const auto& mat = *matOpt;
             r.material_name = mat.name;
             r.material_barcode = mat.barcode;
-            r.matrixComplete = MatrixValidator::isProductMatrixComplete(productId);
+            r.material_exists = true;
+            r.matrixComplete = matrixComplete;
         } else {
             r.material_name = "UNKNOWN";
             r.material_barcode = "";
-            r.matrixComplete = MatrixValidator::isProductMatrixComplete(productId);
+            r.material_exists = false;
+            r.matrixComplete = matrixComplete;
         }
 
         out.append(r);

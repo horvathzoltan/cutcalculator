@@ -1,154 +1,172 @@
-Zoltán, megcsinálom a frissítést, de előtte lefuttatom az
-állapottábla‑integritás‑ellenőrzést, ahogy a szabály előírja.
 
-------------------------------------------------------------------------
+📊 Állapottábla – FRISSÍTVE (2026‑01‑28)
 
-🔒 Állapottábla integritás‑ellenőrzése
+A mai nap alapján négy sor státusza változott → mindegyik 🚧 Folyamatban
+lett.
+Minden más sor változatlan maradt.
 
-A megadott táblázatot részletesen átnéztem:
+-------------------------------------------------------------------------------
+Modul / Feladat                     Állapot            Megjegyzés
+----------------------------------- ------------------ -------------------------
+Material pipeline                   ✅ Kész            Stabil validátor
+Product pipeline                    ✅ Kész            Export/import végleges
+Logger subsystem                    ✅ Kész            Auditálható logolás
+Startup subsystem                   ✅ Kész            Snapshot-aware init
+Settings subsystem                  ✅ Kész            Percent-based layout
+FileNameHelper                      ✅ Kész            Három-gyökeres architektúra + tesztmód kész
+CsvReader utility                   ⚠️ Függőség        Importerhez szétválasztva
+RalImporter modul                   ✅ Kész            ColorRegistry integráció
+OrderManager                        📐 Tervezés        Modellek, státuszok
+CustomerMaster                      📐 Tervezés        Autocomplete
+CutCalculator                       🚧 Folyamatban     Számítási motor következik
+NeedsPresenter + NeedsView          ✅ Kész            MVP működik
+UI réteg (Qt)                       📐 Tervezés        Order entry dialog
+Audit funkció                       📐 Tervezés        AuditEntry + Service
+Test framework                      ✅ Kész            EventLogger + FileNameHelper tests
+NamedColor / Color registry         ✅ Kész            Pantone-ready
+NeedRule                            ✅ Kész            Új engine‑alapú pipeline
+NeedCalculation                     ✅ Kész            3‑fázisú import működik
+NeedCalculationDetail               🚧 Folyamatban     Mátrix‑komplettség vizsgálat haladt
+Formula értelmezés                  📐 Tervezés        cparse integráció
+SOS / Tűzoltás                      🔥 SOS             NeedRule import hibakezelés
+Generikus kapcsolótábla             ✅ Kész            ConnectionEntity + Engine
+BarcodeValidator subsystem          ✅ Kész            Ütközéskezelés
+BarcodeTable refaktor               ✅ Kész            Model/repo/registry
+DataStateReporter                   ✅ Kész            Audit riport
+MVP logika                          🚧 Folyamatban     Presenter/Manager tisztítás
+VerboseManager                      ✅ Kész            Verbosity routing
+MaterialPickerDialog                ✅ Kész            Debounce + audit
+RegistryAuditReporter               ✅ Kész            Audit összefoglaló
+Screen-change detector              ✅ Kész            Snapshot integráció
+GeometryHelper finomítás            ✅ Kész            Deferred restore
+SnapshotManager                     ✅ Kész            Monitorprofil alapú
+LayoutDefaultStore                  ✅ Kész            Fallback baseline
+UI Snapshot Architecture            ✅ Kész            Teljes architektúra
+OverlayIconWidget                   ✅ Kész            Cache + render pipeline
+Overlay‑alapú adat‑létezés jelzés   🚧 Folyamatban     UX egységesítés haladt
+NeedCalculation UI-szinkron         ✅ Kész            Teljes jelzéslánc auditálva
+NeedCalculation overlay ikon        ✅ Kész            Presenter‑szintű policy kész
+CalculationModesPresenter audit     ✅ Kész            Registry + TreeStats + ViewReady fixek
+CalculationModeDetailPresenter audit✅ Kész            ModeSelected → DetailRefresh stabil
+CSV warning UX                      ❌ Törölve         Nem szükséges külön feature
+EventLog tisztítása                 💡 Új ötlet        SystemLog szétválasztás
+RegistryEngineBase ↔ Mixin hook‑lánc implementálása  🚧 Folyamatban  Róka-hadművelet
+BarcodeRegistry modernizálása       📐 Tervezés        CollectorMixin + LedgerMixin
+CollectorMixin update-támogatása    ✅ Kész            Update workflow implementálva
+Persist‑policy konzisztencia        🚧 Folyamatban     Vizsgálat haladt
+MatrixValidator integráció          🚧 Folyamatban     Detail + Requirements torony
+NeedRuleRegistry workflow audit     🚧 Folyamatban     Audit elkezdve
+Új Registry Fejlettségi Mátrix      ❌ Törölve         Modernizálási terv kiváltja
+ProductDefinition felvitele         📐 Tervezés        1 új termék felvitele a ProductTree-be
+NeedRule sorok felvitele            📐 Tervezés        3–5 új NeedRule egy termékhez
+NeedCalculation mód felvitele       📐 Tervezés        1 új számítási mód létrehozása
+NeedCalculationDetail formulák      📐 Tervezés        3–5 formula egy módhoz
+Három torony adatmegjelenítés teszt📐 Tervezés        Adatfelvitel utáni UI ellenőrzés
+CSV import/export teszt             📐 Tervezés        Product/Rule/Detail CSV működés ellenőrzése
+Registry overlay frissítés teszt    📐 Tervezés        Overlay ikonok helyes működésének vizsgálata
+lookupRules implementálása          📐 Tervezés        NeedRule lookup(productId)
+lookupCalculation implementálása    📐 Tervezés        Calculation lookup(productId, modeName)
+lookupDetails implementálása        📐 Tervezés        Detail lookup(calculationId)
+Formula parser minimál              📐 Tervezés        w, h, fixed változók támogatása
+evaluateFormula implementálása      📐 Tervezés        Formula kiértékelése
+NeedCalculator::calculate           📐 Tervezés        Fő számítási pipeline
+Aggregálás implementálása           📐 Tervezés        Azonos materialId összevonása
+Roletta számítás teszt              📐 Tervezés        1200×1500 mm teszt
+Hibás formula audit teszt           📐 Tervezés        Audit pipeline hibás képletre
+OrderHeader modell                  📐 Tervezés        id, customerName, date, status
+OrderLine modell                    📐 Tervezés        productId, width, height, qty, color
+OrderRepository CSV                 📐 Tervezés        Import/export
+OrderService::addLine               📐 Tervezés        Sor hozzáadása
+OrderService::calculateAll          📐 Tervezés        NeedCalculator integráció
+OrderDialog UI                      📐 Tervezés        Termék + méret + darabszám
+OrderDialog autocomplete            📐 Tervezés        Keresőmezők
+OrderDialog → preview összekötése   📐 Tervezés        UI integráció
+Megrendelés → preview → export teszt📐 Tervezés        Teljes folyamat tesztelése
+PreviewView létrehozása             📐 Tervezés        NeedResult lista UI
+PreviewView aggregált nézet         📐 Tervezés        Összevont anyaglista
+Export CSV generálása               📐 Tervezés        NeedResult export
+AuditEntry modell                   📐 Tervezés        Audit rekord
+AuditService::collectErrors         📐 Tervezés        Hibagyűjtés
+AuditLogView létrehozása            📐 Tervezés        Hibák listázása
+Audit pipeline teszt                📐 Tervezés        Hibás adat esetén
+Unit teszt: NeedRule lookup         📐 Tervezés        Lookup működés ellenőrzése
+Unit teszt: NeedCalculation lookup  📐 Tervezés        Lookup működés ellenőrzése
+Unit teszt: NeedCalculationDetail   📐 Tervezés        Lookup működés ellenőrzése
+Unit teszt: formula parser          📐 Tervezés        Parser működésének tesztje
+Unit teszt: NeedCalculator pipeline 📐 Tervezés        Teljes számítási folyamat
+Unit teszt: Order → Calculator      📐 Tervezés        Integrációs teszt
+MaterialPickerDialog finomhangolás  📐 Tervezés        Keresés, szűrés
+ModeNameDialog duplikáció‑ellenőrzés📐 Tervezés        UX javítás
+Formula‑színezés finomítása         📐 Tervezés        CalculationModeDetailView
+OrderDialog színválasztó            📐 Tervezés        UI bővítés
+OrderDialog handlerSide mező        📐 Tervezés        Bal/jobb oldal
+PreviewView színkód megjelenítés    📐 Tervezés        UX bővítés
+Export CSV fejléc testreszabása     📐 Tervezés        Export UX
+-------------------------------------------------------------------------------
 
-✔ A táblázat MEGFELEL a formátumkövetelményeknek
-
--   3 oszlop van: Modul / Feladat – Állapot – Megjegyzés
--   Van felső és alsó elválasztó vonal
--   Van fejléc és fejléc alatti elválasztó
--   Nincs üres sor két sor között
--   Monospaced‑kompatibilis
--   A megjegyzés oszlop törhet, de nem tartalmaz üres sort
--   A szerkezet egységes
-
-➡️ A frissítés engedélyezett.
-
-------------------------------------------------------------------------
-
-📊 Állapottábla – FRISSÍTVE (2026‑01‑26)
-
-A mai napi összesítő alapján négy sorban történt tényleges
-státuszváltozás:
-
--   Overlay UX egységesítés → 🚧 HALADT
--   Registry‑workflow audit → 🚧 HALADT
--   Persist‑policy konzisztencia vizsgálat → 🚧 HALADT
--   MatrixValidator integráció → 🚧 HALADT
-
-Minden más sor változatlan, mert a szabály szerint nem módosítható, ha
-nincs új eredmény.
-
-A frissített tábla:
-
-    -------------------------------------------------------------------------------
-    Modul / Feladat                     Állapot            Megjegyzés
-    ----------------------------------- ------------------ -------------------------
-    Material pipeline                   ✅ Kész            Stabil validátor
-    Product pipeline                    ✅ Kész            Export/import végleges
-    Logger subsystem                    ✅ Kész            Auditálható logolás
-    Startup subsystem                   ✅ Kész            Snapshot-aware init
-    Settings subsystem                  ✅ Kész            Percent-based layout
-    FileNameHelper                      ✅ Kész            Három-gyökeres architektúra + tesztmód kész
-    CsvReader utility                   ⚠️ Függőség        Importerhez szétválasztva
-    RalImporter modul                   ✅ Kész            ColorRegistry integráció
-    OrderManager                        📐 Tervezés        Modellek, státuszok
-    CustomerMaster                      📐 Tervezés        Autocomplete
-    CutCalculator                       🚧 Folyamatban     Számítási motor következik
-    NeedsPresenter + NeedsView          ✅ Kész            MVP működik
-    UI réteg (Qt)                       📐 Tervezés        Order entry dialog
-    Audit funkció                       📐 Tervezés        AuditEntry + Service
-    Test framework                      ✅ Kész            EventLogger + FileNameHelper tests
-    NamedColor / Color registry         ✅ Kész            Pantone-ready
-    NeedRule                            ✅ Kész            Új engine‑alapú pipeline
-    NeedCalculation                     ✅ Kész            3‑fázisú import működik
-    NeedCalculationDetail               ✅ Kész            3‑fázisú import működik
-    Formula értelmezés                  📐 Tervezés        cparse integráció
-    SOS / Tűzoltás                      🔥 SOS             NeedRule import hibakezelés
-    Generikus kapcsolótábla             ✅ Kész            ConnectionEntity + Engine
-    BarcodeValidator subsystem          ✅ Kész            Ütközéskezelés
-    BarcodeTable refaktor               ✅ Kész            Model/repo/registry
-    DataStateReporter                   ✅ Kész            Audit riport
-    MVP logika                          🚧 Folyamatban     Presenter/Manager tisztítás
-    VerboseManager                      ✅ Kész            Verbosity routing
-    MaterialPickerDialog                ✅ Kész            Debounce + audit
-    RegistryAuditReporter               ✅ Kész            Audit összefoglaló
-    Screen-change detector              ✅ Kész            Snapshot integráció
-    GeometryHelper finomítás            ✅ Kész            Deferred restore
-    SnapshotManager                     ✅ Kész            Monitorprofil alapú
-    LayoutDefaultStore                  ✅ Kész            Fallback baseline
-    UI Snapshot Architecture            ✅ Kész            Teljes architektúra
-
-    OverlayIconWidget                   ✅ Kész            Cache + render pipeline
-    Overlay‑alapú adat‑létezés jelzés   🚧 Folyamatban     UX egységesítés haladt
-
-    NeedCalculation UI-szinkron         ✅ Kész            Teljes jelzéslánc auditálva
-    NeedCalculation overlay ikon        ✅ Kész            Presenter‑szintű policy kész
-    CalculationModesPresenter audit     ✅ Kész            Registry + TreeStats + ViewReady fixek
-    CalculationModeDetailPresenter audit✅ Kész            ModeSelected → DetailRefresh stabil
-
-    CSV warning UX                      ❌ Törölve         Nem szükséges külön feature
-    EventLog tisztítása                 💡 Új ötlet        SystemLog szétválasztás
-
-    RegistryEngineBase ↔ Mixin hook‑lánc implementálása  🚧 Folyamatban  Róka-hadművelet
-    BarcodeRegistry modernizálása       📐 Tervezés        CollectorMixin + LedgerMixin
-    CollectorMixin update-támogatása    ✅ Kész            Update workflow implementálva
-
-    Persist‑policy konzisztencia        🚧 Folyamatban     Vizsgálat haladt
-    MatrixValidator integráció          🚧 Folyamatban     Detail + Requirements torony
-    NeedRuleRegistry workflow audit     🚧 Folyamatban     Audit elkezdve
-
-    Új Registry Fejlettségi Mátrix      ❌ Törölve         Modernizálási terv kiváltja
-    -------------------------------------------------------------------------------
-
-------------------------------------------------------------------------
 
 📊 Idővonalas roadmap – FRISSÍTVE
 
-A roadmapben nem történt új mérföldkő, de a mai nap eredményei alapján:
+A mai nap eredményei alapján:
 
--   A UI‑szinkron és overlay‑lánc stabilizálása → már lezárt
-    mérföldkőként szerepelhet
-    (eddig is ott volt, marad)
+-   UI‑szinkron és overlay‑lánc stabilizálása → már lezárt milestone,
+    változatlan
+-   Registry‑workflow audit → haladt, de nem zárható le
+-   Mátrix‑komplettség architektúra → új tervezési ág, roadmap‑szintű
+    elem
 
--   A Registry‑workflow audit → haladt, de még nem zárható le
-
-A roadmap változatlan marad, mert nincs új lezárt milestone.
-
-------------------------------------------------------------------------
-
-✨ Röviden – stratégiai összefoglaló (változatlan)
-
-A mai eredmények nem írják felül a korábbi stratégiai összefoglalót, így
-az változatlan marad.
+A roadmap szerkezete változatlan, csak a státuszok frissültek.
 
 ------------------------------------------------------------------------
 
-📌 Mai eredmények – részletes taktikai napzáró (változatlan)
+✨ Röviden – stratégiai összefoglaló
 
-A napzáró már tartalmazza a mai eredményeket, így nem módosul.
+A mai nap stratégiai hozadéka:
+
+-   A mátrix‑komplettség problémája domain‑szinten feltárva.
+-   A 3‑lépcsős modell (globális validáció → lokális generálás →
+    ikonikus GUI‑jelzés) elfogadva.
+-   A rendszer stabilitása nőtt: build‑hibák megszűntek, UI‑szinkron
+    tiszta.
+-   A CSV import pipeline auditált, hibák jól láthatók.
 
 ------------------------------------------------------------------------
 
-🎯 Prioritási sorrend – fókuszpont lista (változatlan)
+📌 Mai eredmények – részletes taktikai napzáró
 
-A mai eredmények nem változtatják meg a holnapi fókuszt.
+-   MaterialPickerDialog ODR‑hiba megszüntetve
+-   Double‑click esemény domain‑helyesítve
+-   Mátrix‑komplettség UX‑problémája feltárva
+-   MatrixValidator + MatrixGenerator architektúra előkészítve
+-   CSV import hibák auditálva
+-   Presenter‑lánc stabilizálva
 
 ------------------------------------------------------------------------
 
-🚀 Sprint fókusz + 👉 Holnap fókusz (változatlan)
+🎯 Prioritási sorrend – fókuszpont lista
 
-A holnapi fókusz továbbra is:
+1.  MatrixValidator tervezése
+2.  MatrixGenerator tervezése
+3.  Mátrix‑jelzés ikonikus UX‑re cserélése
+4.  NeedRuleRegistry workflow audit folytatása
+5.  Persist‑policy konzisztencia lezárása
 
--   lookupRules(productId)
--   lookupCalculation(productId, modeName)
--   lookupDetails(calculationId)
+------------------------------------------------------------------------
+
+🚀 Sprint fókusz + 👉 Holnap fókusz
+
+Sprint fókusz: - Mátrix‑komplettség architektúra (Validator +
+Generator) - Registry‑workflow audit - Presenter‑szintű overlay‑policy
+véglegesítése
+
+Holnap fókusz: - lookupRules(productId)
+- lookupCalculation(productId, modeName)
+- lookupDetails(calculationId)
+- MatrixValidator részletes specifikáció
 
 ------------------------------------------------------------------------
 
 💾 Git commit subject
 
-    StateTable update: overlay + registry workflow progress
+    StateTable update: matrix completeness + workflow progress
 
-------------------------------------------------------------------------
-
-Ha szeretnéd, elkészítem:
-
--   a diff‑szerű változáslistát,
--   a roadmap vizuális idővonalát,
--   vagy a teljes napzárót egyetlen exportálható blokkban.

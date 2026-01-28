@@ -1,16 +1,10 @@
 #include "calculation/manager/calculation_mode_detail_manager.h"
 #include "calculation/registry/need_calculation_detail_registry.h"
 #include "common/registry/manager/registry_manager.h"
-#include "common/logger/event_logger.h"
-#include "materials/registry/material_registry.h"
-
-#include <needs/registry/need_rule_registry.h>
-
-#include <calcmodes/registry/need_calculation_registry.h>
-
-#include <calculation/dialogs/formula_editor_dialog.h>
-
-#include <calculation/service/matrix_validator.h>
+#include "needs/registry/need_rule_registry.h"
+#include "calcmodes/registry/need_calculation_registry.h"
+#include "calculation/dialogs/formula_editor_dialog.h"
+#include "calculation/service/matrix_validator.h"
 
 CalculationModeDetailManager::CalculationModeDetailManager(CalculationModeDetailView* view, QObject* parent)
     : QObject(parent), _view(view)
@@ -72,7 +66,7 @@ QVector<CalculationModeDetailView::DetailRow> CalculationModeDetailManager::refr
             d.materialId = r.rightId;
             d.formula = "w-0";
             d.kind = NeedCalculationDetail::DetailKind::Cutting;
-            NeedCalculationDetailRegistry::instance().insert(d);
+            NeedCalculationDetailRegistry::instance().insertWithWorkflow(d);
         }
 
         details = NeedCalculationDetailRegistry::instance().findByCalculation(calcId);

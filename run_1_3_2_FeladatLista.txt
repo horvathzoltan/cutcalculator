@@ -1,0 +1,79 @@
+⭐ NAPI FÓKUSZRA OPTIMALIZÁLT FELADATLISTA
+
+(minden pont egy tőmondatos, 2–4 órás feladat)
+
+I. Adatfelvitel – Product / NeedRule / Calculation / Detail
+
+1.  Felvinni 1 új ProductDefinition‑t a ProductTree‑be.
+2.  Felvinni 3–5 NeedRule sort egy kiválasztott termékhez.
+3.  Felvinni 1 új NeedCalculation módot egy termékhez.
+4.  Felvinni 3–5 NeedCalculationDetail formulát egy módhoz.
+5.  Tesztelni, hogy a felvitt adatok megjelennek a három toronyban.
+6.  Tesztelni, hogy a CSV import/export működik a három entitásra.
+7.  Tesztelni, hogy a registry overlay ikonok helyesen frissülnek.
+
+------------------------------------------------------------------------
+
+II. NeedCalculator – számítási motor
+
+8.  Implementálni a NeedCalculator::lookupRules(productId) függvényt.
+9.  Implementálni a NeedCalculator::lookupCalculation(productId,
+    modeName) függvényt.
+10. Implementálni a NeedCalculator::lookupDetails(calculationId)
+    függvényt.
+11. Implementálni a formula parser minimális verzióját (w, h, fixed).
+12. Implementálni a NeedCalculator::evaluateFormula(formula, width,
+    height) függvényt.
+13. Implementálni a NeedCalculator::calculate(OrderLine) fő függvényt.
+14. Implementálni az aggregálást (azonos materialId → összevonás).
+15. Tesztelni egy roletta számítást (1200×1500 mm).
+16. Tesztelni hibás formula esetén az audit jelzést.
+
+------------------------------------------------------------------------
+
+III. Order rendszer – model / repo / UI
+
+17. OrderHeader modell létrehozása (id, customerName, date, status).
+18. OrderLine modell létrehozása (productId, width, height, qty, color).
+19. OrderRepository CSV import/export implementálása.
+20. OrderService::addLine() implementálása.
+21. OrderService::calculateAll() → NeedCalculator integráció.
+22. OrderDialog UI létrehozása (termék + méret + darabszám).
+23. OrderDialog autocomplete mezők implementálása.
+24. OrderDialog → preview panel összekötése.
+25. Tesztelni egy teljes megrendelés → preview → export folyamatot.
+
+------------------------------------------------------------------------
+
+IV. Preview / Export / Audit
+
+26. PreviewView létrehozása (NeedResult lista megjelenítése).
+27. PreviewView aggregált nézet implementálása.
+28. Export CSV generálása a NeedResult listából.
+29. AuditEntry modell létrehozása.
+30. AuditService::collectErrors() implementálása.
+31. AuditLogView létrehozása (hibák listázása).
+32. Tesztelni hibás adat esetén az audit pipeline‑t.
+
+------------------------------------------------------------------------
+
+V. Minőségbiztosítás / Tesztelés
+
+33. Unit teszt: NeedRule lookup működik.
+34. Unit teszt: NeedCalculation lookup működik.
+35. Unit teszt: NeedCalculationDetail lookup működik.
+36. Unit teszt: formula parser működik.
+37. Unit teszt: NeedCalculator teljes pipeline működik.
+38. Unit teszt: Order → NeedCalculator → preview működik.
+
+------------------------------------------------------------------------
+
+VI. Kényelmi funkciók (opcionális, de 2–4 órásak)
+
+39. MaterialPickerDialog finomhangolása (keresés, szűrés).
+40. ModeNameDialog duplikáció‑ellenőrzés javítása.
+41. CalculationModeDetailView formula‑színezés finomítása.
+42. OrderDialog színválasztó UI hozzáadása.
+43. OrderDialog handlerSide (bal/jobb) UI hozzáadása.
+44. PreviewView színkód megjelenítése.
+45. Export CSV fejlécének testreszabása.

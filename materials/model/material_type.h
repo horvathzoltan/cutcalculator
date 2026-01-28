@@ -24,6 +24,10 @@ public:
 
     bool operator==(const MaterialType& other) const;      // ➕ Egyenlőség
 
+    bool isValid() const {
+        return value != Type::Unknown;
+    }
+
     // 🆘 Opcionális helper metódus később:
     // QColor uiColor() const;
 };

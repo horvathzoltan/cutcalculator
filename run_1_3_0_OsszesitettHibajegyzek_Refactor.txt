@@ -1,164 +1,285 @@
-Nagyon jó irányba viszed ezt, Zoltán. A hibajegyzéked már most is
-strukturált, de még jobban optimalizálható, ha a hibákat nem “tornyok”
-szerint, hanem javítási költség és érintett fájlok minimális halmaza
-szerint csoportosítjuk.
+Zoltán, ez most egy igazi architekturális pillanat, és nagyon jó
+érzékkel választottad a 3‑as modellt.
+Ez a professzionális BOM‑motorok működési mintája: globális validáció +
+lokális generálás + ikonikus GUI‑jelzés.
 
-Az alábbi új csoportosítás célja:
+A kérésed pedig teljesen világos:
+egy funkcionális specifikációt szeretnél, ami még nem implementáció,
+hanem egy „terv‑terv”, egy kristálytiszta, pontokba szedett, átlátható
+dokumentum arról, hogy mit fogunk építeni.
 
--   minél kevesebb fájlt kelljen egyszerre megnyitni,
--   egy csoport hibái egyetlen fejben tartható kontextust igényeljenek,
--   a javítások egymást erősítsék, ne szétszórtan kelljen dolgozni.
-
-Az eredmény: 5 nagy javítási csomag, mindegyikhez külön files.txt
-listával.
+Meg is hozom.
 
 ------------------------------------------------------------------------
 
-🧩 Új, optimalizált hibacsoportok
+📘 Funkcionális specifikáció – NeedCalculationDetail mátrix validáció és automatikus generálás
 
-1) VIEW–PRESENTER SZINKRONIZÁCIÓS HIBÁK
+🎯 Cél
 
-Ezek mind ugyanarra a problémára vezethetők vissza:
-a view nem jelzi, hogy készen áll, vagy a presenter nem továbbítja az
-eseményt.
+Biztosítani, hogy a termék × mód × anyag mátrix mindig teljes legyen, és
+a felhasználó soha ne találkozzon hiányzó számítási részletekkel munka
+közben.
+A rendszer legyen:
 
-Ide tartozik: - 1.1 CalculationModesView → markReady() hiánya
-- 1.2 Presenter → DetailPresenter jelzéslánc hiánya
-- 1.3 DetailPresenter nem állította be a current_calcId‑t
-- 1.4 DetailManager → view.set_details() ki volt kommentelve
-- 1.5 ProductTreeManager → detail reset hiányzott
-
-files.txt – View/Presenter Sync
-
-calcmodes/view/calculation_modes_view.h
-calcmodes/view/calculation_modes_view.cpp
-calcmodes/presenter/calculation_modes_presenter.h
-calcmodes/presenter/calculation_modes_presenter.cpp
-calculation/presenter/calculation_mode_detail_presenter.h
-calculation/presenter/calculation_mode_detail_presenter.cpp
-calculation/manager/calculation_mode_detail_manager.cpp
-products/view/product_tree_manager.cpp
-workbench/view/bom_workbench.cpp
+-   önjavító,
+-   auditálható,
+-   UX‑barát,
+-   skálázható,
+-   determinista.
 
 ------------------------------------------------------------------------
 
-2) OVERLAY RENDSZER + UX KONZISZTENCIA
+1) Fogalmi modell
 
-Ezek a hibák mind az overlay ikonok, overlay frissítés és overlay policy
-köré csoportosulnak.
+1.1 Mátrix definíció
 
-Ide tartozik: - 2.1 Presenter nem frissít overlay‑t registry változásra
-- 2.2 Régi overlay kód maradványok
-- 2.3 Overlay UX szabályok hiánya
-- 2.4 MaterialRequirementsPresenter overlay frissítés időzítési gond
+A mátrix minden cellája egy NeedCalculationDetail rekordot jelent:
 
-files.txt – Overlay System
+-   ProductMaster
+-   NeedCalculation (Mode)
+-   MaterialMaster
 
-ui/helpers/overlay_status_helper.h
-ui/helpers/overlay_status_helper.cpp
-ui/helpers/repository_overlay_widget.h
-ui/widgets/overlay_icon_widget.cpp
-ui/widgets/overlay_icon_widget.h
-calcmodes/presenter/calculation_modes_presenter.cpp
-calculation/presenter/calculation_mode_detail_presenter.cpp
-needs/presenter/material_requirements_presenter.cpp
-docs/overlay_ux_rules.md
+Egy cella akkor teljes, ha létezik hozzá:
 
-------------------------------------------------------------------------
+-   formula
+-   detail kind
+-   materialId
+-   needCalculationId
+-   id (GUID)
 
-3) REGISTRY WORKFLOW + DOMAIN VALIDATION
+1.2 Hiányos cella
 
-Ezek mind a registryk működéséhez, workflow‑hoz, domain validációhoz és
-persist stratégiához kapcsolódnak.
+A cella hiányos, ha:
 
-Ide tartozik: - 3.1 ProductTreeView → explicit persist() inkonzisztens
-- 3.2 CalculationModeDetailManager demo insert hibás domainnel
-- 3.3 NeedCalculationDetailRegistry include‑függőségek
-- 3.4 NeedRuleRegistry workflow audit hiány
-- 3.5 Manager nem hív persistet (ha nem automatikus)
+-   nincs NeedCalculationDetail rekord
+-   vagy a rekord sérült (pl. üres formula)
 
-files.txt – Registry Workflow
+1.3 Mátrix teljesség
 
-common/registry/base/registry_engine_base.h
-common/registry/base/registry_engine_base.cpp
-common/registry/mixins/crud_mixin.h
-common/registry/mixins/crud_workflow_mixin.h
-common/registry/mixins/connection_workflow_mixin.h
-common/registry/manager/registry_manager.h
-calculation/registry/need_calculation_detail_registry.cpp
-calcmodes/registry/need_calculation_registry.cpp
-needs/registry/need_rule_registry.cpp
-products/view/product_tree_view.cpp
-calculation/manager/calculation_mode_detail_manager.cpp
-docs/registry_contract.md
+A mátrix akkor teljes, ha minden:
+
+-   termékhez
+-   minden módhoz
+-   minden anyaghoz
+
+létezik legalább egy érvényes detail.
 
 ------------------------------------------------------------------------
 
-4) MATRIX VALIDATION + MATERIAL REQUIREMENTS
+2) Rendszer viselkedése
 
-Ezek a hibák a mátrix teljesség ellenőrzéséhez és a MaterialRequirements
-toronyhoz kapcsolódnak.
+2.1 Induláskor
 
-Ide tartozik: - MaterialRequirementsPresenter overlay időzítés
-- MatrixValidator integráció
-- MaterialRequirementsView sárga/piros jelölések
-- CalculationModeDetailPresenter _matrixComplete logika
+A rendszer:
 
-files.txt – Matrix Validation
+-   csak validál
+-   nem generál
+-   összeállít egy globális hiánylistát
+-   logolja a hiányokat (audit)
+-   a GUI nem jelzi még ikonokkal, mert a felhasználó még nem dolgozik
+    termékkel
 
-calculation/service/matrix_validator.h
-calculation/service/matrix_validator.cpp
-needs/manager/material_requirements_manager.cpp
-needs/view/material_requirements_view.cpp
-calculation/presenter/calculation_mode_detail_presenter.cpp
+Ez gyors, biztonságos, és nem takarja el a CSV import hibáit.
 
 ------------------------------------------------------------------------
 
-5) CSV IMPORT/EXPORT + REPO INTEGRÁCIÓ
+2.2 Amikor a felhasználó megnyit egy terméktípust
 
-Ezek a hibák a CSV import pipeline, audited row kezelés, domain lookup
-és repository integráció köré csoportosulnak.
+Ez a kulcspont.
 
-Ide tartozik: - NeedCalculationDetailRepository hibák
-- NeedRuleRepository audit
-- Product/Material lookup hibák
-- CSV error reporting konzisztencia
+A rendszer:
 
-files.txt – CSV Import/Export
+1.  Validálja a termékhez tartozó mátrixot
+    -   Product × Mode × Material
+    -   összeállítja a hiánylistát
+2.  Ha nincs hiány
+    -   semmi teendő
+    -   a GUI tiszta
+3.  Ha van hiány
+    -   a GUI ikonokkal jelzi a hiányt
+    -   a manager automatikusan generálja a hiányzó detail rekordokat
+    -   a registry frissül
+    -   a GUI frissül
+    -   audit log készül
 
-common/csv/csvimporter.h
-common/csv/csvimporter.cpp
-common/csv/filecontext.h
-common/csv/filecontext.cpp
-common/csv/filecontext_collector.cpp
-calculation/repository/need_calculation_detail_repository.cpp
-needs/repository/need_rule_repository.cpp
-products/repository/product_repository.cpp
-materials/repository/material_repository.cpp
-docs/three_phase_import.md
+Ez a „lokális önjavítás”.
 
 ------------------------------------------------------------------------
 
-🎯 Miért ez a legjobb csoportosítás?
+2.3 Opcionális: „Generate all missing details” menüpont
 
--   Minimális fájlhalmaz: minden csomag 5–10 fájlból áll, könnyen
-    átlátható.
--   Kognitív fókusz: egy csomag = egy gondolkodási mód (UI sync,
-    overlay, registry, matrix, CSV).
--   Párhuzamosítható: akár több fejlesztő is dolgozhat külön csomagokon.
--   A javítások egymást erősítik: pl. registry workflow rendbetétele
-    automatikusan javít overlay frissítést is.
+A felhasználó explicit kérésére:
+
+-   lefut a globális validáció
+-   a hiánylista alapján minden hiányzó detail generálódik
+-   audit log készül
+-   a GUI frissül
+
+Ez egy admin funkció.
 
 ------------------------------------------------------------------------
 
-Ha szeretnéd, elkészítem:
+3) GUI viselkedés
 
-✔ A teljes patch‑tervet mind az 5 csomagra
+3.1 Ikonikus jelzés
 
-✔ A konkrét diff‑eket (atomic patch formában)
+A sárga háttér helyett:
 
-✔ Egy “javítási roadmap” dokumentumot
+-   piros pötty
+-   ceruza ikon
+-   warning triangle
+-   tooltip: „Hiányzó számítási részlet. Automatikusan pótolva.”
 
-✔ Egy automatikus ellenőrző checklistet minden toronyhoz
+A GUI nem harsány, de egyértelmű.
 
-Csak szólj, melyikkel kezdjük.
+3.2 Tooltip tartalma
+
+-   melyik detail hiányzott
+-   milyen formula generálódott
+-   mikor
+-   milyen módon (auto / manuális)
+
+------------------------------------------------------------------------
+
+4) Validációs logika
+
+4.1 Globális validáció
+
+Bemenet: - ProductRegistry
+- NeedCalculationRegistry
+- NeedRuleRegistry
+- NeedCalculationDetailRegistry
+
+Kimenet: - QVector<MissingDetail>
+
+4.2 Lokális validáció
+
+Bemenet: - productId
+
+Kimenet: - QVector<MissingDetail>
+
+4.3 MissingDetail struktúra
+
+    struct MissingDetail {
+        QUuid productId;
+        QUuid modeId;
+        QUuid materialId;
+    };
+
+------------------------------------------------------------------------
+
+5) Generálási logika
+
+5.1 Generálás szabályai
+
+Minden hiányzó cellához:
+
+-   új GUID
+-   default formula: "w-0"
+-   default kind: Cutting
+-   needCalculationId = modeId
+-   materialId = materialId
+
+5.2 Generálás helye
+
+-   MaterialRequirementsManager
+-   CalculationModeDetailManager (ha szükséges)
+-   vagy egy külön MatrixGenerator osztály
+
+5.3 Audit
+
+Minden generált detail:
+
+-   logolva
+-   timestamp
+-   productId
+-   modeId
+-   materialId
+-   formula
+
+------------------------------------------------------------------------
+
+6) Architekturális komponensek
+
+6.1 MatrixValidator
+
+Felelőssége:
+
+-   validateAll()
+-   validateProduct(productId)
+-   validateMode(modeId)
+
+6.2 MatrixGenerator
+
+Felelőssége:
+
+-   generate(missingList)
+-   generateForProduct(productId)
+
+6.3 GUI integráció
+
+-   MaterialRequirementsView
+-   MaterialRequirementsManager
+-   CalculationModesView
+-   CalculationModeDetailView
+
+------------------------------------------------------------------------
+
+7) Nem funkcionális követelmények
+
+7.1 Teljesítmény
+
+-   validáció O(n)
+-   generálás O(missing)
+-   startup gyors marad
+
+7.2 Auditálhatóság
+
+-   minden generálás logolva
+-   minden hiány validálva
+-   CSV import hibák nem fedődnek el
+
+7.3 UX
+
+-   ikonok
+-   tooltip
+-   nem harsány
+-   nem zavaró
+
+7.4 Stabilitás
+
+-   mátrix mindig teljes
+-   számítások mindig működnek
+
+------------------------------------------------------------------------
+
+8) Kockázatok és mitigáció
+
+8.1 Túl sok automatikus generálás
+
+Mitigáció: csak lokálisan generálunk.
+
+8.2 CSV import hibák elfedése
+
+Mitigáció: startupkor csak validálunk, nem generálunk.
+
+8.3 GUI túlterhelése
+
+Mitigáció: ikonok, nem háttérszín.
+
+------------------------------------------------------------------------
+
+9) Következő lépés
+
+Ha ez a specifikáció megfelel, akkor jöhet:
+
+-   #15 patch – MatrixValidator osztály skeleton
+-   #16 patch – MatrixGenerator osztály skeleton
+-   #17 patch – GUI ikonok
+
+Mindegyik külön, tiszta, auditálható.
+
+------------------------------------------------------------------------
+
+Zoltán, ez a specifikáció most egy nagyon erős alap.
+Ha szeretnéd, finomíthatjuk, vagy mehetünk tovább a patch‑ekkel.
