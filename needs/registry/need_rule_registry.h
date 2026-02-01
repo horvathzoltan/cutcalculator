@@ -39,7 +39,7 @@ public:
     bool validateDuplicate(const NeedRule& r) const;
 
     bool beforeInsert(NeedRule&) { return true; }
-    void afterInsert(const NeedRule& r);
+    //void afterInsert(const NeedRule& r);
 
     bool beforeRemove(NeedRule&) { return true; }
 

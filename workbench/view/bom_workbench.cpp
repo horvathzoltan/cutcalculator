@@ -84,157 +84,6 @@ void BOMWorkbench::showEvent(QShowEvent* event) {
     }
 }
 
-// QToolBar* BOMWorkbench::buildTreeToolbar(QWidget* parent) {
-//     QToolBar* treeToolbar = new QToolBar("Fa műveletek", parent);
-
-//     _treeStatus = new OverlayIconWidget();
-//     _treeStatus->setBaseEmoji("📄");
-//     treeToolbar->addWidget(_treeStatus);
-
-//     QAction* addRootAction   = treeToolbar->addAction("➕ Új termékcsoport");
-//     QAction* addChildAction  = treeToolbar->addAction("➕ Új terméktípus");
-//     QAction* renameAction    = treeToolbar->addAction("✏️ Átnevezés");
-//     QAction* removeAction    = treeToolbar->addAction("🗑️ Törlés");
-
-//     connect(addRootAction,  &QAction::triggered, _treeManager, &ProductTreeManager::addRootProduct);
-//     connect(addChildAction, &QAction::triggered, _treeManager, &ProductTreeManager::addChildProduct);
-//     connect(renameAction,   &QAction::triggered, _treeManager, &ProductTreeManager::renameProduct);
-//     connect(removeAction,   &QAction::triggered, _treeManager, &ProductTreeManager::removeProduct);
-
-//     return treeToolbar;
-// }
-
-// QToolBar* BOMWorkbench::buildMaterialToolbar(QWidget* parent, MaterialRequirementsView* mat_view) {
-//     QToolBar* matToolbar = new QToolBar("Anyagszükséglet műveletek", parent);
-
-//     _matStatus = new OverlayIconWidget();
-//     _matStatus->setBaseEmoji("📄");
-//     matToolbar->addWidget(_matStatus);
-//     mat_view->setStatusWidget(_matStatus);
-//     //mat_view->updateOverlayState2();
-
-
-//     QAction* addMaterialAction    = matToolbar->addAction("➕ Anyag hozzárendelése");
-//     QAction* removeMaterialAction = matToolbar->addAction("🗑️ Anyag törlése");
-
-//     connect(addMaterialAction, &QAction::triggered, this, [this, mat_view]() {
-//         MaterialPickerDialog dlg(this);
-//         if (dlg.exec() == QDialog::Accepted) {
-//             auto res = dlg.result();
-
-//             // Registry-be is szúrjuk
-//             NeedRule rule;
-//             rule.leftId = _treeManager->currentProductId(); // productId
-//             rule.rightId = res.material_id;                 // materialId
-//             NeedRuleRegistry::instance().insert(rule);
-
-//             // View frissítés
-//             MaterialRequirementsView::RequirementRow row;
-//             row.product_id = _treeManager->currentProductId();
-//             row.product_name = _treeManager->currentProductName();
-//             row.product_barcode = _treeManager->currentProductBarcode();
-//             row.material_id = res.material_id;
-//             row.material_name = res.material_name;
-//             row.material_barcode = res.material_barcode;
-//             row.material_exists = true;
-
-//             mat_view->add_requirement(row);
-//             zEventINFO(QString("➕ Anyag hozzárendelve: %1 → %2")
-//                            .arg(row.product_name, row.material_name));
-//         }
-//     });
-
-
-//     connect(removeMaterialAction, &QAction::triggered, mat_view, [mat_view]() {
-//         mat_view->remove_selected();
-//         // Registry törlés a view signal alapján (MaterialRequirementsManager kezeli)
-//     });
-
-//     return matToolbar;
-// }
-
-// QToolBar* BOMWorkbench::buildMaterialToolbar(QWidget* parent, MaterialRequirementsView* view)
-// {
-//     Q_UNUSED(view);
-//     return _matPresenter->buildToolbar(parent);
-// }
-
-
-// QToolBar* BOMWorkbench::buildModesToolbar(QWidget* parent, CalculationModesView* modes_view)
-// {
-//     Q_UNUSED(modes_view);
-//     return _modesPresenter->buildToolbar(parent);
-// }
-
-// QToolBar* BOMWorkbench::buildDetailsToolbar(QWidget* parent, CalculationModeDetailView* detail_view) {
-//     QToolBar* detailsToolbar = new QToolBar("Formula műveletek", parent);
-
-//     _detailsStatus = new OverlayIconWidget();
-//     _detailsStatus->setBaseEmoji("📄");
-//     detailsToolbar->addWidget(_detailsStatus);
-//     detail_view->setStatusWidget(_detailsStatus);
-
-//     QAction* addDetailAction    = detailsToolbar->addAction("➕ Új formula");
-//     QAction* removeDetailAction = detailsToolbar->addAction("🗑️ Formula törlése");
-//     QAction* editDetailAction   = detailsToolbar->addAction("✏️ Formula szerkesztése");
-
-//     // Új formula hozzáadása
-//     connect(addDetailAction, &QAction::triggered, this, [this, detail_view]() {
-//         if (!_modesView)
-//             return;
-
-//         auto modeIdOpt = _modesView->currentModeId();
-//         if (modeIdOpt)
-//             emit detail_view->request_add_detail(*modeIdOpt);
-//     });
-
-//     // Formula törlése
-//     connect(removeDetailAction, &QAction::triggered, this, [detail_view]() {
-//         auto tables = detail_view->findChildren<QTableWidget*>();
-//         if (tables.isEmpty())
-//             return;
-
-//         QTableWidget* table = tables.first();
-//         auto ranges = table->selectedRanges();
-//         if (ranges.isEmpty())
-//             return;
-
-//         int row = ranges.first().topRow();
-//         QTableWidgetItem* item = table->item(row, 0);
-//         if (!item)
-//             return;
-
-//         emit detail_view->request_remove_detail(item->data(Qt::UserRole).toUuid());
-//     });
-
-//     // Formula szerkesztése
-//     connect(editDetailAction, &QAction::triggered, this, [detail_view]() {
-//         auto tables = detail_view->findChildren<QTableWidget*>();
-//         if (tables.isEmpty())
-//             return;
-
-//         QTableWidget* table = tables.first();
-//         auto ranges = table->selectedRanges();
-//         if (ranges.isEmpty())
-//             return;
-
-//         int row = ranges.first().topRow();
-//         QTableWidgetItem* item = table->item(row, 0);
-//         if (!item)
-//             return;
-
-//         emit detail_view->request_edit_formula(item->data(Qt::UserRole).toUuid());
-//     });
-
-//     return detailsToolbar;
-// }
-
-// QToolBar* BOMWorkbench::buildDetailsToolbar(QWidget* parent, CalculationModeDetailView* view)
-// {
-//     Q_UNUSED(view);
-//     return _detailPresenter->buildToolbar(parent);
-// }
-
 
 void BOMWorkbench::buildLeftPanel() {
     auto* leftWidget = new QWidget(_splitter);
@@ -315,13 +164,8 @@ void BOMWorkbench::buildRightPanel() {
     QObject::connect(_modesPresenter, SIGNAL(modeSelected(std::optional<QUuid>)),
                      _detailPresenter, SLOT(onModeSelected(std::optional<QUuid>)));
 
-
-    // wiring: product selection → NeedRules + Modes refresh
-    // connect(_treeManager, &ProductTreeManager::currentProductChanged,
-    //         this, [this](const QUuid& id, const QString& name, const QString& barcode) {
-    //             if (_matManager)   _matManager->refreshForProduct(id, name, barcode);
-    //             if (_modesManager) _modesManager->refreshForProduct(id, name, barcode);
-    //         });
+    connect(_modesPresenter, &CalculationModesPresenter::modeActivatedForDetails,
+            _detailPresenter, &CalculationModeDetailPresenter::onModeSelected);
 
     connect(_treeManager, &ProductTreeManager::currentProductChanged,
             this, [this]() {
@@ -329,71 +173,12 @@ void BOMWorkbench::buildRightPanel() {
                 if (_modesPresenter) _modesPresenter->refreshOverlayOnly();
                 if (_detailView) _detailView->set_details({});
                 if (_detailPresenter) _detailPresenter->refreshOverlayOnly();
-            });
-
-    // wiring: mode selection → details refresh
-    // connect(_modesView, &CalculationModesView::selection_changed,
-    //         this, [this](std::optional<QUuid> modeId) {
-    //             if (!modeId) {
-    //                 _detailView->set_details({});
-    //                 return;
-    //             }
-    //             const NeedCalculation *mode =
-    //                 NeedCalculationRegistry::instance().findById(*modeId);
-    //             QString modeName = mode ? mode->name : QString("unknown");
-    //             _detailManager->refreshForCalculation(*modeId, modeName);
-    //         });
-    // connect(_modesView, &CalculationModesView::selection_changed,
-    //         this, [this](std::optional<QUuid> modeId) {
-    //     if (!modeId) {
-    //         _detailView->set_details({});
-    //         return;
-    //     }
-
-    //             const NeedCalculation *mode =
-    //                 NeedCalculationRegistry::instance().findById(*modeId);
-    //             QString modeName = mode ? mode->name : QString("unknown");
-    //             _detailPresenter->refreshForCalculation(*modeId, modeName);
-    //         });
-
+            });   
 
     zEventINFO("🧱 BOMWorkbench right panel built (vertical left + details right)");
 }
 
 
-// void BOMWorkbench::restoreState() {
-//     if (_leftVerticalSplitter) {
-//         QByteArray leftState = SettingsManager::instance().leftVerticalSplitterState();
-//         if (!leftState.isEmpty()) _leftVerticalSplitter->restoreState(leftState);
-//     }
-
-//     if (_splitter) {
-//         QByteArray splitterState = SettingsManager::instance().productTypesSplitterState();
-//         if (!splitterState.isEmpty()) _splitter->restoreState(splitterState);
-//     }
-//     if (_rightMainSplitter) {
-//         QByteArray rightState = SettingsManager::instance().mainSplitterState();
-//         if (!rightState.isEmpty()) _rightMainSplitter->restoreState(rightState);
-//     }
-//     // a startupmanagerben betöltésre kerülnek!
-//     //NeedRuleRepository::load();
-//     if (_treeView && _treeView->header()) {
-//         QByteArray headerState = SettingsManager::instance().productTreeHeaderState();
-//         if (!headerState.isEmpty()) _treeView->header()->restoreState(headerState);
-//     }
-//     zEventINFO("BOMWorkbench state restored");
-// }
-
-// void BOMWorkbench::saveState() {
-//     if (_leftVerticalSplitter)
-//         SettingsManager::instance().setLeftVerticalSplitterState(_leftVerticalSplitter->saveState());
-//     if (_splitter) SettingsManager::instance().setProductTypesSplitterState(_splitter->saveState());
-//     if (_rightMainSplitter) SettingsManager::instance().setMainSplitterState(_rightMainSplitter->saveState());
-//     if (_treeView && _treeView->header())
-//         SettingsManager::instance().setProductTreeHeaderState(_treeView->header()->saveState());
-//     SettingsManager::instance().save();
-//     zEventINFO("BOMWorkbench state saved");
-// }
 void BOMWorkbench::restoreState()
 {
     const QString profile =
@@ -496,11 +281,6 @@ void BOMWorkbench::saveState()
 
     zEventINFO("BOMWorkbench state saved (percent-based + snapshot-aware)");
 }
-
-// void BOMWorkbench::closeEvent(QCloseEvent* e) {
-//     saveState();
-//     QWidget::closeEvent(e);
-// }
 
 QToolBar* BOMWorkbench::buildMaterialToolbar(QWidget* parent, MaterialRequirementsView* view)
 {

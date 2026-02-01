@@ -1,8 +1,32 @@
+Zoltán, megérkezett a táblázat — lefuttattam az állapottábla
+integritás‑ellenőrzését, és a táblázat megfelel a
+formátumkövetelményeknek.
 
-📊 Állapottábla – FRISSÍTVE (2026‑01‑28)
+Most jön a teljes napzáró a kért struktúrában.
 
-A mai nap alapján négy sor státusza változott → mindegyik 🚧 Folyamatban
-lett.
+------------------------------------------------------------------------
+
+⭐ NAPI FÓKUSZRA OPTIMALIZÁLT FELADATLISTA
+
+-   Mátrix‑komplettség architektúra (Validator + Generator) — 🚧
+-   Persist‑policy konzisztencia vizsgálata — 🚧
+-   RegistryEngineBase ↔ Mixin hook‑lánc audit — 🚧
+-   CalculationModesPresenter / View audit — ✅
+-   Startup diagnosztika (MatrixValidator_2) — ✅
+
+------------------------------------------------------------------------
+
+📊 Állapottábla – FRISSÍTVE (2026‑02‑01)
+
+A mai nap alapján három sor státusza változott:
+
+-   NeedCalculationDetail → 🚧 Folyamatban (mátrix‑komplettség vizsgálat
+    haladt)
+-   Persist‑policy konzisztencia → 🚧 Folyamatban (hiba feltárva,
+    tervezés elkezdve)
+-   RegistryEngineBase ↔ Mixin hook‑lánc → 🚧 Folyamatban
+    (persist‑modell audit haladt)
+
 Minden más sor változatlan maradt.
 
 -------------------------------------------------------------------------------
@@ -104,69 +128,74 @@ PreviewView színkód megjelenítés    📐 Tervezés        UX bővítés
 Export CSV fejléc testreszabása     📐 Tervezés        Export UX
 -------------------------------------------------------------------------------
 
+------------------------------------------------------------------------
 
 📊 Idővonalas roadmap – FRISSÍTVE
 
-A mai nap eredményei alapján:
-
--   UI‑szinkron és overlay‑lánc stabilizálása → már lezárt milestone,
-    változatlan
--   Registry‑workflow audit → haladt, de nem zárható le
--   Mátrix‑komplettség architektúra → új tervezési ág, roadmap‑szintű
-    elem
-
-A roadmap szerkezete változatlan, csak a státuszok frissültek.
+-   UI‑szinkron és overlay‑lánc → stabil, lezárt milestone
+-   Registry‑workflow audit → 🚧 haladt
+-   Mátrix‑komplettség architektúra → 📐 új tervezési ág
 
 ------------------------------------------------------------------------
 
 ✨ Röviden – stratégiai összefoglaló
 
-A mai nap stratégiai hozadéka:
-
--   A mátrix‑komplettség problémája domain‑szinten feltárva.
--   A 3‑lépcsős modell (globális validáció → lokális generálás →
-    ikonikus GUI‑jelzés) elfogadva.
--   A rendszer stabilitása nőtt: build‑hibák megszűntek, UI‑szinkron
-    tiszta.
--   A CSV import pipeline auditált, hibák jól láthatók.
+-   A mátrix‑komplettség architektúra domain‑szinten feltárva.
+-   A persist‑modell rejtett hibája azonosítva.
+-   A 3‑lépcsős mátrixmodell (globális validáció → lokális generálás →
+    GUI‑jelzés) stabil.
+-   A Presenter–View pipeline auditált és tiszta.
+-   A CSV import pipeline átlátható és auditált.
 
 ------------------------------------------------------------------------
 
 📌 Mai eredmények – részletes taktikai napzáró
 
--   MaterialPickerDialog ODR‑hiba megszüntetve
--   Double‑click esemény domain‑helyesítve
--   Mátrix‑komplettség UX‑problémája feltárva
--   MatrixValidator + MatrixGenerator architektúra előkészítve
--   CSV import hibák auditálva
--   Presenter‑lánc stabilizálva
+-   MatrixValidator audit → kész
+-   MatrixGenerator audit → kész
+-   Presenter–View UUID‑alapú jelzés → stabil
+-   Persist‑modell mismatch feltárva
+-   RegistryEngineBase ↔ Mixin audit elkezdve
+-   Detail view ürességének okai feltárva
+-   Auto‑persist szükségessége igazolva
+-   Startup diagnosztika működik
 
 ------------------------------------------------------------------------
 
 🎯 Prioritási sorrend – fókuszpont lista
 
-1.  MatrixValidator tervezése
-2.  MatrixGenerator tervezése
-3.  Mátrix‑jelzés ikonikus UX‑re cserélése
-4.  NeedRuleRegistry workflow audit folytatása
-5.  Persist‑policy konzisztencia lezárása
+1.  Persist‑aware CRUD API (insertAndPersist)
+2.  MatrixGenerator átállítása persist‑aware működésre
+3.  RegistryEngineBase ↔ Mixin hook‑lánc tisztázása
+4.  lookupRules / lookupCalculation / lookupDetails
+5.  MatrixValidator részletes specifikáció
 
 ------------------------------------------------------------------------
 
 🚀 Sprint fókusz + 👉 Holnap fókusz
 
-Sprint fókusz: - Mátrix‑komplettség architektúra (Validator +
-Generator) - Registry‑workflow audit - Presenter‑szintű overlay‑policy
-véglegesítése
+Sprint fókusz:
 
-Holnap fókusz: - lookupRules(productId)
-- lookupCalculation(productId, modeName)
-- lookupDetails(calculationId)
-- MatrixValidator részletes specifikáció
+-   Mátrix‑komplettség architektúra
+-   Persist‑policy konzisztencia
+-   Registry‑workflow audit
+-   Presenter‑szintű overlay‑policy véglegesítése
+
+Holnap fókusz:
+
+-   lookupRules(productId)
+-   lookupCalculation(productId, modeName)
+-   lookupDetails(calculationId)
+-   MatrixValidator specifikáció mélyítése
 
 ------------------------------------------------------------------------
 
 💾 Git commit subject
 
-    StateTable update: matrix completeness + workflow progress
+    StateTable update: persist model audit + matrix workflow
 
+------------------------------------------------------------------------
+
+Zoltán, ez egy nagyon erős nap volt — a mátrix‑architektúra most már
+tényleg auditálható, és a persist‑modell tisztázása holnapra egy
+kristálytiszta, megoldható feladat.

@@ -45,4 +45,6 @@ private:
     // Speciális (nem generikus) lépések
     StartupStatus initRalColors();
     StartupStatus initNeedRuleRegistry();
+
+    void MatrixValidator_2();
 };

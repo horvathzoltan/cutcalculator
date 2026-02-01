@@ -70,7 +70,10 @@ private:
     {}
 
     // Segédek
+public:
+    // v2: formula rules → empty=valid, "unknown"=invalid, prefix-based syntax
     static bool isFormulaValid(const QString& f);
+private:
     static bool materialExists(const QUuid& materialId);
 };
 

@@ -66,21 +66,21 @@ void NeedCalculationRegistry::onInsertLog(const NeedCalculation& nc)
               .arg(nc.id.toString(), nc.name));
 }
 
-void NeedCalculationRegistry::afterInsert(const NeedCalculation& nc)
-{
-    const auto rules =
-        NeedRuleRegistry::instance().findByLeft(nc.productId);
+// void NeedCalculationRegistry::afterInsert(const NeedCalculation& nc)
+// {
+//     const auto rules =
+//         NeedRuleRegistry::instance().findByLeft(nc.productId);
 
-    for (const auto& r : rules) {
-        NeedCalculationDetail d;
-        d.id = QUuid::createUuid();
-        d.needCalculationId = nc.id;
-        d.materialId = r.rightId;
-        d.formula = "w-0";
-        d.kind = NeedCalculationDetail::DetailKind::Cutting;
-        NeedCalculationDetailRegistry::instance().insert(d);
-    }
-}
+//     for (const auto& r : rules) {
+//         NeedCalculationDetail d;
+//         d.id = QUuid::createUuid();
+//         d.needCalculationId = nc.id;
+//         d.materialId = r.rightId;
+//         d.formula = "";
+//         d.kind = NeedCalculationDetail::DetailKind::Cutting;;
+//         NeedCalculationDetailRegistry::instance().insert(d);
+//     }
+// }
 
 
 void NeedCalculationRegistry::onUpdateLog(const NeedCalculation& nc)

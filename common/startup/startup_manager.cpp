@@ -24,6 +24,10 @@
 #include "barcodes/registry/barcode_registry.h"
 #include "barcodes/repository/barcode_repository.h"
 
+#include <QSet>              // ÚJ: affected products/modes gyűjtéséhez
+// + a MatrixValidator headerje a saját projekted szerinti elérési úttal, pl.:
+ #include "calculation/service/matrix_validator.h"
+
 // ============================================================
 // 🧩 SPECIÁLIS LÉPÉSEK (nem generikusak)
 // ============================================================
@@ -106,15 +110,41 @@ StartupStatus StartupManager::runStartupSequence()
         initRegistryGeneric<NeedCalculationDetailRegistry, NeedCalculationDetailRepository>(
             "NeedCalculationDetail CSV betöltése sikertelen.", false
             )
-};
+    };
 
-StartupStatus finalStatus = StartupStatus::success();
+    StartupStatus finalStatus = StartupStatus::success();
 
-for (const auto& s : steps) {
-    if (!s.isSuccess())
-        return s;
-    finalStatus.addWarnings(s.warnings());
+    for (const auto& s : steps) {
+        if (!s.isSuccess())
+            return s;
+        finalStatus.addWarnings(s.warnings());
+    }
+
+    // 🔎 ÚJ: MatrixValidator diagnosztika indulás után
+    MatrixValidator_2();
+
+    return finalStatus;
 }
 
-return finalStatus;
+
+void StartupManager::MatrixValidator_2(){
+    auto missing = MatrixValidator::validateAll();
+    if (!missing.isEmpty()) {
+        zInfo(QString("🧩 MatrixValidator startup diagnostics: missing details detected: %1")
+                  .arg(missing.size()));
+        zInfo("Strategy: startup diagnostic (no generation)");
+
+        QSet<QUuid> products;
+        QSet<QUuid> modes;
+
+        for (const auto& md : missing) {
+            products.insert(md.productId);
+            modes.insert(md.modeId);
+        }
+
+        zInfo(QString("🧩 Affected products: %1").arg(products.size()));
+        zInfo(QString("🧩 Affected modes: %1").arg(modes.size()));
+    } else {
+        zInfo("🧩 MatrixValidator: no missing details detected.");
+    }
 }

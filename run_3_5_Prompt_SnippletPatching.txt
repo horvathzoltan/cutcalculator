@@ -1,63 +1,114 @@
-Kérlek, készíts diff-szerű snippeteket a következő szabályok szerint.
+⭐ ÚJ PATCH‑PROMPT (RUGALMAS STRICT MODE)
 
-============================================================
-## 1) HELYMEGHATÁROZÁS
-============================================================
-Minden snippet előtt add meg:
+------------------------------------------------------------------------
 
-- fájlnév (relatív path)
-- függvénynév vagy környezet
-- opcionális sor-támpont
+0) PATCH SESSION – KONTEKSTUSVÉDELEM (RUGALMAS STRICT MODE)
 
-============================================================
-## 2) SNIPPET FORMÁTUM
-============================================================
-A snippetet mindig két külön ```cpp kódblokkon belül add meg:
+Mielőtt bármilyen diffet készítek:
+A felhasználó megadja, melyik patch‑lépést és snippetet kell végrehajtani.
+ÉN (AI) határozom meg, mely fájlok érintettek logikailag a snippethez.
+Ha bármely szükséges fájl nincs beküldve, ÉN kérem be.
+Ha a fájl már be van küldve, nem kérem újra.
+Ha egy szükséges fájl hiányzik, ezt írom:
+„A szükséges fájl hiányzik: <path>. Kérlek küldd be, és folytatjuk.”
+Soha nem találgatok: ha egy kódrészlet nincs a fájlban, azt egyértelműen jelzem.
+A diff mindig a ténylegesen beküldött fájlokra épül, nem feltételez semmit.
+Ez biztosítja, hogy a patch mindig valós, auditálható és hibamentes legyen.
 
-RÉGI (old) blokk
-ÚJ (new) blokk
+------------------------------------------------------------------------
 
-Formátum:
+1) HELYMEGHATÁROZÁS
 
-RÉGI:
-```cpp
-<régi kódrészlet pontosan>
+Minden snippet előtt megadom:
 
-ÚJ:
-```cpp
-<új kódrészlet pontosan>
-```
+-   fájlnév
+-   függvénynév vagy környezet
+-   egyértelmű szöveges támpont (pl. „a return előtt”, „a ciklus
+    elején”)
 
-Ha teljesen új kódrészletet javasolsz (nem módosítás, hanem új függvény, új blokk vagy új beszúrás),
-akkor NEM kérek RÉGI blokkot. Ilyenkor csak egyetlen ```cpp kódblokkot adj,
-amely kizárólag az ÚJ kódot tartalmazza, és előtte egyértelműen írd le,
-hogy pontosan hova kell beszúrni (fájlnév, függvénynév vagy környezet, opcionális sor-támpont).
+------------------------------------------------------------------------
 
-Ha egy kódrészletet teljes egészében törölni kell, akkor NEM kérek RÉGI–ÚJ diffet.
-Ilyenkor csak egyetlen rövid jelzést adj, hogy a megadott helyen a kódrészletet teljesen el kell távolítani,
-és ne adj hozzá semmilyen új kódot.
+2) SNIPPET FORMÁTUM
 
-A snippet:
-- csak a módosított sorokat tartalmazza
-- ne legyen benne felesleges környezeti kód
-- ne legyen benne kommentár
-- ne legyen benne magyarázat
-- ne legyen benne extra whitespace
+A snippet mindig két blokk:
 
-============================================================
-## 3) ATOMIKUS PATCH-EK
-============================================================
-Minden snippet egyetlen logikai változtatást tartalmazzon.
-Ha több változtatás van:
-- külön snippet blokk
-- egyértelmű sorrend:
+    RÉGI:
+    ```cpp
+    <csak a módosított sorok>
 
-    #1 – apply first
-    #2 – apply second
-    ...
+    ÚJ:
+    ```cpp
+    <csak a módosított sorok>
 
-============================================================
-## 4) STRICT MODE
-============================================================
-A snippetek NEM tartalmazhatnak improvizációt.
-A snippetek NEM térhetnek el a tervtől.
+-   nincs környezeti kód
+-   nincs extra whitespace
+-   nincs magyarázó komment
+-   csak a diff
+
+------------------------------------------------------------------------
+
+3) KOMMENTKEZELÉS
+
+-   Ha a módosított blokkban volt komment → frissítem.
+-   Ha elavult → módosítom.
+-   Ha a logika része → megtartom.
+-   Ha új logika kerül be → rövid kommentet adok hozzá, ha a fájl
+    stílusa is használ kommenteket.
+
+------------------------------------------------------------------------
+
+4) ÚJ FÁJL / ÚJ BLOKK
+
+Ha teljesen új kódrészlet jön:
+
+-   NEM kérek RÉGI blokkot
+-   Egyetlen ```cpp blokkban adom
+-   Előtte megadom:
+    -   fájlnév
+    -   beszúrás helye
+    -   Qt Creator sablon javaslat
+
+------------------------------------------------------------------------
+
+5) TELJES TÖRLÉS
+
+Ha egy blokkot teljesen törlünk:
+
+-   Csak ezt írom:
+    „A megadott blokkot teljes egészében el kell távolítani.”
+
+------------------------------------------------------------------------
+
+6) ATOMIKUS PATCH-EK
+
+-   Minden snippet egyetlen logikai változtatás
+-   Ha több változtatás kell → külön snippet (#1, #2, #3…)
+
+------------------------------------------------------------------------
+
+7) STRICT MODE (RUGALMAS)
+
+A snippetek:
+
+-   nem tartalmazhatnak improvizációt
+-   nem térhetnek el az implementációs tervtől
+-   nem tartalmazhatnak feltételezést
+-   nem tartalmazhatnak felesleges környezeti kódot
+
+DE:
+
+-   nem kell minden patch előtt teljes files.txt
+-   nem kell neked eldönteni, mely fájlok kellenek
+-   a rendszer automatikusan bekéri, ami hiányzik
+
+------------------------------------------------------------------------
+
+8) IMPLEMENTÁCIÓS TERV KAPCSOLAT
+
+Minden snippet előtt megadom:
+
+-   melyik patch lépéshez tartozik
+-   a patch célját 1 mondatban
+
+------------------------------------------------------------------------
+

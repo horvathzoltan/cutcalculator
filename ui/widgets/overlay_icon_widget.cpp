@@ -67,7 +67,7 @@ void OverlayIconWidget::setLogicalSize(int px)
 }
 
 // ------------------------------------------------------------
-// BaseRect kiszámítása (a dokumentum ikon valós helye)
+// BaseRect kiszámítása (a dokumentum ikon valós helye)  // v2: legacy fallback, paintEvent computes primary baseRect
 // ------------------------------------------------------------
 QRect OverlayIconWidget::computeBaseRect(const QFontMetrics& fm) const
 {
@@ -81,7 +81,7 @@ QRect OverlayIconWidget::computeBaseRect(const QFontMetrics& fm) const
 }
 
 // ------------------------------------------------------------
-// Overlay negyedek a baseRect alapján
+// Overlay negyedek a baseRect alapján  // v2: padding‑based corner positioning
 // ------------------------------------------------------------
 QRect OverlayIconWidget::cornerRectRelativeToBase(Corner c, const QRect& baseRect, const QRect& overlayBounds) const
 {
@@ -130,7 +130,7 @@ void OverlayIconWidget::paintEvent(QPaintEvent*)
     //const int S = qMin(W, H);
 
     // --------------------------------------------------------
-    // Base emoji rajzolása (baseline + vízszintes közép)
+    // Base emoji rajzolása (baseline + vízszintes közép)  // v2: 70% scale + centered baseRect
     // --------------------------------------------------------
     QRect baseRect;
 
@@ -166,13 +166,13 @@ void OverlayIconWidget::paintEvent(QPaintEvent*)
         if (_overlays[i].emoji)
             overlayCount++;
 
-    const qreal overlayRatio = (overlayCount == 1) ? 0.75 : 0.50;
+    const qreal overlayRatio = (overlayCount == 1) ? 0.75 : 0.50; // v2: single=75%, multi=50%
     //const int overlaySize_H = H * overlayRatio;
     //const int overlaySize_W = W * overlayRatio;
     QSize overlay_Size = baseRect.size() * overlayRatio;
 
     // --------------------------------------------------------
-    // Overlay rajzolása
+    // Overlay rajzolása  // v2: baseRect → overlayRect → drawPixmap
     // --------------------------------------------------------
     for (int i = 0; i < 4; ++i) {
         const auto& ov = _overlays[i];
@@ -235,7 +235,7 @@ QSize OverlayIconWidget::minimumSizeHint() const
 }
 
 // ------------------------------------------------------------
-// Emoji monokróm-e?
+// Emoji monokróm-e?  // v2: tint pipeline pre-check (mono vs multicolor)
 // ------------------------------------------------------------
 bool OverlayIconWidget::isMonochromeEmoji(const QString& emoji, const QSize& size) const
 {
@@ -272,7 +272,7 @@ bool OverlayIconWidget::isMonochromeEmoji(const QString& emoji, const QSize& siz
 }
 
 // ------------------------------------------------------------
-// Tintelő algoritmus (szürkeárnyalatos → színintenzitás)
+// Tintelő algoritmus (szürkeárnyalatos → színintenzitás)  // v2: tint pipeline (grayscale-based tinting)
 // ------------------------------------------------------------
 QPixmap OverlayIconWidget::tintedEmoji(const QString& emoji, const QSize& size, const QColor& color) const
 {
@@ -329,7 +329,7 @@ QPixmap OverlayIconWidget::renderEmoji(const QString& emoji,
     const QString fileName = emojiCacheFileName(key);
 
     // ------------------------------------------------------------
-    // 1) Memória-cache
+    // 1) Memória-cache  // v2: cache pipeline = memory → file → render
     // ------------------------------------------------------------
     if (auto it = _emojiCache.constFind(key); it != _emojiCache.constEnd()) {
         if (IS_VERBOSE_THIS()) {
@@ -341,7 +341,7 @@ QPixmap OverlayIconWidget::renderEmoji(const QString& emoji,
     }
 
     // ------------------------------------------------------------
-    // 2) Fájl-cache
+    // 2) Fájl-cache  // v2: cache pipeline step 2
     // ------------------------------------------------------------
     {
         QPixmap px;
@@ -360,7 +360,7 @@ QPixmap OverlayIconWidget::renderEmoji(const QString& emoji,
     }
 
     // ------------------------------------------------------------
-    // 3) Super-sampling render (2× méret)
+    // 3) Super-sampling render (2× méret)  // v2: cache pipeline step 3
     // ------------------------------------------------------------
     const int scale = 2;
     const QSize bigSize = targetSize * scale;
@@ -381,7 +381,7 @@ QPixmap OverlayIconWidget::renderEmoji(const QString& emoji,
     QImage src = base.toImage().convertToFormat(QImage::Format_ARGB32);
 
     // ------------------------------------------------------------
-    // 4) Tight bounding box meghatározása
+    // 4) Tight bounding box meghatározása  // v2: render pipeline step 4
     // ------------------------------------------------------------
     int minX = bigSize.width();
     int minY = bigSize.height();
@@ -413,7 +413,7 @@ QPixmap OverlayIconWidget::renderEmoji(const QString& emoji,
     QImage cropped = src.copy(tight);
 
     // ------------------------------------------------------------
-    // 5) Tintelés (opcionális)
+    // 5) Tintelés (opcionális)  // v2: render pipeline step 5
     // ------------------------------------------------------------
     if (tint.has_value()) {
 
@@ -475,7 +475,7 @@ QPixmap OverlayIconWidget::renderEmoji(const QString& emoji,
     }
 
     // ------------------------------------------------------------
-    // 6) Visszakicsinyítés a targetSize-re
+    // 6) Visszakicsinyítés a targetSize-re  // v2: render pipeline step 6
     // ------------------------------------------------------------
     QPixmap finalPx = QPixmap::fromImage(cropped)
                           .scaled(targetSize,
@@ -485,7 +485,7 @@ QPixmap OverlayIconWidget::renderEmoji(const QString& emoji,
     finalPx.setDevicePixelRatio(devicePixelRatioF());
 
     // ------------------------------------------------------------
-    // 7) Cache-be mentés (memória + fájl)
+    // 7) Cache-be mentés (memória + fájl)  // v2: render pipeline step 7
     // ------------------------------------------------------------
     _emojiCache.insert(key, finalPx);
     finalPx.save(fileName, "PNG");

@@ -38,8 +38,8 @@ public:
     void setBaseEmoji(const QString& emoji);
 
     // Overlay layer
-    void setOverlay(Corner c, const QString& emoji, const QColor& color); // színezett overlay
-    void setOverlay(Corner c, const QString& emoji); // színezés nélküli overlay
+    void setOverlay(Corner c, const QString& emoji, const QColor& color); // v2: tint is per-overlay, no global default
+    void setOverlay(Corner c, const QString& emoji); // v2: no tint → render original emoji
     void clearOverlay(Corner c);
 
     void setPadding(int px);
@@ -52,7 +52,7 @@ protected:
     void paintEvent(QPaintEvent* e) override;
 
 private:
-    QString _baseEmoji; // <<< ÚJ
+    QString _baseEmoji; // v2: default base emoji = 📄 (document)
 
     struct OverlayInfo {
         std::optional<QString> emoji;
@@ -68,7 +68,7 @@ private:
     mutable bool _cacheDirInitialized = false;
     mutable QString _cacheDirPath;
 
-//    QRect cornerRect(Corner c, int size, const QFontMetrics& fm) const;
+    //    QRect cornerRect(Corner c, int size, const QFontMetrics& fm) const; // v2: legacy API, replaced by cornerRectRelativeToBase()
     QRect cornerRect(Corner c, int size) const;
 
     QSize sizeHint() const override;

@@ -26,6 +26,11 @@ public:
 
 signals:
     void modeSelected(std::optional<QUuid> modeId);
+    void modeActivatedForDetails(QUuid modeId);
+
+public slots:
+    void on_mode_activated(const QUuid& modeId);
+
 
 private:
     CalculationModesView* _view = nullptr;
@@ -38,5 +43,5 @@ private:
     void connectRegistry();
 
     OverlayStatusHelper::State computeMatrixState();
-    bool isMatrixComplete() const;
+    //bool isMatrixComplete() const; // v2: mátrix‑komplettség ellenőrzése eltávolítva
 };

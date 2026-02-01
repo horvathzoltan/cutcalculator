@@ -162,7 +162,25 @@ QVector<CalculationModesView::ModeRow> CalculationModesManager::refreshForProduc
 
     for (const auto& m : modes) {
         int detailCount = detailCountByCalc.value(m.id, 0);
-        rows.append({ m.id, productId, m.name, detailCount });
+        /* removed: matrix completeness check */
+        /* removed: missing details list */
+
+
+        CalculationModesView::ModeRow row;
+        row.id = m.id;
+        row.productId = productId;
+        row.modeName = m.name;
+        row.detailsCount = detailCount;
+
+        // v2: missing details for this mode
+        auto missing = MatrixValidator::validateMode(m.id);
+        row.hasMissingDetails = !missing.isEmpty();
+
+        /* removed: matrix fields */
+
+
+        rows.append(row);
+
     }
 
     _view->set_current_product(productId, productName, productBarcode);

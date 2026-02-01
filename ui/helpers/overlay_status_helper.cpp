@@ -27,25 +27,24 @@ void OverlayStatusHelper::apply(OverlayIconWidget* w, State s)
         return;
 
     // Base emoji minden toronyban egységes
-    w->setBaseEmoji("📄");
+    w->setBaseEmoji("📄"); // v2: unified document base emoji
 
     switch (s) {
-    case State::EmptyRepo:
+    case State::EmptyRepo: // v2: empty repo → red ❌
         w->setOverlay(OverlayIconWidget::BottomRight, "❌");
         break;
 
-    case State::NoVisibleRows:
+    case State::NoVisibleRows: // v2: no visible rows → yellow 🟡
         w->setOverlay(OverlayIconWidget::BottomRight, "🟡");
         break;
 
-    case State::Normal:
+    case State::Normal: // v2: normal → green 🟢
         w->setOverlay(OverlayIconWidget::BottomRight, "🟢");
         break;
 
-    case State::Incomplete:
+    case State::Incomplete: // v2: incomplete → blue 🔵
         w->setOverlay(OverlayIconWidget::BottomRight, "🔵");
         break;
     }
-
 }
 

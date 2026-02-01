@@ -42,6 +42,7 @@ private:
 
     // Segéd: UI listaépítés a registry rekordokból
     static QVector<CalculationModeDetailView::DetailRow>
-    makeRows(const QVector<NeedCalculationDetail>& details, bool matrixComplete);
+    makeRows(const QVector<NeedCalculationDetail>& details);
+
     void resetView();
 };

@@ -29,6 +29,8 @@ CalculationModeDetailPresenter::CalculationModeDetailPresenter(
      QObject::connect(this, &CalculationModeDetailPresenter::modeSelected,
                       this, &CalculationModeDetailPresenter::onModeSelected);
 
+    connect(this, &CalculationModeDetailPresenter::requestScrollToRow,
+            _view, &CalculationModeDetailView::scrollToRow);
 }
 
 QToolBar* CalculationModeDetailPresenter::buildToolbar(QWidget* parent)
@@ -81,11 +83,19 @@ QToolBar* CalculationModeDetailPresenter::buildToolbar(QWidget* parent)
 void CalculationModeDetailPresenter::refreshForCalculation(const QUuid& calcId,
                                                            const QString& modeName)
 {
-    _matrixComplete = MatrixValidator::isCalculationMatrixComplete(calcId);
     auto rows = _manager->refreshForCalculation(calcId, modeName);
 
-    _view->set_details(rows);
     refreshOverlayOnly();
+
+    int firstProblem = -1;
+    for (int i = 0; i < rows.size(); ++i) {
+        const auto& r = rows[i];
+        if (!r.materialValid || !r.formulaValid || r.formula.trimmed().isEmpty()) {
+            firstProblem = i;
+            break;
+        }
+    }
+    emit requestScrollToRow(firstProblem >= 0 ? firstProblem : 0);
 }
 
 void CalculationModeDetailPresenter::onModeSelected(std::optional<QUuid> modeId)
@@ -122,12 +132,28 @@ void CalculationModeDetailPresenter::connectRegistry()
                 NeedCalculationRegistry::instance().findById(calcId);
             QString modeName = mode ? mode->name : QString("unknown");
 
-            refreshForCalculation(calcId, modeName);
+            // újratöltjük a sorokat
+            auto rows = _manager->refreshForCalculation(calcId, modeName);
+
+            // scroll a hibás sorra
+            int firstProblem = -1;
+            for (int i = 0; i < rows.size(); ++i) {
+                const auto& r = rows[i];
+                if (!r.materialValid || !r.formulaValid) {
+                    firstProblem = i;
+                    break;
+                }
+            }
+            emit requestScrollToRow(firstProblem >= 0 ? firstProblem : 0);
+
+            refreshOverlayOnly();
         });
+
 }
 
 OverlayStatusHelper::State CalculationModeDetailPresenter::computeMatrixState()
 {
+    // v2: Overlay NEM jelzi a mátrixot, csak repoCount + visibleRows
     int repo = NeedCalculationDetailRegistry::instance().size();
     int visible = _view->rowCount();
 
@@ -137,10 +163,7 @@ OverlayStatusHelper::State CalculationModeDetailPresenter::computeMatrixState()
     if (visible == 0)
         return OverlayStatusHelper::State::NoVisibleRows;
 
-    if (!_matrixComplete)
-        return OverlayStatusHelper::State::Incomplete;
-
     return OverlayStatusHelper::State::Normal;
-
 }
+
 

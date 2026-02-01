@@ -1,3 +1,4 @@
+#include "colors/model/colorconstants.h"
 #include "event_logger_tester.h"
 
 #include <QColor>
@@ -31,12 +32,13 @@ void EventLoggerTester::testColorForPrefix()
     QColor cWarn  = adapter.colorForPrefix("WARN:");
     QColor cInfo  = adapter.colorForPrefix("INFO:");
 
-    Q_ASSERT(cError == Qt::red);
-    Q_ASSERT(cWarn  == QColor("#d98e00"));
-    Q_ASSERT(cInfo  == Qt::darkGreen);
+    Q_ASSERT(cError == ColorConstants::ColorError);
+    Q_ASSERT(cWarn  == ColorConstants::ColorWarn);
+    Q_ASSERT(cInfo  == ColorConstants::ColorInfo);
 
     zInfo("✓ testColorForPrefix OK");
 }
+
 
 bool EventLoggerTester::run()
 {

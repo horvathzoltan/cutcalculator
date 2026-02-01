@@ -1,5 +1,5 @@
 #include "needs/view/material_requirements_view.h"
-
+#include "colors/model/colorconstants.h"
 #include <QHeaderView>
 #include <QTableWidgetItem>
 #include <QGuiApplication>
@@ -161,21 +161,30 @@ void MaterialRequirementsView::set_current_product(const QUuid& product_id,
 void MaterialRequirementsView::apply_row_visuals(int row, const RequirementRow& data)
 {
     const bool materialMissing = !data.material_exists;
-    const bool matrixIncomplete = !data.matrixComplete;
+    /* removed: matrixComplete */
 
     QColor bgColor;
     QString tip;
 
     if (materialMissing) {
-        bgColor = QColor("#ffcccc"); // piros
-        tip = "Material not found in MaterialMaster!";
+        bgColor = ColorConstants::ColorRed;
+        tip = "Material missing.";
     }
-    else if (matrixIncomplete) {
-        bgColor = QColor("#fff4c2"); // sárga
-        tip = "Missing calculation detail for this rule/mode.";
+    else if (data.hasMissingDetails) {
+        bgColor = ColorConstants::ColorYellow; // missing detail
+        tip = "Missing detail(s) for this material.";
     }
+
+    /* removed: matrixIncomplete visual state */
+
     else {
         bgColor = Qt::NoBrush;
+    }
+
+    auto* materialItem = _table->item(row, 1);
+    if (materialItem) {
+        /* removed: matrixComplete icon */
+
     }
 
     for (int col = 0; col < _table->columnCount(); ++col) {
@@ -186,8 +195,6 @@ void MaterialRequirementsView::apply_row_visuals(int row, const RequirementRow& 
         }
     }
 }
-
-
 
 QString MaterialRequirementsView::format_product_cell(const RequirementRow& data) {
     // Felhasználóbarát + auditbarát – name (barcode)

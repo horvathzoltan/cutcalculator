@@ -32,5 +32,7 @@ private:
     void connectTreeStats();
     void connectRegistry();
     OverlayStatusHelper::State computeMatrixState();
-    bool isMatrixComplete() const;
+
+    // v2: mátrix‑komplettség ellenőrzése eltávolítva
+    //bool isMatrixComplete() const;
 };

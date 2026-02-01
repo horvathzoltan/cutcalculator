@@ -22,6 +22,7 @@ public:
 
 signals:
     void modeSelected(std::optional<QUuid> modeId);
+    void requestScrollToRow(int row);
 
 public slots:
     void onModeSelected(std::optional<QUuid> modeId);
@@ -31,8 +32,6 @@ private:
     CalculationModeDetailView* _view = nullptr;
     CalculationModeDetailManager* _manager = nullptr;
     RepositoryOverlayWidget<NeedCalculationDetailRegistry>* _status = nullptr;
-    bool _matrixComplete = true;
-
 
     void connectRegistry();
 

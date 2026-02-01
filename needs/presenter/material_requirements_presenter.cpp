@@ -84,6 +84,7 @@ void MaterialRequirementsPresenter::refreshForProduct(const QUuid& productId,
 
 void MaterialRequirementsPresenter::refreshOverlayOnly()
 {
+    // v2: overlay reagál a mátrix állapotára is
     _status->refresh(_view->rowCount());
 }
 
@@ -109,32 +110,31 @@ OverlayStatusHelper::State MaterialRequirementsPresenter::computeMatrixState()
     if (visible == 0)
         return OverlayStatusHelper::State::NoVisibleRows;
 
-    if (!isMatrixComplete())
-        return OverlayStatusHelper::State::Incomplete;
+    // v2: Overlay NEM jelzi a mátrixot
 
     return OverlayStatusHelper::State::Normal;
 
 }
 
-bool MaterialRequirementsPresenter::isMatrixComplete() const
-{
-    const auto rules = NeedRuleRegistry::instance().readAll();
-    const auto modes = NeedCalculationRegistry::instance().readAll();
+// bool MaterialRequirementsPresenter::isMatrixComplete() const
+// {
+//     const auto rules = NeedRuleRegistry::instance().readAll();
+//     const auto modes = NeedCalculationRegistry::instance().readAll();
 
-    for (const auto& r : rules) {
-        for (const auto& m : modes) {
-            if (m.productId != r.leftId)
-                continue;
+//     for (const auto& r : rules) {
+//         for (const auto& m : modes) {
+//             if (m.productId != r.leftId)
+//                 continue;
 
-            bool exists = NeedCalculationDetailRegistry::instance()
-                              .existsBy([&](const NeedCalculationDetail& d){
-                                  return d.needCalculationId == m.id &&
-                                         d.materialId == r.rightId;
-                              });
+//             bool exists = NeedCalculationDetailRegistry::instance()
+//                               .existsBy([&](const NeedCalculationDetail& d){
+//                                   return d.needCalculationId == m.id &&
+//                                          d.materialId == r.rightId;
+//                               });
 
-            if (!exists)
-                return false;
-        }
-    }
-    return true;
-}
+//             if (!exists)
+//                 return false;
+//         }
+//     }
+//     return true;
+// }

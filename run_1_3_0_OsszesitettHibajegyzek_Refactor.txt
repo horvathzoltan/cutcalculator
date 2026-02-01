@@ -1,285 +1,200 @@
-Zoltán, ez most egy igazi architekturális pillanat, és nagyon jó
-érzékkel választottad a 3‑as modellt.
-Ez a professzionális BOM‑motorok működési mintája: globális validáció +
-lokális generálás + ikonikus GUI‑jelzés.
-
-A kérésed pedig teljesen világos:
-egy funkcionális specifikációt szeretnél, ami még nem implementáció,
-hanem egy „terv‑terv”, egy kristálytiszta, pontokba szedett, átlátható
-dokumentum arról, hogy mit fogunk építeni.
-
-Meg is hozom.
+Nagyon szépen kirajzolódott, hogy itt már nem „egy bugot” kell javítani,
+hanem a registry + mixin + persist modell egészét kell tisztázni és
+rendbe tenni.
+Csináljunk ebből egy tiszta, auditálható tervet – pont úgy, ahogy
+szereted.
 
 ------------------------------------------------------------------------
 
-📘 Funkcionális specifikáció – NeedCalculationDetail mátrix validáció és automatikus generálás
+1. A hiba pontos leírása
 
-🎯 Cél
+Tünet:
 
-Biztosítani, hogy a termék × mód × anyag mátrix mindig teljes legyen, és
-a felhasználó soha ne találkozzon hiányzó számítási részletekkel munka
-közben.
-A rendszer legyen:
+-   Vannak registryk, ahol:
+    -   insert/update/remove → perzisztál (CSV frissül)
+-   És vannak helyzetek (pl. MatrixGenerator), ahol:
+    -   insert → csak memóriába ír, de
+    -   nem indul el a persist workflow,
+    -   újraindítás után eltűnik a módosítás.
 
--   önjavító,
--   auditálható,
--   UX‑barát,
--   skálázható,
--   determinista.
+Lényeg:
 
-------------------------------------------------------------------------
-
-1) Fogalmi modell
-
-1.1 Mátrix definíció
-
-A mátrix minden cellája egy NeedCalculationDetail rekordot jelent:
-
--   ProductMaster
--   NeedCalculation (Mode)
--   MaterialMaster
-
-Egy cella akkor teljes, ha létezik hozzá:
-
--   formula
--   detail kind
--   materialId
--   needCalculationId
--   id (GUID)
-
-1.2 Hiányos cella
-
-A cella hiányos, ha:
-
--   nincs NeedCalculationDetail rekord
--   vagy a rekord sérült (pl. üres formula)
-
-1.3 Mátrix teljesség
-
-A mátrix akkor teljes, ha minden:
-
--   termékhez
--   minden módhoz
--   minden anyaghoz
-
-létezik legalább egy érvényes detail.
+-   Ugyanaz az „insert” fogalom kétféleképpen viselkedik:
+    -   egyszer „csak runtime”,
+    -   másszor „runtime + persist”.
+-   Ez rejtett, nem dokumentált különbség, ami:
+    -   megkerülhetővé teszi a persist workflow-t,
+    -   és teljesen jogosan kelt benned bizalmatlanságot.
 
 ------------------------------------------------------------------------
 
-2) Rendszer viselkedése
+2. Miért kritikus ez?
 
-2.1 Induláskor
+-   A registryk a te világodban nem csak cache-ek, hanem:
+    -   a „rendszer állapotának” reprezentációi.
+-   A persist (CSV) pedig:
+    -   a „legutóbbi ismert jó állapot” tárolója.
+-   Ha a registry CRUD műveletei nem konzisztensen perzisztálnak:
+    -   a fejlesztő nem tudja, mikor marad meg valami,
+    -   a mátrix‑generálás „látszólag működik, valójában elvész”,
+    -   az egész rendszer auditálhatósága sérül.
 
-A rendszer:
-
--   csak validál
--   nem generál
--   összeállít egy globális hiánylistát
--   logolja a hiányokat (audit)
--   a GUI nem jelzi még ikonokkal, mert a felhasználó még nem dolgozik
-    termékkel
-
-Ez gyors, biztonságos, és nem takarja el a CSV import hibáit.
+Ez nem csak technikai, hanem bizalmi probléma is.
 
 ------------------------------------------------------------------------
 
-2.2 Amikor a felhasználó megnyit egy terméktípust
+3. Terv 1 – A registry + mixin + CRUD modell vizsgálata
 
-Ez a kulcspont.
+Cél: feltárni, hol és hogyan válik szét a perzisztáló és nem perzisztáló
+insert.
 
-A rendszer:
+Lépések:
 
-1.  Validálja a termékhez tartozó mátrixot
-    -   Product × Mode × Material
-    -   összeállítja a hiánylistát
-2.  Ha nincs hiány
-    -   semmi teendő
-    -   a GUI tiszta
-3.  Ha van hiány
-    -   a GUI ikonokkal jelzi a hiányt
-    -   a manager automatikusan generálja a hiányzó detail rekordokat
-    -   a registry frissül
-    -   a GUI frissül
-    -   audit log készül
+1.  Azonosítsuk a központi bázist:
+    -   RegistryEngineBase
+    -   RepositoryEngineBase
+    -   CrudMixin / CrudRegistryMixin / hasonló nevű mixinek
+2.  Listázzuk ki:
+    -   melyik registry milyen mixineket használ (Material, Product,
+        NeedCalculation, NeedCalculationDetail, stb.)
+    -   melyik mixin:
+        -   hív-e Repository::save()-et,
+        -   állít-e dirty flaget,
+        -   triggerel-e onItemsChanged()-et.
+3.  Különítsük el:
+    -   perzisztáló CRUD útvonalak (UI-ból hívott műveletek),
+    -   nem perzisztáló CRUD útvonalak (pl. MatrixGenerator, script,
+        batch).
+4.  Dokumentáljuk:
+    -   „Melyik registryben MIT jelent az, hogy insert()?”
+    -   Van-e külön:
+        -   insert() vs insertAndPersist(),
+        -   vagy implicit „néha persistál, néha nem”.
 
-Ez a „lokális önjavítás”.
+Ebből lesz egy registry_persist_model.md, ami kimondja:
 
-------------------------------------------------------------------------
-
-2.3 Opcionális: „Generate all missing details” menüpont
-
-A felhasználó explicit kérésére:
-
--   lefut a globális validáció
--   a hiánylista alapján minden hiányzó detail generálódik
--   audit log készül
--   a GUI frissül
-
-Ez egy admin funkció.
-
-------------------------------------------------------------------------
-
-3) GUI viselkedés
-
-3.1 Ikonikus jelzés
-
-A sárga háttér helyett:
-
--   piros pötty
--   ceruza ikon
--   warning triangle
--   tooltip: „Hiányzó számítási részlet. Automatikusan pótolva.”
-
-A GUI nem harsány, de egyértelmű.
-
-3.2 Tooltip tartalma
-
--   melyik detail hiányzott
--   milyen formula generálódott
--   mikor
--   milyen módon (auto / manuális)
+  „Egy registryben CRUD művelet csak akkor perzisztál, ha X mixin van
+  rajta, és Y kódrészen keresztül hívjuk.”
 
 ------------------------------------------------------------------------
 
-4) Validációs logika
+4. Terv 2 – A hiba rendszerszintű leírása
 
-4.1 Globális validáció
+Ezt érdemes külön, tisztán leírni (pl. matrix_persist_bug.md):
 
-Bemenet: - ProductRegistry
-- NeedCalculationRegistry
-- NeedRuleRegistry
-- NeedCalculationDetailRegistry
+Röviden:
 
-Kimenet: - QVector<MissingDetail>
+-   A MatrixGenerator közvetlenül hívja a
+    NeedCalculationDetailRegistry::insert()-et.
+-   Ez az insert:
+    -   nem indít persist workflow-t,
+    -   nem hívja a repository-t,
+    -   nem garantálja, hogy a változás túléli az újraindítást.
+-   A fejlesztő (te) joggal feltételezte, hogy:
+    -   „ha registrybe insertálok, az perzisztálódik”.
+-   A valóság: nem egységes a szerződés a registry és a persist között.
 
-4.2 Lokális validáció
+Kulcsmondat:
 
-Bemenet: - productId
-
-Kimenet: - QVector<MissingDetail>
-
-4.3 MissingDetail struktúra
-
-    struct MissingDetail {
-        QUuid productId;
-        QUuid modeId;
-        QUuid materialId;
-    };
+  „A registry CRUD API-ja jelenleg nem garantálja, hogy minden
+  insert/update/remove perzisztálódik – ez implicit, mixin-függő, és
+  megkerülhető.”
 
 ------------------------------------------------------------------------
 
-5) Generálási logika
+5. Terv 3 – A hiba javításának architekturális terve
 
-5.1 Generálás szabályai
+Itt két szintet kell szétválasztani:
 
-Minden hiányzó cellához:
+5.1. Szerződés szint – mit jelent a CRUD?
 
--   új GUID
--   default formula: "w-0"
--   default kind: Cutting
--   needCalculationId = modeId
--   materialId = materialId
+Döntést kell hozni:
 
-5.2 Generálás helye
+-   A) „Registry CRUD = mindig persistáló művelet”
+-   B) „Registry CRUD = csak runtime, külön API a persistre”
+-   C) „Kettő külön API:
+    -   insert() → runtime only
+    -   insertAndPersist() → runtime + persist”
 
--   MaterialRequirementsManager
--   CalculationModeDetailManager (ha szükséges)
--   vagy egy külön MatrixGenerator osztály
+A te gondolkodásod, a mátrix, és az eddigi workflow alapján:
 
-5.3 Audit
+-   A mátrix generálása adatbázis-művelet, nem „ideiglenes runtime
+    hack”.
+-   A registryt nem script cache-nek, hanem „üzemi állapotnak” kezeled.
+-   Ezért a legkonzisztensebb modell:
 
-Minden generált detail:
+👉 C) Két külön API, de nagyon szigorú szerződéssel:
 
--   logolva
--   timestamp
--   productId
--   modeId
--   materialId
--   formula
+-   insert() → csak belső, ritkán használt, explicit dokumentált.
+-   insertAndPersist() → az alapértelmezett, UI és üzemi logika által
+    használt útvonal.
 
-------------------------------------------------------------------------
+5.2. Technikai szint – hogyan vezetjük be?
 
-6) Architekturális komponensek
+1.  A NeedCalculationDetailRegistry (és később a többi) kapjon:
 
-6.1 MatrixValidator
+        void insertAndPersist(const NeedCalculationDetail& d);
 
-Felelőssége:
+    ami:
 
--   validateAll()
--   validateProduct(productId)
--   validateMode(modeId)
+    -   hívja a belső insert()-et,
+    -   beállítja a dirty flaget,
+    -   hívja a repository.save()-et,
+    -   triggereli az onItemsChanged()-et.
 
-6.2 MatrixGenerator
+2.  A MatrixGenerator SOHA ne hívja közvetlenül a sima insert()-et, csak
+    az insertAndPersist()-et.
 
-Felelőssége:
+3.  Később (ha akarod) a sima insert()-et:
 
--   generate(missingList)
--   generateForProduct(productId)
-
-6.3 GUI integráció
-
--   MaterialRequirementsView
--   MaterialRequirementsManager
--   CalculationModesView
--   CalculationModeDetailView
+    -   vagy protected-dé tesszük,
+    -   vagy „internal only” kommenttel látjuk el,
+    -   vagy statikusan elemezzük, hol használják.
 
 ------------------------------------------------------------------------
 
-7) Nem funkcionális követelmények
+6. Terv 4 – Patch terv (lépésről lépésre)
 
-7.1 Teljesítmény
+Ez lesz majd a konkrét PATCH terv (amikor odaérünk):
 
--   validáció O(n)
--   generálás O(missing)
--   startup gyors marad
-
-7.2 Auditálhatóság
-
--   minden generálás logolva
--   minden hiány validálva
--   CSV import hibák nem fedődnek el
-
-7.3 UX
-
--   ikonok
--   tooltip
--   nem harsány
--   nem zavaró
-
-7.4 Stabilitás
-
--   mátrix mindig teljes
--   számítások mindig működnek
+1.  Dokumentáció:
+    -   registry_persist_model.md – leírja a jelenlegi modellt.
+    -   matrix_persist_bug.md – leírja a konkrét mátrix‑persist hibát.
+2.  Registry API bővítés:
+    -   NeedCalculationDetailRegistry::insertAndPersist() bevezetése.
+    -   belül: insert() + Repository::save() + onItemsChanged().
+3.  MatrixGenerator átállítása:
+    -   insert(d) → insertAndPersist(d).
+4.  Audit:
+    -   generálás után:
+        -   registry size nő,
+        -   CSV frissül,
+        -   újraindítás után is megmaradnak a detail rekordok.
+5.  Későbbi lépés (ha akarod):
+    -   a többi registryre is bevezetni a *AndPersist() mintát,
+    -   a sima insert()-et „low-level, internal” API-vá minősíteni.
 
 ------------------------------------------------------------------------
 
-8) Kockázatok és mitigáció
+7. Rövid válasz a két kulcsmondatodra
 
-8.1 Túl sok automatikus generálás
+  „miért van benne perzisztáló és nem perzisztáló insert?”
 
-Mitigáció: csak lokálisan generálunk.
+Mert a persist viselkedés implicit, mixin-függő, és nincs egységes
+szerződés a CRUD API-ra.
+Ez most bukott ki a MatrixGenerator miatt, ami megkerüli a „UI‑s,
+persistáló” útvonalat.
 
-8.2 CSV import hibák elfedése
+  „először terv kell”
 
-Mitigáció: startupkor csak validálunk, nem generálunk.
-
-8.3 GUI túlterhelése
-
-Mitigáció: ikonok, nem háttérszín.
-
-------------------------------------------------------------------------
-
-9) Következő lépés
-
-Ha ez a specifikáció megfelel, akkor jöhet:
-
--   #15 patch – MatrixValidator osztály skeleton
--   #16 patch – MatrixGenerator osztály skeleton
--   #17 patch – GUI ikonok
-
-Mindegyik külön, tiszta, auditálható.
+Teljesen igazad van.
+A fenti 4 terv (modellvizsgálat, hiba-leírás, architekturális döntés,
+patch-terv) pont ezt adja meg.
 
 ------------------------------------------------------------------------
 
-Zoltán, ez a specifikáció most egy nagyon erős alap.
-Ha szeretnéd, finomíthatjuk, vagy mehetünk tovább a patch‑ekkel.
+Ha szeretnéd, a következő körben megírhatjuk:
+
+-   a registry_persist_model.md vázát,
+-   és a matrix_persist_bug.md első verzióját – úgy, hogy akár a
+    csapatnak is odaadható legyen.

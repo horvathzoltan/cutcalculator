@@ -1,6 +1,8 @@
+#include "colors/model/colorconstants.h"
 #include "calcmodes/view/calculation_modes_view.h"
 #include <QHeaderView>
 #include <QTableWidgetItem>
+#include "mode_row_delegate.h"
 
 CalculationModesView::CalculationModesView(QWidget* parent)
     : QWidget(parent)
@@ -15,7 +17,29 @@ CalculationModesView::CalculationModesView(QWidget* parent)
     connect(_table, &QTableWidget::itemSelectionChanged, this, [this]() {
         on_selection_changed();
     });
+
+    _table->setItemDelegate(new ModeRowDelegate(_table));
+    _table->setMouseTracking(true); // hover működjön
+
+    connect(_table, &QTableWidget::itemDoubleClicked,
+            this, &CalculationModesView::on_item_double_clicked);
+
 }
+
+void CalculationModesView::on_item_double_clicked(QTableWidgetItem* item)
+{
+    if (!item)
+        return;
+
+    int row = item->row();
+    auto* idItem = _table->item(row, 0);
+    if (!idItem)
+        return;
+
+    QUuid modeId = idItem->data(Qt::UserRole).toUuid();
+    emit modeActivated(modeId);
+}
+
 
 void CalculationModesView::setup_table() {
     _table->setColumnCount(2);
@@ -32,14 +56,61 @@ void CalculationModesView::setup_table() {
 void CalculationModesView::set_modes(const QVector<ModeRow>& rows) {
     _table->clearContents();
     _table->setRowCount(rows.size());
-    for (int i=0; i<rows.size(); ++i) {
+
+    for (int i = 0; i < rows.size(); ++i) {
         const auto& r = rows[i];
-        auto* modeItem = new QTableWidgetItem(r.modeName);
+
+        // --- Státusz ikon ---
+        QString icon;
+        if (r.hasMissingDetails) {
+            icon = "🔴 ";
+        }
+        else if (r.detailsCount == 0) {
+            icon = "🟡 ";
+        }
+        else {
+            icon = "🟢 "; // all good
+        }
+
+        QString label = icon + r.modeName;
+
+        auto* modeItem = new QTableWidgetItem(label);
         auto* cntItem  = new QTableWidgetItem(QString::number(r.detailsCount));
 
+        QString tip;
+        if (r.hasMissingDetails) {
+            tip = "Missing detail(s)";
+        }
+        else if (r.detailsCount == 0) {
+            tip = "Unknown formula(s)";
+        }
+        else {
+            tip = "All details OK";
+        }
+
+        if (!tip.isEmpty())
+            modeItem->setToolTip(tip);
+
+
+        if (r.hasMissingDetails) {
+            modeItem->setBackground(ColorConstants::ColorRed);
+            cntItem->setBackground(ColorConstants::ColorRed);
+        }
+        else if (r.detailsCount == 0) {
+            modeItem->setBackground(ColorConstants::ColorYellow);
+            cntItem->setBackground(ColorConstants::ColorYellow);
+        }
+
+        /* removed: matrix-incomplete background */
+        else {
+            modeItem->setBackground(Qt::NoBrush);
+            cntItem->setBackground(Qt::NoBrush);
+        }
+
+
         modeItem->setData(Qt::UserRole, r.id);
-        _table->setItem(i,0,modeItem);
-        _table->setItem(i,1,cntItem);
+        _table->setItem(i, 0, modeItem);
+        _table->setItem(i, 1, cntItem);
     }
 }
 

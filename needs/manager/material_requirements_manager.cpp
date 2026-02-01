@@ -110,7 +110,7 @@ MaterialRequirementsManager::makeRowsForProduct(const QUuid& productId,
 {
     QVector<MaterialRequirementsView::RequirementRow> out;
     const auto rulesByProduct = NeedRuleRegistry::instance().findByLeft(productId);
-    bool matrixComplete = MatrixValidator::isProductMatrixComplete(productId);
+    /* removed: matrix completeness */
 
     for (const auto& rule : rulesByProduct) {
         MaterialRequirementsView::RequirementRow r;
@@ -129,17 +129,24 @@ MaterialRequirementsManager::makeRowsForProduct(const QUuid& productId,
             r.material_name = mat.name;
             r.material_barcode = mat.barcode;
             r.material_exists = true;
-            r.matrixComplete = matrixComplete;
+            /* removed: matrixComplete */
         } else {
             r.material_name = "UNKNOWN";
             r.material_barcode = "";
             r.material_exists = false;
-            r.matrixComplete = matrixComplete;
+            /* removed: matrixComplete */
         }
+
+        // v2: check if any mode for this product is missing this material
+        auto missing = MatrixValidator::validateProduct(productId);
+        bool missingForThisMaterial = std::any_of(
+            missing.begin(), missing.end(),
+            [&](const MissingDetail& md){ return md.materialId == r.material_id; });
+
+        r.hasMissingDetails = missingForThisMaterial;
 
         out.append(r);
     }
-
     return out;
 }
 
@@ -147,6 +154,8 @@ QVector<MaterialRequirementsView::RequirementRow> MaterialRequirementsManager::r
                                                     const QString& productName,
                                                     const QString& productBarcode)
 {
+    // v2: Manager nem végez mátrix-validációt
+
     _currentProductId = productId;
     _currentProductName = productName;
     _currentProductBarcode = productBarcode;
@@ -154,15 +163,7 @@ QVector<MaterialRequirementsView::RequirementRow> MaterialRequirementsManager::r
     QVector<MaterialRequirementsView::RequirementRow> rows =
         makeRowsForProduct(productId, productName, productBarcode);
 
-    //_view->set_current_product(productId, productName, productBarcode);
-    //_view->set_requirements(rows);
-
-    //int repoCount = NeedRuleRegistry::instance().size();
-    //int visibleRows = rows.size();
-    //_view->updateOverlay(repoCount, visibleRows);
-
     return rows;
-
 }
 
 

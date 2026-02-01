@@ -43,23 +43,23 @@ bool NeedRuleRegistry::validateDuplicate(const NeedRule& r) const
 }
 
 
-void NeedRuleRegistry::afterInsert(const NeedRule& r)
-{
-    const auto modes =
-        NeedCalculationRegistry::instance().findAll([&](const NeedCalculation& nc){
-            return nc.productId == r.leftId;
-        });
+// void NeedRuleRegistry::afterInsert(const NeedRule& r)
+// {
+//     const auto modes =
+//         NeedCalculationRegistry::instance().findAll([&](const NeedCalculation& nc){
+//             return nc.productId == r.leftId;
+//         });
 
-    for (const auto& m : modes) {
-        NeedCalculationDetail d;
-        d.id = QUuid::createUuid();
-        d.needCalculationId = m.id;
-        d.materialId = r.rightId;
-        d.formula = "w-0";
-        d.kind = NeedCalculationDetail::DetailKind::Cutting;
-        NeedCalculationDetailRegistry::instance().insertWithWorkflow(d);
-    }
-}
+//     for (const auto& m : modes) {
+//         NeedCalculationDetail d;
+//         d.id = QUuid::createUuid();
+//         d.needCalculationId = m.id;
+//         d.materialId = r.rightId;
+//         d.formula = "";
+//         d.kind = NeedCalculationDetail::DetailKind::Cutting;
+//         NeedCalculationDetailRegistry::instance().insertWithWorkflow(d);
+//     }
+// }
 
 
 // --- Log hookok ---

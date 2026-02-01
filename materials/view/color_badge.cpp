@@ -1,3 +1,4 @@
+#include "colors/model/colorconstants.h"
 #include "materials/view/color_badge.h"
 #include <QPainter>
 #include <QPaintEvent>
@@ -25,11 +26,13 @@ QSize ColorBadge::sizeHint() const {
 
 
 void ColorBadge::paintEvent(QPaintEvent*) {
+    static const QPen grayPen(ColorConstants::ColorGray, 1.0);
+
     QPainter p(this);
     p.setRenderHint(QPainter::Antialiasing, true);
 
     p.setBrush(_color);
-    p.setPen(QPen(QColor("#888"), 1.0));
+    p.setPen(grayPen);
 
     // Circle badge
     p.drawEllipse(rect());

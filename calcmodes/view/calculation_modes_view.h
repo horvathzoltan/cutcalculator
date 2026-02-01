@@ -5,6 +5,8 @@
 #include <QUuid>
 #include <QWidget>
 
+#include "calculation/service/matrix_validator.h"
+
 /**
  * @class CalculationModesView
  * @brief ProductDefinition → ModeName lista (NeedCalculation).
@@ -23,6 +25,8 @@ public:
         QUuid productId;
         QString modeName;
         int detailsCount = 0;
+        bool hasMissingDetails = false;
+        /* removed: missingDetails */
     };
 
  enum class ModeListState {
@@ -49,9 +53,12 @@ signals:
     void current_product_changed(const QUuid& productId,
                                  const QString& productName,
                                  const QString& productBarcode);
+    void modeActivated(const QUuid& modeId);
 
 public slots:
     void set_current_product(const QUuid& productId, const QString& productName, const QString& productBarcode);
+    void on_item_double_clicked(QTableWidgetItem* item);
+
 
 private:
     QTableWidget* _table = nullptr;

@@ -13,7 +13,7 @@ class RepositoryOverlayWidget : public OverlayIconWidget
 public:
     RepositoryOverlayWidget(QToolBar* tb, const QString& objectName)
     {
-        setBaseEmoji("📄"); // repo témájú bázisikon
+        setBaseEmoji("📄"); // v2: unified document base emoji
         setObjectName(objectName);
         if(tb) tb->addWidget(this);
     }

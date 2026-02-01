@@ -1,221 +1,706 @@
-📘 Követelményspecifikáció – Anyagszükséglet szerkesztő és számítás 🎯
-Cél A rendszer célja, hogy a terméktípusokhoz tartozó
-anyagszükségleteket és az ezekhez kapcsolódó számítási módokat
-auditálható, szerkeszthető formában kezelje.
+Zoltán, ez most egy nagyon fontos fordulópont: lezárjuk a „szétszórt,
+félig v1, félig v2” állapotot, és visszatereljük a rendszert a
+Funkcionális Specifikáció v2 szerinti, auditálható, determinisztikus
+mátrix‑logikára.
 
-Első lépés: definiáljuk, hogy egy terméktípushoz mely anyagok tartoznak
-(NeedRule).
+Amit most kapsz:
 
-Második lépés: definiáljuk, hogy az adott terméktípushoz milyen
-számítási módok érhetők el (NeedCalculation).
+1.  Egy rövid, pontonként végrehajtható helyrehozó patch‑sorozat
+    (#R1–#R4)
+    – mindegyik patch önálló, atomikus, és egymásra épül
+    – nem érinti a GUI‑patcheket (#21–#26), csak a backend‑logikát
 
-Harmadik lépés: egy számítási módon belül megadjuk, hogy az egyes
-anyagokból hogyan számoljuk ki a mennyiséget (formula).
+2.  Egy „context snapshot” dokumentációs jegyzet,
+    amelyet holnap reggel elolvasol, és azonnal tudod, hol tartottunk.
 
-🧩 Adatmodellek MaterialMaster (globális törzs)
-
-Minden alapanyag (tok, tengely, vászon, rugó, hajtómű, motor, pálca,
-záróléc).
-
-Mezők: id, name, type, size, color, weight, ralCode/hexCode.
-
-ProductDefinition (globális táblázat)
-
-Terméktípusok: napháló, sávroló, roletta.
-
-Mezők: id, parentId, name, barcode.
-
-NeedRule (kapcsolótábla)
-
-Kapcsolat: ProductDefinition ↔ MaterialMaster.
-
-Mezők: id, productId, materialId.
-
-Ez adja meg, hogy egy termékhez mely anyagok szükségesek.
-
-NeedCalculation (számítási mód)
-
-Egy adott ProductDefinitionhez tartozó számítási mód.
-
-Mezők: id, productId, modeName (pl. falc, glass, fabric, manufacturing).
-
-Ez csak a módokat sorolja fel, formula nélkül.
-
-NeedCalculationDetail (kapcsolótábla)
-
-Kapcsolat: NeedCalculation ↔ MaterialMaster.
-
-Mezők: id, needCalculationId, materialId, formula.
-
-Ez mondja meg, hogy az adott számítási módon belül az adott anyagból
-hogyan számoljuk ki a mennyiséget.
-
-Példák:
-
-Tengely: w-15
-
-Vászon: w-0
-
-Rugó: fixed:2
-
-⚙️ Funkcionális specifikáció Anyagszükséglet kezelés (NeedRule)
-
-Terméktípushoz anyagok hozzárendelése.
-
-Lista: Product ↔ Material.
-
-Audit: jelzés, ha anyag hiányzik a MaterialMasterből.
-
-Számítási módok kezelés (NeedCalculation)
-
-Terméktípushoz számítási módok hozzárendelése.
-
-Lista: Product ↔ Mode.
-
-Audit: jelzés, ha hiányzik számítási mód.
-
-Számítási mód részletek (NeedCalculationDetail)
-
-Egy adott számítási módhoz anyagok + formulák hozzárendelése.
-
-Audit: jelzés, ha formula hibás vagy hiányzik.
-
-Megrendelés feldolgozás
-
-OrderLine alapján kiválasztja a számítási módot.
-
-Lefuttatja a formulákat → NeedResult.
-
-Aggregálás: azonos ügyfél + termék + szín összevonása.
-
-*************
-🟢 Rendben, Zoltán 🦎 — frissítsük az előző tervünket, hogy tükrözze a
-mostani irányt: NeedRule + NeedCalculation + NeedCalculationDetail egy
-közös layoutban, auditbarát validációval és ikonokkal a Cutting/Kitting
-sorokhoz.
+Ez lesz a projekt új, stabil alapja.
 
 ------------------------------------------------------------------------
 
-🔄 Aktualizált végrehajtható terv
+⭐ RÖVID, PONTONKÉNT VÉGREHAJTHATÓ HELYREHOZÓ PATCH‑SOROZAT (#R1–#R4)
 
-1️⃣ Adatmodellek
+(Ez NEM kód, hanem patch‑terv. Holnap kérheted diff‑szerűen is.)
 
--   NeedRule → ProductDefinition ↔ MaterialMaster (már kész).
+------------------------------------------------------------------------
 
--   NeedCalculation → ProductDefinition ↔ CalculationMode
+#R1 – MatrixValidator v2 bevezetése (NeedRule‑alapú MissingDetail)
 
-        struct NeedCalculation {
-            QUuid id;
-            QUuid productDefinitionId;
-            QString modeName; // pl. "falc", "glass"
-        };
+🎯 Cél
 
--   NeedCalculationDetail → NeedCalculation ↔ MaterialMaster + formula
+A mátrix teljességét nem a MaterialRegistry, hanem a NeedRule.rightId
+határozza meg.
 
-        struct NeedCalculationDetail {
-            QUuid id;
-            QUuid needCalculationId;
+🔧 Teendők
+
+1.  Új fájl: matrix_missing_detail.h
+
+        struct MissingDetail {
+            QUuid productId;
+            QUuid modeId;
             QUuid materialId;
-            QString formula; // pl. "w-15", "fixed:2"
         };
 
-2️⃣ Repository réteg
+2.  MatrixValidator új API:
 
--   need_calculation_repository.h/.cpp → CSV import/export a számítási
-    módokhoz.
--   need_calculation_detail_repository.h/.cpp → CSV import/export a
-    formulákhoz.
--   Audit: jelzés, ha hiányzik vagy hibás formula.
+    -   validateProduct(productId) -> QVector<MissingDetail>
+    -   validateMode(modeId) -> QVector<MissingDetail>
+    -   validateAll() -> QVector<MissingDetail>
 
-3️⃣ Registry réteg
+3.  A régi:
 
--   NeedCalculationRegistry → CRUD számítási módokra.
--   NeedCalculationDetailRegistry → CRUD formulákra.
--   Validáció: formula nem üres, material létezik.
+    -   getMissingDetails(modeId) → eltávolítandó
+    -   isCalculationMatrixComplete() → belül az új logikát használja
+    -   isProductMatrixComplete() → szintén
 
-4️⃣ Service réteg
+🔍 Eredmény
 
--   NeedCalculator
-    -   Input: OrderLine (pl. Roletta, w=1000, h=500, qty=3).
-    -   Lookup: NeedRule → anyagok, NeedCalculation → mód,
-        NeedCalculationDetail → formulák.
-    -   Kiértékelés: futtatja a formulákat → mennyiségek.
-    -   Output: CutRequest (⚙️ fogaskerék ikon) és KitRequest (📦 doboz
-        ikon).
-    -   Audit: jelzés, ha hiányzik formula vagy számítási mód.
-
-5️⃣ View réteg (Qt UI)
-
--   Layout:
-    -   Bal felső: NeedRules (MaterialRequirementsView).
-    -   Bal alsó: NeedCalculations (CalculationModesView).
-    -   Jobb oldal: NeedCalculationDetails (CalculationModeDetailView).
--   Ikonok:
-    -   Cutting sorokhoz → ⚙️ fogaskerék.
-    -   Kitting sorokhoz → 📦 doboz.
--   Tooltip: auditbarát magyarázat („Cutting request – vágási művelet”,
-    „Kitting request – összeállítási művelet”).
-
-6️⃣ Audit funkció
-
--   Jelzés, ha:
-    -   Hiányzik számítási mód.
-    -   Hiányzik formula.
-    -   Formula hibás.
--   AuditLogView → hibák listázása.
--   Audit üzenetek központosítása (AuditMessages helper).
-
-7️⃣ Példa folyamat
-
--   OrderLine: Roletta, w=1000, h=500, qty=3.
--   NeedRule → tok, tengely, vászon, rugó, pálca.
--   NeedCalculation → "falc" mód.
--   NeedCalculationDetail → formulák:
-    -   Tengely: "w-15" → 985 mm × 3.
-    -   Vászon: "w-0" → 1000 mm × 3.
-    -   Rugó: "fixed:2" → 6 db.
-    -   Pálca: "h-10" → 490 mm × 3.
--   NeedCalculator → Cut list (⚙️) + Kitting list (📦).
--   Audit: ha hiányzik formula → ⚠️ warning.
+A validátor végre a BOM‑szabályok szerint működik, nem a teljes
+anyaglistából.
 
 ------------------------------------------------------------------------
 
-✨ Röviden
+#R2 – MatrixGenerator bevezetése + generálás kiszervezése a registry‑hookokból
 
--   NeedRule már kész.
--   Következő lépés: NeedCalculation és NeedCalculationDetail
-    bevezetése.
--   UI: közös layout → bal fent anyagszükséglet, bal lent számítási
-    módok, jobb oldalon formulák.
--   Service: NeedCalculator → CutRequest (⚙️) + KitRequest (📦).
--   Audit: központosított üzenetek, hibák riportálása.
+🎯 Cél
 
-🦎 Így a terv naprakész, végrehajtható, és a teljes pipeline (NeedRule →
-NeedCalculation → NeedCalculationDetail → NeedCalculator) auditbarát
-módon épül fel.
+A generálás nem történhet registry‑insert hookokban.
+A generálásnak két helye van:
 
-👉 Szeretnéd, hogy a következő körben készítsek egy Qt layout skeleton
-kódot (QSplitter + három view), ami mutatja, hogyan nézne ki ez a panel?
+-   termékváltáskor (lokális önjavítás)
+-   admin „Generate all missing details” funkció
 
-*************
+🔧 Teendők
 
-✨ Összefoglalás NeedRule → terméktípus ↔ anyag kapcsolatok.
+1.  Új fájlok:
 
-NeedCalculation → terméktípus ↔ számítási módok.
+    -   matrix_generator.h
+    -   matrix_generator.cpp
 
-NeedCalculationDetail → számítási mód ↔ anyag + formula.
+2.  API:
 
-NeedCalculator → megrendelésből előállítja a vágási és kitting listát.
+        class MatrixGenerator {
+        public:
+            static bool generate(const QVector<MissingDetail>& list);
+            static bool generateForProduct(const QUuid& productId);
+            static bool generateForMode(const QUuid& modeId);
+        };
 
-UI → három szint: Anyagszükséglet, Számítási módok, Számítási mód
-részletek.
+3.  A következő hookokból eltávolítani a generálást:
 
-Audit → jelzi a hiányzó vagy hibás szabályokat.
+    -   NeedCalculationRegistry::afterInsert
+    -   NeedRuleRegistry::afterInsert
 
-🦎 Így a specifikációban már határozottan látszik a megbeszélésünk
-nyoma: külön lista az anyagokra, külön lista a számítási módokra, és
-külön kapcsolótábla a módon belüli formulákra.
+4.  A generálás helye:
 
+    -   MaterialRequirementsManager::refreshForProduct
+    -   CalculationModeDetailManager::refreshForCalculation
+
+🔍 Eredmény
+
+A rendszer determinista, auditálható, és nem generál „láthatatlanul”.
+
+------------------------------------------------------------------------
+
+#R3 – Overlay‑policy véglegesítése
+
+🎯 Cél
+
+A torony overlay nem jelzi a mátrix‑komplettséget.
+A mátrix‑jelzés a módlistában és a detail‑sorokban jelenik meg.
+
+🔧 Teendők
+
+1.  OverlayStatusHelper::computeState() marad:
+    -   EmptyRepo
+    -   NoVisibleRows
+    -   Normal
+2.  A prezenterekből törölni:
+    -   computeMatrixState()
+    -   _matrixComplete overlay‑be építése
+3.  A mátrix‑jelzés helye:
+    -   CalculationModesView ikonja
+    -   CalculationModeDetailView ikonja
+
+🔍 Eredmény
+
+A torony overlay újra egységes, egyszerű, stabil.
+
+------------------------------------------------------------------------
+
+#R4 – Formula‑modell egységesítése („unknown” vs „”)
+
+🎯 Cél
+
+A rendszerben egyértelműen legyen definiálva:
+
+-   mi az „unknown” formula
+-   mi az „invalid” formula
+-   mi a „valid” formula
+
+🔧 Teendők
+
+1.  Döntés:
+    -   „unknown” = üres string
+    -   "unknown" mint explicit string → tilos (nem kell)
+2.  NeedCalculationDetailRegistry::isFormulaValid módosítása:
+    -   trimmed.isEmpty() → valid, de unknown
+    -   "unknown" → invalid (vagy eltávolítandó)
+3.  CalculationModeDetailView:
+    -   üres formula → sárga ⚠️
+    -   invalid formula → piros ❗
+    -   valid formula → zöld 🟢
+4.  A default formula generálás:
+    -   formula = "" (nem "unknown")
+
+🔍 Eredmény
+
+A formula‑modell egységes, nincs kétféle „unknown”.
+
+------------------------------------------------------------------------
+
+⭐ CONTEXT SNAPSHOT – hol tartunk ma?
+
+(Ezt holnap reggel elolvasod, és azonnal tudod, hol folytatjuk.)
+
+------------------------------------------------------------------------
+
+Állapot: 2026.01.30. – 22:40 – Debrecen
+
+✔ Mi készült el?
+
+-   DetailView UX:
+    -   inline edit
+    -   inline validation
+    -   undo/redo
+    -   syntax highlight
+    -   default formula
+    -   enter‑navigation
+-   ModesView ikonlogika
+-   DetailPresenter scrollToRow
+-   Registry update workflow
+-   Tooltip rendszer
+-   Overlay widget stabilizálása
+
+✔ Mi működik jól?
+
+-   A felhasználó kényelmesen szerkeszti a formulákat
+-   A hibák azonnal látszanak
+-   A módlistában látszik, melyik mód problémás
+-   A detail‑sorok vizuálisan konzisztenssé váltak
+-   A registry update stabil
+
+❗ Mi nincs kész?
+
+1.  MatrixValidator v2
+    – még a régi, MaterialRegistry‑alapú logika fut
+
+2.  MatrixGenerator
+    – még nem létezik
+    – generálás még registry‑hookokban történik
+
+3.  Overlay‑policy
+    – a prezenterek még mátrix‑komplettséget is jeleznek
+
+4.  Formula‑modell
+    – „unknown” és „” keveredik
+    – validátor és UX nincs teljesen szinkronban
+
+❗ Miért fontos ez?
+
+Mert a GUI‑patchek (#21–#26) kész vannak,
+de a backend‑mátrix (#1–#5) még v1‑es.
+
+A kettő együtt most „félig v1, félig v2” állapotot eredményez.
+
+✔ Mi a következő lépés?
+
+A helyrehozó patch‑sorozat (#R1–#R4) végrehajtása.
+
+------------------------------------------------------------------------
+
+⭐ Holnap reggel innen folytatjuk:
+
+-   #R1 – MatrixValidator v2 diff‑patch
+    (MissingDetail, validateProduct, validateMode, validateAll)
+
+Ha szeretnéd, holnap reggel megcsinálom a teljes diff‑szerű
+patch‑csomagot is.
+
+Rendben, Zoltán — akkor most elkészítem a végleges, teljes, konzisztens,
+implementálásra kész Funkcionális Specifikáció v2‑t, amely:
+
+-   tartalmazza az összes eddigi döntésedet,
+-   beépíti a tegnapi UX‑filozófiát,
+-   tisztán szétválasztja a mátrix‑komplettséget és a formula‑minőséget,
+-   támogatja a kontextus újraépítését fáradás esetén,
+-   és előkészíti a #15–#17 patch‑eket.
+
+A dokumentum önmagában is értelmezhető, nincs szükség előzményekre.
+
+A végén szerepel egy jegyzet a még nyitott finomhangolási kérdésekről,
+ahogy kérted.
+
+Induljunk.
+
+------------------------------------------------------------------------
+
+📘 Funkcionális specifikáció v2
+
+NeedCalculationDetail mátrix validáció, generálás és UX‑jelzés
+
+🎯 Cél
+
+A rendszer biztosítsa, hogy minden terméktípushoz a
+Product × Mode × Material mátrix:
+
+-   mindig teljes legyen,
+-   a felhasználó soha ne találkozzon hiányzó detail cellával,
+-   a hiányok és hibák vizuálisan egyértelműek legyenek,
+-   a rendszer auditálható és determinisztikus maradjon,
+-   a GUI segítse a navigációt és a hibák megtalálását.
+
+A rendszer legyen:
+
+-   önjavító,
+-   auditálható,
+-   UX‑barát,
+-   skálázható,
+-   determinista.
+
+------------------------------------------------------------------------
+
+1) Fogalmi modell
+
+1.1 A mátrix definíciója
+
+A mátrix három dimenzióból áll:
+
+-   ProductMaster (terméktípus)
+-   NeedCalculation (számítási mód)
+-   MaterialMaster (anyag)
+
+Egy cella = egy NeedCalculationDetail rekord.
+
+Egy detail akkor érvényes, ha:
+
+-   van id (GUID)
+-   van needCalculationId
+-   van materialId
+-   van formula
+-   van kind (Cutting/Kitting)
+-   a formula valid (szintaktikailag helyes)
+
+1.2 A mátrix anyaghalmaza
+
+A mátrix sorai kizárólag a NeedRule kapcsolatokból származnak:
+
+  MaterialMaster halmaz = NeedRule.rightId halmaz
+
+Ez a BOM‑logikával és a projektkóddal is összhangban van.
+
+1.3 A mátrix teljessége
+
+A mátrix akkor teljes, ha:
+
+  minden termék × minden mód × minden anyag
+  kombinációhoz létezik legalább egy detail rekord.
+
+------------------------------------------------------------------------
+
+2) Rendszer viselkedése
+
+2.1 Startup
+
+A rendszer:
+
+-   csak validál,
+-   nem generál,
+-   összeállít egy globális hiánylistát,
+-   audit logot készít,
+-   a GUI még nem jelez hiányt.
+
+Ez biztosítja, hogy a CSV import hibái nem fedődnek el.
+
+2.2 Termékválasztáskor (lokális önjavítás)
+
+A rendszer:
+
+1.  Validálja a termék mátrixát
+2.  Ha nincs hiány → nincs teendő
+3.  Ha van hiány →
+    -   a GUI jelzi a módnál (⚠️)
+    -   a rendszer automatikusan generálja a hiányzó detail cellákat
+    -   a registry frissül
+    -   a GUI frissül
+    -   audit log készül
+
+Ez a „lokális önjavítás”.
+
+2.3 Admin funkció: „Generate all missing details”
+
+-   globális validáció
+-   minden hiányzó cella generálása
+-   audit log
+-   GUI frissítés
+
+------------------------------------------------------------------------
+
+3) GUI viselkedés – új UX‑modell
+
+A mátrix‑komplettség jelzése nem a torony overlay feladata.
+A torony overlay csak repoCount/visibleRows alapján működik.
+
+A mátrix‑komplettség jelzése három szinten történik:
+
+------------------------------------------------------------------------
+
+3.1 Módok listája (NeedCalculations)
+
+Minden mód mellett egy ikon:
+
+-   🔴 ha legalább egy anyaghoz nincs detail
+-   🟡 ha unknown formula van, de minden cella létezik
+-   🟢 ha minden formula valid
+
+Ez az ikon jelzi, hogy abban a módban van‑e még dolgunk.
+
+------------------------------------------------------------------------
+
+3.2 Detail lista (NeedCalculationDetails)
+
+Minden sor (anyag) mellett:
+
+-   ⚠️ (sárga) → formula unknown (üres string)
+-   ❗ (piros) → formula invalid
+-   ✏️ → kézzel megadott, valid formula
+-   nincs ikon → minden rendben
+
+Ez a cellaszintű jelzés.
+
+------------------------------------------------------------------------
+
+3.3 Detail toolbar – globális mátrix állapot
+
+A detail panel toolbarján:
+
+-   🔴 = a mód teljesen hiányos vagy hibás
+-   🟡 = részben hiányos (unknown formula van)
+-   🟢 = teljes és valid
+
+Ez a felhasználó számára a „mód egészségi állapota”.
+
+------------------------------------------------------------------------
+
+4) Validációs logika
+
+4.1 Globális validáció
+
+Bemenet:
+
+-   ProductRegistry
+-   NeedRuleRegistry
+-   NeedCalculationRegistry
+-   NeedCalculationDetailRegistry
+
+Kimenet:
+
+    struct MissingDetail {
+        QUuid productId;
+        QUuid modeId;
+        QUuid materialId;
+    };
+
+4.2 Lokális validáció
+
+Bemenet: productId
+Kimenet: QVector
+
+4.3 Formula validáció
+
+Három állapot:
+
+1.  unknown → formula = ""
+2.  invalid → szintaktikailag hibás
+3.  valid → helyes formula
+
+------------------------------------------------------------------------
+
+5) Generálási logika
+
+5.1 Default formula filozófia → UNKNOWN
+
+A generált detail:
+
+-   formula = ""
+-   kind = Cutting (alapértelmezés)
+-   később a felhasználó tölti ki
+-   a GUI sárga ⚠️ ikonnal jelzi
+
+Ez a legőszintébb UX.
+
+5.2 Generálás helye
+
+-   külön MatrixGenerator osztály
+
+5.3 Audit
+
+Minden generált detail:
+
+-   timestamp
+-   productId
+-   modeId
+-   materialId
+-   formula (empty)
+-   „auto‑generated” flag
+
+------------------------------------------------------------------------
+
+6) Determinisztikus sorrend
+
+A generálás és validáció sorrendje:
+
+1.  ProductMaster.barcode
+2.  NeedCalculation.modeName
+3.  MaterialMaster.barcode
+
+Ez biztosítja:
+
+-   stabil logokat
+-   stabil CSV exportot
+-   auditálhatóságot
+-   reprodukálhatóságot
+
+------------------------------------------------------------------------
+
+7) Nem funkcionális követelmények
+
+-   validáció O(n)
+-   generálás O(missing)
+-   GUI gyors
+-   audit részletes
+-   determinisztikus működés
+-   default formula jelölése kötelező
+
+------------------------------------------------------------------------
+
+8) Kockázatok és mitigáció
+
+-   túl sok automatikus generálás → csak lokális generálás
+-   CSV hibák elfedése → startupkor nincs generálás
+-   GUI túlterhelése → ikonok, nem háttérszín
+
+------------------------------------------------------------------------
+
+9) Következő lépések
+
+-   #15 patch – MatrixValidator skeleton
+-   #16 patch – MatrixGenerator skeleton
+-   #17 patch – GUI ikonok és jelzéslogika
+
+------------------------------------------------------------------------
+
+📝 Jegyzet – Nyitott finomhangolási kérdések
+
+Ezek nem blokkolják a fejlesztést, de később érdemes tisztázni:
+
+1.  A sárga és piros ⚠️ ikon megkülönböztetése
+    -   első körben: ⚠️ (sárga) / ❗ (piros)
+    -   második körben: ikon átszínezése overlay nélkül
+2.  A detail sorok vizuális megjelenése
+    -   háttérszín legyen‑e?
+    -   vagy csak ikon?
+3.  A mátrix‑komplettség jelzésének pontos helye a toolbaron
+    -   bal oldal?
+    -   jobb oldal?
+4.  A „Reset to default” funkció szükségessége
+    -   jelenleg: nem kell
+    -   később: felhasználói visszajelzés alapján dönthető el
+
+------------------------------------------------------------------------
+
+────────────────────────────────────────────
+────────────────────────────────────────────
+────────────────────────────────────────────
+2) Végrehajtható implementációs terv (Matrix v2)
+
+Ez a terv pontonként végrehajtható, és minden lépés után a rendszer
+működőképes marad.
+
+------------------------------------------------------------------------
+
+🔵 0. Előkészítés
+
+0.1 Új fájlok létrehozása
+
+    calculation/service/matrix_generator.h
+    calculation/service/matrix_generator.cpp
+    calculation/service/matrix_missing_detail.h   (opcionális)
+
+------------------------------------------------------------------------
+
+🟦 1. MissingDetail struktúra
+
+matrix_missing_detail.h
+
+    struct MissingDetail {
+        QUuid productId;
+        QUuid modeId;
+        QUuid materialId;
+    };
+
+------------------------------------------------------------------------
+
+🟩 2. MatrixValidator bővítése
+
+Új metódusok:
+
+-   QVector<MissingDetail> validateProduct(productId)
+-   QVector<MissingDetail> validateMode(modeId)
+-   QVector<MissingDetail> validateAll()
+
+A régi isCalculationMatrixComplete() megmarad, de belül az új logikát használja.
+
+------------------------------------------------------------------------
+
+🟧 3. MatrixGenerator implementálása
+
+Felelőssége:
+
+-   MissingDetail → NeedCalculationDetail rekordok generálása
+-   default formula = "unknown" (nem "w-0")
+-   default kind = Cutting
+-   audit logolás
+
+matrix_generator.cpp
+
+    bool MatrixGenerator::generate(const QVector<MissingDetail>& list) {
+        for (const auto& m : list) {
+            NeedCalculationDetail d;
+            d.id = QUuid::createUuid();
+            d.needCalculationId = m.modeId;
+            d.materialId = m.materialId;
+            d.formula = "unknown";
+            d.kind = NeedCalculationDetail::DetailKind::Cutting;
+
+            NeedCalculationDetailRegistry::instance().insert(d);
+
+            zEventINFO(QString("🟡 Auto-generated detail: product=%1 mode=%2 material=%3")
+                .arg(m.productId.toString(), m.modeId.toString(), m.materialId.toString()));
+        }
+        return true;
+    }
+
+------------------------------------------------------------------------
+
+🟨 4. NeedCalculationDetailRegistry módosítása
+
+4.1 isFormulaValid() új logika
+
+-   "unknown" → valid, de jelölendő
+-   üres string → invalid
+-   hibás formula → invalid
+
+4.2 formulaValid mező a view‑ban
+
+A view jelzi:
+
+-   unknown → sárga ⚠️
+-   invalid → piros ❗
+-   valid → nincs ikon
+
+------------------------------------------------------------------------
+
+🟦 5. GUI módosítások
+
+5.1 CalculationModeDetailView::apply_row_visuals
+
+Új szabályok:
+
+  Állapot             Jelzés   Szín
+  ------------------- -------- ---------
+  unknown formula     ⚠️       sárga
+  invalid formula     ❗       piros
+  material missing    ❗       piros
+  matrix incomplete   🔵       halvány
+
+------------------------------------------------------------------------
+
+5.2 CalculationModesView – oszlop ikon
+
+A mód neve mellett:
+
+-   ha a mód hiányos → ⚠️
+-   ha minden detail oké → 🟢
+
+------------------------------------------------------------------------
+
+5.3 MaterialRequirementsView – soronkénti jelzés
+
+A material sor mellett:
+
+-   ha bármely módhoz hiányzik detail → ⚠️
+
+------------------------------------------------------------------------
+
+🟫 6. Manager logika módosítása
+
+6.1 MaterialRequirementsManager::refreshForProduct
+
+-   validálja a mátrixot
+-   ha hiány van → MatrixGenerator::generateForProduct(productId)
+-   újratölti a view‑t
+
+6.2 CalculationModeDetailManager::refreshForCalculation
+
+-   validálja a módot
+-   ha hiány van → MatrixGenerator::generateForMode(calcId)
+-   újratölti a view‑t
+
+------------------------------------------------------------------------
+
+🟪 7. Overlay módosítások
+
+Új állapotok:
+
+-   🔴 teljesen hiányos
+-   🟡 részben hiányos
+-   🟢 teljes
+
+A toolbar bal oldalán jelenik meg.
+
+------------------------------------------------------------------------
+
+🟥 8. Audit log
+
+Formátum:
+
+    [2026-01-30T10:20:00] INFO: Auto-generated detail
+      product: ROL-R
+      mode: falc
+      material: TE-R-23
+      formula: unknown
+
+------------------------------------------------------------------------
+
+🟦 9. Tesztelési terv
+
+-   termékváltás → automatikus generálás
+-   módváltás → automatikus generálás
+-   formula szerkesztés → ikon eltűnik
+-   invalid formula → piros ❗
+-   unknown formula → sárga ⚠️
+-   teljes mátrix → zöld 🟢
+
+------------------------------------------------------------------------
+
+🟩 10. Kész
+
+Ez a terv 100%‑ban végrehajtható, és a rendszeredet egy stabil,
+auditálható, UX‑barát BOM‑mátrixszá alakítja.
+
+------------------------------------------------------------------------
+────────────────────────────────────────────
+────────────────────────────────────────────
 ────────────────────────────────────────────
 
   Roletta típusok és anyagszükségletek

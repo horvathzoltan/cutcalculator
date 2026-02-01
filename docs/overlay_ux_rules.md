@@ -1,25 +1,33 @@
-# Overlay UX Rules
+# Overlay UX Rules — Matrix v2
 
-## Base Emoji
-- Always use 📄 as the base emoji for all repository-related overlays.
+## 1. Alapelv
+Az overlay NEM jelzi a mátrix állapotát.  
+Az overlay kizárólag a repository állapotát mutatja:
 
-## States
-- EmptyRepo → ❌
-- NoVisibleRows → 🟡
-- Normal → 🟢
+- 🟥 Üres repository
+- 🟨 Van adat, de nincs látható sor
+- 🟩 Van adat és látható sorok
 
-## Presenter Responsibilities
-- Call RepositoryOverlayWidget<T>::refresh(visibleRows)
-- Ensure refresh is triggered:
-  - after view data changes
-  - after registry changes
-  - after product or mode selection changes
+A mátrix állapotát a View réteg ikonlogikája jelzi.
 
-## Helper Responsibilities
-- OverlayStatusHelper::computeState(repoCount, visibleRows)
-- OverlayStatusHelper::apply(widget, state)
+## 2. DetailView ikonok
+- ❌ Material missing  
+- ❗ Invalid formula  
+- 🟡 Unknown formula  
+- 🟢 OK  
 
-## Widget Responsibilities
-- Render base emoji
-- Render overlay emoji in BottomRight corner
-- No business logic
+## 3. ModesView ikonok
+- 🔴 Missing detail(s)  
+- 🟡 Unknown formula(s)  
+- 🟢 All details OK  
+
+## 4. MaterialRequirementsView ikonok
+- ❗ Material missing  
+- ⚠️ Missing detail(s) for this material  
+- 🟢 OK  
+
+## 5. Navigáció
+A Presenter automatikusan a legelső hibás sorra ugrik:
+- material missing  
+- invalid formula  
+- unknown formula  

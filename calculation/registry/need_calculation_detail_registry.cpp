@@ -13,34 +13,31 @@
 
 bool NeedCalculationDetailRegistry::isFormulaValid(const QString& f) {
     const auto trimmed = f.trimmed();
+    // v2: empty = valid (unknown), "unknown" = invalid
     if (trimmed.isEmpty())
+        return true;
+    if (trimmed == "unknown")
         return false;
 
+    // v2: len:* prefix → numeric suffix required
     if (trimmed.startsWith("len:w-") || trimmed.startsWith("len:h-")) {
         bool ok = false;
         trimmed.mid(6).toInt(&ok);
         return ok;
     }
 
-    if (trimmed.startsWith("qty:fixed:")) {
+    // v2: qty:* prefix → numeric suffix required
+    // v2: qty:* prefix → numeric suffix required (fixed, perOrder, perArea)
+    if (trimmed.startsWith("qty:fixed:") ||
+        trimmed.startsWith("qty:perOrder:") ||
+        trimmed.startsWith("qty:perArea:")) {
         bool ok = false;
-        trimmed.mid(QStringLiteral("qty:fixed:").size()).toInt(&ok);
+        const int idx = trimmed.indexOf(':', 4) + 1;
+        trimmed.mid(idx).toInt(&ok);
         return ok;
     }
 
-    if (trimmed.startsWith("qty:perOrder:")) {
-        bool ok = false;
-        trimmed.mid(QStringLiteral("qty:perOrder:").size()).toInt(&ok);
-        return ok;
-    }
-
-    if (trimmed.startsWith("qty:perArea:")) {
-        bool ok = false;
-        trimmed.mid(QStringLiteral("qty:perArea:").size()).toInt(&ok);
-        return ok;
-    }
-
-
+    // v2: unknown prefix → invalid
     return false;
 }
 
@@ -80,13 +77,14 @@ NeedCalculationDetailRegistry::findByCalculation(const QUuid& calcId) const
 
 // --- Domain hookok ---
 
+// v2: trim formula before validation (empty = valid, "unknown" = invalid)
 bool NeedCalculationDetailRegistry::beforeValidate(NeedCalculationDetail& d)
 {
     d.formula = d.formula.trimmed();
     return true;
 }
 
-
+// v2: domain validation uses updated formula rules (isFormulaValid)
 bool NeedCalculationDetailRegistry::validateDomain(const NeedCalculationDetail& d) const
 {
     if(!isFormulaValid(d.formula)) return false;
@@ -131,18 +129,21 @@ bool NeedCalculationDetailRegistry::beforeUpdate(NeedCalculationDetail& d)
 
 // --- Log hookok ---
 
+// v2: log reflects formula state (empty=valid, "unknown"=invalid)
 void NeedCalculationDetailRegistry::onInsertLog(const NeedCalculationDetail& d)
 {
     zInfo(QString("➕ NeedCalculationDetail INSERT: id=%1 material=%2 formula=%3")
               .arg(d.id.toString(), d.materialId.toString(), d.formula));
 }
 
+// v2: log reflects updated formula state
 void NeedCalculationDetailRegistry::onUpdateLog(const NeedCalculationDetail& d)
 {
     zInfo(QString("✏️ NeedCalculationDetail UPDATE: id=%1 material=%2 formula=%3")
               .arg(d.id.toString(), d.materialId.toString(), d.formula));
 }
 
+// v2: log reflects formula state at removal
 void NeedCalculationDetailRegistry::onRemoveLog(const NeedCalculationDetail& d)
 {
     zInfo(QString("🗑️ NeedCalculationDetail REMOVE: id=%1 material=%2 formula=%3")
@@ -156,6 +157,7 @@ void NeedCalculationDetailRegistry::persist() const
     NeedCalculationDetailRepository::save(readAll());
 }
 
+// v2: registry load log reflects formula model v2 state
 void NeedCalculationDetailRegistry::onLoadLog()
 {
     zInfo(QString("📊 NeedCalculationDetailRegistry: %1 sor betöltve").arg(size()));

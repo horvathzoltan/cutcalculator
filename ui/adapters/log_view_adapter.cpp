@@ -1,4 +1,5 @@
 #include "log_view_adapter.h"
+#include "colors/model/colorconstants.h"
 #include "common/utils/font_utils.h"
 
 LogViewAdapter::LogViewAdapter(QPlainTextEdit* target)
@@ -31,11 +32,18 @@ ParsedLine LogViewAdapter::parseLine(const QString& line) const {
     return result;
 }
 
-QColor LogViewAdapter::colorForPrefix(const QString& prefix) const {
-    if (prefix.startsWith("ERROR", Qt::CaseInsensitive)) return Qt::red;
-    if (prefix.startsWith("WARN", Qt::CaseInsensitive)) return QColor("#d98e00");
-    if (prefix.startsWith("INFO", Qt::CaseInsensitive)) return Qt::darkGreen;
-    return _target->palette().color(QPalette::Text);
+QColor LogViewAdapter::colorForPrefix(const QString& prefix) const
+{
+    if (prefix.startsWith("ERROR:"))
+        return ColorConstants::ColorError;
+
+    if (prefix.startsWith("WARN:"))
+        return ColorConstants::ColorWarn;
+
+    if (prefix.startsWith("INFO:"))
+        return ColorConstants::ColorInfo;
+
+    return ColorConstants::TextBlack;
 }
 
 void LogViewAdapter::insertColored(QTextCursor& cursor, const QString& text, const QColor& color) const {

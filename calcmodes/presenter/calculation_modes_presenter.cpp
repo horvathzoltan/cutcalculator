@@ -7,6 +7,8 @@
 
 #include <needs/registry/need_rule_registry.h>
 
+#include <calculation/service/matrix_generator.h>
+
 CalculationModesPresenter::CalculationModesPresenter(
     CalculationModesView* view,
     CalculationModesManager* manager,
@@ -24,13 +26,52 @@ CalculationModesPresenter::CalculationModesPresenter(
                 if (_view->isReady())
                     refreshForProduct(id, name, barcode);
                 emit modeSelected(std::nullopt);
+                // v2: ha a mód hiányos, a detail nézet automatikusan a hibára ugrik
             });
 
     QObject::connect(_view, &CalculationModesView::selection_changed,
                      this, [this](std::optional<QUuid> modeId) {
                          emit modeSelected(modeId);
+        // v2: ha a mód hiányos, a detail nézet automatikusan a hibára ugrik
                      });
+
+    connect(_view, &CalculationModesView::modeActivated,
+            this, &CalculationModesPresenter::on_mode_activated);
 }
+
+void CalculationModesPresenter::on_mode_activated(const QUuid& modeId)
+{
+    // 🛠 1) Hiányzó detail cellák felmérése ehhez a módhoz
+    auto missing = MatrixValidator::validateMode(modeId);
+
+    if (!missing.isEmpty()) {
+        zInfo(QString("🛠 MatrixGenerator: generating %1 missing details for mode %2")
+                  .arg(missing.size())
+                  .arg(modeId.toString()));
+
+        // 🛠 2) Hiányzó cellák pótlása
+        zInfo(QString("🧩 Auto-heal triggered for mode %1").arg(modeId.toString()));
+        zInfo("Reason: missing detail cells detected");
+
+        MatrixGenerator::generate(missing);
+
+        // 🧾 3) Audit log minden generált celláról
+        for (const auto& md : missing) {
+            zInfo(QString("GEN detail: product=%1 mode=%2 material=%3")
+                      .arg(md.productId.toString())
+                      .arg(md.modeId.toString())
+                      .arg(md.materialId.toString()));
+        }
+
+        // 🟢 4) GUI frissítése generálás után
+        auto* mode = NeedCalculationRegistry::instance().findById(modeId);
+        refreshForProduct(mode->productId, QString(), QString());
+    }
+
+    // 🔁 4) Detail view frissítése (eddigi logika)
+    emit modeActivatedForDetails(modeId);
+}
+
 
 QToolBar* CalculationModesPresenter::buildToolbar(QWidget* parent)
 {
@@ -113,32 +154,31 @@ OverlayStatusHelper::State CalculationModesPresenter::computeMatrixState()
     if (visible == 0)
         return OverlayStatusHelper::State::NoVisibleRows;
 
-    if (!isMatrixComplete())
-        return OverlayStatusHelper::State::Incomplete;
+    // v2: Overlay NEM jelzi a mátrixot
 
     return OverlayStatusHelper::State::Normal;
 
 }
 
-bool CalculationModesPresenter::isMatrixComplete() const
-{
-    const auto modes = NeedCalculationRegistry::instance().readAll();
-    const auto rules = NeedRuleRegistry::instance().readAll();
+// bool CalculationModesPresenter::isMatrixComplete() const
+// {
+//     const auto modes = NeedCalculationRegistry::instance().readAll();
+//     const auto rules = NeedRuleRegistry::instance().readAll();
 
-    for (const auto& m : modes) {
-        for (const auto& r : rules) {
-            if (r.leftId != m.productId)
-                continue;
+//     for (const auto& m : modes) {
+//         for (const auto& r : rules) {
+//             if (r.leftId != m.productId)
+//                 continue;
 
-            bool exists = NeedCalculationDetailRegistry::instance()
-                              .existsBy([&](const NeedCalculationDetail& d){
-                                  return d.needCalculationId == m.id &&
-                                         d.materialId == r.rightId;
-                              });
+//             bool exists = NeedCalculationDetailRegistry::instance()
+//                               .existsBy([&](const NeedCalculationDetail& d){
+//                                   return d.needCalculationId == m.id &&
+//                                          d.materialId == r.rightId;
+//                               });
 
-            if (!exists)
-                return false;
-        }
-    }
-    return true;
-}
+//             if (!exists)
+//                 return false;
+//         }
+//     }
+//     return true;
+// }

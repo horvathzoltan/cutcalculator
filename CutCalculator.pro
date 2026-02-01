@@ -22,6 +22,7 @@ SOURCES += \
     calculation/dialogs/material_picker_dialog2.cpp \
     calculation/presenter/calculation_mode_detail_presenter.cpp \
     calculation/service/formula_engine.cpp \
+    calculation/service/matrix_generator.cpp \
     calculation/service/matrix_validator.cpp \
     common/layout/layout_default_store.cpp \
     common/logger/logger_gui.cpp \
@@ -102,10 +103,13 @@ HEADERS += \
     calcmodes/dialogs/mode_name_dialog.h \
     calcmodes/presenter/calculation_modes_presenter.h \
     calcmodes/repository/need_calculation_traits.h \
+    calcmodes/view/mode_row_delegate.h \
     calculation/dialogs/formula_editor_dialog.h \
     calculation/dialogs/material_picker_dialog2.h \
     calculation/presenter/calculation_mode_detail_presenter.h \
     calculation/service/formula_engine.h \
+    calculation/service/matrix_generator.h \
+    calculation/service/matrix_missing_detail.h \
     calculation/service/matrix_validator.h \
     common/layout/layout_default_store.h \
     common/logger/logger_gui.h \

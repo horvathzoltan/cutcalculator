@@ -27,7 +27,8 @@ public:
         bool isCutting = true; // ⚙️ vs 📦
         bool formulaValid = true;
         bool materialValid = true;
-        bool matrixComplete = true;
+        /* removed: matrixComplete */
+
     };
 
     void set_details(const QVector<DetailRow>& rows);
@@ -42,11 +43,19 @@ signals:
 
 public slots:
     void set_current_calculation(const QUuid& calcId, const QString& modeName);
+    void scrollToRow(int row);
 
 private:
     QTableWidget* _table = nullptr;
     QUuid _current_calcId;
 
+
+    // ÚJ: undo/redo stack formula cellákhoz
+    QVector<QString> _undoStack;
+    QVector<QString> _redoStack;
+    QString _lastFormulaValue;
+
     void setup_table();
     void apply_row_visuals(int row, const DetailRow& r);
+    bool eventFilter(QObject* obj, QEvent* ev) override;
 };

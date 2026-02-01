@@ -51,7 +51,7 @@ public:
         QString material_barcode;
 
         bool material_exists = true; // ha false → piros háttér, tooltip warning
-        bool matrixComplete = true;
+        bool hasMissingDetails = false;   // v2: hiányzó detail valamely módhoz
     };
 
     /**
