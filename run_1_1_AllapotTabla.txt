@@ -183,6 +183,11 @@ Sprint fókusz:
 
 Holnap fókusz:
 
+-   Ugyanaz az „insert” fogalom kétféleképpen viselkedik:
+    -   egyszer „csak runtime”,
+    -   másszor „runtime + persist”.
+    Ennek a kettősségnek a tisztázása és egységesítése kritikus fontosságú.
+
 -   lookupRules(productId)
 -   lookupCalculation(productId, modeName)
 -   lookupDetails(calculationId)
