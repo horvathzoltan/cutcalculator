@@ -9,6 +9,7 @@
 class NeedRuleRepository {
     friend class test_NeedRuleRepository;
 public:
+
     static bool load();
     static bool save();
 

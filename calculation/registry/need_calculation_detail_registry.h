@@ -6,15 +6,36 @@
 #include "common/registry/feature/register_me.h"
 #include "common/registry/base/registry_engine_base.h"
 #include "calculation/model/need_calculation_detail.h"
-#include "common/registry/mixins/crud_mixin.h"
 #include "common/registry/mixins/crud_workflow_mixin.h"
+#include "common/registry/mixins/test_support_mixin.h"
 
+// ⚠️ CRUD WORKFLOW – VÉGLEGES SZERZŐDÉS (WF-4)
+//
+// A domain CRUD egyetlen érvényes útvonala (insert/update/remove):
+//   validateDomain
+//   → validateDuplicate
+//   → beforeInsert / beforeUpdate / beforeRemove
+//   → store*Impl + notifyItemsChanged
+//   → on*Log
+//   → persist()
+//   → after*Hook (opcionális, mellékhatás-mentes)
+//
+// Kötelező invariánsok:
+// - nincs engine-level write API hívás (add/updateInternal/removeInternal/clear)
+// - nincs kézi persist() hívás workflow-on kívül
+// - nincs közvetlen memória-módosítás store*Impl megkerülésével
+// - nincs CRUD hívás load-path alatt (setAll, konstruktor, CSV betöltés)
+// - nincs CRUD hívás konstruktorból/destruktorból
+// - nincs aszinkron vagy deferred CRUD
+//
+// A workflow lépései megszakíthatatlanok, sorrendkötöttek, és nem hagyhatnak
+// részleges állapotot. A log mindig a persist ELŐTT fut.
 
 class NeedCalculationDetailRegistry
     : public RegistryEngineBase<NeedCalculationDetail>,
-      public CrudMixin<NeedCalculationDetailRegistry, NeedCalculationDetail>,
       public CrudWorkflowMixin<NeedCalculationDetailRegistry, NeedCalculationDetail>,
-      public RegisterMe<NeedCalculationDetailRegistry>
+      public RegisterMe<NeedCalculationDetailRegistry>,
+      public TestSupportMixin<NeedCalculationDetailRegistry>
 {
     AUTO_REGISTER_REGISTRY
 public:
@@ -30,31 +51,29 @@ public:
     QVector<NeedCalculationDetail> findByCalculation(const QUuid& calcId) const;
 
 
-    bool insert(const NeedCalculationDetail& d) {
-        return insertWithWorkflow(d);
-    }
+// ⚠️ Persist‑policy (WF‑3):
+// - persist() kizárólag a workflow részeként hívható
+// - nem módosíthat memóriát és nem hívhat CRUD‑ot
+// - csak a repository‑t hívhatja (tiszta tartósítás)
+// - nem dobhat kivételt kifelé
+    bool insert(const NeedCalculationDetail& d);
+    bool update(const NeedCalculationDetail& d);
+    bool remove(const QUuid& id);
 
-    bool update(const NeedCalculationDetail& d) {
-        return updateWithWorkflow(d);
-    }
-
-    bool remove(const QUuid& id) {
-        return removeWithWorkflow(id);
-    }
-
-
-    // --- Domain hookok ---
-    bool beforeValidate(NeedCalculationDetail& d);
     bool validateDomain(const NeedCalculationDetail& d) const ;
     bool validateDuplicate(const NeedCalculationDetail& d) const ;
 
-    bool beforeInsert(NeedCalculationDetail& d) ;
-    bool beforeUpdate(NeedCalculationDetail& d) ;
+    bool beforeInsert(NeedCalculationDetail& d);
+    bool beforeUpdate(NeedCalculationDetail& d);
+
     bool beforeRemove(NeedCalculationDetail&) { return true; }
 
-    void afterInsert(const NeedCalculationDetail&) {}
-    void afterUpdate(const NeedCalculationDetail&) {}
-    void afterRemove(const NeedCalculationDetail&) {}
+    // --- AfterHook-ok ---
+    // Mellékhatás-mentes, opcionális UI/notification lépések.
+    // A workflow sorrendje: log → persist → afterHook.
+    void afterInsert(const NeedCalculationDetail&);
+    void afterUpdate(const NeedCalculationDetail&);
+    void afterRemove(const NeedCalculationDetail&);
 
     void onInsertLog(const NeedCalculationDetail& d) ;
     void onUpdateLog(const NeedCalculationDetail& d) ;
@@ -63,17 +82,16 @@ public:
     void onLoadLog() ; // <- ÚJ
     void persist() const ;
 
+    // Segédek
 
+    // v2: formula rules → empty=valid, "unknown"=invalid, prefix-based syntax
+    static bool isFormulaValid(const QString& f);
 private:
     NeedCalculationDetailRegistry()
         : RegistryEngineBase("NeedCalculationDetailRegistry", "NeedCalculationDetail")
     {}
 
-    // Segédek
-public:
-    // v2: formula rules → empty=valid, "unknown"=invalid, prefix-based syntax
-    static bool isFormulaValid(const QString& f);
-private:
+    bool validateMaterial(const NeedCalculationDetail& d);
     static bool materialExists(const QUuid& materialId);
 };
 

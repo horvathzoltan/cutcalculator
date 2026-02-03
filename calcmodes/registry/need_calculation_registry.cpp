@@ -14,12 +14,16 @@ NeedCalculationRegistry& NeedCalculationRegistry::instance()
     return inst;
 }
 
-// ⭐ Konstruktor – repository load + setAll()
+// ⭐ Konstruktor
+// ⚠️ Szerződés:
+// - registry konstruktor SOHA nem tölthet be CSV-t
+// - minden load a StartupManager feladata (setAll, no persist)
 NeedCalculationRegistry::NeedCalculationRegistry()
     : RegistryEngineBase("NeedCalculationRegistry", "NeedCalculation")
 {
     // A betöltést a CalculationModesManager / StartupManager végzi, nem a konstruktor.
 }
+
 
 // ⭐ Kényelmi API – a NeedCalculator használja
 const NeedCalculation*
@@ -31,12 +35,17 @@ NeedCalculationRegistry::findByProductAndName(const QUuid& productId,
     });
 }
 
-// --- Domain hookok ---
+bool NeedCalculationRegistry::insert(const NeedCalculation &nc) {return insertWithWorkflow(nc);}
 
-bool NeedCalculationRegistry::beforeValidate(NeedCalculation& nc) {
-    nc.name = nc.name.trimmed();
-    return true;
-}
+bool NeedCalculationRegistry::update(const NeedCalculation &nc) {return updateWithWorkflow(nc);}
+
+bool NeedCalculationRegistry::remove(const QUuid &id) {return removeWithWorkflow(id);}
+
+// --- Domain hookok ---
+// ⚠️ Szerződés (workflow):
+// - minden insert/update/remove a CrudWorkflowMixin útvonalán fut
+// - persist() itt workflow‑hook, NEM kézi hívás
+// - CrudMixin közvetlen használata tilos
 
 
 bool NeedCalculationRegistry::validateDomain(const NeedCalculation& nc) const
@@ -99,4 +108,12 @@ void NeedCalculationRegistry::onRemoveLog(const NeedCalculation& nc)
 void NeedCalculationRegistry::onLoadLog()
 {
     zInfo(QString("📊 NeedCalculationRegistry: %1 mód betöltve").arg(size()));
+}
+
+bool NeedCalculationRegistry::beforeInsert(NeedCalculation& nc) {
+    nc.name = nc.name.trimmed(); return true;
+}
+
+bool NeedCalculationRegistry::beforeUpdate(NeedCalculation& nc) {
+    nc.name = nc.name.trimmed(); return true;
 }

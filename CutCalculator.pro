@@ -130,6 +130,7 @@ HEADERS += \
     common/registry/feature/register_me.h \
     common/registry/hierarchy/hierarchy_mixin.h \
     common/registry/manager/registry_traits.h \
+    common/registry/mixins/bulk_load_mixin.h \
     common/registry/mixins/collector_mixin.h \
     common/registry/mixins/connection_crud_mixin.h \
     common/registry/mixins/connection_workflow_mixin.h \
@@ -137,6 +138,7 @@ HEADERS += \
     common/registry/mixins/crud_mixin.h \
     common/registry/mixins/crud_workflow_mixin.h \
     common/registry/mixins/id_lookup_mixin.h \
+    common/registry/mixins/test_support_mixin.h \
     common/registry/subscription_token.h \
     common/snapshot/snapshot_manager.h \
     common/snapshot/workbench_snapshot.h \

@@ -1,4 +1,23 @@
 #pragma once
+
+// ⚠️ RegistryEngineBase szerződés:
+// - NEM CRUD és NEM workflow
+// - NEM persistál
+// - csak memóriabeli tároló + indexelés + find/filter API
+// - a domain CRUD útvonalat a CrudWorkflowMixin biztosítja
+
+/*
+⭐ Ezzel a RegistryEngineBase három write‑rétege teljesen tiszta:
+  -----------------------------------------------------------------------------
+  Szint             Metódusok                    Jelentés
+  ----------------- ---------------------------- ------------------------------
+  1. Storage‑szint  store*Impl                   memória + index, event nélkül
+  2. Engine‑szint   add, updateInternal,         memória + event, de nem CRUD
+                    removeInternal, clear
+  3. Domain CRUD    CrudWorkflowMixin            validáció + workflow + persist
+  -----------------------------------------------------------------------------
+*/
+
 #include "common/registry/feature/registry_base.h"
 #include <QVector>
 #include <QUuid>
@@ -13,8 +32,13 @@
 template<typename TEntity>
 class RegistryEngineBase : public RegistryBase {
 public:
-    template<typename, typename>
-    friend struct RegistryCore;
+    template<typename, typename> friend struct RegistryCore;
+    template<typename, typename> friend struct CrudWorkflowMixin;
+    template<typename, typename> friend struct ConnectionCrudMixin;
+    template<typename, typename> friend struct ConnectionWorkflowMixin;
+    template<typename Host> friend struct TestSupportMixin;
+    template<typename Host, typename Entity> friend struct BulkLoadMixin;
+    template<typename ConnectionType, typename Traits> friend class ConnectionRepository;
 
     using ItemsChangedEvent = std::function<void()>;
     using SubscriptionId = size_t;
@@ -75,6 +99,12 @@ public:
     const QString& registryName() const { return _registryName; }
 
     // --- READ APIs (delegáló thin wrappers) ---
+
+    // ⚠️ Read-only API:
+    // - teljesen mellékhatás-mentes
+    // - NEM CRUD, NEM workflow, NEM persist
+    // - kizárólag lekérdezésre szolgál (find/read/items)
+
 
     // az items referenciáit adja
     QVector<TEntity> readAll() const {
@@ -147,7 +177,14 @@ public:
         return storeFindByPairImpl(leftId, rightId);
     }
 
+protected:
     // --- WRITE APIs (thin wrappers that notify) ---
+
+    // ⚠️ Engine-szintű write API (nem CRUD):
+    // - memóriamódosítás + onItemsChanged event
+    // - NEM domain CRUD, NEM workflow, NEM persist
+    // - kizárólag engine-level értesítési réteg (UI/cache/subscribers)
+
     bool add(const TEntity& e) {
         guardInstanceUsage();
         if (!storeAddImpl(e)) return false;
@@ -161,6 +198,11 @@ public:
         onItemsChanged();
         return true;
     }
+
+    // ⚠️ Szerződés (setAll):
+    // - kizárólag load-only művelet (CSV → memória)
+    // - NEM persistál, NEM workflow, NEM domain CRUD
+    // - csak a StartupManager hívhatja betöltéskor
 
     void setAll(const QVector<TEntity>& v) {
         guardInstanceUsage();
@@ -225,6 +267,17 @@ protected:
     }
 
     // --- Protected store*Impl methods used by RegistryCore and mixins ---
+
+    // ⚠️ Nem CRUD API:
+    // Ezek a metódusok storage‑szintű műveletek (memória + index),
+    // NEM domain CRUD, NEM workflow, NEM persist.
+    // A domain CRUD útvonal kizárólag a CrudWorkflowMixin-ben él.
+
+    // ⚠️ Belső storage-API (nem CRUD):
+    // - csak memóriabeli módosítás (add/update/remove)
+    // - NEM domain CRUD, NEM workflow, NEM persist
+    // - kizárólag a CrudWorkflowMixin használja a saját folyamatán belül
+
     bool storeAddImpl(const TEntity& e) {
         QWriteLocker w(&_rwLock);
         _items.append(e);

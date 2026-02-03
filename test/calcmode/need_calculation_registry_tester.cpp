@@ -24,7 +24,7 @@ NeedCalculation NeedCalculationRegistryTester::makeNC(const QUuid& productId,
 void NeedCalculationRegistryTester::prepare()
 {
     ids = TestDataBuilder::prepareStandard();
-    NeedCalculationRegistry::instance().clear();
+    NeedCalculationRegistry::instance().clearForTest();
 
     QString csvPath = FileNameHelper::instance().getNeedCalculationCsvFile();
     QFile::remove(csvPath);

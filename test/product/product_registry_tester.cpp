@@ -25,7 +25,7 @@ void ProductRegistryTester::clearCsv(const QString& path)
 void ProductRegistryTester::prepare()
 {
     ids = TestDataBuilder::prepareStandard();
-    ProductRegistry::instance().clear();
+    ProductRegistry::instance().clearForTest();
 
     QString csvPath = FileNameHelper::instance().getProductCsvFile();
     clearCsv(csvPath);

@@ -31,8 +31,8 @@ void NeedCalculationDetailRegistryTester::prepare()
 {
     ids = TestDataBuilder::prepareStandard();
 
-    NeedCalculationRegistry::instance().clear();
-    NeedCalculationDetailRegistry::instance().clear();
+    NeedCalculationRegistry::instance().clearForTest();
+    NeedCalculationDetailRegistry::instance().clearForTest();
 
     QString csv = FileNameHelper::instance().getNeedCalculationDetailCsvFile();
     QFile::remove(csv);

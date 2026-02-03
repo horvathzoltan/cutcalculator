@@ -14,7 +14,8 @@ class NeedRuleRegistry
     : public RegistryEngineBase<NeedRule>,
       public ConnectionCrudMixin<NeedRuleRegistry, NeedRule>,
       public ConnectionWorkflowMixin<NeedRuleRegistry, NeedRule>,
-      public RegisterMe<NeedRuleRegistry>
+      public RegisterMe<NeedRuleRegistry>,
+      public TestSupportMixin<NeedRuleRegistry>
 {
     AUTO_REGISTER_REGISTRY;
 public:

@@ -36,7 +36,7 @@ private:
             Host& reg = static_cast<Host&>(*this);
             Entity mutableCopy = e;
 
-            if (!reg.beforeInsert(mutableCopy)) return false;
+            if (!reg.beforeInsertValidate(mutableCopy)) return false;
             if (!this->addImpl(mutableCopy))    return false;
 
             reg.afterInsert(mutableCopy);
@@ -66,7 +66,7 @@ private:
             Host& reg = static_cast<Host&>(*this);
             Entity mutableCopy = e;
 
-            if (!reg.beforeUpdate(mutableCopy)) return false;
+            if (!reg.beforeUpdateValidate(mutableCopy)) return false;
             if (!this->updateImpl(mutableCopy))  return false;
 
             reg.afterUpdate(mutableCopy);

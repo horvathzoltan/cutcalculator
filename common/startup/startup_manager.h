@@ -21,6 +21,12 @@ public:
 private:
     // ============================================================
     // 🧩 GENERIKUS REGISTRY BETÖLTŐ
+    // ------------------------------------------------------------
+    // ⚠️ Szerződés:
+    // - CSV → memória betöltés (load-only path)
+    // - NEM persistál vissza
+    // - NEM futtat workflow-t vagy domain hookokat
+    // - runtime CRUD-tól teljesen elkülönül
     // ============================================================
     template<typename Registry, typename Repository>
     StartupStatus initRegistryGeneric(const QString& errorMessage, bool critical = true)

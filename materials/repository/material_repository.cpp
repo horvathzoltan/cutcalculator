@@ -198,8 +198,13 @@ MaterialRepository::loadMaterialRows(CsvImporter::FileContext& ctx) {
 }
 
 // --- Entry Point ---
+// ⚠️ Szerződés (load-only path):
+// - csak CSV → memória betöltés
+// - NEM ír registrybe, NEM hív persistet
+// - StartupManager végzi a setAll() hívást
 bool MaterialRepository::load(QVector<MaterialMaster>& out)
 {
+
     auto& helper = FileNameHelper::instance();
     if (!helper.isInitialized()) {
         zWarning("⚠️ A FileNameHelper nincs inicializálva.");

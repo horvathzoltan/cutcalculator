@@ -34,8 +34,8 @@ void MaterialRegistryTester::testLoad()
     Q_ASSERT(list.size() == 1);
 
     auto& reg = MaterialRegistry::instance();
-    reg.clear();
-    reg.setAll(list);
+    reg.clearForTest();
+    reg.setAllForTest(list);
 
     Q_ASSERT(reg.size() == 1);
 

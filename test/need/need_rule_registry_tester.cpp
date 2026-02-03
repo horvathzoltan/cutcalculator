@@ -25,15 +25,15 @@ public:
 
 void NeedRuleRegistryTester::clearAllRegistries()
 {
-    ProductRegistry::instance().clear();
-    MaterialRegistry::instance().clear();
-    NeedRuleRegistry::instance().clear();
+    ProductRegistry::instance().clearForTest();
+    MaterialRegistry::instance().clearForTest();
+    NeedRuleRegistry::instance().clearForTest();
 }
 
 void NeedRuleRegistryTester::prepare()
 {
     ids = TestDataBuilder::prepareStandard();
-    NeedRuleRegistry::instance().clear();
+    NeedRuleRegistry::instance().clearForTest();
 
     QString csvPath = FileNameHelper::instance().getNeedRuleCsvFile();
     QFile::remove(csvPath);

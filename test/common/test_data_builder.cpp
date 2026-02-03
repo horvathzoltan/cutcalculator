@@ -2,7 +2,7 @@
 
 #include "products/registry/product_registry.h"
 #include "materials/registry/material_registry.h"
-#include "needs/registry/need_rule_registry.h"
+//#include "needs/registry/need_rule_registry.h"
 
 TestDataIds TestDataBuilder::prepareStandard()
 {
@@ -12,8 +12,8 @@ TestDataIds TestDataBuilder::prepareStandard()
     auto& mreg = MaterialRegistry::instance();
     //auto& nreg = NeedRuleRegistry::instance();
 
-    preg.clear();
-    mreg.clear();
+    preg.clearForTest();
+    mreg.clearForTest();
     //nreg.clear();
 
     // --- Product ---
@@ -28,14 +28,14 @@ TestDataIds TestDataBuilder::prepareStandard()
     m.id = ids.M1 = QUuid::createUuid();
     m.name = "Mat1";
     m.barcode = "M1";
-    mreg.add(m);
+    mreg.addForTest(m);
 
     // --- Material 2 ---
     MaterialMaster m2;
     m2.id = ids.M2 = QUuid::createUuid();
     m2.name = "Mat2";
     m2.barcode = "M2";
-    mreg.add(m2);
+    mreg.addForTest(m2);
 
     return ids;
 }

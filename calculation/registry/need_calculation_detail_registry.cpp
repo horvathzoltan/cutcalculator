@@ -42,13 +42,6 @@ bool NeedCalculationDetailRegistry::isFormulaValid(const QString& f) {
 }
 
 
-bool NeedCalculationDetailRegistry::materialExists(const QUuid& materialId) {
-    const auto* ent =
-        RegistryManager::instance().findEntity("MaterialMaster", materialId);
-    return ent != nullptr;
-}
-
-
 // --- Kényelmi API ---
 
 bool NeedCalculationDetailRegistry::updateFormula(const QUuid& id,
@@ -75,14 +68,19 @@ NeedCalculationDetailRegistry::findByCalculation(const QUuid& calcId) const
     });
 }
 
-// --- Domain hookok ---
-
-// v2: trim formula before validation (empty = valid, "unknown" = invalid)
-bool NeedCalculationDetailRegistry::beforeValidate(NeedCalculationDetail& d)
-{
-    d.formula = d.formula.trimmed();
-    return true;
+bool NeedCalculationDetailRegistry::insert(const NeedCalculationDetail &d) {
+    return insertWithWorkflow(d);
 }
+
+bool NeedCalculationDetailRegistry::update(const NeedCalculationDetail &d) {
+    return updateWithWorkflow(d);
+}
+
+bool NeedCalculationDetailRegistry::remove(const QUuid &id) {
+    return removeWithWorkflow(id);
+}
+
+// --- Domain hookok ---
 
 // v2: domain validation uses updated formula rules (isFormulaValid)
 bool NeedCalculationDetailRegistry::validateDomain(const NeedCalculationDetail& d) const
@@ -117,17 +115,16 @@ bool NeedCalculationDetailRegistry::validateDuplicate(const NeedCalculationDetai
     });
 }
 
-bool NeedCalculationDetailRegistry::beforeInsert(NeedCalculationDetail& d)
-{
-    return materialExists(d.materialId);
-}
+bool NeedCalculationDetailRegistry::beforeInsert(NeedCalculationDetail &d) { return validateMaterial(d); }
 
-bool NeedCalculationDetailRegistry::beforeUpdate(NeedCalculationDetail& d)
-{
-    return beforeInsert(d);
-}
+bool NeedCalculationDetailRegistry::beforeUpdate(NeedCalculationDetail &d) { return validateMaterial(d); }
 
-// --- Log hookok ---
+/*
+// --- Shadow-mode előkészítés ---
+// A log hookok teljesen mellékhatás-mentesek (csak zInfo).
+// A persist() tiszta, nem módosít memóriát és nem hív CRUD-ot.
+// A registry készen áll a log→persist sorrend későbbi átállítására (WF-1/WF-2).
+*/
 
 // v2: log reflects formula state (empty=valid, "unknown"=invalid)
 void NeedCalculationDetailRegistry::onInsertLog(const NeedCalculationDetail& d)
@@ -150,6 +147,33 @@ void NeedCalculationDetailRegistry::onRemoveLog(const NeedCalculationDetail& d)
               .arg(d.id.toString(), d.materialId.toString(), d.formula));
 }
 
+/*
+// --- AfterHook-ok ---
+// Mellékhatás-mentes, opcionális UI/notification lépések.
+// Workflow sorrend: persist → log → afterHook.
+void afterInsert(const NeedCalculationDetail&);
+void afterUpdate(const NeedCalculationDetail&);
+void afterRemove(const NeedCalculationDetail&);
+*/
+void NeedCalculationDetailRegistry::afterInsert(const NeedCalculationDetail& d)
+{
+    // Mellékhatás-mentes: opcionális UI/diagnosztikai jelzés
+    zInfo(QString("ℹ️ NeedCalculationDetail AFTER INSERT: id=%1")
+              .arg(d.id.toString()));
+}
+
+void NeedCalculationDetailRegistry::afterUpdate(const NeedCalculationDetail& d)
+{
+    zInfo(QString("ℹ️ NeedCalculationDetail AFTER UPDATE: id=%1")
+              .arg(d.id.toString()));
+}
+
+void NeedCalculationDetailRegistry::afterRemove(const NeedCalculationDetail& d)
+{
+    zInfo(QString("ℹ️ NeedCalculationDetail AFTER REMOVE: id=%1")
+              .arg(d.id.toString()));
+}
+
 // --- Persist ---
 
 void NeedCalculationDetailRegistry::persist() const
@@ -163,4 +187,14 @@ void NeedCalculationDetailRegistry::onLoadLog()
     zInfo(QString("📊 NeedCalculationDetailRegistry: %1 sor betöltve").arg(size()));
 }
 
+bool NeedCalculationDetailRegistry::validateMaterial(const NeedCalculationDetail& d)
+{
+    return materialExists(d.materialId);
+}
+
+bool NeedCalculationDetailRegistry::materialExists(const QUuid& materialId) {
+    const auto* ent =
+        RegistryManager::instance().findEntity("MaterialMaster", materialId);
+    return ent != nullptr;
+}
 
