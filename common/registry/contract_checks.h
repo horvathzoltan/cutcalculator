@@ -1,5 +1,5 @@
 #pragma once
-#include "common/registry/mixins/contract_checks.h" // itt vannak a Has... trait-ek
+#include "common/registry/mixins/mixin_contract_checks.h" // itt vannak a Has... trait-ek
 
 #define REGISTER_LOOKUP_CHECK(Host, Entity) \
     static_assert(HasLookupPublicApi<Host, Entity>, \
@@ -20,3 +20,11 @@
 #define REGISTER_PERSIST_CHECK(Host) \
     static_assert(HasPersistApi<Host>, \
                   #Host " must provide persist() and persistRegistry() if required");
+
+#define REGISTER_CRUD_WORKFLOW_CHECK(Host, Entity) \
+    static_assert(HasCrudWorkflowApi<Host, Entity>::value, \
+                  #Host " must satisfy the CrudWorkflowMixin contract")
+
+#define REGISTER_CONNECTION_WORKFLOW_CHECK(Host, Connection) \
+    static_assert(HasConnectionWorkflowApi<Host, Connection>::value, \
+                  #Host " must satisfy the ConnectionWorkflowMixin contract")

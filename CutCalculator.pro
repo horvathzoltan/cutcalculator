@@ -134,10 +134,10 @@ HEADERS += \
     common/registry/mixins/collector_mixin.h \
     common/registry/mixins/connection_crud_mixin.h \
     common/registry/mixins/connection_workflow_mixin.h \
-    common/registry/mixins/contract_checks.h \
     common/registry/mixins/crud_mixin.h \
     common/registry/mixins/crud_workflow_mixin.h \
     common/registry/mixins/id_lookup_mixin.h \
+    common/registry/mixins/mixin_contract_checks.h \
     common/registry/mixins/test_support_mixin.h \
     common/registry/subscription_token.h \
     common/snapshot/snapshot_manager.h \

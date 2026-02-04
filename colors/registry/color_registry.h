@@ -6,10 +6,12 @@
 #include "common/registry/base/registry_engine_base.h"
 #include "colors/model/named_color.h"
 #include "common/registry/feature/register_me.h"
+#include "common/registry/mixins/bulk_load_mixin.h"
 
 class ColorRegistry
     : public RegistryEngineBase<NamedColor>,
-    public RegisterMe<ColorRegistry>
+      public RegisterMe<ColorRegistry>,
+      public BulkLoadMixin<ColorRegistry, NamedColor>
 {
     AUTO_REGISTER_REGISTRY
 public:

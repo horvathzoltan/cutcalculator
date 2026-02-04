@@ -6,6 +6,7 @@
 #include "common/registry/feature/register_me.h"
 #include "common/registry/base/registry_engine_base.h"
 #include "calculation/model/need_calculation_detail.h"
+#include "common/registry/mixins/bulk_load_mixin.h"
 #include "common/registry/mixins/crud_workflow_mixin.h"
 #include "common/registry/mixins/test_support_mixin.h"
 
@@ -35,7 +36,8 @@ class NeedCalculationDetailRegistry
     : public RegistryEngineBase<NeedCalculationDetail>,
       public CrudWorkflowMixin<NeedCalculationDetailRegistry, NeedCalculationDetail>,
       public RegisterMe<NeedCalculationDetailRegistry>,
-      public TestSupportMixin<NeedCalculationDetailRegistry>
+      public TestSupportMixin<NeedCalculationDetailRegistry>,
+      public BulkLoadMixin<NeedCalculationDetailRegistry, NeedCalculationDetail>
 {
     AUTO_REGISTER_REGISTRY
 public:

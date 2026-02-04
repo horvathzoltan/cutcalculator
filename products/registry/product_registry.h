@@ -8,6 +8,7 @@
 #include "common/registry/barcode/barcode_index_mixin.h"
 #include "common/registry/hierarchy/hierarchy_mixin.h"
 
+#include "common/registry/mixins/bulk_load_mixin.h"
 #include "common/registry/mixins/crud_workflow_mixin.h"
 #include "common/registry/mixins/test_support_mixin.h"
 #include "products/model/product_master.h"
@@ -41,8 +42,8 @@ class ProductRegistry
       public BarcodeIndexMixin<ProductRegistry, ProductMaster>,
       public HierarchyMixin<ProductRegistry, ProductMaster>,
       public RegisterMe<ProductRegistry>,
-      public TestSupportMixin<ProductRegistry>
-
+      public TestSupportMixin<ProductRegistry>,
+      public BulkLoadMixin<ProductRegistry, ProductMaster>
 {
     AUTO_REGISTER_REGISTRY;
 public:

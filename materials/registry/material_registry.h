@@ -20,7 +20,7 @@ class MaterialRegistry
       public IBarcodeCapable,
       public RegisterMe<MaterialRegistry>,
       public TestSupportMixin<MaterialRegistry>,
-      public BulkLoadMixin<MaterialRegistry, MaterialMaster>,
+      public BulkLoadMixin<MaterialRegistry, MaterialMaster>
 {
     AUTO_REGISTER_REGISTRY
 

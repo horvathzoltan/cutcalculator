@@ -39,7 +39,7 @@ private:
         if (!ok)
             return StartupStatus::failure(errorMessage, critical);
 
-        Registry::instance().setAll(items);
+        Registry::instance().bulkSetAll(items);
 
         zInfo(QString("📦 %1: %2 elem betöltve")
                   .arg(Registry::instance().name())

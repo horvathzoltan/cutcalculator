@@ -51,7 +51,7 @@ void MaterialRequirementsManager::connectSignals() {
                 rule.leftId = productId;
                 rule.rightId = materialId;
 
-                if (!NeedRuleRegistry::instance().insert(rule)) {
+                if (!NeedRuleRegistry::instance().insertRaw(rule)) {
                     zWarning("⚠️ NeedRule insert failed");
                     return;
                 }
@@ -72,7 +72,7 @@ void MaterialRequirementsManager::connectSignals() {
                 Q_UNUSED(productBarcode);
                 Q_UNUSED(materialBarcode);
 
-                bool ok = NeedRuleRegistry::instance().remove(productId, materialId);
+                bool ok = NeedRuleRegistry::instance().removeRaw(productId, materialId);
                 if (ok) {
                     // zEventINFO(QString("🗑 NeedRule removed: Product=%1 Material=%2")
                     //                .arg(productId.toString(), materialId.toString()));
@@ -96,7 +96,7 @@ void MaterialRequirementsManager::connectSignals() {
                 auto pick = picker.result();
                 auto newMaterialId = pick.material_id;
 
-                NeedRuleRegistry::instance().remove(productId, oldMaterialId);
+                NeedRuleRegistry::instance().removeRaw(productId, oldMaterialId);
                 NeedRuleRegistry::instance().insertRule(productId, newMaterialId);
 
                 NeedRuleRepository::save();

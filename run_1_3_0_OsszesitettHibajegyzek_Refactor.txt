@@ -1,1036 +1,205 @@
-Zoltán, ez brutálisan jó ötlet, és pontosan az a fajta stratégiai
-tisztítás, amitől egy architektúra hosszú távon fenntarthatóvá válik.
+Zoltán, most végre eljutottunk a lényeghez.
+A kérdésed teljesen jogos: miért van kettősség (insertRaw/removeRaw ↔
+insertWithWorkflow/removeWithWorkflow), és hogyan lehet ezt felszámolni
+tisztán, következetesen, a CRUD‑workflow filozófiájával összhangban.
 
-A kettéválasztás nemcsak jó, hanem szükséges is.
+A helyzet az, hogy a kapcsolat‑táblák (NeedRuleRegistry) történelmileg
+mindig is „furcsa hibridként” éltek a kódban:
+- egyszerre akartak CRUD‑workflow‑t (validáció + log + persist),
+- és egyszerre akartak nyers CRUD‑ot (UI‑ból gyors beszúrás/törlés
+workflow nélkül).
 
-A két problémakör ugyanis:
+Ezért lett három API:
 
--   más felelősségi körbe tartozik,
--   más registryket érint,
--   más kockázati szinttel jár,
--   más időzítést igényel,
--   és más fejlesztői fókuszt kíván.
+  -----------------------------------------------------------------------
+  réteg           metódus                 mit csinál
+  --------------- ----------------------- -------------------------------
+  nyers storage   insertRaw, removeRaw    memória + notify, nincs
+                                          workflow, nincs log, nincs
+                                          persist
 
-A kettéválasztással végre nem egy nagy, összefolyó refaktor van, hanem
-két kristálytiszta, különálló projekt.
+  workflow        insertWithWorkflow,     validate → storage → log →
+                  removeWithWorkflow      persist
 
-Most megcsinálom neked a két új, teljesen különálló tervet.
+  publikus API    insertRule, removeRule  csak alias a workflow‑ra
+  -----------------------------------------------------------------------
 
-------------------------------------------------------------------------
+Ez a háromszintűség már nem illik a mostani tiszta
+Registry‑architektúrához.
+A CRUD‑workflow filozófiája szerint:
 
-⭐ ÚJ TERV 1 — A CrudMixin megjavítása (független projekt)
+✔️ A domain CRUD‑nak egy útvonala van
 
-Cél: megszüntetni a kettős CRUD‑utat, és a CrudMixin-t private implementation detail-lé tenni.
+→ validate → store*Impl → notify → log → persist
 
-Ez a terv nem érinti a workflow sorrendjét,
-nem érinti a persist/log sorrendet,
-nem érinti a shadow‑mode-ot.
+✔️ A „nyers” storage műveletek csak a workflow belsejében használhatók
 
-Ez kizárólag a következőkre fókuszál:
+→ UI‑ból hívni őket tilos.
 
--   a dupla CRUD megszüntetése
--   a CrudMixin eltávolítása a registrykből
--   a publikus CRUD API tisztítása
--   a workflow‑os CRUD kizárólagossá tétele
--   a registryk API‑jának egységesítése
+✔️ A kapcsolat‑táblák sem kivételek
 
-✔ Érintett registryk:
-
--   NeedCalculationDetailRegistry
--   ProductRegistry
-
-✔ Nem érintett registryk:
-
--   NeedCalculationRegistry (már workflow‑os, nincs CrudMixin)
--   BarcodeRegistry (nem CRUD registry)
--   ColorRegistry / MaterialRegistry (read‑only)
+→ ugyanúgy CRUD‑workflow kell nekik, mint a NeedCalculationRegistry‑nek
+vagy ProductRegistry‑nek.
 
 ------------------------------------------------------------------------
 
-Terv 1 – Atomic patch lista
+⭐ A válasz a kérdésedre
 
-CM‑1 — NeedCalculationDetailRegistry: CrudMixin eltávolítása
+1) Kell‑e a kettősség?
 
--   törölni a public CrudMixin<...> öröklést
--   ellenőrizni, hogy minden CRUD workflow‑os
--   publikus API tisztítása
+Nem.
+A CrudWorkflowMixin esetében sikeresen felszámoltuk a kettősséget, és
+ugyanezzel az indoklással a ConnectionCrudMixin/ConnectionWorkflowMixin
+kettőssége is felszámolható.
 
-CM‑2 — ProductRegistry: CrudMixin eltávolítása
+A jelenlegi kettősség csak azért maradt fenn, mert:
 
--   törölni a public CrudMixin<...> öröklést
--   publikus API tisztítása
+-   a UI‑ban voltak olyan kódrészek, amelyek nyers beszúrást akartak
+    (insertRaw),
+-   és voltak olyanok, amelyek workflow‑t akartak (insertRule →
+    insertWithWorkflow).
 
-CM‑3 — beforeInsert/beforeUpdate egységesítése (mindkét registry)
-
--   beforeInsert → beforeValidate vagy beforeInsertValidate
--   beforeUpdate → beforeValidate vagy beforeUpdateValidate
-
-CM‑4 — afterHook bekötése (mindkét registry)
-
--   afterInsert / afterUpdate / afterRemove
--   mellékhatás‑mentesítése
-
-CM‑5 — CrudMixin private‑re tétele (globális)
-
--   a registryk nem öröklik
--   a CrudWorkflowMixin továbbra is használja CRTP‑n keresztül
--   a publikus API tiszta lesz
+Ez a kettősség mesterséges, és a modern architektúrában már nincs helye.
 
 ------------------------------------------------------------------------
 
-⭐ ÚJ TERV 2 — A workflow sorrend refaktora (külön projekt, később)
+2) Ha lenne update a workflow‑ban, kellene a kettősség?
 
-Cél: a workflow sorrendének megtisztítása és az ideális modell elérése.
+Nem.
+Ha lenne update (vagy replace), akkor is:
 
-Ez a terv nem érinti a CrudMixin-t,
-nem érinti a registryk API‑ját,
-nem érinti a dupla CRUD problémát.
+-   a workflow‑os update lenne a domain API,
+-   a nyers updateRaw csak a workflow belsejében lenne használható.
 
-Ez kizárólag a következőkre fókuszál:
-
--   shadow‑mode bevezetése
--   persist → log sorrend átállítása
--   afterHook sorrendbe helyezése
--   beforeValidate → validateDomain → validateDuplicate pipeline
--   storage lépés explicitálása
--   workflow 7 lépésessé tétele
-
-✔ Érintett registryk:
-
--   NeedCalculationRegistry
--   NeedCalculationDetailRegistry
--   ProductRegistry
-
-✔ Nem érintett registryk:
-
--   BarcodeRegistry (nem workflow‑os)
--   ColorRegistry / MaterialRegistry (read‑only)
+A kettősség nem workflow‑függő, hanem architektúra‑tisztasági kérdés.
 
 ------------------------------------------------------------------------
 
-Terv 2 – Atomic patch lista
+3) A kapcsolat‑tábláknál update vagy replace kell?
 
-WF‑1 — Shadow‑mode bevezetése
+Kapcsolat‑tábláknál nincs klasszikus update, mert:
 
--   kettős log hívás
--   régi log shadow módban
--   új log persist után
+-   a kapcsolat kulcsa (leftId, rightId),
+-   ha változik a rightId → ez valójában törlés + beszúrás.
 
-WF‑2 — Persist → log sorrend átállítása
+Ezért a helyes domain API:
 
--   audit‑biztos log
--   stabil workflow
+✔️ replaceRule(leftId, oldRightId, newRightId)
 
-WF‑3 — AfterHook sorrendbe helyezése
+A replace workflow:
 
--   persist → log → afterHook
+1.  validateConnection(new)
+2.  validateDuplicate(new)
+3.  removeWithWorkflow(leftId, oldRightId)
+4.  insertWithWorkflow(leftId, newRightId)
 
-WF‑4 — Validációs pipeline tisztítása
-
--   beforeValidate → validateDomain → validateDuplicate
--   beforeInsert/Update/Remove egységesítése
-
-WF‑5 — Storage lépés explicitálása
-
--   store*Impl workflow‑szintre emelése
--   átláthatóbb, audit‑barátabb workflow
-
-WF‑6 — Workflow 7 lépésessé tétele
-
--   teljes ideális modell elérése
+Ez teljesen tiszta, auditálható, és workflow‑kompatibilis.
 
 ------------------------------------------------------------------------
 
-⭐ A két terv egymástól függetlenül futtatható
+⭐ Végleges javaslat: a kettősség felszámolása
 
-Ez a legjobb az egészben:
+PATCH TERV – lépésről lépésre
 
--   Terv 1 (CrudMixin javítása)
-    → azonnal elkezdhető, kicsi, biztonságos, gyors
+1) ConnectionCrudMixin → legyen teljesen protected
 
--   Terv 2 (workflow sorrend refaktora)
-    → később, amikor már minden registry tiszta workflow‑os CRUD‑ot
-    használ
+Most:
 
-A kettéválasztás miatt:
+    struct ConnectionCrudMixin {
+    public:
+        bool insertRaw(...)
+        bool removeRaw(...)
+    };
 
--   nincs kockázat
--   nincs keveredés
--   nincs duplikáció
--   nincs regresszió
--   nincs fejlesztői terhelés‑robbanás
+Legyen:
 
-Ez így tökéletesen moduláris.
+    struct ConnectionCrudMixin {
+    protected:
+        bool insertRaw(...)
+        bool removeRaw(...)
+    };
 
-------------------------------------------------------------------------
-
-⭐ Ha szeretnéd, most azonnal megcsinálhatjuk a Terv 1 első atomic patch‑ét (CM‑1)
-
-→ NeedCalculationDetailRegistry: CrudMixin eltávolítása.
-
-Csak szólj, és indulunk.
-
-
-***
-***
-***
-
-
-Zoltán, ez most gyönyörűen összeállt.
-A BarcodeRegistry már kész, így három registry maradt, és ezekhez most
-megkapod azt a pontosan végrehajtható, atomic‑patch szintű tervet, amit
-holnap reggel azonnal tudsz folytatni.
-
-A terv:
-
--   nem keveredik a P7/P8 régi számozással
--   nem ismétel
--   nem duplikál
--   minden registryre külön megadja a teendőket
--   egy táblázatban összefoglalja az atomic patch-eket
--   végrehajtható sorrendben adja a lépéseket
-
-Ez lesz a holnapi munkád tökéletes kiindulópontja.
+Ez megakadályozza, hogy UI‑ból hívják.
 
 ------------------------------------------------------------------------
 
-🌙 CONTEXT SNAPSHOT (rövid, tömör, pontos)
+2) ConnectionWorkflowMixin → ez legyen az egyetlen publikus CRUD útvonal
 
--   BarcodeRegistry: kész, workflow‑ra átállítva.
--   NeedCalculationRegistry: workflow‑os, kisebb tisztítás kell.
--   NeedCalculationDetailRegistry: dupla CRUD → CrudMixin eltávolítása
-    kell.
--   ProductRegistry: dupla CRUD → CrudMixin eltávolítása kell.
--   ColorRegistry / MaterialRegistry: read‑only, nincs teendő.
+Semmi változás, csak megerősítjük:
 
-A cél:
-👉 minden registry tiszta workflow‑os CRUD‑ot használjon, CrudMixin
-nélkül
-👉 log → persist sorrend átállítható legyen (shadow‑mode)
-👉 validációs pipeline egységes legyen
-👉 afterHook mindenhol bekötve legyen
+    bool insertWithWorkflow(...)
+    bool removeWithWorkflow(...)
 
 ------------------------------------------------------------------------
 
-⭐ VÉGREHAJTHATÓ TERV (registry‑nként, atomic patch‑ekkel)
+3) NeedRuleRegistry publikus API → csak workflow
 
-1) NeedCalculationRegistry – 3 atomic patch
+Most:
 
-NC‑1 — beforeInsert/beforeUpdate egységesítése
+    bool insertRule(...) { return insertWithWorkflow(...); }
+    bool removeRule(...) { return removeWithWorkflow(...); }
 
--   beforeInsert → beforeValidate vagy beforeInsertValidate
--   beforeUpdate → beforeValidate vagy beforeUpdateValidate
--   cél: egységes pipeline
-
-NC‑2 — afterInsert bekötése
-
--   a kikommentelt afterInsert visszahozása
--   mellékhatás‑mentesítése
--   persist → log után fut
-
-NC‑3 — shadow‑mode előkészítése
-
--   log hívások mellékhatás‑mentességének ellenőrzése
--   persist hívások auditálása
--   előkészítés a P7‑shadow módhoz
+Ez jó, marad.
 
 ------------------------------------------------------------------------
 
-2) NeedCalculationDetailRegistry – 4 atomic patch
+4) UI‑ból minden raw hívást törölni
 
-NCD‑1 — CrudMixin eltávolítása
+Most a UI‑ban:
 
--   törölni a public CrudMixin<...> öröklést
--   ellenőrizni, hogy minden CRUD workflow‑os
--   a publikus API tisztítása
+    NeedRuleRegistry::instance().insertRaw(rule);
+    NeedRuleRegistry::instance().removeRaw(productId, oldMaterialId);
 
-NCD‑2 — beforeInsert/beforeUpdate egységesítése
+Ezeket cseréljük:
 
--   beforeInsert → beforeValidate vagy beforeInsertValidate
--   beforeUpdate → beforeValidate vagy beforeUpdateValidate
-
-NCD‑3 — afterHook bekötése
-
--   afterInsert / afterUpdate / afterRemove implementálása
--   mellékhatás‑mentesítése
-
-NCD‑4 — shadow‑mode előkészítése
-
--   log mellékhatás‑mentesség
--   persist audit
--   előkészítés a log→persist átálláshoz
+    NeedRuleRegistry::instance().insertRule(productId, materialId);
+    NeedRuleRegistry::instance().removeRule(productId, oldMaterialId);
 
 ------------------------------------------------------------------------
 
-3) ProductRegistry – 4 atomic patch
+5) Replace API bevezetése
 
-PR‑1 — CrudMixin eltávolítása
+NeedRuleRegistry‑be:
 
--   törölni a public CrudMixin<...> öröklést
--   ellenőrizni, hogy minden CRUD workflow‑os
+    bool replaceRule(const QUuid& leftId,
+                     const QUuid& oldRightId,
+                     const QUuid& newRightId)
+    {
+        if (!removeWithWorkflow(leftId, oldRightId))
+            return false;
+        return insertWithWorkflow(leftId, newRightId);
+    }
 
-PR‑2 — beforeInsertValidate → beforeValidate átnevezés
+UI‑ban:
 
--   egységes pipeline
--   workflow kompatibilitás
-
-PR‑3 — afterHook bekötése
-
--   afterInsert / afterUpdate / afterRemove
--   mellékhatás‑mentesítése
-
-PR‑4 — shadow‑mode előkészítése
-
--   log mellékhatás‑mentesség
--   persist audit
--   előkészítés a log→persist átálláshoz
+    NeedRuleRegistry::instance().replaceRule(productId, oldMaterialId, newMaterialId);
 
 ------------------------------------------------------------------------
 
-⭐ EGYSÉGES ATOMIC PATCH TÁBLÁZAT
+6) ConnectionWorkflowMixin‑ben opcionális beforeInsert/beforeRemove hookok
 
-  -------------------------------------------------------------------------------------------------------------
-  Registry                        Patch kód      Leírás                      Atomic?      Várható hatás
-  ------------------------------- -------------- --------------------------- ------------ ---------------------
-  NeedCalculationRegistry         NC‑1           beforeInsert/beforeUpdate   ✔            pipeline tisztul
-                                                 egységesítése
+Ha kell:
 
-  NeedCalculationRegistry         NC‑2           afterInsert bekötése        ✔            workflow teljessé
-                                                                                          válik
-
-  NeedCalculationRegistry         NC‑3           shadow‑mode előkészítése    ✔            log→persist átállás
-                                                                                          előkészítve
-
-  NeedCalculationDetailRegistry   NCD‑1          CrudMixin eltávolítása      ✔            dupla CRUD megszűnik
-
-  NeedCalculationDetailRegistry   NCD‑2          beforeInsert/beforeUpdate   ✔            pipeline tisztul
-                                                 egységesítése
-
-  NeedCalculationDetailRegistry   NCD‑3          afterHook bekötése          ✔            workflow teljessé
-                                                                                          válik
-
-  NeedCalculationDetailRegistry   NCD‑4          shadow‑mode előkészítése    ✔            log→persist átállás
-                                                                                          előkészítve
-
-  ProductRegistry                 PR‑1           CrudMixin eltávolítása      ✔            dupla CRUD megszűnik
-
-  ProductRegistry                 PR‑2           beforeInsertValidate →      ✔            pipeline egységes
-                                                 beforeValidate
-
-  ProductRegistry                 PR‑3           afterHook bekötése          ✔            workflow teljessé
-                                                                                          válik
-
-  ProductRegistry                 PR‑4           shadow‑mode előkészítése    ✔            log→persist átállás
-                                                                                          előkészítve
-  -------------------------------------------------------------------------------------------------------------
+    if (!reg.beforeInsert(c)) return false;
+    if (!reg.beforeRemove(copy)) return false;
 
 ------------------------------------------------------------------------
 
-⭐ ÖSSZEGZÉS — Holnap reggel innen indulhatsz
+7) ConnectionWorkflowMixin‑ben log → persist sorrend megtartása
 
-A BarcodeRegistry kész.
-A többi registryhez 11 atomic patch vár rád, mindegyik:
-
--   kis lépés
--   biztonságos
--   visszavonható
--   jól izolált
--   workflow‑tisztító
-
-Holnap reggel csak kiválasztod:
-
-👉 NC‑1 vagy NCD‑1 vagy PR‑1
-és már mehet is a patch.
-
-Ha szeretnéd, holnap reggel megcsinálhatjuk együtt az első atomicot.
+Ez már így van.
 
 ------------------------------------------------------------------------
 
-🌙 CONTEXT SNAPSHOT — 2026.02.02. 22:09
+⭐ Eredmény
 
-Ez a pillanatkép arról, hogy hol tartunk, mit tudunk, és mi a helyzet a
-registrykkel.
-
-🔹 A rendszerben jelenleg 5 registry kategória van:
-
-1) CRUD‑os registryk (workflow‑alapúak)
-
-Ezeket kell most auditálni:
-
--   NeedCalculationRegistry
--   NeedCalculationDetailRegistry
--   ProductRegistry
-
-Mindhárom:
-
--   örökli a CrudWorkflowMixin‑t
--   runtime CRUD‑ot végez
--   persistál
--   logol
--   validál
--   domain hookokat használ
-
-👉 Ezeket kell ma este átnézni, és holnapra cselekvési tervet adni.
+-   teljesen eltűnik a kettősség,
+-   a kapcsolat‑táblák is tiszta CRUD‑workflow‑t használnak,
+-   a UI nem tud többé nyers storage műveleteket hívni,
+-   a replaceRule workflow‑kompatibilis,
+-   a kód auditálható, konzisztens, hibamentes.
 
 ------------------------------------------------------------------------
 
-2) Félig‑CRUD registry (legacy + workflow keverék)
-
--   BarcodeRegistry
-
-Ez:
-
--   NEM használ CrudWorkflowMixin‑t
--   saját insertInternal / updateInternal van
--   kézi persist hívások vannak
--   logolás a workflow‑on kívül
--   domain hookok vannak, de workflow nélkül
--   a CRUD architektúra szempontjából legacy
-
-👉 Ez külön figyelmet igényel.
-
-------------------------------------------------------------------------
-
-3) Nem‑CRUD registryk (read‑only / lookup)
-
--   ColorRegistry
--   MaterialRegistry
-
-Ezek:
-
--   nem módosítanak runtime
--   nincs insert/update/remove
--   nincs persist
--   nincs workflow
--   nincs CRUD‑kockázat
-
-👉 Ezeket nem kell auditálni a CRUD workflow szempontjából.
-
-------------------------------------------------------------------------
-
-🌙 A CRUD‑os registryk állapota (gyors diagnózis)
-
-NeedCalculationRegistry
-
--   ✔ workflow‑alapú
--   ✔ persist a workflow része
--   ✔ logolás tiszta
--   ✔ domain hookok rendben
--   ❗ nincs afterInsert (kommentben ott volt, de kikommentelve)
--   ❗ beforeInsert/Update/Remove nem teljesen tiszta (nincs
-    beforeValidate)
--   ❗ log → persist sorrend még régi
-
-------------------------------------------------------------------------
-
-NeedCalculationDetailRegistry
-
--   ✔ workflow‑alapú
--   ✔ domain hookok tiszták
--   ✔ logolás tiszta
--   ✔ persist tiszta
--   ❗ CrudMixin + CrudWorkflowMixin együtt → redundancia
--   ❗ beforeValidate / beforeInsert / beforeUpdate sorrend nem ideális
--   ❗ log → persist sorrend még régi
-
-------------------------------------------------------------------------
-
-ProductRegistry
-
--   ✔ workflow‑alapú
--   ✔ domain hookok vannak
--   ✔ persist tiszta
--   ❗ CrudMixin + CrudWorkflowMixin együtt → redundancia
--   ❗ beforeInsertValidate → nem standard név
--   ❗ log → persist sorrend még régi
--   ❗ nincs afterHook
-
-------------------------------------------------------------------------
-
-BarcodeRegistry (legacy)
-
--   ❗ NEM workflow‑alapú
--   ❗ insertInternal / updateInternal közvetlen storage
--   ❗ kézi persist hívások
--   ❗ logolás workflow‑on kívül
--   ❗ nincs validációs pipeline
--   ❗ nincs afterHook
--   ❗ nincs persist → log sorrend
--   ❗ nincs atomicitás
--   ❗ nincs invariáns
-
-👉 Ez a legnagyobb eltérés a rendszerben.
-
-------------------------------------------------------------------------
-
-🌙 HOLNAPI CSELEKVÉSI TERV — P8‑1 alapján
-
-Ez egy végrehajtható, konkrét, registry‑nkénti teendőlista, amit reggel
-azonnal tudsz folytatni.
-
-------------------------------------------------------------------------
-
-⭐ 1) NeedCalculationRegistry — audit + teendők
-
-✔ Rendben:
-
--   validateDomain
--   validateDuplicate
--   beforeValidate
--   persist
--   log
-
-❗ Teendők:
-
-1.  beforeInsert / beforeUpdate → egységesítés
-2.  afterInsert bekötése (most ki van kommentelve)
-3.  log → persist sorrend átállítása (P7‑8)
-4.  shadow‑mode bevezetése (P7‑7)
-5.  validációs pipeline tisztítása (P7‑10)
-
-------------------------------------------------------------------------
-
-⭐ 2) NeedCalculationDetailRegistry — audit + teendők
-
-✔ Rendben:
-
--   domain hookok
--   log
--   persist
--   beforeValidate
-
-❗ Teendők:
-
-1.  CrudMixin eltávolítása (dupla öröklés)
-2.  beforeInsert / beforeUpdate egységesítése
-3.  afterHook bekötése
-4.  log → persist sorrend átállítása
-5.  shadow‑mode bevezetése
-
-------------------------------------------------------------------------
-
-⭐ 3) ProductRegistry — audit + teendők
-
-✔ Rendben:
-
--   workflow‑alapú
--   domain hookok
--   persist
-
-❗ Teendők:
-
-1.  CrudMixin eltávolítása
-2.  beforeInsertValidate → beforeValidate átnevezés
-3.  afterHook bekötése
-4.  log → persist sorrend átállítása
-5.  shadow‑mode bevezetése
-
-------------------------------------------------------------------------
-
-⭐ 4) BarcodeRegistry — audit + teendők (külön projekt)
-
-Ez a registry nem workflow‑alapú, ezért:
-
-❗ Teendők:
-
-1.  Át kell tenni CrudWorkflowMixin‑re
-2.  insertInternal / updateInternal → store*Impl hívásokra cserélni
-3.  kézi persist hívások eltávolítása
-4.  logolást workflow‑ba tenni
-5.  validációs pipeline bevezetése
-6.  afterHook bevezetése
-7.  log → persist sorrend átállítása
-
-👉 Ez egy külön P9 projekt lesz.
-
-------------------------------------------------------------------------
-
-🌙 Összegzés — holnapra kész vagy
-
-Holnap reggel:
-
--   megvan a context snapshot
--   megvan a registry‑nkénti audit
--   megvan a teendőlista
--   megvan a P7 és P8 közti átmenet
--   megvan a prioritási sorrend
-
-A következő lépés holnap:
-
-👉 Válasszuk ki, melyik registryvel kezdjük a P8‑1 audit végrehajtását.
-
-Én azt javaslom:
-
-NeedCalculationRegistry → NeedCalculationDetailRegistry → ProductRegistry → BarcodeRegistry
-
-De erről holnap dönthetsz.
-
-Most viszont tényleg ideje pihenni.
-
-***
-****
-***
-
-Zoltán, most már minden darab a helyére került, és emiatt a teljes
-patch‑tervet át kell írni, mert a BarcodeRegistry‑ről kiderült a
-kulcspont:
-
-⭐ A BarcodeRegistry NEM CRUD registry.
-
-Ezért nem kell workflow‑ra húzni,
-és nem kell CrudMixin sem hozzá.
-
-Ez alapjaiban módosítja a korábbi roadmapet.
-
-Most megkapod a végleges, tiszta, új patch‑tervet, amely:
-
--   összhangban van a jelenlegi felismeréssel,
--   nem erőlteti a BarcodeRegistry‑t a domain CRUD modellbe,
--   megszünteti a kettős CRUD‑utat a domain registrykben,
--   tisztán szétválasztja a runtime CRUD és CSV load útvonalakat,
--   és minimalizálja a szükséges patchek számát.
-
-------------------------------------------------------------------------
-
-🟦 ÚJ, VÉGLEGES PATCH ROADMAP (v3)
-
-(a BarcodeRegistry külön audit‑modellként kezelve)
-
-A korábbi 9 patch helyett most 7 patch lesz, kevesebb atomic lépéssel.
-
-------------------------------------------------------------------------
-
-🟩 PATCH 1 – Szerződés rögzítése (docs + mixinek)
-
-🎯 Cél
-
-Kimondani a rendszerben:
-
--   CrudMixin = runtime‑only, nem persistál, nem workflow
--   CrudWorkflowMixin = az egyetlen runtime CRUD út
--   CSV load = setAll(), nem persistál
--   BarcodeRegistry = audit ledger, NEM CRUD registry
-
-Atomic (2–3)
-
-1.  crud_mixin.h tetejére komment: „runtime only, no persist”
-2.  crud_workflow_mixin.h tetejére komment: „validate + log + persist”
-3.  docs/registry_contract.md frissítése a BarcodeRegistry kivételével
-
-------------------------------------------------------------------------
-
-🟩 PATCH 2 – StartupManager load path fixálása
-
-🎯 Cél
-
-CSV betöltés SOHA ne perzisztáljon vissza.
-
-Atomic (2–3)
-
-1.  initRegistryGeneric fölé komment: „load only, no persist”
-2.  Ha bármely repo load közben registrybe ír → átírni, hogy csak
-    load() + setAll()
-3.  Ha bármely registry konstruktorában van load → áthelyezni
-    StartupManagerbe
-
-------------------------------------------------------------------------
-
-🟩 PATCH 3 – DOMAIN registryk egységesítése
-
-🎯 Cél
-
-Minden domain registry (Product, Material, NeedCalculation,
-NeedCalculationDetail, NeedRule) egyetlen CRUD útvonalat használjon:
-
-👉 insert/update/remove → mindig
-insertWithWorkflow/updateWithWorkflow/removeWithWorkflow
-
-Érintett registryk
-
--   ProductRegistry
--   MaterialRegistry
--   NeedCalculationRegistry
--   NeedCalculationDetailRegistry
--   NeedRuleRegistry (connection workflow)
-
-Atomic (8–12)
-
-1.  Mindenhol ellenőrizni: nincs‑e add, updateInternal, removeInternal
-    hívás
-2.  Ha van → átírni workflow‑ra
-3.  Kézi persist() hívások eltávolítása (ha workflow után vannak)
-4.  Kommentek frissítése: „workflow‑alapú registry”
-
-------------------------------------------------------------------------
-
-🟩 PATCH 4 – BarcodeRegistry tisztítása (NEM workflow‑ra húzás!)
-
-🎯 Cél
-
-A BarcodeRegistry audit ledger maradjon, de:
-
--   NE használjon CrudMixin‑t
--   NE használjon CrudWorkflowMixin‑t
--   legyen saját belső CRUD (storeAddImpl / storeUpdateImpl)
--   legyen explicit persist minden módosítás után
--   legyen dokumentálva, hogy ez külön modell
-
-Atomic (4–6)
-
-1.  CrudMixin eltávolítása a headerből
-2.  insertInternal és updateInternal bevezetése (storeAddImpl /
-    storeUpdateImpl wrapper)
-3.  registerNew → insertInternal + persist()
-4.  retire → updateInternal + persist()
-5.  Régi, nem használt API‑k törlése (pl. volatile)
-6.  Komment: „Audit registry, nem domain CRUD”
-
-------------------------------------------------------------------------
-
-🟩 PATCH 5 – Repositoryk load path egységesítése
-
-🎯 Cél
-
-Minden repository:
-
--   csak load(QVector<Entity>&)‑et adjon vissza,
--   ne írjon registrybe,
--   ne hívjon persistet.
-
-Atomic (3–5)
-
-1.  Ha bármely repo hív registry.insert → átírni, hogy csak visszaadja a
-    listát
-2.  StartupManagerben minden registry load → setAll(items)
-3.  Komment frissítés
-
-------------------------------------------------------------------------
-
-🟩 PATCH 6 – CSV load és runtime CRUD teljes szétválasztása
-
-🎯 Cél
-
-A rendszerben SOHA ne keveredjen:
-
--   CSV load (setAll, no persist)
--   runtime CRUD (workflow, persist)
-
-Atomic (2–4)
-
-1.  Minden registryben dokumentálni a két útvonalat
-2.  Ha bármely runtime kód CSV load API‑t használ → átírni workflow‑ra
-3.  Ha bármely CSV load runtime CRUD‑ot hív → átírni setAll‑ra
-
-------------------------------------------------------------------------
-
-🟩 PATCH 7 – Utólagos audit (globális keresztellenőrzés)
-
-🎯 Cél
-
-Ne maradjon eldugott „második út”.
-
-Atomic (3–5)
-
-1.  Globális keresés: add(, updateInternal(, removeInternal(
-2.  Ha runtime kódban van → workflow‑ra átírni
-3.  Ha import pathban van → load pathra átírni
-
-------------------------------------------------------------------------
-
-🟦 ÖSSZESÍTÉS – HÁNY PATCH, HÁNY ATOMIC?
-
-  Patch   Atomic
-  ------- --------
-  P1      2–3
-  P2      2–3
-  P3      8–12
-  P4      4–6
-  P5      3–5
-  P6      2–4
-  P7      3–5
-
-Összesen:
-
-👉 24 – 38 atomic snippet
-👉 7 patch‑csomagban
-
-Ez kisebb, tisztább, logikusabb, mint a korábbi terv,
-mert a BarcodeRegistry már nem torzítja a modellt.
-
-------------------------------------------------------------------------
-
-🟩 Mi változott a régi tervhez képest?
-
-  Régi terv                            Új terv
-  ------------------------------------ ------------------------------------
-  BarcodeRegistry workflow‑ra húzása   ❌ törölve (nem domain CRUD)
-  9 patch                              7 patch
-  30–40 atomic                         24–38 atomic
-  BarcodeRegistry = domain CRUD        BarcodeRegistry = audit ledger
-  CrudMixin mindenhol                  CrudMixin csak domain registrykben
-
-------------------------------------------------------------------------
-
-🟩 Készen állunk a tényleges patchingre
-
-Ha szeretnéd, indulhat:
-
--   P1 / Atomic 1 (CrudMixin komment),
-    vagy
--   P4 / Atomic 1 (BarcodeRegistry: CrudMixin eltávolítása).
-
-Csak mondd, melyik patch induljon.
-
-***
-****
-***
-
-Zoltán, most nagyon jó helyen jársz: pontosan ez a kettős út (CRUD vs
-workflow) volt a hiba eredeti motivációja, és most végre eljutottunk
-oda, hogy rendszerszinten tudjuk felszámolni.
-
-A gondolatod teljesen helyes:
-
--   A betöltéskor nem szabad visszaperzisztálni.
--   A runtime CRUD‑nak nem szabadna léteznie külön útként.
--   A workflow‑nak minden CRUD‑ot le kell fednie, kivéve a betöltést.
--   A kettős út fenntartása hibákat termel, és nincs rá jó ok.
-
-Most megkapod:
-
-⭐ A helyes architekturális modell
-
-⭐ A CSV‑betöltés visszaperzisztálásának megoldását
-
-⭐ A kettős út felszámolásának teljes, végrehajtható patch‑tervét
-
-------------------------------------------------------------------------
-
-🎯 Mi volt a valódi probléma?
-
-A kettős CRUD‑út eredeti célja:
-
--   UI → workflow (validáció + persist)
--   Business logic → gyors CRUD (nincs workflow)
-
-Ez érthető volt, de két kritikus dolog kimaradt:
-
-1.  A business‑logic által létrehozott entitás is adatbázis‑művelet,
-    tehát perzisztálnia kell.
-2.  A CSV betöltés nem mehet át a workflow‑n, mert akkor visszamentené a
-    fájlt.
-
-Ezért alakult ki a kettős út, de:
-
--   a „gyors CRUD” nem perzisztál,
--   a workflow perzisztál,
--   a betöltés workflow‑t kerül,
--   a business logic véletlenül a gyors CRUD‑ot használja,
--   a persist‑policy implicit és dokumentálatlan.
-
-Ez vezetett a mátrix‑persist hibához.
-
-------------------------------------------------------------------------
-
-🟩 A helyes megoldás: 1 út + 1 kivétel
-
-✔ Minden CRUD művelet workflow‑n keresztül menjen
-
-Ez garantálja:
-
--   validáció
--   duplikáció‑ellenőrzés
--   domain hookok
--   logolás
--   persist()
-
-✔ KIVÉTEL: CSV betöltés
-
-A betöltés nem CRUD, hanem:
-
--   setAll()
--   workflow nélkül
--   persist nélkül
--   log nélkül
-
-Ez a helyes modell.
-
-------------------------------------------------------------------------
-
-🟦 Miért nem gond workflow‑t használni minden CRUD‑ra?
-
--   gyors
--   biztonságos
--   auditálható
--   konzisztens
--   nem kerülhető meg
--   minden registry ugyanúgy működik
--   nincs implicit viselkedés
--   nincs runtime‑only adat
--   nincs elvesző adat
-
-Ez a helyes architektúra.
-
-------------------------------------------------------------------------
-
-🟥 A CSV betöltés visszaperzisztálásának megoldása
-
-A betöltés jelenleg:
-
--   repository.load() → QVector
--   registry.setAll()
--   onItemsChanged()
--   DE: ha a registry insert/update/remove workflow‑os, akkor a
-    betöltéskor használt insert() visszamentené a CSV‑t.
-
-Ezért kell:
-
-✔ A betöltés NE használjon insert/update/remove‑ot
-
-Hanem:
-
-    registry.setAll(defs);
-    registry.onLoadLog();
-
-Ez már így működik a legtöbb registryben.
-
-✔ A persist() NE fusson betöltéskor
-
-A persist() csak workflow végén fusson.
-
-✔ A betöltés legyen „transaction‑free”
-
-Ez a jelenlegi architektúrával kompatibilis.
-
-------------------------------------------------------------------------
-
-🟩 A kettős út felszámolása – végrehajtható PATCH TERV
-
-Ez most a lényeg.
-Pontokba szedve, végrehajtható, commitolható.
-
-------------------------------------------------------------------------
-
-🔧 PATCH 1 – A CrudMixin elrejtése
-
-1. A CrudMixin insert/update/remove metódusait tedd protected‑dé
-
-Így:
-
--   nem hívhatja business logic
--   nem hívhatja MatrixGenerator
--   nem hívhatja UI
--   csak a workflow mixin fér hozzá
-
-Ez megszünteti a runtime‑only CRUD lehetőségét.
-
-------------------------------------------------------------------------
-
-🔧 PATCH 2 – A registryk publikus CRUD API‑ja workflow‑os legyen
-
-Minden registryben:
-
-    bool insert(const Entity& e) { return insertWithWorkflow(e); }
-    bool update(const Entity& e) { return updateWithWorkflow(e); }
-    bool remove(const IdType& id) { return removeWithWorkflow(id); }
-
-Ez már sok helyen így van, de egységesíteni kell.
-
-------------------------------------------------------------------------
-
-🔧 PATCH 3 – Új API: insertInternal() csak betöltéshez
-
-A RegistryEngineBase‑ben:
-
-    bool insertInternal(const Entity& e) { return add(e); }
-
-Ez:
-
--   nem workflow
--   nem persist
--   nem logol
--   nem validál
--   csak betöltéshez használható
-
-------------------------------------------------------------------------
-
-🔧 PATCH 4 – Repository load() → registry.setAll()
-
-Minden repository betöltés után:
-
-    registry.setAll(defs);
-    registry.onLoadLog();
-
-Ez már így működik, de egységesíteni kell.
-
-------------------------------------------------------------------------
-
-🔧 PATCH 5 – MatrixGenerator átállítása workflow‑ra
-
-Ahol most:
-
-    NeedCalculationDetailRegistry::instance().insert(detail);
-
-Ott legyen:
-
-    NeedCalculationDetailRegistry::instance().insert(detail);
-
-Ez workflow‑os, persistáló út.
-
-------------------------------------------------------------------------
-
-🔧 PATCH 6 – Dokumentáció: registry_persist_model.md
-
-Tartalmazza:
-
--   CRUD = workflow
--   insertInternal = betöltés
--   persist = workflow végén
--   betöltés = persist nélkül
--   nincs runtime‑only CRUD
-
-------------------------------------------------------------------------
-
-🔧 PATCH 7 – Unit tesztek
-
--   insert → persist() hívódik
--   update → persist() hívódik
--   remove → persist() hívódik
--   load → persist() NEM hívódik
--   MatrixGenerator → persist() hívódik
-
-------------------------------------------------------------------------
-
-🟩 Összegzés – a helyes modell
-
-✔ 1 út: workflow
-
-✔ 1 kivétel: betöltés
-
-✔ nincs runtime‑only CRUD
-
-✔ nincs implicit persist
-
-✔ nincs elvesző adat
-
-✔ nincs kettős út
-
-✔ nincs megkerülhető workflow
-
-✔ nincs rejtett viselkedés
-
-Ez a modell:
-
--   auditálható
--   konzisztens
--   biztonságos
--   fejlesztőbarát
--   jövőálló
-
-------------------------------------------------------------------------
-
-Ha szeretnéd, megírom:
-
--   a teljes PATCH_R_PersistAwareCRUD.md dokumentumot,
--   vagy a konkrét diff‑eket (patch formában),
--   vagy a registry_persist_model.md első verzióját.
+Ha szeretnéd, megírom a konkrét diff‑patch fájlokat is, minden érintett
+header és cpp módosításával, teljesen alkalmazható formában.

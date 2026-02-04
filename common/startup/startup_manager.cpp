@@ -48,7 +48,7 @@ StartupStatus StartupManager::initRalColors()
     if (!ok)
         return StartupStatus::failure("❌ Nem sikerült betölteni a RAL színeket.");
 
-    ColorRegistry::instance().setAll(colors);
+    ColorRegistry::instance().bulkSetAll(colors);
 
     zInfo(QString("🎨 ColorRegistry: %1 szín betöltve")
               .arg(ColorRegistry::instance().size()));

@@ -69,8 +69,14 @@
 // - NEM hívható registry konstruktorból vagy destruktorból
 // - NEM végezhet aszinkron vagy deferred CRUD műveletet
 
+#include "common/registry/mixins/mixin_contract_checks.h"
 template<typename Host, typename Entity>
 struct CrudWorkflowMixin {
+    // static_assert(
+    //     HasCrudWorkflowApi<Host, Entity>::value,
+    //     "Host must satisfy the CrudWorkflowMixin contract"
+    //     );
+
     using IdType = typename Entity::IdType;
 
     // ⚠️ Workflow invariánsok:
