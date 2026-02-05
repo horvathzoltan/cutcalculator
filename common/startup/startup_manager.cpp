@@ -56,22 +56,22 @@ StartupStatus StartupManager::initRalColors()
     return StartupStatus::success();
 }
 
-StartupStatus StartupManager::initNeedRuleRegistry()
-{
-    bool ok = NeedRuleRepository::load();
+// StartupStatus StartupManager::initNeedRuleRegistry()
+// {
+//     bool ok = NeedRuleRepository::load();
 
-    if (!ok)
-        return StartupStatus::failure("⚠️ NeedRuleRegistry: kapcsolatok betöltése sikertelen.");
+//     if (!ok)
+//         return StartupStatus::failure("⚠️ NeedRuleRegistry: kapcsolatok betöltése sikertelen.");
 
-    int count = NeedRuleRegistry::instance().size();
+//     int count = NeedRuleRegistry::instance().size();
 
-    if (count == 0)
-        zInfo("📊 NeedRuleRegistry: jelenleg nincs kapcsolat – tiszta indulás");
-    else
-        zInfo(QString("📊 NeedRuleRegistry: %1 kapcsolat tárolva").arg(count));
+//     if (count == 0)
+//         zInfo("📊 NeedRuleRegistry: jelenleg nincs kapcsolat – tiszta indulás");
+//     else
+//         zInfo(QString("📊 NeedRuleRegistry: %1 kapcsolat tárolva").arg(count));
 
-    return StartupStatus::success();
-}
+//     return StartupStatus::success();
+// }
 
 // ============================================================
 // 🚀 TELJES STARTUP PIPELINE
@@ -98,8 +98,10 @@ StartupStatus StartupManager::runStartupSequence()
             "Product CSV betöltése sikertelen.", false
             ),
 
-        // 5) NeedRule (speciális)
-        initNeedRuleRegistry(),
+        // 5) NeedRule (generikus)
+        initRegistryGeneric<NeedRuleRegistry, NeedRuleRepository>(
+            "NeedRule CSV betöltése sikertelen.", false
+            ),
 
         // 6) NeedCalculation (MÓKUSKA!)
         initRegistryGeneric<NeedCalculationRegistry, NeedCalculationRepository>(

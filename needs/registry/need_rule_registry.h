@@ -5,17 +5,17 @@
 
 #include "common/registry/mixins/connection_workflow_mixin.h"
 #include "common/registry/base/registry_engine_base.h"
-#include "common/registry/mixins/connection_crud_mixin.h"
+//#include "common/registry/mixins/connection_crud_mixin.h"
 #include "needs/model/need_rule.h"
 //#include "needs/repository/need_rule_repository.h"
 //#include "common/logger/logger.h"
 
 class NeedRuleRegistry
     : public RegistryEngineBase<NeedRule>,
-      public ConnectionCrudMixin<NeedRuleRegistry, NeedRule>,
       public ConnectionWorkflowMixin<NeedRuleRegistry, NeedRule>,
       public RegisterMe<NeedRuleRegistry>,
-      public TestSupportMixin<NeedRuleRegistry>
+      public TestSupportMixin<NeedRuleRegistry>,
+      public BulkLoadMixin<NeedRuleRegistry, NeedRule>
 {
     AUTO_REGISTER_REGISTRY;
 public:
@@ -26,13 +26,19 @@ public:
 
     QVector<NeedRule> findByLeft(const QUuid& leftId) const;
 
-        // Publikus API – NEM írjuk felül az insert/remove-ot!
-    bool insertRule(const QUuid& leftId, const QUuid& rightId) {
+    // Publikus API – NEM írjuk felül az insert/remove-ot!
+    bool insert(const QUuid& leftId, const QUuid& rightId) {
         return insertWithWorkflow(leftId, rightId);
     }
 
-    bool removeRule(const QUuid& leftId, const QUuid& rightId) {
+    bool remove(const QUuid& leftId, const QUuid& rightId) {
         return removeWithWorkflow(leftId, rightId);
+    }
+
+    bool replace(const QUuid& leftId,
+                 const QUuid& oldRightId,
+                 const QUuid& newRightId) {
+        return replaceWithWorkflow(leftId, oldRightId, newRightId);
     }
 
     // Domain hookok

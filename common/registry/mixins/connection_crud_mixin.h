@@ -1,35 +1,35 @@
-#pragma once
+// #pragma once
 
-//#include <functional>
-#include <QString>
-//#include "common/logger/logger.h"
+// //#include <functional>
+// #include <QString>
+// //#include "common/logger/logger.h"
 
-template<typename Host, typename Connection>
-struct ConnectionCrudMixin {
-public:
-    bool insertRaw(const Connection& c) {
-        Host& reg = static_cast<Host&>(*this);
-        Connection copy = c;
+// template<typename Host, typename Connection>
+// struct ConnectionCrudMixin {
+// protected:
+//     bool insertRaw(const Connection& c) {
+//         Host& reg = static_cast<Host&>(*this);
+//         Connection copy = c;
 
-        if (!reg.storeAddImpl(copy))
-            return false;
+//         if (!reg.storeAddImpl(copy))
+//             return false;
 
-        reg.notifyItemsChanged();
-        return true;
-    }
+//         reg.notifyItemsChanged();
+//         return true;
+//     }
 
-    bool removeRaw(const typename Connection::IdType& leftId,
-                   const typename Connection::IdType& rightId)
-    {
-        Host& reg = static_cast<Host&>(*this);
+//     bool removeRaw(const typename Connection::IdType& leftId,
+//                    const typename Connection::IdType& rightId)
+//     {
+//         Host& reg = static_cast<Host&>(*this);
 
-        if (!reg.storeRemovePairImpl(leftId, rightId))
-            return false;
+//         if (!reg.storeRemovePairImpl(leftId, rightId))
+//             return false;
 
-        reg.notifyItemsChanged();
-        return true;
-    }
-};
+//         reg.notifyItemsChanged();
+//         return true;
+//     }
+// };
 
 // template<typename Host, typename Connection>
 // struct ConnectionCrudMixin {

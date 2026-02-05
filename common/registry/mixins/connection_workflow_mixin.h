@@ -18,8 +18,10 @@ struct ConnectionWorkflowMixin {
 
         if (!reg.validateConnection(c)) return false;
         if (!reg.validateDuplicate(c)) return false;
+        if (!reg.beforeInsert(c)) return false;
 
-        if (!reg.insertRaw(c)) return false;
+        if (!reg.storeAddImpl(c)) return false;
+        reg.notifyItemsChanged();
 
         reg.onInsertLog(c);
         reg.persist();
@@ -34,13 +36,48 @@ struct ConnectionWorkflowMixin {
             return false;
 
         Connection copy = *existing;
+        if (!reg.beforeRemove(copy)) return false;
 
-        if (!reg.removeRaw(leftId, rightId)) return false;
+        if (!reg.storeRemovePairImpl(leftId, rightId)) return false;
+        reg.notifyItemsChanged();
 
         reg.onRemoveLog(copy);
         reg.persist();
         return true;
     }
+
+    bool replaceWithWorkflow(const IdType& leftId,
+                             const IdType& oldRightId,
+                             const IdType& newRightId)
+    {
+        Host& reg = static_cast<Host&>(*this);
+
+        // --- Find old connection ---
+        const Connection* existing = reg.findByPair(leftId, oldRightId);
+        if (!existing)
+            return false;
+
+        Connection oldCopy = *existing;
+        Connection newConn(leftId, newRightId);
+
+        if (!reg.validateConnection(newConn)) return false;
+        if (!reg.validateDuplicate(newConn)) return false;
+
+        if (!reg.beforeRemove(oldCopy)) return false;
+        if (!reg.beforeInsert(newConn)) return false;
+
+        if (!reg.storeRemovePairImpl(leftId, oldRightId)) return false;
+        if (!reg.storeAddImpl(newConn)) return false;
+
+        reg.notifyItemsChanged();
+
+        reg.onRemoveLog(oldCopy);
+        reg.onInsertLog(newConn);
+
+        reg.persist();
+        return true;
+    }
+
 };
 
 // template<typename Host, typename Connection>

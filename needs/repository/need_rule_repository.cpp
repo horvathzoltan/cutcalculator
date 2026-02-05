@@ -3,12 +3,12 @@
 #include "needs/repository/need_rule_traits.h"
 #include "needs/registry/need_rule_registry.h"
 
-bool NeedRuleRepository::load()
+bool NeedRuleRepository::load(QVector<NeedRule>& out)
 {
-    return ConnectionRepository<NeedRule, NeedRuleTraits>::load(
-        NeedRuleRegistry::instance()
-        );
+    return ConnectionRepository<NeedRule, NeedRuleTraits>::load(out);
 }
+
+
 
 bool NeedRuleRepository::save()
 {

@@ -8,11 +8,10 @@
 
 class NeedRuleRepository {
     friend class test_NeedRuleRepository;
+
 public:
-
-    static bool load();
+    static bool load(QVector<NeedRule>& out);
     static bool save();
-
     static QString toCsvLine(const NeedRule &r);
 };
 

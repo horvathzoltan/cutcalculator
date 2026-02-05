@@ -47,14 +47,14 @@ void MaterialRequirementsManager::connectSignals() {
                 //     // CSV persist
                 //     NeedRuleRepository::save();
                 // }
-                NeedRule rule;
-                rule.leftId = productId;
-                rule.rightId = materialId;
-
-                if (!NeedRuleRegistry::instance().insertRaw(rule)) {
+                // NeedRule rule;
+                // rule.leftId = productId;
+                // rule.rightId = materialId;
+                if (!NeedRuleRegistry::instance().insert(productId, materialId)) {
                     zWarning("⚠️ NeedRule insert failed");
                     return;
                 }
+
 
                 /*NeedRuleRepository::save();
                 zEventINFO(QString("➕ NeedRule added: Product=%1 Material=%2")
@@ -72,13 +72,10 @@ void MaterialRequirementsManager::connectSignals() {
                 Q_UNUSED(productBarcode);
                 Q_UNUSED(materialBarcode);
 
-                bool ok = NeedRuleRegistry::instance().removeRaw(productId, materialId);
-                if (ok) {
-                    // zEventINFO(QString("🗑 NeedRule removed: Product=%1 Material=%2")
-                    //                .arg(productId.toString(), materialId.toString()));
-
-                    // CSV persist
-                    NeedRuleRepository::save();
+                bool ok = NeedRuleRegistry::instance().remove(productId, materialId);
+                if (!ok) {
+                    zWarning(QString("⚠️ NeedRule remove failed: Product=%1 Material=%2")
+                                 .arg(productId.toString(), materialId.toString()));
                 } else {
                     zWarning(QString("⚠️ NeedRule remove failed: Product=%1 Material=%2")
                                    .arg(productId.toString(), materialId.toString()));
@@ -96,10 +93,7 @@ void MaterialRequirementsManager::connectSignals() {
                 auto pick = picker.result();
                 auto newMaterialId = pick.material_id;
 
-                NeedRuleRegistry::instance().removeRaw(productId, oldMaterialId);
-                NeedRuleRegistry::instance().insertRule(productId, newMaterialId);
-
-                NeedRuleRepository::save();
+                NeedRuleRegistry::instance().replace(productId, oldMaterialId, newMaterialId);
             });
 }
 

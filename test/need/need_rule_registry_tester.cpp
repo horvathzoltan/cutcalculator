@@ -47,7 +47,7 @@ void NeedRuleRegistryTester::testValidInsert()
     auto& reg = NeedRuleRegistry::instance();
 
     Q_ASSERT(reg.size() == 0);
-    Q_ASSERT(reg.insertRule(ids.P1, ids.M1));
+    Q_ASSERT(reg.insert(ids.P1, ids.M1));
     Q_ASSERT(reg.size() == 1);
 
     QString csvPath = FileNameHelper::instance().getNeedRuleCsvFile();
@@ -65,7 +65,7 @@ void NeedRuleRegistryTester::testDuplicateInsert()
 
     auto& reg = NeedRuleRegistry::instance();
 
-    Q_ASSERT(!reg.insertRule(ids.P1, ids.M1));
+    Q_ASSERT(!reg.insert(ids.P1, ids.M1));
     Q_ASSERT(reg.size() == 1);
 }
 
@@ -76,7 +76,7 @@ void NeedRuleRegistryTester::testInvalidLeft()
     auto& reg = NeedRuleRegistry::instance();
 
     QUuid badLeft = QUuid::createUuid();
-    Q_ASSERT(!reg.insertRule(badLeft, ids.M1));
+    Q_ASSERT(!reg.insert(badLeft, ids.M1));
     Q_ASSERT(reg.size() == 1);
 }
 
@@ -87,7 +87,7 @@ void NeedRuleRegistryTester::testInvalidRight()
     auto& reg = NeedRuleRegistry::instance();
 
     QUuid badRight = QUuid::createUuid();
-    Q_ASSERT(!reg.insertRule(ids.P1, badRight));
+    Q_ASSERT(!reg.insert(ids.P1, badRight));
     Q_ASSERT(reg.size() == 1);
 }
 
@@ -97,7 +97,7 @@ void NeedRuleRegistryTester::testValidRemove()
 
     auto& reg = NeedRuleRegistry::instance();
 
-    Q_ASSERT(reg.removeRule(ids.P1, ids.M1));
+    Q_ASSERT(reg.remove(ids.P1, ids.M1));
     Q_ASSERT(reg.size() == 0);
 
     QString csvPath = FileNameHelper::instance().getNeedRuleCsvFile();
@@ -115,7 +115,7 @@ void NeedRuleRegistryTester::testInvalidRemove()
 
     auto& reg = NeedRuleRegistry::instance();
 
-    Q_ASSERT(!reg.removeRule(ids.P1, ids.M2));
+    Q_ASSERT(!reg.remove(ids.P1, ids.M2));
     Q_ASSERT(reg.size() == 0);
 }
 
@@ -125,8 +125,8 @@ void NeedRuleRegistryTester::testFindByLeft()
 
     auto& reg = NeedRuleRegistry::instance();
 
-    Q_ASSERT(reg.insertRule(ids.P1, ids.M1));
-    Q_ASSERT(reg.insertRule(ids.P1, ids.M2));
+    Q_ASSERT(reg.insert(ids.P1, ids.M1));
+    Q_ASSERT(reg.insert(ids.P1, ids.M2));
 
     auto v = reg.findByLeft(ids.P1);
     Q_ASSERT(v.size() == 2);
@@ -171,8 +171,8 @@ void NeedRuleRegistryTester::testSubscription()
         counter++;
     });
 
-    Q_ASSERT(reg.insertRule(ids.P1, ids.M1));
-    Q_ASSERT(reg.removeRule(ids.P1, ids.M1));
+    Q_ASSERT(reg.insert(ids.P1, ids.M1));
+    Q_ASSERT(reg.remove(ids.P1, ids.M1));
 
     Q_ASSERT(counter == 2);
 }
