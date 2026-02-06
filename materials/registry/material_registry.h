@@ -14,8 +14,7 @@
 
 class MaterialRegistry
     : public RegistryEngineBase<MaterialMaster>,
-      public IdLookupMixin<MaterialRegistry, MaterialMaster>,
-      public IdLookupRegistryInterface,
+      public IdLookupInterfaceMixin<MaterialRegistry, MaterialMaster>,
       public BarcodeIndexMixin<MaterialRegistry, MaterialMaster>,
       public IBarcodeCapable,
       public RegisterMe<MaterialRegistry>,
@@ -30,11 +29,11 @@ public:
         return inst;
     }
 
-    const IdentifiableEntity* findEntityById(const QUuid& id) const override {
-        if (auto* e = findById(id))
-            return static_cast<const IdentifiableEntity*>(e);
-        return nullptr;
-    }
+    // const IdentifiableEntity* findEntityById(const QUuid& id) const override {
+    //     if (auto* e = findById(id))
+    //         return static_cast<const IdentifiableEntity*>(e);
+    //     return nullptr;
+    // }
 
     // Lookup API
     QVector<MaterialMaster> readAll() const { return RegistryEngineBase<MaterialMaster>::readAll(); }

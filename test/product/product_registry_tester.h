@@ -17,7 +17,32 @@ private:
     void prepare();
     void clearCsv(const QString& path);
 
+    // CRUD
     void testInsert();
     void testUpdate();
     void testDelete();
+
+    // Roundtrip
+    void testCsvRoundtrip();
+
+    // Load pipeline
+    void testLoadPipeline();
+
+    // RegistryManager integration
+    void testRegistryManagerLookup();
+
+    // Pointer stability
+    void testPointerStability();
+
+    // Hierarchy
+    void testHierarchy();
+
+    // Barcode collision
+    void testBarcodeCollision();
+
+    // findIf / findAll
+    void testFindFunctions();
+
+    // CSV header
+    void testCsvHeader();
 };

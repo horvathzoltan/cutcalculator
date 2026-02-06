@@ -8,6 +8,7 @@
 #include "test/eventlogger/event_logger_tester.h"
 #include "test/filenamehelper/filenamehelper_tests.h"
 #include "test/need/need_rule_registry_tester.h"
+#include "test/overlay/overlay_presenter_tester.h"
 
 TestManager& TestManager::instance() {
     static TestManager inst;
@@ -46,7 +47,9 @@ void TestManager::runBusinessLogicTests(const QString& profile) {
     else if (profile == "calcdetail") {
         runModule<NeedCalculationDetailRegistryTester>();
     }
-
+    else if (profile == "overlay") {
+        runModule<OverlayPresenterTester>();
+    }
     /**/
     else {
         _lastResults << "Unknown profile:" + profile;

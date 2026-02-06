@@ -8,7 +8,7 @@
 #include <QFile>
 #include <QTextStream>
 
-void MaterialRegistryTester::writeTestCsv()
+void MaterialRegistryTester::writeTestCsv_multi()
 {
     QString csv = FileNameHelper::instance().getMaterialCsvFile();
     QFile::remove(csv);
@@ -18,59 +18,93 @@ void MaterialRegistryTester::writeTestCsv()
 
     QTextStream out(&f);
     out << "name,barcode,stockLength,dim1,dim2,shape,machineId,type,color,cuttingMode,paintingMode\n";
-    out << "Mat1,ABC-1,6000,50,30,Rectangular,M1,Other,#ff0000,Length,Default\n";
+
+    out << "Mat1,ABC-1,6000,50,30,Rectangular,M1,Custom,RAL 3020,Length,Default\n";
+    out << "Mat2,ABC-2,6000,40,20,Rectangular,M1,Custom,RAL 6018,Length,Default\n";
+    out << "Mat3,XYZ-1,6000,30,10,Rectangular,M1,Custom,RAL 5015,Length,Default\n";
+    out << "Mat4,abc-3,6000,20,10,Rectangular,M1,Custom,RAL 7040,Length,Default\n";
+    out << "Mat5,ABC-1-EXTRA,6000,10,5,Rectangular,M1,Custom,RAL 9006,Length,Default\n";
 
     f.close();
 }
 
-void MaterialRegistryTester::testLoad()
+void MaterialRegistryTester::testLoad_multi()
 {
-    zInfo("→ testLoad");
+    zInfo("→ testLoad_multi");
 
-    writeTestCsv();
+    writeTestCsv_multi();
 
     QVector<MaterialMaster> list;
     Q_ASSERT(MaterialRepository::load(list));
-    Q_ASSERT(list.size() == 1);
+    Q_ASSERT(list.size() == 5);
 
     auto& reg = MaterialRegistry::instance();
     reg.clearForTest();
     reg.setAllForTest(list);
 
-    Q_ASSERT(reg.size() == 1);
+    Q_ASSERT(reg.size() == 5);
 
-    zInfo("✓ testLoad OK");
+    zInfo("✓ testLoad_multi OK");
 }
 
-void MaterialRegistryTester::testFindById()
+void MaterialRegistryTester::testFindByBarcode()
 {
-    zInfo("→ testFindById");
-
-    auto& reg = MaterialRegistry::instance();
-    Q_ASSERT(reg.size() == 1);
-
-    const MaterialMaster& m = reg.readAll().first();
-    const MaterialMaster* found = reg.findById(m.id);
-
-    Q_ASSERT(found != nullptr);
-    Q_ASSERT(found->name == "Mat1");
-
-    zInfo("✓ testFindById OK");
-}
-
-void MaterialRegistryTester::testBarcodeIndex()
-{
-    zInfo("→ testBarcodeIndex");
+    zInfo("→ testFindByBarcode");
 
     auto& reg = MaterialRegistry::instance();
 
-    const MaterialMaster* found = reg.findIf([](const MaterialMaster& mm){
-        return mm.barcode == "ABC-1";
-    });
+    const MaterialMaster* m1 = reg.findByBarcode("ABC-1");
+    Q_ASSERT(m1 != nullptr);
+    Q_ASSERT(m1->name == "Mat1");
 
-    Q_ASSERT(found != nullptr);
+    const MaterialMaster* m4 = reg.findByBarcode("abc-3"); // lowercase
+    Q_ASSERT(m4 != nullptr);
+    Q_ASSERT(m4->name == "Mat4");
 
-    zInfo("✓ testBarcodeIndex OK");
+    const MaterialMaster* m1_case = reg.findByBarcode("aBc-1");
+    Q_ASSERT(m1_case != nullptr);
+    Q_ASSERT(m1_case->name == "Mat1");
+
+    zInfo("✓ testFindByBarcode OK");
+}
+
+void MaterialRegistryTester::testFindIfMultiple()
+{
+    zInfo("→ testFindIfMultiple");
+
+    auto& reg = MaterialRegistry::instance();
+
+    auto all = reg.RegistryEngineBase<MaterialMaster>::findAll(
+        [](const MaterialMaster& mm){
+            return mm.barcode.startsWith("ABC", Qt::CaseInsensitive);
+        }
+        );
+
+    Q_ASSERT(all.size() == 4);
+
+    zInfo("✓ testFindIfMultiple OK");
+}
+
+void MaterialRegistryTester::testPointerStability()
+{
+    zInfo("→ testPointerStability");
+
+    auto& reg = MaterialRegistry::instance();
+
+    const auto ptrs = reg.readAll_ptr();
+    Q_ASSERT(ptrs.size() == 5);
+
+    const MaterialMaster* p1 = ptrs[0];
+    QString oldBarcode = p1->barcode;
+
+    reg.onItemsChanged(); // index rebuild
+
+    const MaterialMaster* p2 = reg.findByBarcode(oldBarcode);
+    Q_ASSERT(p2 != nullptr);
+
+    Q_ASSERT(p1 == p2); // pointer stability
+
+    zInfo("✓ testPointerStability OK");
 }
 
 bool MaterialRegistryTester::run()
@@ -79,9 +113,10 @@ bool MaterialRegistryTester::run()
 
     FileNameHelper::instance().setTestMode(true);
 
-    testLoad();
-    testFindById();
-    testBarcodeIndex();
+    testLoad_multi();
+    testFindByBarcode();
+    testFindIfMultiple();
+    testPointerStability();
 
     zInfo(QString("=== %1 TESTS END ===").arg(name()));
     return true;

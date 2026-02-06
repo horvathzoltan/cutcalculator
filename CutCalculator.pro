@@ -60,6 +60,7 @@ SOURCES += \
     test/filenamehelper/filenamehelper_tests.cpp \
     test/material/material_registry_tester.cpp \
     test/need/need_rule_registry_tester.cpp \
+    test/overlay/overlay_presenter_tester.cpp \
     test/product/product_registry_tester.cpp \
     ui/helpers/overlay_status_helper.cpp \
     ui/widgets/overlay_icon_widget.cpp \
@@ -188,6 +189,7 @@ HEADERS += \
     test/filenamehelper/filenamehelper_tests.h \
     test/material/material_registry_tester.h \
     test/need/need_rule_registry_tester.h \
+    test/overlay/overlay_presenter_tester.h \
     test/product/product_registry_tester.h \
     ui/helpers/overlay_status_helper.h \
     ui/helpers/repository_overlay_widget.h \

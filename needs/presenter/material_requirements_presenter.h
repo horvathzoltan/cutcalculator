@@ -7,13 +7,22 @@
 #include "products/view/product_tree_manager.h"
 #include "ui/helpers/repository_overlay_widget.h"
 
+class OverlayPresenterTester; // forward
+
 class MaterialRequirementsPresenter : public QObject {
     Q_OBJECT
+
+    //friend class OverlayPresenterTester; // <<< EZ A LÉNYEG
+
 public:
     explicit MaterialRequirementsPresenter(MaterialRequirementsView* view,
                                            MaterialRequirementsManager* manager,
                                            ProductTreeManager* treeManager,
                                            QObject* parent = nullptr);
+
+    // Teszt konstruktor
+    // MaterialRequirementsPresenter() : _view(nullptr), _manager(nullptr), _treeManager(nullptr), _status(nullptr)
+    // {}
 
     QToolBar* buildToolbar(QWidget* parent);
 
@@ -23,6 +32,7 @@ public:
 
     void refreshOverlayOnly();
 private:
+
     MaterialRequirementsView* _view = nullptr;
     MaterialRequirementsManager* _manager = nullptr;
     ProductTreeManager* _treeManager = nullptr;

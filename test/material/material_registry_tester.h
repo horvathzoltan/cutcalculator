@@ -10,8 +10,9 @@ public:
     bool run() override;
 
 private:
-    void writeTestCsv();
-    void testLoad();
-    void testFindById();
-    void testBarcodeIndex();
+    void writeTestCsv_multi();
+    void testLoad_multi();
+    void testFindByBarcode();
+    void testFindIfMultiple();
+    void testPointerStability();
 };
