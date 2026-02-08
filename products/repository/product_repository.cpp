@@ -121,12 +121,8 @@ ProductRepository::loadProductRows(CsvImporter::FileContext& ctx) {
 bool ProductRepository::load(QVector<ProductMaster>& out)
 {
     auto& helper = FileNameHelper::instance();
-    if (!helper.isInitialized()) {
-        zWarning("⚠️ FileNameHelper nincs inicializálva.");
-        return false;
-    }
 
-    const QString fn = helper.getProductCsvFile();
+    const QString fn = helper.pathFor(FileKind::Products, FileAccess::Read);;
     CsvImporter::FileContext ctx("Product import", fn);
 
     const auto rows = loadProductRows(ctx);
@@ -360,7 +356,13 @@ QString ProductRepository::toCsvLine(const ProductMaster& pm)
  * @return true siker esetén, false ha a fájl nem nyitható meg.
  */
 
-bool ProductRepository::saveToCSV(const QVector<ProductMaster>& data, const QString& path) {
+bool ProductRepository::saveToCSV(const QVector<ProductMaster>& data) {
+    auto& helper = FileNameHelper::instance();
+
+    const QString path = helper.pathFor(FileKind::Products, FileAccess::Write);
+    if (path.isEmpty())
+        return false;
+
     QFile file(path);
     QIODevice::OpenMode mode = QIODevice::WriteOnly | QIODevice::Text;
     if (!file.open(mode)) {

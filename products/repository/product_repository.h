@@ -24,7 +24,7 @@ class ProductRepository {
 public:
     static bool load(QVector<ProductMaster>& out);
     //static bool loadFromCSV(ProductRegistry& registry);
-    static bool saveToCSV(const QVector<ProductMaster>& data, const QString& path);
+    static bool saveToCSV(const QVector<ProductMaster>& data);
 
 private:
     /// Nyers CSV sor → típusos Row

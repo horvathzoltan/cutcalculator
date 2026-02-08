@@ -21,9 +21,12 @@ struct NeedRuleTraits {
 
     using RegistryType = NeedRuleRegistry;
 
-    static QString filePath() {
-        return FileNameHelper::instance().getNeedRuleCsvFile(); // pl. needs_rules.csv
+    static QString filePath(FileAccess access) {
+        QString csvPath = FileNameHelper::instance().pathFor(
+            FileKind::NeedRules, access);
+         return csvPath;
     }
+
     static QStringList headers() {
         return {"productId","materialId"};
     }

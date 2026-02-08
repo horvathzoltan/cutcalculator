@@ -507,7 +507,9 @@ QString OverlayIconWidget::ensureCacheDir() const
         return _cacheDirPath;
 
     // FileNameHelper adja meg a cache gyökérkönyvtárat
-    _cacheDirPath = FileNameHelper::instance().getCacheDirectory("emoji_overlay_cache");
+    _cacheDirPath = FileNameHelper::instance().pathFor(
+        FileKind::CacheDir,FileAccess::Write,"emoji_overlay");
+
     _cacheDirInitialized = true;
     return _cacheDirPath;
 }

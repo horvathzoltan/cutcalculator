@@ -10,7 +10,7 @@
 
 void MaterialRegistryTester::writeTestCsv_multi()
 {
-    QString csv = FileNameHelper::instance().getMaterialCsvFile();
+    QString csv = FileNameHelper::instance().pathFor(FileKind::Materials, FileAccess::Read);
     QFile::remove(csv);
 
     QFile f(csv);

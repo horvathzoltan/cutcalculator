@@ -28,7 +28,7 @@ void ProductRegistryTester::prepare()
     ids = TestDataBuilder::prepareStandard();
     ProductRegistry::instance().clearForTest();
 
-    QString csvPath = FileNameHelper::instance().getProductCsvFile();
+    QString csvPath = FileNameHelper::instance().pathFor(FileKind::Products, FileAccess::Write);
     clearCsv(csvPath);
 }
 
@@ -41,7 +41,7 @@ void ProductRegistryTester::testInsert()
     prepare();
 
     auto& reg = ProductRegistry::instance();
-    QString csvPath = FileNameHelper::instance().getProductCsvFile();
+    QString csvPath = FileNameHelper::instance().pathFor(FileKind::Products, FileAccess::Write);
 
     Q_ASSERT(reg.size() == 0);
 
@@ -68,7 +68,7 @@ void ProductRegistryTester::testUpdate()
     zInfo("→ testUpdate");
 
     auto& reg = ProductRegistry::instance();
-    QString csvPath = FileNameHelper::instance().getProductCsvFile();
+    QString csvPath = FileNameHelper::instance().pathFor(FileKind::Products, FileAccess::Write);
 
     auto* found = reg.findIf([](const ProductMaster& pm){
         return pm.name == "TestProduct";
@@ -99,7 +99,7 @@ void ProductRegistryTester::testDelete()
     zInfo("→ testDelete");
 
     auto& reg = ProductRegistry::instance();
-    QString csvPath = FileNameHelper::instance().getProductCsvFile();
+    QString csvPath = FileNameHelper::instance().pathFor(FileKind::Products, FileAccess::Write);
 
     auto* found = reg.findIf([](const ProductMaster& pm){
         return pm.name == "UpdatedProduct";
@@ -124,7 +124,7 @@ void ProductRegistryTester::testCsvRoundtrip()
     prepare();
 
     auto& reg = ProductRegistry::instance();
-    QString csvPath = FileNameHelper::instance().getProductCsvFile();
+    QString csvPath = FileNameHelper::instance().pathFor(FileKind::Products, FileAccess::Write);
 
     ProductMaster p;
     p.id = QUuid::createUuid();
@@ -155,7 +155,7 @@ void ProductRegistryTester::testLoadPipeline()
 {
     zInfo("→ testLoadPipeline");
 
-    QString csvPath = FileNameHelper::instance().getProductCsvFile();
+    QString csvPath = FileNameHelper::instance().pathFor(FileKind::Products, FileAccess::Write);
     clearCsv(csvPath);
 
     QFile f(csvPath);
@@ -306,7 +306,7 @@ void ProductRegistryTester::testCsvHeader()
 {
     zInfo("→ testCsvHeader");
 
-    QString csvPath = FileNameHelper::instance().getProductCsvFile();
+    QString csvPath = FileNameHelper::instance().pathFor(FileKind::Products, FileAccess::Write);;
     QStringList lines = readAllLines(csvPath);
 
     QString header = lines.first();

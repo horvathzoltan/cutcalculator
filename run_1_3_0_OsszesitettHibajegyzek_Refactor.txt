@@ -1,205 +1,169 @@
-Zoltán, most végre eljutottunk a lényeghez.
-A kérdésed teljesen jogos: miért van kettősség (insertRaw/removeRaw ↔
-insertWithWorkflow/removeWithWorkflow), és hogyan lehet ezt felszámolni
-tisztán, következetesen, a CRUD‑workflow filozófiájával összhangban.
+Zoltán, pontosan értem, mire van szükséged:
+egy olyan összefoglalt, végrehajtható tervre, amely:
 
-A helyzet az, hogy a kapcsolat‑táblák (NeedRuleRegistry) történelmileg
-mindig is „furcsa hibridként” éltek a kódban:
-- egyszerre akartak CRUD‑workflow‑t (validáció + log + persist),
-- és egyszerre akartak nyers CRUD‑ot (UI‑ból gyors beszúrás/törlés
-workflow nélkül).
+-   kiveszi a már kész fókuszpontokat,
+-   csak a maradék kettőre koncentrál,
+-   először vizsgálja, hogy valóban fennáll‑e a probléma,
+-   és ha igen, pontosan milyen lépésekből áll a megoldás.
 
-Ezért lett három API:
-
-  -----------------------------------------------------------------------
-  réteg           metódus                 mit csinál
-  --------------- ----------------------- -------------------------------
-  nyers storage   insertRaw, removeRaw    memória + notify, nincs
-                                          workflow, nincs log, nincs
-                                          persist
-
-  workflow        insertWithWorkflow,     validate → storage → log →
-                  removeWithWorkflow      persist
-
-  publikus API    insertRule, removeRule  csak alias a workflow‑ra
-  -----------------------------------------------------------------------
-
-Ez a háromszintűség már nem illik a mostani tiszta
-Registry‑architektúrához.
-A CRUD‑workflow filozófiája szerint:
-
-✔️ A domain CRUD‑nak egy útvonala van
-
-→ validate → store*Impl → notify → log → persist
-
-✔️ A „nyers” storage műveletek csak a workflow belsejében használhatók
-
-→ UI‑ból hívni őket tilos.
-
-✔️ A kapcsolat‑táblák sem kivételek
-
-→ ugyanúgy CRUD‑workflow kell nekik, mint a NeedCalculationRegistry‑nek
-vagy ProductRegistry‑nek.
+Ez lesz holnap az audit alapja — most pedig megkapod a tiszta,
+fókuszált, audit‑ready tervet.
 
 ------------------------------------------------------------------------
 
-⭐ A válasz a kérdésedre
+⭐ ÖSSZEFOGLALT TERV
 
-1) Kell‑e a kettősség?
+Csak a két maradék fókuszpontra
 
-Nem.
-A CrudWorkflowMixin esetében sikeresen felszámoltuk a kettősséget, és
-ugyanezzel az indoklással a ConnectionCrudMixin/ConnectionWorkflowMixin
-kettőssége is felszámolható.
-
-A jelenlegi kettősség csak azért maradt fenn, mert:
-
--   a UI‑ban voltak olyan kódrészek, amelyek nyers beszúrást akartak
-    (insertRaw),
--   és voltak olyanok, amelyek workflow‑t akartak (insertRule →
-    insertWithWorkflow).
-
-Ez a kettősség mesterséges, és a modern architektúrában már nincs helye.
+(ConnectionCrudMixin → protected, MatrixValidator integráció)
 
 ------------------------------------------------------------------------
 
-2) Ha lenne update a workflow‑ban, kellene a kettősség?
+🎯 1. ConnectionCrudMixin → protected
 
-Nem.
-Ha lenne update (vagy replace), akkor is:
+🔍 A vizsgálat célja
 
--   a workflow‑os update lenne a domain API,
--   a nyers updateRaw csak a workflow belsejében lenne használható.
+Megállapítani, hogy:
 
-A kettősség nem workflow‑függő, hanem architektúra‑tisztasági kérdés.
+-   valóban szükséges‑e még bármilyen beavatkozás,
+-   vagy a probléma már megszűnt, csak a státusz maradt „Folyamatban”.
 
-------------------------------------------------------------------------
+🔎 Ellenőrző kérdések (audit során)
 
-3) A kapcsolat‑tábláknál update vagy replace kell?
+1.  Használja‑e bármely registry a raw CRUD API‑t?
+    -   keresés: insertRaw, removeRaw, storeAddImpl, storeRemovePairImpl
+        közvetlen hívása
+2.  Van‑e olyan UI vagy Presenter, amely közvetlenül hív engine‑szintű
+    write API‑t?
+    -   keresés: .add(, .removeInternal(, .updateInternal(
+3.  A ConnectionCrudMixin ténylegesen szükséges‑e még?
+    -   van‑e olyan registry, amely a mixinre épít
+4.  A kommentelt mixin okoz‑e build‑ vagy include‑zajt?
+    -   felesleges include, félbehagyott kód
+5.  A RegistryEngineBase friend‑listájában maradt‑e felesleges friend?
 
-Kapcsolat‑tábláknál nincs klasszikus update, mert:
+📌 Ha a vizsgálat eredménye: „nincs probléma”
 
--   a kapcsolat kulcsa (leftId, rightId),
--   ha változik a rightId → ez valójában törlés + beszúrás.
+→ A pont lezárható, státusz: Kész
+→ A mixin törölhető vagy archiválható
 
-Ezért a helyes domain API:
+📌 Ha a vizsgálat eredménye: „van teendő”
 
-✔️ replaceRule(leftId, oldRightId, newRightId)
+A megoldás három lépésből áll:
 
-A replace workflow:
+1) A ConnectionCrudMixin végleges eltávolítása vagy protected‑dé tétele
 
-1.  validateConnection(new)
-2.  validateDuplicate(new)
-3.  removeWithWorkflow(leftId, oldRightId)
-4.  insertWithWorkflow(leftId, newRightId)
+-   törölni a kommentelt blokkot
+-   vagy protected szintre tenni, ha később kellhet
 
-Ez teljesen tiszta, auditálható, és workflow‑kompatibilis.
+2) A RegistryEngineBase friend‑listájának tisztítása
 
-------------------------------------------------------------------------
+-   eltávolítani a felesleges friend deklarációkat
 
-⭐ Végleges javaslat: a kettősség felszámolása
+3) Ellenőrizni, hogy minden registry kizárólag workflow API‑t használ
 
-PATCH TERV – lépésről lépésre
-
-1) ConnectionCrudMixin → legyen teljesen protected
-
-Most:
-
-    struct ConnectionCrudMixin {
-    public:
-        bool insertRaw(...)
-        bool removeRaw(...)
-    };
-
-Legyen:
-
-    struct ConnectionCrudMixin {
-    protected:
-        bool insertRaw(...)
-        bool removeRaw(...)
-    };
-
-Ez megakadályozza, hogy UI‑ból hívják.
+-   NeedRuleRegistry → OK
+-   NeedCalculationDetailRegistry → OK
+-   ProductRegistry / MaterialRegistry → ellenőrizni
 
 ------------------------------------------------------------------------
 
-2) ConnectionWorkflowMixin → ez legyen az egyetlen publikus CRUD útvonal
+🎯 2. MatrixValidator + Detail torony összehangolása
 
-Semmi változás, csak megerősítjük:
+🔍 A vizsgálat célja
 
-    bool insertWithWorkflow(...)
-    bool removeWithWorkflow(...)
+Megállapítani, hogy:
 
-------------------------------------------------------------------------
+-   a MatrixValidator valóban hiányosan integrált‑e,
+-   vagy csak a státusz maradt „Folyamatban”.
 
-3) NeedRuleRegistry publikus API → csak workflow
+🔎 Ellenőrző kérdések (audit során)
 
-Most:
+1.  A Presenter használja‑e a MatrixValidator‑t?
+    -   keresés: MatrixValidator:: a Presenterben
+2.  A RepositoryOverlayWidget támogatja‑e a mátrix‑állapotot?
+    -   van‑e MatrixIncomplete vagy hasonló state
+3.  A UI mutat‑e bármilyen mátrix‑komplettség jelzést?
+    -   toolbar overlay ikon
+4.  Van‑e MatrixValidatorTester?
+    -   teszteli‑e:
+        -   validateMode
+        -   validateProduct
+        -   validateAll
+        -   isCalculationMatrixComplete
+        -   isProductMatrixComplete
+5.  A NeedCalculationDetailRegistry domain szabályai összhangban
+    vannak‑e a validatorral?
+    -   formula validáció
+    -   duplicate szabály
+    -   materialId / calcId ellenőrzés
 
-    bool insertRule(...) { return insertWithWorkflow(...); }
-    bool removeRule(...) { return removeWithWorkflow(...); }
+📌 Ha a vizsgálat eredménye: „nincs probléma”
 
-Ez jó, marad.
+→ A pont lezárható, státusz: Kész
 
-------------------------------------------------------------------------
+📌 Ha a vizsgálat eredménye: „van teendő”
 
-4) UI‑ból minden raw hívást törölni
+A megoldás négy lépésből áll:
 
-Most a UI‑ban:
+1) Presenter integráció
 
-    NeedRuleRegistry::instance().insertRaw(rule);
-    NeedRuleRegistry::instance().removeRaw(productId, oldMaterialId);
+MaterialRequirementsPresenter::refreshOverlayOnly()
+→ egészítsük ki:
 
-Ezeket cseréljük:
+    bool complete = MatrixValidator::isProductMatrixComplete(_treeManager->currentProductId());
+    _status->setMatrixState(complete);
 
-    NeedRuleRegistry::instance().insertRule(productId, materialId);
-    NeedRuleRegistry::instance().removeRule(productId, oldMaterialId);
+2) Overlay widget bővítése
 
-------------------------------------------------------------------------
+-   új state: MatrixIncomplete
+-   új ikon: pl. „⚠️” vagy „🧩”
 
-5) Replace API bevezetése
+3) UI vizualizáció
 
-NeedRuleRegistry‑be:
+-   tooltip: „Hiányzó calculation detail”
+-   overlay ikon a toolbaron
 
-    bool replaceRule(const QUuid& leftId,
-                     const QUuid& oldRightId,
-                     const QUuid& newRightId)
-    {
-        if (!removeWithWorkflow(leftId, oldRightId))
-            return false;
-        return insertWithWorkflow(leftId, newRightId);
-    }
+4) MatrixValidatorTester létrehozása
 
-UI‑ban:
+Tesztelje:
 
-    NeedRuleRegistry::instance().replaceRule(productId, oldMaterialId, newMaterialId);
-
-------------------------------------------------------------------------
-
-6) ConnectionWorkflowMixin‑ben opcionális beforeInsert/beforeRemove hookok
-
-Ha kell:
-
-    if (!reg.beforeInsert(c)) return false;
-    if (!reg.beforeRemove(copy)) return false;
-
-------------------------------------------------------------------------
-
-7) ConnectionWorkflowMixin‑ben log → persist sorrend megtartása
-
-Ez már így van.
-
-------------------------------------------------------------------------
-
-⭐ Eredmény
-
--   teljesen eltűnik a kettősség,
--   a kapcsolat‑táblák is tiszta CRUD‑workflow‑t használnak,
--   a UI nem tud többé nyers storage műveleteket hívni,
--   a replaceRule workflow‑kompatibilis,
--   a kód auditálható, konzisztens, hibamentes.
+-   validateMode
+-   validateProduct
+-   validateAll
+-   isCalculationMatrixComplete
+-   isProductMatrixComplete
 
 ------------------------------------------------------------------------
 
-Ha szeretnéd, megírom a konkrét diff‑patch fájlokat is, minden érintett
-header és cpp módosításával, teljesen alkalmazható formában.
+⭐ A HOLNAPI AUDIT MENETE
+
+Ezt a tervet fogjuk követni:
+
+1.  ConnectionCrudMixin audit
+    -   ellenőrző kérdések
+    -   fájlok bekérése
+    -   bizonyítékok összegyűjtése
+    -   döntés: kész / van teendő
+2.  MatrixValidator integráció audit
+    -   ellenőrző kérdések
+    -   presenter / overlay / UI / tester vizsgálata
+    -   döntés: kész / van teendő
+3.  Ha van teendő → patch‑terv készítése
+4.  Ha nincs → státusz frissítése „Kész”‑re
+
+------------------------------------------------------------------------
+
+⭐ Röviden – a mai kérésedre adott válasz
+
+Íme a két fókuszpont audit‑ready terve,
+kész pontok nélkül,
+ellenőrző kérdésekkel,
+és lépésről‑lépésre végrehajtható megoldási tervvel.
+
+Holnap pedig lefolytatjuk az auditot, és eldöntjük, hogy:
+
+-   valóban van‑e még dolgunk, vagy
+-   a rendszer már kész, csak a státusz maradt régi.
+
+Készen állok a holnapi körre.

@@ -211,7 +211,7 @@ bool MaterialRepository::load(QVector<MaterialMaster>& out)
         return false;
     }
 
-    const QString fn = helper.getMaterialCsvFile();
+    const QString fn = helper.pathFor(FileKind::Materials, FileAccess::Read);
     CsvImporter::FileContext ctx("Material import", fn);
 
     const auto rows = loadMaterialRows(ctx);

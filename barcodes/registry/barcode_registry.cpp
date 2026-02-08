@@ -187,11 +187,7 @@ bool BarcodeRegistry::retire(const QString& code, const QString& reason)
 // --- Persist ---
 
 void BarcodeRegistry::persist() const
-{
-    const QString path = FileNameHelper::instance().getBarcodeCsvFile();
-    if (path.isEmpty())
-        return;
-
+{    
     // Egyelőre megtartjuk a meglévő API-t
-    BarcodeRepository::saveToCSV(*this, path);
+    BarcodeRepository::saveToCSV(*this);
 }

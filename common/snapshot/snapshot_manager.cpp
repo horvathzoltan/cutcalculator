@@ -47,7 +47,7 @@ QString SnapshotManager::snapshotFilePathFor(QWidget* window) const
 
     const QString profile = currentMonitorProfile(window);
     const QString path =
-        FileNameHelper::instance().uiSnapshotFilePath(profile);
+        FileNameHelper::instance().pathFor(FileKind::UiSnapshotFile, FileAccess::Read, profile);
 
     if (path.isEmpty()) {
         zWarning("⚠️ SnapshotManager: snapshot path is empty");

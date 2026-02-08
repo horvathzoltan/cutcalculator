@@ -121,13 +121,7 @@ BarcodeRepository::loadBarcodeRows(CsvImporter::FileContext& ctx)
 // --- Entry Point ---
 bool BarcodeRepository::load(QVector<BarcodeRecord>& out)
 {
-    auto& helper = FileNameHelper::instance();
-    if (!helper.isInitialized()) {
-        zWarning("⚠️ FileNameHelper nincs inicializálva.");
-        return false;
-    }
-
-    const QString fn = helper.getBarcodeCsvFile();
+    const QString fn = FileNameHelper::instance().pathFor(FileKind::Barcodes, FileAccess::Read);
     CsvImporter::FileContext ctx("Barcode import", fn);
 
     // 1) Convert
@@ -229,8 +223,12 @@ bool BarcodeRepository::load(QVector<BarcodeRecord>& out)
 // }
 
 // --- Export (opcionális) ---
-bool BarcodeRepository::saveToCSV(const BarcodeRegistry& registry, const QString& path)
+bool BarcodeRepository::saveToCSV(const BarcodeRegistry& registry)
 {
+    const QString path = FileNameHelper::instance().pathFor(FileKind::Barcodes, FileAccess::Write);
+    if (path.isEmpty())
+        return false;
+
     QFile f(path);
     QIODevice::OpenMode mode = QIODevice::WriteOnly | QIODevice::Text;
     if (!f.open(mode)) {

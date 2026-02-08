@@ -24,7 +24,7 @@ class BarcodeRepository {
 public:
     /**
      * Entry point – CSV betöltés és registry feltöltés.
-     * - A FileNameHelper-ből várja a CSV útvonalát (pl. getBarcodeCsvFile()).
+     * - A FileNameHelper-ből várja a CSV útvonalát (pl. pathFor()).
      * - Audit hibák esetén warning és részösszegző log.
      */
 //    static bool loadFromCSV(BarcodeRegistry& registry);
@@ -34,7 +34,7 @@ public:
      * Opcionális export – a registry jelenlegi tartalmát kiírja CSV-be.
      * - Auditbarát header sorral, ISO dátumokkal, pontos statusz értékkel.
      */
-    static bool saveToCSV(const BarcodeRegistry& registry, const QString& path);
+    static bool saveToCSV(const BarcodeRegistry& registry);
 
 private:
     // 📥 CSV sor logikai modellje (raw → typed, de még nem BarcodeRecord)

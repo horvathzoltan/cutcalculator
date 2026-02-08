@@ -1,14 +1,63 @@
 #pragma once
 
-//#include "mixin_contract_checks.h"
-
+/**
+ * 🧩 CrudWorkflowMixin – a domain entitások egyetlen érvényes CRUD‑útvonala
+ *
+ * Cél:
+ * ----
+ * - A domain registryk (Product, Material, NeedCalculation, NeedCalculationDetail)
+ *   tiszta, auditálható, invariáns‑biztos CRUD‑workflowját biztosítja.
+ * - A teljes CRUD‑folyamatot egységesíti: validáció → memória → log → persist.
+ * - Megakadályozza az engine‑szintű write API megkerülését.
+ *
+ * Workflow lépések:
+ * -----------------
+ *   1) validateDomain
+ *   2) validateDuplicate
+ *   3) beforeInsert / beforeUpdate / beforeRemove
+ *   4) store*Impl (memória + engine event) + notifyItemsChanged
+ *   5) on*Log (audit/diagnosztika)
+ *   6) persist()  (tartósítás)
+ *   7) after*Hook (opcionális, mellékhatás‑mentes)
+ *
+ * Tiltások:
+ * ---------
+ * - Engine‑szintű write API hívása TILOS:
+ *       add(), updateInternal(), removeInternal(), clear()
+ * - Kézi persist() hívása workflow‑on kívül TILOS.
+ * - Közvetlen memória‑módosítás TILOS (store*Impl megkerülése).
+ * - CRUD hívása load‑path alatt TILOS (setAll, konstruktor, CSV betöltés).
+ * - CRUD hívása konstruktorból vagy destruktorból TILOS.
+ * - Aszinkron vagy deferred CRUD TILOS.
+ *
+ * Log szerződés:
+ * --------------
+ * - Minden storage művelet után kötelező a megfelelő log hívás.
+ * - A log mindig a persist ELŐTT fut.
+ * - A log nem módosíthat memóriát vagy tartós állapotot.
+ *
+ * Persist szerződés:
+ * ------------------
+ * - persist() kizárólag a workflow részeként hívható.
+ * - persist() nem dobhat kivételt kifelé.
+ * - persist() nem módosíthat memóriát és nem hívhat CRUD‑ot.
+ *
+ * AfterHook szerződés:
+ * --------------------
+ * - afterInsert/afterUpdate/afterRemove opcionális.
+ * - Nem módosíthat memóriát vagy tartós állapotot.
+ * - Nem hívhat CRUD‑ot vagy persist‑et.
+ * - Mellékhatás‑mentes UI/diagnosztikai jelzésekre való.
+ *
+ * Összefoglaló:
+ * -------------
+ * Ez a mixin a domain CRUD egyetlen helyes útvonala.
+ * Minden registry insert/update/remove művelete erre kell épüljön.
+ * A workflow invariánsai megszakíthatatlanok és auditálhatók.
+ */
 
 template<typename Host, typename Connection>
 struct ConnectionWorkflowMixin {
-    // static_assert(
-    //     HasConnectionWorkflowApi<Host, Connection>::value,
-    //     "Host must satisfy the ConnectionWorkflowMixin contract"
-    //     );
 
     using IdType = typename Connection::IdType;
 
@@ -80,49 +129,3 @@ struct ConnectionWorkflowMixin {
 
 };
 
-// template<typename Host, typename Connection>
-// struct ConnectionWorkflowMixin {
-//     using IdType = typename Connection::IdType;
-
-//     bool insertWithWorkflow(const IdType& leftId, const IdType& rightId) {
-//         Host& reg = static_cast<Host&>(*this);
-
-//         Connection c(leftId, rightId);
-
-//         // --- Domain validation ---
-//         if (!reg.validateConnection(c)) return false;
-//         if (!reg.validateDuplicate(c)) return false;
-//         // ha lesz:
-//         // if (!reg.beforeInsert(c)) return false;
-
-//         // --- Tényleges beszúrás (ConnectionCrudMixin::insert) ---
-//         if (!reg.insert(c)) return false;
-
-//         // --- Domain log + persist ---
-//         reg.onInsertLog(c);
-//         reg.persist();
-//         return true;
-//     }
-
-//     bool removeWithWorkflow(const IdType& leftId, const IdType& rightId) {
-//         Host& reg = static_cast<Host&>(*this);
-
-//         using C = Connection;
-//         const C* existing = reg.findByPair(leftId, rightId);
-//         if (!existing)
-//             return false;
-
-//         C copy = *existing;
-
-//         // ha lesz:
-//         // if (!reg.beforeRemove(copy)) return false;
-
-//         // --- Tényleges törlés (ConnectionCrudMixin::remove) ---
-//         if (!reg.remove(leftId, rightId)) return false;
-
-//         // --- Domain log + persist ---
-//         reg.onRemoveLog(copy);
-//         reg.persist();
-//         return true;
-//     }
-// };

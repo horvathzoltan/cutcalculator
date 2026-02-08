@@ -34,7 +34,7 @@ void NeedCalculationDetailRegistryTester::prepare()
     NeedCalculationRegistry::instance().clearForTest();
     NeedCalculationDetailRegistry::instance().clearForTest();
 
-    QString csv = FileNameHelper::instance().getNeedCalculationDetailCsvFile();
+    QString csv = FileNameHelper::instance().pathFor((FileKind::NeedCalculationDetails), FileAccess::Write);
     QFile::remove(csv);
 
     NeedCalculation nc;
@@ -61,7 +61,7 @@ void NeedCalculationDetailRegistryTester::testValidInsert()
     Q_ASSERT(reg.insert(d));
     Q_ASSERT(reg.size() == 1);
 
-    QString csv = FileNameHelper::instance().getNeedCalculationDetailCsvFile();
+    QString csv = FileNameHelper::instance().pathFor((FileKind::NeedCalculationDetails), FileAccess::Write);
     QStringList lines = readAllLines(csv);
     Q_ASSERT(lines.size() == 2);
 
@@ -86,7 +86,7 @@ void NeedCalculationDetailRegistryTester::testDuplicateInsert()
 
     Q_ASSERT(reg.insert(d1));
 
-    QString csv = FileNameHelper::instance().getNeedCalculationDetailCsvFile();
+    QString csv = FileNameHelper::instance().pathFor((FileKind::NeedCalculationDetails), FileAccess::Write);
     QStringList before = readAllLines(csv);
 
     Q_ASSERT(!reg.insert(d2));
@@ -113,7 +113,7 @@ void NeedCalculationDetailRegistryTester::testInvalidDomain()
     NeedCalculationDetail bad = makeD(calc->id, ids.M1, "");
     Q_ASSERT(!reg.insert(bad));
 
-    QString csv = FileNameHelper::instance().getNeedCalculationDetailCsvFile();
+    QString csv = FileNameHelper::instance().pathFor((FileKind::NeedCalculationDetails), FileAccess::Write);
     QStringList lines = readAllLines(csv);
     Q_ASSERT(lines.isEmpty());
 
@@ -139,7 +139,7 @@ void NeedCalculationDetailRegistryTester::testValidUpdate()
     d.formula = "h-20";
     Q_ASSERT(reg.update(d));
 
-    QString csv = FileNameHelper::instance().getNeedCalculationDetailCsvFile();
+    QString csv = FileNameHelper::instance().pathFor((FileKind::NeedCalculationDetails), FileAccess::Write);
     QStringList lines = readAllLines(csv);
 
     Q_ASSERT(lines.contains("P1;ModeA;M1;h-20"));
@@ -166,7 +166,7 @@ void NeedCalculationDetailRegistryTester::testInvalidUpdateDuplicate()
     Q_ASSERT(reg.insert(d1));
     Q_ASSERT(reg.insert(d2));
 
-    QString csv = FileNameHelper::instance().getNeedCalculationDetailCsvFile();
+    QString csv = FileNameHelper::instance().pathFor((FileKind::NeedCalculationDetails), FileAccess::Write);
     QStringList before = readAllLines(csv);
 
     d2.materialId = ids.M1;
@@ -199,7 +199,7 @@ void NeedCalculationDetailRegistryTester::testValidRemove()
     Q_ASSERT(reg.remove(d.id));
     Q_ASSERT(reg.size() == 0);
 
-    QString csv = FileNameHelper::instance().getNeedCalculationDetailCsvFile();
+    QString csv = FileNameHelper::instance().pathFor((FileKind::NeedCalculationDetails), FileAccess::Write);
     QStringList lines = readAllLines(csv);
     Q_ASSERT(lines.size() == 1);
 
@@ -213,7 +213,7 @@ void NeedCalculationDetailRegistryTester::testInvalidRemove()
 
     auto& reg = NeedCalculationDetailRegistry::instance();
 
-    QString csv = FileNameHelper::instance().getNeedCalculationDetailCsvFile();
+    QString csv = FileNameHelper::instance().pathFor((FileKind::NeedCalculationDetails), FileAccess::Write);
     QStringList before = readAllLines(csv);
 
     Q_ASSERT(!reg.remove(QUuid::createUuid()));

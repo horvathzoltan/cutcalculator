@@ -69,10 +69,6 @@ void ProductRegistry::onRemoveLog(const ProductMaster& p)
 
 void ProductRegistry::persist() const
 {
-    const QString path = FileNameHelper::instance().getProductCsvFile();
-    if (path.isEmpty())
-        return;
-
-    ProductRepository::saveToCSV(readAll(), path);
+    ProductRepository::saveToCSV(readAll());
 }
 

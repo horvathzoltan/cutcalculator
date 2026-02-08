@@ -7,9 +7,9 @@
 // ------------------------------------------------------------
 // Path helper
 // ------------------------------------------------------------
-QString NeedCalculationDetailRepository::filePath() {
-    return FileNameHelper::instance().getNeedCalculationDetailCsvFile();
-}
+// QString NeedCalculationDetailRepository::filePath() {
+//     return FileNameHelper::instance().getNeedCalculationDetailCsvFile();
+// }
 
 // ------------------------------------------------------------
 // Stage 1: Convert
@@ -156,7 +156,13 @@ NeedCalculationDetailRepository::loadRows(CsvImporter::FileContext& ctx)
 // ------------------------------------------------------------
 bool NeedCalculationDetailRepository::load(QVector<NeedCalculationDetail>& out)
 {
-    CsvImporter::FileContext ctx("NeedCalculationDetail import", filePath());
+    auto filePath = FileNameHelper::instance().pathFor(FileKind::NeedCalculationDetails, FileAccess::Read);
+    if(filePath.isEmpty()) {
+        zWarning("⚠️ Nem elérhető fájlútvonal a NeedCalculationDetail CSV betöltéséhez.");
+        return false;
+    }
+
+    CsvImporter::FileContext ctx("NeedCalculationDetail import", filePath);
 
     const auto rows = loadRows(ctx);
 
@@ -191,7 +197,12 @@ bool NeedCalculationDetailRepository::load(QVector<NeedCalculationDetail>& out)
 // ------------------------------------------------------------
 bool NeedCalculationDetailRepository::save(const QVector<NeedCalculationDetail>& data)
 {
-    QFile file(filePath());
+    auto filePath = FileNameHelper::instance().pathFor(FileKind::NeedCalculationDetails, FileAccess::Write);
+    if(filePath.isEmpty()) {
+        zWarning("⚠️ Nem elérhető fájlútvonal a NeedCalculationDetail CSV mentéséhez.");
+        return false;
+    }
+    QFile file(filePath);
     if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
         FileHelper::logFileError(file, "CSV SAVE", QIODevice::WriteOnly);
         return false;

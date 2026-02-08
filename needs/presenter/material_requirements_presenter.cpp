@@ -1,10 +1,9 @@
 #include "needs/presenter/material_requirements_presenter.h"
 #include "needs/registry/need_rule_registry.h"
 #include "needs/view/material_picker_dialog.h"
-
 #include <calcmodes/registry/need_calculation_registry.h>
-
 #include <calculation/registry/need_calculation_detail_registry.h>
+#include "calculation/service/matrix_validator.h"
 
 MaterialRequirementsPresenter::MaterialRequirementsPresenter(
     MaterialRequirementsView* view,
@@ -84,9 +83,10 @@ void MaterialRequirementsPresenter::refreshForProduct(const QUuid& productId,
 
 void MaterialRequirementsPresenter::refreshOverlayOnly()
 {
-    // v2: overlay reagál a mátrix állapotára is
-    _status->refresh(_view->rowCount());
+    auto state = computeMatrixState();
+    _status->setState(state);
 }
+
 
 
 void MaterialRequirementsPresenter::connectRegistry() {
@@ -110,11 +110,16 @@ OverlayStatusHelper::State MaterialRequirementsPresenter::computeMatrixState()
     if (visible == 0)
         return OverlayStatusHelper::State::NoVisibleRows;
 
-    // v2: Overlay NEM jelzi a mátrixot
+    // 🔵 v3: mátrix-komplettség ellenőrzése
+    const QUuid productId = _treeManager->currentProductId();
+    bool complete = MatrixValidator::isProductMatrixComplete(productId);
+
+    if (!complete)
+        return OverlayStatusHelper::State::Incomplete;
 
     return OverlayStatusHelper::State::Normal;
-
 }
+
 
 // bool MaterialRequirementsPresenter::isMatrixComplete() const
 // {

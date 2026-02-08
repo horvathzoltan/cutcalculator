@@ -36,10 +36,10 @@ StartupStatus StartupManager::initRalColors()
     auto fnh = FileNameHelper::instance();
 
     QList<RalSource> ralSources = {
-        { RalSystem::Classic,  fnh.getRalClassicCsvFile() },
-        { RalSystem::Design,   fnh.getRalDesignCsvFile() },
-        { RalSystem::Plastic1, fnh.getRalPlastic1CsvFile() },
-        { RalSystem::Plastic2, fnh.getRalPlastic2CsvFile() }
+        { RalSystem::Classic,  fnh.pathFor(FileKind::RalClassic,  FileAccess::Read) },
+        { RalSystem::Design,   fnh.pathFor(FileKind::RalDesign,   FileAccess::Read) },
+        { RalSystem::Plastic1, fnh.pathFor(FileKind::RalPlastic1, FileAccess::Read) },
+        { RalSystem::Plastic2, fnh.pathFor(FileKind::RalPlastic2, FileAccess::Read) }
     };
 
     QVector<NamedColor> colors;

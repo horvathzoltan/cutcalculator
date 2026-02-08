@@ -6,10 +6,53 @@
 #include <QString>
 #include "common/logger/logger.h"
 
+
+enum class FileKind {
+    Materials,
+    Products,
+    NeedRules,
+    NeedCalculations,
+    NeedCalculationDetails,
+    Barcodes,
+
+    RalClassic,
+    RalDesign,
+    RalPlastic1,
+    RalPlastic2,
+
+    UiSnapshotDir,   // könyvtár
+    UiSnapshotFile,  // fájl
+    LogDir,
+    SettingsIni,
+    CacheDir
+};
+
+enum class FileAccess {
+    Read,
+    Write
+};
+
+enum class FileBehavior {
+    Crud,
+    ReadOnly,
+    Config
+};
+
+
+struct FileKindInfo {
+    QString fileName;
+    FileBehavior behavior;
+};
+
 //3. 🧠 Lehetőség singletonná alakításra
 // 📁 Tesztfájl elérési segédfüggvények
 class FileNameHelper{
     friend class FileNameHelperTesterProxy;
+
+public:
+
+
+    QString pathFor(FileKind kind, FileAccess access,const QString& overrideFileName="") const;
 
 public:
     enum InitSource { None, CompileTime, SourceFileHeuristic, AppDirFallback , Setter};
@@ -90,7 +133,9 @@ private:
     FileNameHelper();
     bool init(const char* file);
     QString generateTimestamp() const;
-    QString getRalColorsFilePath(const QString& path) const;
+    //QString getRalColorsFilePath(const QString& path) const;
+
+
 public:
     // 🔁 Példány elérése
     static FileNameHelper& instance();
@@ -100,46 +145,44 @@ public:
     void setDataRootPath(const QString& path);
     //QString dataRootPath() const;
 
-
-    bool isInitialized() const { return _dataRoot_TEST.isInitialized(); }
-
     // ⚙️ Beállítások
     void setTestMode(bool v) {
         _isTest = v;
         _dataRoot.setTestMode(v);
     }
 
+    void setBinaryPath(const QString &a);
+    bool isInitialized() const { return _dataRoot_TEST.isInitialized(); }
     bool isTestMode() const { return _isTest; }
 
     // 📁 Elérési utak
     //QString getTestFolderPath() const;
     //QString getWorkingFolder() const;
-    QString getMaterialCsvFile() const; // 📁 Anyag törzs CSV útvonal
+    //QString getMaterialCsvFile() const; // 📁 Anyag törzs CSV útvonal
 
     // 📓 Naplófájl név
     //QString getNew_LogFileName() const;
-    QString getLogFolder() const;
+    //QString getLogFolder() const;
     //QString getLogFilePath(const QString& fn) const;
 
     //
-    QString getRalClassicCsvFile() const;
-    QString getRalDesignCsvFile() const;
-    QString getRalPlastic1CsvFile() const;
-    QString getRalPlastic2CsvFile() const;
+    // QString getRalClassicCsvFile() const;
+    // QString getRalDesignCsvFile() const;
+    // QString getRalPlastic1CsvFile() const;
+    // QString getRalPlastic2CsvFile() const;
 
-    QString getSettingsFilePath(bool forWrite);
-    void setBinaryPath(const QString &a);
-    QString getProductCsvFile() const;
-    QString getNeedRuleCsvFile() const;
-    QString getNeedCalculationCsvFile() const;
-    QString getNeedCalculationDetailCsvFile() const;
-    QString getBarcodeCsvFile() const;
+    //QString getSettingsFilePath(bool forWrite);
+    //QString getProductCsvFile() const;
+    //QString getNeedRuleCsvFile() const;
+    //QString getNeedCalculationCsvFile() const;
+    //QString getNeedCalculationDetailCsvFile() const;
+    //QString getBarcodeCsvFile() const;
 
     // Új: snapshot könyvtár
-    QString uiSnapshotDirectory() const;
+    //QString uiSnapshotDirectory() const;
 
     // Új: snapshot file path monitorprofil alapján
-    QString uiSnapshotFilePath(const QString& profile) const;
+    //QString snapshotFilePath(const QString& profile) const;
     //QString dataRootPath() const;
-    QString getCacheDirectory(const QString &subfolder) const;
+    //QString getCacheDirectory(const QString &subfolder) const;
 };

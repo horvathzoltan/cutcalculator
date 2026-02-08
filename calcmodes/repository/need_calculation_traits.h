@@ -9,8 +9,8 @@ struct NeedCalculationTraits {
     using Entity = NeedCalculation;
     using RegistryType = NeedCalculationRegistry;
 
-    static QString filePath() {
-        return FileNameHelper::instance().getNeedCalculationCsvFile();
+    static QString filePath(FileAccess access) {
+        return FileNameHelper::instance().pathFor(FileKind::NeedCalculations, access);
     }
 
     static QStringList headers() {

@@ -1,33 +1,116 @@
-# Overlay UX Rules — Matrix v2
+Overlay UX Rules — Matrix v3
 
-## 1. Alapelv
-Az overlay NEM jelzi a mátrix állapotát.  
-Az overlay kizárólag a repository állapotát mutatja:
+1. Alapelv
 
-- 🟥 Üres repository
-- 🟨 Van adat, de nincs látható sor
-- 🟩 Van adat és látható sorok
+Az overlay alapértelmezésben NEM jelzi a mátrix állapotát.
+Az overlay továbbra is a repository + view állapotát mutatja:
 
-A mátrix állapotát a View réteg ikonlogikája jelzi.
+-   🟥 EmptyRepo — üres repository
+-   🟨 NoVisibleRows — van adat, de nincs látható sor
+-   🟩 Normal — van adat és látható sorok
 
-## 2. DetailView ikonok
-- ❌ Material missing  
-- ❗ Invalid formula  
-- 🟡 Unknown formula  
-- 🟢 OK  
+Újdonság (v3):
+A Presenter kiegészítheti ezt egy negyedik állapottal:
 
-## 3. ModesView ikonok
-- 🔴 Missing detail(s)  
-- 🟡 Unknown formula(s)  
-- 🟢 All details OK  
+-   🔵 Incomplete — a mátrix hiányos (MatrixValidator alapján)
 
-## 4. MaterialRequirementsView ikonok
-- ❗ Material missing  
-- ⚠️ Missing detail(s) for this material  
-- 🟢 OK  
+Ez az állapot nem automatikus, a Presenter állítja be.
 
-## 5. Navigáció
+------------------------------------------------------------------------
+
+2. Overlay állapotok (OverlayStatusHelper::State)
+
+  --------------------------------------------------------------------------
+  Állapot         Emoji         Jelentés           Ki dönti el?
+  --------------- ------------- ------------------ -------------------------
+  EmptyRepo       🟥            nincs adat a       OverlayStatusHelper
+                                repositoryban      
+
+  NoVisibleRows   🟨            van adat, de a     OverlayStatusHelper
+                                view nem mutat     
+                                semmit             
+
+  Normal          🟩            van adat és        OverlayStatusHelper
+                                látható sorok      
+
+  Incomplete      🔵            a mátrix hiányos   Presenter
+                                                   (MatrixValidator alapján)
+  --------------------------------------------------------------------------
+
+------------------------------------------------------------------------
+
+3. Sor‑szintű ikonok (nem overlay)
+
+DetailView ikonok
+
+-   ❌ Material missing
+-   ❗ Invalid formula
+-   🟡 Unknown formula
+-   🟢 OK
+
+ModesView ikonok
+
+-   🔴 Missing detail(s)
+-   🟡 Unknown formula(s)
+-   🟢 All details OK
+
+MaterialRequirementsView ikonok
+
+-   ❗ Material missing
+-   ⚠️ Missing detail(s) for this material
+-   🟢 OK
+
+Ezek NEM overlay ikonok, hanem sor‑szintű állapotjelzések.
+
+------------------------------------------------------------------------
+
+4. MatrixValidator integráció (új, v3)
+
+A Presenter (pl. MaterialRequirementsPresenter) felelős a mátrix
+állapotának lekérdezéséért.
+
+4.1. A Presenter lekérdezi a mátrix állapotát
+
+    bool complete = MatrixValidator::isProductMatrixComplete(productId);
+
+4.2. A Presenter dönti el az overlay állapotát
+
+    OverlayStatusHelper::State state;
+
+    if (!complete)
+        state = OverlayStatusHelper::State::Incomplete;
+    else
+        state = OverlayStatusHelper::computeState(repoCount, visibleRows);
+
+4.3. A Presenter alkalmazza az overlayt
+
+    OverlayStatusHelper::apply(_overlayWidget, state);
+
+------------------------------------------------------------------------
+
+5. Navigációs szabályok
+
 A Presenter automatikusan a legelső hibás sorra ugrik:
-- material missing  
-- invalid formula  
-- unknown formula  
+
+-   material missing
+-   invalid formula
+-   unknown formula
+-   missing detail
+
+Ez változatlan a v2‑höz képest.
+
+------------------------------------------------------------------------
+
+6. Összefoglaló
+
+-   Az overlay továbbra is repository‑policy, de kiegészült egy
+    Presenter‑vezérelt „Incomplete” állapottal.
+-   A mátrix állapotát nem az OverlayStatusHelper számolja ki.
+-   A mátrix állapotát a Presenter dönti el, a MatrixValidator eredménye
+    alapján.
+-   A sor‑szintű ikonok továbbra is a View logikáját követik.
+-   A rendszer így teljesen konzisztens a Matrix v2 logikával és a
+    modern workflow‑architektúrával.
+
+------------------------------------------------------------------------
+

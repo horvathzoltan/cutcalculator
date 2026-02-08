@@ -60,6 +60,8 @@ SOURCES += \
     test/filenamehelper/filenamehelper_tests.cpp \
     test/material/material_registry_tester.cpp \
     test/need/need_rule_registry_tester.cpp \
+    test/overlay/material_requirements_overlay_tester.cpp \
+    test/overlay/matrix_validator_tester.cpp \
     test/overlay/overlay_presenter_tester.cpp \
     test/product/product_registry_tester.cpp \
     ui/helpers/overlay_status_helper.cpp \
@@ -133,7 +135,6 @@ HEADERS += \
     common/registry/manager/registry_traits.h \
     common/registry/mixins/bulk_load_mixin.h \
     common/registry/mixins/collector_mixin.h \
-    common/registry/mixins/connection_crud_mixin.h \
     common/registry/mixins/connection_workflow_mixin.h \
     common/registry/mixins/crud_mixin.h \
     common/registry/mixins/crud_workflow_mixin.h \
@@ -189,6 +190,8 @@ HEADERS += \
     test/filenamehelper/filenamehelper_tests.h \
     test/material/material_registry_tester.h \
     test/need/need_rule_registry_tester.h \
+    test/overlay/material_requirements_overlay_tester.h \
+    test/overlay/matrix_validator_tester.h \
     test/overlay/overlay_presenter_tester.h \
     test/product/product_registry_tester.h \
     ui/helpers/overlay_status_helper.h \

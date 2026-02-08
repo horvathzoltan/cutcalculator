@@ -1,6 +1,6 @@
 #include "settings_manager.h"
 #include "common/utils/filename_helper.h"
-#include "common/utils/geometry_helper.h"
+//#include "common/utils/geometry_helper.h"
 
 SettingsManager& SettingsManager::instance() {
     static SettingsManager _instance;
@@ -8,8 +8,11 @@ SettingsManager& SettingsManager::instance() {
 }
 
 SettingsManager::SettingsManager() {
-    QString _readPath  = FileNameHelper::instance().getSettingsFilePath(false);
-    QString _writePath = FileNameHelper::instance().getSettingsFilePath(true);
+    QString _readPath  =
+        FileNameHelper::instance().pathFor(FileKind::SettingsIni,FileAccess::Read);
+
+    QString _writePath =
+        FileNameHelper::instance().pathFor(FileKind::SettingsIni,FileAccess::Write);
 
     // B-terv: ha nincs writePath, de van readPath → másoljuk át
     if (!QFile::exists(_writePath)){

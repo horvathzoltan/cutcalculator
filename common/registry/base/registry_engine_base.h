@@ -34,7 +34,6 @@ class RegistryEngineBase : public RegistryBase {
 public:
     template<typename, typename> friend struct RegistryCore;
     template<typename, typename> friend struct CrudWorkflowMixin;
-    template<typename, typename> friend struct ConnectionCrudMixin;
     template<typename, typename> friend struct ConnectionWorkflowMixin;
     template<typename Host> friend struct TestSupportMixin;
     template<typename Host, typename Entity> friend struct BulkLoadMixin;

@@ -8,6 +8,8 @@
 #include "test/eventlogger/event_logger_tester.h"
 #include "test/filenamehelper/filenamehelper_tests.h"
 #include "test/need/need_rule_registry_tester.h"
+#include "test/overlay/material_requirements_overlay_tester.h"
+#include "test/overlay/matrix_validator_tester.h"
 #include "test/overlay/overlay_presenter_tester.h"
 
 TestManager& TestManager::instance() {
@@ -49,6 +51,12 @@ void TestManager::runBusinessLogicTests(const QString& profile) {
     }
     else if (profile == "overlay") {
         runModule<OverlayPresenterTester>();
+    }
+    else if (profile == "materialrequirement_overlay") {
+        runModule<MaterialRequirementsOverlayTester>();
+    }
+    else if (profile == "matrixvalidator") {
+        runModule<MatrixValidatorTester>();
     }
     /**/
     else {

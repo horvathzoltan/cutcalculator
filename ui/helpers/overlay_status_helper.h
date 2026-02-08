@@ -21,6 +21,10 @@ class OverlayIconWidget;
  * A cél egy egységes, toronyfüggetlen overlay policy biztosítása,
  * amely minden Presenter-ben ugyanúgy működik.
  */
+// Megjegyzés:
+// Az Incomplete állapotot NEM a computeState() dönti el.
+// A Presenter (pl. MaterialRequirementsPresenter) állítja be,
+// tipikusan a MatrixValidator eredménye alapján.
 
 class OverlayStatusHelper
 {

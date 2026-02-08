@@ -35,7 +35,7 @@ void NeedRuleRegistryTester::prepare()
     ids = TestDataBuilder::prepareStandard();
     NeedRuleRegistry::instance().clearForTest();
 
-    QString csvPath = FileNameHelper::instance().getNeedRuleCsvFile();
+    QString csvPath = FileNameHelper::instance().pathFor(FileKind::NeedRules, FileAccess::Write);
     QFile::remove(csvPath);
 }
 
@@ -50,7 +50,7 @@ void NeedRuleRegistryTester::testValidInsert()
     Q_ASSERT(reg.insert(ids.P1, ids.M1));
     Q_ASSERT(reg.size() == 1);
 
-    QString csvPath = FileNameHelper::instance().getNeedRuleCsvFile();
+    QString csvPath = FileNameHelper::instance().pathFor(FileKind::NeedRules, FileAccess::Write);
     QStringList lines = readAllLines(csvPath);
 
     NeedRule expected(ids.P1, ids.M1);
@@ -100,7 +100,7 @@ void NeedRuleRegistryTester::testValidRemove()
     Q_ASSERT(reg.remove(ids.P1, ids.M1));
     Q_ASSERT(reg.size() == 0);
 
-    QString csvPath = FileNameHelper::instance().getNeedRuleCsvFile();
+    QString csvPath = FileNameHelper::instance().pathFor(FileKind::NeedRules, FileAccess::Write);
     QStringList lines = readAllLines(csvPath);
 
     NeedRule removed(ids.P1, ids.M1);
@@ -131,7 +131,7 @@ void NeedRuleRegistryTester::testFindByLeft()
     auto v = reg.findByLeft(ids.P1);
     Q_ASSERT(v.size() == 2);
 
-    QString csvPath = FileNameHelper::instance().getNeedRuleCsvFile();
+    QString csvPath = FileNameHelper::instance().pathFor(FileKind::NeedRules, FileAccess::Write);
     QStringList lines = readAllLines(csvPath);
 
     NeedRule r1(ids.P1, ids.M1);

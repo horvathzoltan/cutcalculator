@@ -11,6 +11,7 @@
 #include "common/logger/logger.h"
 #include "common/registry/manager/registry_traits.h"
 #include "common/registry/manager/registry_manager.h"
+#include "common/utils/filename_helper.h"
 
 /**
  * 🧩 ConnectionRow – CSV sor modell (barcode-okkal)
@@ -129,7 +130,7 @@ public:
     // }
     //template<typename RegistryEngine>
     static bool load(QVector<ConnectionType>& out) {
-        const QString path = Traits::filePath();
+        const QString path = Traits::filePath(FileAccess::Read);
 
         using RegistryType = typename Traits::RegistryType;
         auto& regInstance = RegistryType::instance();
@@ -212,7 +213,8 @@ public:
 
     template<typename RegistryEngine>
     static bool save(const RegistryEngine& registry) {
-        QFile file(Traits::filePath());
+        auto fileName = Traits::filePath(FileAccess::Write);
+        QFile file(fileName);
         QIODevice::OpenMode mode = QIODevice::WriteOnly | QIODevice::Text;
         if (!file.open(mode)) {
             FileHelper::logFileError(file, "CSV CONNECTION_SAVE", mode);
@@ -249,7 +251,7 @@ public:
         }
 
         zInfo(QStringLiteral("💾 ConnectionRepository: %1 kapcsolat mentve → %2")
-                  .arg(data.size()).arg(Traits::filePath()));
+                  .arg(data.size()).arg(fileName));
         return true;
     }
 

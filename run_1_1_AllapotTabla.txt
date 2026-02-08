@@ -54,7 +54,7 @@ Most jön a frissített állapottábla és a teljes napi riport.
     NamedColor / Color registry         ✅ Kész            Pantone-ready
     NeedRule                            ✅ Kész            Új engine‑alapú pipeline
     NeedCalculation                     ✅ Kész            3‑fázisú import működik
-    NeedCalculationDetail               🚧 Folyamatban     Mátrix‑komplettség vizsgálat haladt
+    NeedCalculationDetail               ✅ Kész            Mátrix‑komplettség vizsgálat haladt
     Formula értelmezés                  🚧 Folyamatban     Mini‑DSL kész, cparse integráció hiányzik
     SOS / Tűzoltás                      ❌ Törölve         NeedRule import hibakezelés
     Generikus kapcsolótábla             ✅ Kész            ConnectionEntity + Engine
@@ -82,7 +82,7 @@ Most jön a frissített állapottábla és a teljes napi riport.
     BarcodeRegistry modernizálása       📐 Tervezés        CollectorMixin + LedgerMixin
     CollectorMixin update-támogatása    ✅ Kész            Update workflow implementálva
     Persist‑policy konzisztencia        ✅ Kész     Kettősség megszűnt; végső audit következik
-    MatrixValidator integráció          🚧 Folyamatban     Validator működik; workflow + audit bekötés hiányzik
+    MatrixValidator integráció          ✅ Kész     Validator működik; workflow + audit bekötés hiányzik
     NeedRuleRegistry workflow audit     🚧 Folyamatban     Audit lényegében kész; végső tesztelés következik
     Új Registry Fejlettségi Mátrix      ❌ Törölve         Modernizálási terv kiváltja
     ProductDefinition felvitele         📐 Tervezés        1 új termék felvitele a ProductTree-be
@@ -141,7 +141,6 @@ Most jön a frissített állapottábla és a teljes napi riport.
         patch‑terv
     -   Registry overlay frissítés teszt – PASS
 -   Holnap:
-    -   ConnectionCrudMixin → protected
     -   UI raw hívások eltávolítása
     -   replaceRule workflow implementálása
 -   Következő sprint:
@@ -177,25 +176,15 @@ teljesen auditált.
 
 🎯 Prioritási sorrend – fókuszpont lista
 
-1.  ConnectionCrudMixin → protected
-2.  UI raw hívások eltávolítása
-3.  replaceRule workflow implementálása
-4.  NeedRuleRegistry teljes workflow‑teszt
-5.  MatrixValidator + Detail torony összehangolása
-
 ------------------------------------------------------------------------
 
 🚀 Sprint fókusz + 👉 Holnap fókusz
 
 🔥 Sprint SOS fókusz
 
--   NeedRule import hibakezelés (változatlan)
 
 👉 Holnap fókusz
 
--   ConnectionCrudMixin védetté tétele
--   UI‑oldali insertRaw/removeRaw felszámolása
--   replaceRule implementáció elkezdése
 
 ------------------------------------------------------------------------
 

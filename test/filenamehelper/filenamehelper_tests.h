@@ -1,4 +1,5 @@
 #pragma once
+#include "common/utils/filename_helper.h"
 #include "test/common/test_module_base.h"
 #include <QString>
 
@@ -15,7 +16,15 @@ private:
     void testBootstrap();
     void testRootSwitching();
     void testMainDataPaths();
-    void testRegistryPaths();
+    void testSnapshotpaths();
     void testFallbackLogic();
     void testDirectoryCreation();
+    void testLogPaths();
+    void testSettingsIni();
+    void testCacheDir();
+
+    static void assertPath(FileKind kind,
+                           FileAccess access,
+                           const QString& label,
+                           const QString& expectedFilename);
 };

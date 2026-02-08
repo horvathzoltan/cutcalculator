@@ -23,4 +23,11 @@ public:
         auto state = OverlayStatusHelper::computeState(repo, visible);
         OverlayStatusHelper::apply(this, state);
     }
+
+public:
+    void setState(OverlayStatusHelper::State s)
+    {
+        OverlayStatusHelper::apply(this, s);
+    }
+
 };

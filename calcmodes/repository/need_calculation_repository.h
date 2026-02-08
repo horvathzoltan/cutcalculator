@@ -36,5 +36,5 @@ private:
     static QVector<CsvImporter::AuditedRow<Row>>
     loadRows(CsvImporter::FileContext& ctx);
 
-    static QString filePath();
+    //static QString filePath();
 };

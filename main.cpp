@@ -57,11 +57,12 @@ int main(int argc, char *argv[])
     QCoreApplication::setOrganizationDomain("https://github.com/horvathzoltan");
 
     SettingsManager::instance().detectTestMode(argc, argv);
-    FileNameHelper::instance().setDataRootPath(SettingsManager::instance().dataRootPath());
+    auto drp = SettingsManager::instance().dataRootPath();
+    FileNameHelper::instance().setDataRootPath(drp);
 
     // Settings betöltése után mozgatás a data könyvtárba
     // Settings után data mappába mozgatás
-    const auto dataDir = FileNameHelper::instance().getLogFolder();
+    const auto dataDir = FileNameHelper::instance().pathFor(FileKind::LogDir, FileAccess::Write);
     LifecycleManager::instance().setPhase_2(dataDir);
 
     // 🔵 1) Registryk explicit inicializálása
