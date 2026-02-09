@@ -26,6 +26,7 @@ SOURCES += \
     calculation/service/matrix_validator.cpp \
     common/layout/layout_default_store.cpp \
     common/logger/logger_gui.cpp \
+    common/settings/settings_store.cpp \
     common/snapshot/snapshot_manager.cpp \
     common/system/verbose_class_initializer.cpp \
     common/system/verbose_manager.cpp \
@@ -64,6 +65,7 @@ SOURCES += \
     test/overlay/matrix_validator_tester.cpp \
     test/overlay/overlay_presenter_tester.cpp \
     test/product/product_registry_tester.cpp \
+    test/settings_manager_tester.cpp \
     ui/helpers/overlay_status_helper.cpp \
     ui/widgets/overlay_icon_widget.cpp \
     workbench/view/bom_workbench.cpp \
@@ -142,6 +144,7 @@ HEADERS += \
     common/registry/mixins/mixin_contract_checks.h \
     common/registry/mixins/test_support_mixin.h \
     common/registry/subscription_token.h \
+    common/settings/settings_store.h \
     common/snapshot/snapshot_manager.h \
     common/snapshot/workbench_snapshot.h \
     common/system/nameof.hpp \
@@ -194,6 +197,7 @@ HEADERS += \
     test/overlay/matrix_validator_tester.h \
     test/overlay/overlay_presenter_tester.h \
     test/product/product_registry_tester.h \
+    test/settings_manager_tester.h \
     ui/helpers/overlay_status_helper.h \
     ui/helpers/repository_overlay_widget.h \
     ui/widgets/overlay_icon_widget.h \
@@ -277,6 +281,7 @@ DISTFILES += \
     run_2_3_3_Prompt_ReleaseNotes.txt \
     run_2_3_4_Prompt_SprintReview.txt \
     run_2_3_5_Prompt_BugList.txt \
+    run_2_3_6_Prompt_FileList.txt \
     run_2_5_Prompt_DeveloperManual.txt \
     run_2_6_ManualsWorkflow.txt \
     run_3_1_Manifest.txt \

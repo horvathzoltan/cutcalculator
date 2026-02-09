@@ -1,6 +1,5 @@
 #include "settings_manager.h"
 #include "common/utils/filename_helper.h"
-//#include "common/utils/geometry_helper.h"
 
 SettingsManager& SettingsManager::instance() {
     static SettingsManager _instance;
@@ -9,39 +8,49 @@ SettingsManager& SettingsManager::instance() {
 
 SettingsManager::SettingsManager() {
     QString _readPath  =
-        FileNameHelper::instance().pathFor(FileKind::SettingsIni,FileAccess::Read);
+        FileNameHelper::instance().pathFor(FileKind::SettingsIni, FileAccess::Read);
 
     QString _writePath =
-        FileNameHelper::instance().pathFor(FileKind::SettingsIni,FileAccess::Write);
+        FileNameHelper::instance().pathFor(FileKind::SettingsIni, FileAccess::Write);
 
-    // B-terv: ha nincs writePath, de van readPath → másoljuk át
-    if (!QFile::exists(_writePath)){
-        if( QFile::exists(_readPath)) {
+    // 1) Fallback settings.ini megnyitása (csak olvasásra)
+    if (QFile::exists(_readPath)) {
+        _fallback = std::make_unique<QSettings>(_readPath, QSettings::IniFormat);
+        zInfo() << "ℹ️ Fallback settings.ini megnyitva:" << _readPath;
+    } else {
+        zWarning() << "⚠️ Fallback settings.ini nem található:" << _readPath;
+    }
+
+    // 2) Ha nincs primary settings.ini → másoljuk át a fallbacket
+    if (!QFile::exists(_writePath)) {
+        if (QFile::exists(_readPath)) {
             if (!QFile::copy(_readPath, _writePath)) {
                 zError("❌ Nem sikerült átmásolni a settings.ini fájlt a testdata-ból a bináris mellé.");
-            }
-            else {
+            } else {
                 zInfo() << "✅ settings.ini átmásolva a testdata-ból a bináris mellé.";
             }
-        }
-        else
-        {
-            // egyik sem létezik → de másolás előtt  a forrás a releváns
-            zError() << "❌ Nem található a default settings.ini: " << qPrintable(_readPath);
+        } else {
+            zError() << "❌ Nem található a default settings.ini: " << _readPath;
         }
     }
 
-    // késői init
+    // 3) Primary settings.ini inicializálása
     _store.init(_writePath);
 
-    bool storeInitialized = _store.isInitialized();
-    if(!storeInitialized){
+    if (!_store.isInitialized()) {
         zError("❌ Nem sikerült settingset inicializálni.");
     }
 }
 
+void SettingsManager::detectTestMode(int argc, char* argv[]) {
+    detectTestMode_private(argc, argv);
 
-void  SettingsManager::detectTestMode(int argc, char* argv[]) {
+    // ⭐ Itt már biztosan tudjuk, hogy test mode van-e
+    _store.setTestMode(isTestMode());
+    _store.setFallback(_fallback.get());
+}
+
+void  SettingsManager::detectTestMode_private(int argc, char* argv[]) {
     for (int i = 1; i < argc - 1; ++i) {
         QString arg = argv[i];
         QString next = argv[i + 1];
@@ -63,17 +72,6 @@ void  SettingsManager::detectTestMode(int argc, char* argv[]) {
     return;
 }
 
-/*setValue_persistent*/
-
-void SettingsStore::setValue_persistent(const QString &key, const QString &value) {
-    setValue(key, value);
-    sync();
-}
-
-void SettingsStore::setValue_persistent(const QString& key, const QByteArray& value) {
-    setValue(key, value);
-    sync();
-}
 
 
 

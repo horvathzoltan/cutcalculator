@@ -2,80 +2,7 @@
 
 #include <QFile>
 #include <QSettings>
-
-#include "common/logger/logger.h"
-
-/**
- * @class SettingsStore
- * @brief Vékony wrapper a QSettings köré, késleltetett inicializálással.
- *
- * Felelősség:
- * - A nyers QSettings példány kezelését végzi (init, value, setValue, sync).
- * - Késleltetett inicializálás: csak akkor hozza létre a QSettings objektumot,
- *   ha ténylegesen létező és érvényes settings.ini fájl elérhető.
- * - Auditbarát hibakezelést biztosít: ha a fájl hiányzik vagy újrainicializálás
- *   történne, explicit logbejegyzést ír.
- *
- * Használat:
- * - A SettingsManager hívja meg az init(path) metódust a megfelelő settings.ini fájlra.
- * - A felsőbb rétegek nem közvetlenül a QSettings-et használják, hanem ezen a rétegen keresztül.
- *
- * Előnyök:
- * - Tesztelhetőség: könnyen mockolható/stubolható.
- * - Jövőbeli bővíthetőség: ha más storage backendre váltanánk (JSON, DB, titkosított fájl),
- *   csak ezt az osztályt kell átírni.
- */
-class SettingsStore {
-public:
-    explicit SettingsStore(){}
-
-    void init(const QString&path){
-        // már inicializálva?
-        if (_settings) {
-            zError("❌ SettingsStore már inicializálva van, reinit nem engedélyezett!");
-            return;
-        }
-
-        // üres string?
-        if (path.isEmpty()) {
-            zError("❌ SettingsStore init: üres path nem engedélyezett!");
-            return;
-        }
-
-        // fájl létezik?
-        if (!QFile::exists(path)) {
-            zError() << "❌ SettingsStore init: a fájl nem létezik: " << qPrintable(path);
-            return;
-        }
-
-        // minden rendben → inicializálás
-
-        _settings = std::make_unique<QSettings>(path, QSettings::IniFormat);
-        zInfo() << "✅ Settings inicializálva: " << qPrintable(path);
-    }
-
-    QVariant value(const QString& key, const QVariant& defaultValue = QVariant()) const {
-        return _settings?_settings->value(key, defaultValue):defaultValue;
-    }
-
-    void setValue(const QString& key, const QVariant& value) {
-        if(_settings)
-            _settings->setValue(key, value);
-    }
-
-    void sync() {if(_settings) _settings->sync(); }
-
-    bool isInitialized() const {
-        return _settings != nullptr;
-    }
-
-    void setValue_persistent(const QString& key, const QString& value);
-    void setValue_persistent(const QString &key, const QByteArray &value);
-
-private:
-    std::unique_ptr<QSettings> _settings = nullptr;;
-};
-
+#include "settings_store.h"
 
 /**
  * @class SettingsManager
@@ -218,6 +145,8 @@ private:
     SettingsStore _store;
     QString _testProfile = "none";
     bool _windowRestored = false;
+    std::unique_ptr<QSettings> _fallback;
 
+    void detectTestMode_private(int argc, char* argv[]);
 };
 

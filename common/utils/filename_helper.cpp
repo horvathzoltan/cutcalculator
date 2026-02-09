@@ -15,8 +15,7 @@ bool FileNameHelper::init(const char* file) {
 #else
     if (!file || !*file) {
         zWarning() << "⚠️ init() hívás érvénytelen fájlparaméterrel.";
-        //_initialized_testDataPath = false;
-        //_initSource_testdataPath = None;
+
         return false;
     }
 
@@ -41,14 +40,6 @@ bool FileNameHelper::init(const char* file) {
 }
 
 FileNameHelper& FileNameHelper::instance() {
-//Q_ASSERT_X(_brc.isInitialized(), "FileNameHelper", "Call setBinaryPath(argv0) in main() before instance()");
-
-// #ifndef QT_DEBUG
-//     if (!_brc.isInitialized()) {
-//         qFatal("FileNameHelper::instance: bootstrap missing (setBinaryPath not called)");
-//     }
-// #endif
-
     static FileNameHelper helper;
     return helper;
 }
@@ -66,181 +57,33 @@ void FileNameHelper::setBinaryPath(const char* argv0) {
     _brc.setRootPath(QFileInfo(QString::fromUtf8(argv0)).absolutePath(), InitSource::Setter);
 }
 
+// void FileNameHelper::setDataRootPath(const QString& path) {
+//     _dataRoot.setRootPath(path, InitSource::Setter);
+//     _dataRoot_MAIN.setRootPath(path, InitSource::Setter);
+// }
+
 void FileNameHelper::setDataRootPath(const QString& path) {
+    if (path.isEmpty()) {
+        zWarning("⚠️ FileNameHelper::setDataRootPath: üres datapath érkezett");
+        // üres path esetén is beállítjuk, de jelzünk
+        _dataRoot.setRootPath("", InitSource::Setter);
+        _dataRoot_MAIN.setRootPath("", InitSource::Setter);
+        return;
+    }
+
+    QDir dir(path);
+    if (!dir.exists()) {
+        zWarning() << "⚠️ FileNameHelper::setDataRootPath: a könyvtár nem létezik:" << path;
+        // ettől még beállítjuk, mert a CRUD fájlok létrehozhatják
+    }
+
     _dataRoot.setRootPath(path, InitSource::Setter);
     _dataRoot_MAIN.setRootPath(path, InitSource::Setter);
 }
 
-// QString FileNameHelper::getSettingsFilePath(bool forWrite) {
-//     Q_ASSERT_X(_brc.isInitialized(), "FileNameHelper","setBinaryPath(argv0) must be called before getSettingsFilePath");
-// #ifndef QT_DEBUG
-//     if (!_brc.isInitialized()) qFatal("getSettingsFilePath: bootstrap missing");
-// #endif
-
-//     const QString binIni = _brc.filePath("settings.ini");
-//     if (forWrite) return binIni;
-
-//     if (QFileInfo::exists(binIni)) return binIni;
-
-//     if(_dataRoot_TEST.isEmpty()) return "";
-//     const QString testIni = _dataRoot_TEST.filePath("settings.ini");
-//     return testIni;
-// }
-
 QString FileNameHelper::generateTimestamp() const {
     return QDateTime::currentDateTime().toString("yyyyMMdd-HHmmss");
 }
-
-/*log*/
-
-// QString FileNameHelper::getNew_LogFileName() const {
-//     QString fn0 = QStringLiteral("log_%1.txt").arg(generateTimestamp());
-//     return fn0;
-// }
-
-// QString FileNameHelper::getLogFolder() const {
-//      // bináris neve (pl. CutCalculator)
-//      QString programName = "CutCalculator";//QFileInfo(QCoreApplication::applicationFilePath()).baseName();
-//      return _dataRoot.filePath(programName + "_logs");
-// }
-
-// QString FileNameHelper::getLogFilePath(const QString& fn) const {
-//     return QDir(getLogFolder()).filePath(fn);
-// }
-
-/* Material */
-// QString FileNameHelper::getMaterialCsvFile() const {
-//     return _dataRoot_MAIN.filePath("materials.csv");
-// }
-
-/* Product */
-// QString FileNameHelper::getProductCsvFile() const {
-//     QString path = _dataRoot.filePath("products.csv");
-
-//     if(_isTest) return path;
-
-//     if (!QFile::exists(path)) {
-//         // fallback fejlesztéshez
-//         path = _dataRoot_TEST.filePath("products.csv");
-//     }
-//         return path;
-// }
-
-
-/* Product */
-// QString FileNameHelper::getNeedRuleCsvFile() const {
-//     QString path = _dataRoot.filePath("needrules.csv");
-
-//     if(_isTest) return path;
-
-//     if (!QFile::exists(path)) {
-//         // fallback fejlesztéshez
-//         path = _dataRoot_TEST.filePath("needrules.csv");
-//     }
-//     return path;
-// }
-
-/* Barcode */
-// QString FileNameHelper::pathFor() const {
-//     QString path = _dataRoot.filePath("barcodes.csv");
-
-//     if(_isTest) return path;
-
-//     if (!QFile::exists(path)) {
-//         // fallback fejlesztéshez
-//         path = _dataRoot_TEST.filePath("barcodes.csv");
-//     }
-//     return path;
-// }
-
-
-// QString FileNameHelper::getNeedCalculationCsvFile() const {
-//     return _dataRoot.filePath("needcalculations.csv");
-// }
-
-// QString FileNameHelper::getNeedCalculationDetailCsvFile() const {
-//     return _dataRoot.filePath("needcalc_details.csv");
-// }
-
-
-/* RAL Colors */
-
-// QString FileNameHelper::getRalColorsFilePath(const QString& path) const {
-//     return QDir(_dataRoot_MAIN.filePath("ral_colors")).filePath(path);
-// }
-
-// QString FileNameHelper::getRalClassicCsvFile() const {
-//     return getRalColorsFilePath("classic.csv");
-// }
-
-// QString FileNameHelper::getRalDesignCsvFile() const {
-//     return getRalColorsFilePath("design.csv");
-// }
-
-// QString FileNameHelper::getRalPlastic1CsvFile() const {
-//     return getRalColorsFilePath("p1.csv");
-// }
-
-// QString FileNameHelper::getRalPlastic2CsvFile() const {
-//     return getRalColorsFilePath("p2.csv");
-// }
-
-// QString FileNameHelper::dataRootPath() const {
-//     return _dataRoot.filePath("");
-// }
-
-
-// QString FileNameHelper::uiSnapshotDirectory() const {
-//     const QString root = _dataRoot_MAIN.filePath("");
-
-//     if (root.isEmpty()) {
-//         zWarning("⚠️ uiSnapshotDirectory: dataRootPath is empty");
-//         return {};
-//     }
-
-//     QDir dir(root);
-//     const QString sub = "ui_snapshots";
-
-//     if (!dir.exists(sub)) {
-//         if (!dir.mkpath(sub)) {
-//             zError("❌ uiSnapshotDirectory: mkpath(ui_snapshots) failed");
-//             return {};
-//         }
-//     }
-
-//     dir.cd(sub);
-//     return dir.absolutePath();
-// }
-
-
-// QString FileNameHelper::uiSnapshotFilePath(const QString& profile) const {
-//     const QString dirPath = uiSnapshotDirectory();
-//     if (dirPath.isEmpty()) {
-//         zWarning("⚠️ uiSnapshotFilePath: snapshot directory is empty");
-//         return {};
-//     }
-
-//     QDir dir(dirPath);
-//     const QString fileName = QStringLiteral("geometry_%1.ini").arg(profile);
-
-//     return dir.filePath(fileName);
-// }
-
-
-// QString FileNameHelper::getCacheDirectory(const QString& subfolder) const
-// {
-//     QString root =  _dataRoot_MAIN.filePath("");
-//     if (root.isEmpty())
-//         root = QStandardPaths::writableLocation(QStandardPaths::CacheLocation);
-
-//     QDir dir(root);
-//     if (!dir.exists(subfolder))
-//         dir.mkpath(subfolder);
-
-//     dir.cd(subfolder);
-//     return dir.absolutePath();
-// }
-
 
 static const QMap<FileKind, FileKindInfo> FILE_INFO = {
     // READ-ONLY
@@ -272,6 +115,12 @@ QString FileNameHelper::pathFor(FileKind kind, FileAccess access, const QString&
         zWarning("⚠️ FileNameHelper nincs inicializálva.");
         return "";
     }
+
+    if (_dataRoot.isEmpty()) {
+        zWarning("⚠️ FileNameHelper: dataRootPath üres, pathFor nem tud érvényes utat adni.");
+        return "";
+    }
+
 
     // 🔒 Biztonsági ellenőrzés: minden FileKind legyen a FILE_INFO-ban
     if (!FILE_INFO.contains(kind)) {
@@ -350,10 +199,4 @@ QString FileNameHelper::pathFor(FileKind kind, FileAccess access, const QString&
     return "";
 }
 
-// QString FileNameHelper::snapshotFilePath(const QString& profile) const
-// {
-//     QString dir = pathFor(FileKind::UiSnapshotDir, FileAccess::Write);
-//     QString fileName = QString("geometry_%1.ini").arg(profile);
-//     return QDir(dir).filePath(fileName);
-// }
 

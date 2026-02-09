@@ -3,6 +3,7 @@
 
 #include "material/material_registry_tester.h"
 #include "product/product_registry_tester.h"
+#include "settings_manager_tester.h"
 #include "test/calcmode/need_calculation_registry_tester.h"
 #include "test/calculation/need_calculation_detail_registry_tester.h"
 #include "test/eventlogger/event_logger_tester.h"
@@ -58,6 +59,10 @@ void TestManager::runBusinessLogicTests(const QString& profile) {
     else if (profile == "matrixvalidator") {
         runModule<MatrixValidatorTester>();
     }
+    else if (profile == "settings") {
+        runModule<SettingsManagerTester>();
+    }
+
     /**/
     else {
         _lastResults << "Unknown profile:" + profile;

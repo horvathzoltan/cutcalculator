@@ -154,35 +154,4 @@ public:
     void setBinaryPath(const QString &a);
     bool isInitialized() const { return _dataRoot_TEST.isInitialized(); }
     bool isTestMode() const { return _isTest; }
-
-    // 📁 Elérési utak
-    //QString getTestFolderPath() const;
-    //QString getWorkingFolder() const;
-    //QString getMaterialCsvFile() const; // 📁 Anyag törzs CSV útvonal
-
-    // 📓 Naplófájl név
-    //QString getNew_LogFileName() const;
-    //QString getLogFolder() const;
-    //QString getLogFilePath(const QString& fn) const;
-
-    //
-    // QString getRalClassicCsvFile() const;
-    // QString getRalDesignCsvFile() const;
-    // QString getRalPlastic1CsvFile() const;
-    // QString getRalPlastic2CsvFile() const;
-
-    //QString getSettingsFilePath(bool forWrite);
-    //QString getProductCsvFile() const;
-    //QString getNeedRuleCsvFile() const;
-    //QString getNeedCalculationCsvFile() const;
-    //QString getNeedCalculationDetailCsvFile() const;
-    //QString getBarcodeCsvFile() const;
-
-    // Új: snapshot könyvtár
-    //QString uiSnapshotDirectory() const;
-
-    // Új: snapshot file path monitorprofil alapján
-    //QString snapshotFilePath(const QString& profile) const;
-    //QString dataRootPath() const;
-    //QString getCacheDirectory(const QString &subfolder) const;
 };

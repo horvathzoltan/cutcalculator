@@ -1,0 +1,27 @@
+A fenti fejlesztési feladathoz szeretnék egy minimális, de teljes fájllistát:
+
+A fájllista generálásának szabályai:
+
+1. Csak olyan fájlokat sorolj fel, amelyek:
+   - ténylegesen szerepelnek a mellékelt .pro fájlban,
+   - és a megadott fejlesztési feladat megértéséhez vagy módosításához szükségesek.
+
+2. Ne sorolj fel olyan fájlokat, amelyek:
+   - csak közvetve kapcsolódnak,
+   - vagy a feladat szempontjából irrelevánsak,
+   - vagy csak a build részei (UI, view, presenter, repository, registry stb.), ha nem érintettek.
+
+3. A kimenet formátuma:
+   - egy sor = egy fájl
+   - relatív path a projekt gyökeréhez képest
+   - kommentek `#` jellel kezdődhetnek
+   - a lista legyen közvetlenül beilleszthető egy `files.txt` fájlba
+
+4. A lista legyen:
+   - minimális (ne legyen benne felesleg),
+   - teljes (ne hiányozzon semmi, ami kell),
+   - determinisztikus (ugyanarra a feladatra mindig ugyanazt adja).
+
+5. A .pro fájl tartalmát vedd alapul a fájlok létezésének ellenőrzéséhez.
+
+Most add meg a fájllistát a fenti szabályok szerint.
