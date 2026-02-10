@@ -63,23 +63,19 @@ void FileNameHelper::setBinaryPath(const char* argv0) {
 // }
 
 void FileNameHelper::setDataRootPath(const QString& path) {
-    if (path.isEmpty()) {
-        zWarning("⚠️ FileNameHelper::setDataRootPath: üres datapath érkezett");
-        // üres path esetén is beállítjuk, de jelzünk
-        _dataRoot.setRootPath("", InitSource::Setter);
-        _dataRoot_MAIN.setRootPath("", InitSource::Setter);
-        return;
+    QString finalPath = path;
+
+    if (finalPath.isEmpty()) {
+        zWarning("⚠️ FileNameHelper::setDataRootPath: üres datapath → fallback ~/CutData");
+
+        finalPath = QDir::home().filePath("CutData");
+        QDir().mkpath(finalPath);
     }
 
-    QDir dir(path);
-    if (!dir.exists()) {
-        zWarning() << "⚠️ FileNameHelper::setDataRootPath: a könyvtár nem létezik:" << path;
-        // ettől még beállítjuk, mert a CRUD fájlok létrehozhatják
-    }
-
-    _dataRoot.setRootPath(path, InitSource::Setter);
-    _dataRoot_MAIN.setRootPath(path, InitSource::Setter);
+    _dataRoot.setRootPath(finalPath, InitSource::Setter);
+    _dataRoot_MAIN.setRootPath(finalPath, InitSource::Setter);
 }
+
 
 QString FileNameHelper::generateTimestamp() const {
     return QDateTime::currentDateTime().toString("yyyyMMdd-HHmmss");
@@ -116,12 +112,6 @@ QString FileNameHelper::pathFor(FileKind kind, FileAccess access, const QString&
         return "";
     }
 
-    if (_dataRoot.isEmpty()) {
-        zWarning("⚠️ FileNameHelper: dataRootPath üres, pathFor nem tud érvényes utat adni.");
-        return "";
-    }
-
-
     // 🔒 Biztonsági ellenőrzés: minden FileKind legyen a FILE_INFO-ban
     if (!FILE_INFO.contains(kind)) {
         zError() << "❌ FileNameHelper::pathFor – unknown FileKind:" << int(kind);
@@ -138,6 +128,16 @@ QString FileNameHelper::pathFor(FileKind kind, FileAccess access, const QString&
         else
             fileName = overrideName;
     }
+
+    // Csak CRUD és ReadOnly fájloknál kötelező a dataRoot
+    if (_dataRoot.isEmpty() &&
+        (info.behavior == FileBehavior::Crud ||
+         info.behavior == FileBehavior::ReadOnly)) {
+
+        zWarning("⚠️ FileNameHelper: dataRootPath üres, pathFor nem tud érvényes utat adni.");
+        return "";
+    }
+
 
     if (info.behavior == FileBehavior::Crud) {
 
@@ -173,13 +173,19 @@ QString FileNameHelper::pathFor(FileKind kind, FileAccess access, const QString&
     if (info.behavior == FileBehavior::Config) {
 
         if (kind == FileKind::SettingsIni) {
-            QString binIni = _brc.filePath("settings.ini");
+            QString primary = _brc.filePath("settings.ini");
+            QString fallbackUser = QDir::home().filePath("CutData/CutCalculator_settings.ini");
+
             if (access == FileAccess::Write)
-                return binIni;
+                return primary;
 
-            if (QFileInfo::exists(binIni))
-                return binIni;
+            if (QFileInfo::exists(primary))
+                return primary;
 
+            if (QFileInfo::exists(fallbackUser))
+                return fallbackUser;
+
+            // végső fallback fejlesztés alatt
             return _dataRoot_TEST.filePath("settings.ini");
         }
 

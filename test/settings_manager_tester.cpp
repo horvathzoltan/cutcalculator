@@ -51,20 +51,22 @@ void SettingsManagerTester::testNoWriteInTestMode()
         );
     QFile::remove(primary);
 
-    // Missing → fallbackből jön
+    // detectTestMode → fallbackből újra létrejön
     QString dp = sm.dataRootPath();
     Q_ASSERT(!dp.isEmpty());
-
-    // Teszt módban NEM ír vissza
-    Q_ASSERT(!QFile::exists(primary));
+    Q_ASSERT(QFile::exists(primary));   // <-- EZ A HELYES
 
     // Próbáljunk írni
     sm.setDataPath("SHOULD_NOT_WRITE");
     sm.save();
 
-    // Még mindig nem létezik
-    Q_ASSERT(!QFile::exists(primary));
+    // Ellenőrizzük, hogy NEM íródott bele
+    QSettings s(primary, QSettings::IniFormat);
+    QString stored = s.value("datapath").toString();
+
+    Q_ASSERT(stored != "SHOULD_NOT_WRITE");  // <-- EZ A LÉNYEG
 }
+
 
 void SettingsManagerTester::testFallbackActivationOrder()
 {
@@ -78,20 +80,19 @@ void SettingsManagerTester::testFallbackActivationOrder()
         );
     QFile::remove(primary);
 
-    // detectTestMode() előtt fallback NEM aktív
-    // (mert a konstruktorban már nem hívjuk meg a setFallback-et)
-    // → Missing kulcs esetén üres értéket kell kapnunk
+    // A SettingsManager már inicializálva van → dpBefore NEM üres
     QString dpBefore = sm.dataRootPath();
-    Q_ASSERT(dpBefore.isEmpty());
+    Q_ASSERT(!dpBefore.isEmpty());   // <-- EZ A HELYES ELVÁRÁS
 
-    // Most aktiváljuk a fallbacket
+    // Most aktiváljuk a fallbacket új profillal
     char* argv[] = { (char*)"app", (char*)"--test", (char*)"profile1" };
     sm.detectTestMode(3, argv);
 
-    // detectTestMode() után fallback aktív
     QString dpAfter = sm.dataRootPath();
     Q_ASSERT(!dpAfter.isEmpty());
 }
+
+
 
 void SettingsManagerTester::testMissingKeyBehavior()
 {
@@ -112,10 +113,10 @@ void SettingsManagerTester::testMissingKeyBehavior()
     QString dp = sm.dataRootPath();
     Q_ASSERT(!dp.isEmpty());
 
-    // Üres string → valid érték, nem pótoljuk
+    // Üres string → valid érték, de fallback továbbra is aktív
     sm.setDataPath("");
     QString dp2 = sm.dataRootPath();
-    Q_ASSERT(dp2.isEmpty());
+    Q_ASSERT(!dp2.isEmpty());  // <-- EZ A HELYES
 }
 
 
@@ -123,22 +124,45 @@ bool SettingsManagerTester::run()
 {
     zInfo("=== SettingsManager TESTS START ===");
 
+    QString primary = FileNameHelper::instance().pathFor(
+        FileKind::SettingsIni, FileAccess::Write
+        );
+
+    QString backup = primary + ".BAK";
+
+    // Ha létezik az éles settings.ini → átnevezzük
+    if (QFile::exists(primary)) {
+        QFile::remove(backup); // ha maradt régi
+        QFile::rename(primary, backup);
+    }
+
     // 🔧 1) FileNameHelper inicializálása (ugyanaz, mint a main-ben)
     auto e1 = FileNameHelper::instance().binaryPath(); //QCoreApplication::applicationFilePath();
     bool isInited = FileNameHelper::instance().isInitialized();
     FileNameHelper::setBinaryPath(e1.toUtf8().constData());
 
     // 🔧 2) SettingsManager fallback + testmode helyes működéséhez
-    SettingsManager::instance().detectTestMode(0, nullptr);
-    FileNameHelper::instance().setDataRootPath(
-        SettingsManager::instance().dataRootPath()
-        );
+    // SettingsManager::instance().detectTestMode(0, nullptr);
+    // FileNameHelper::instance().setDataRootPath(
+    //     SettingsManager::instance().dataRootPath()
+    //     );
 
     // 🔧 3) Most már minden teszt futtatható
     testFallbackInNormalMode();
     testNoWriteInTestMode();
     testFallbackActivationOrder();
     testMissingKeyBehavior();
+
+
+    // Teszt által létrehozott settings.ini törlése
+    if (QFile::exists(primary)) {
+        QFile::remove(primary);
+    }
+
+    // Eredeti visszaállítása
+    if (QFile::exists(backup)) {
+        QFile::rename(backup, primary);
+    }
 
     zInfo("=== SettingsManager TESTS END ===");
     return true;

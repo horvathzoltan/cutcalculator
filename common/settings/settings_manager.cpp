@@ -7,48 +7,76 @@ SettingsManager& SettingsManager::instance() {
 }
 
 SettingsManager::SettingsManager() {
-    QString _readPath  =
+//     QString primary =
+//         FileNameHelper::instance().pathFor(FileKind::SettingsIni, FileAccess::Write);
+
+//     QString fallback =
+//         FileNameHelper::instance().pathFor(FileKind::SettingsIni, FileAccess::Read);
+
+
+
+//     // 3) Primary settings.ini inicializálása
+//     _store.init(primary);
+
+//     if (!_store.isInitialized()) {
+//         zError("❌ Nem sikerült settingset inicializálni.");
+//     }
+
+//     _store.setFallback(_fallback.get());
+}
+
+void SettingsManager::detectTestMode(int argc, char* argv[])
+{
+    detectTestMode_private(argc, argv);
+
+    // 1) primary + fallback path
+    QString primary =
+        FileNameHelper::instance().pathFor(FileKind::SettingsIni, FileAccess::Write);
+    QString fallbackPath =
         FileNameHelper::instance().pathFor(FileKind::SettingsIni, FileAccess::Read);
 
-    QString _writePath =
-        FileNameHelper::instance().pathFor(FileKind::SettingsIni, FileAccess::Write);
-
-    // 1) Fallback settings.ini megnyitása (csak olvasásra)
-    if (QFile::exists(_readPath)) {
-        _fallback = std::make_unique<QSettings>(_readPath, QSettings::IniFormat);
-        zInfo() << "ℹ️ Fallback settings.ini megnyitva:" << _readPath;
+    // 2) fallback ini megnyitása (ha van)
+    if (QFile::exists(fallbackPath)) {
+        _fallback = std::make_unique<QSettings>(fallbackPath, QSettings::IniFormat);
+        zInfo() << "ℹ️ Fallback settings.ini megnyitva:" << fallbackPath;
     } else {
-        zWarning() << "⚠️ Fallback settings.ini nem található:" << _readPath;
+        zWarning() << "⚠️ Fallback settings.ini nem található:" << fallbackPath;
     }
 
-    // 2) Ha nincs primary settings.ini → másoljuk át a fallbacket
-    if (!QFile::exists(_writePath)) {
-        if (QFile::exists(_readPath)) {
-            if (!QFile::copy(_readPath, _writePath)) {
-                zError("❌ Nem sikerült átmásolni a settings.ini fájlt a testdata-ból a bináris mellé.");
-            } else {
-                zInfo() << "✅ settings.ini átmásolva a testdata-ból a bináris mellé.";
-            }
+    // 3) ha nincs primary, de van fallback → másoljuk
+    if (!QFile::exists(primary) && _fallback) {
+        if (QFile::copy(fallbackPath, primary)) {
+            zInfo() << "✅ Primary settings.ini létrehozva fallbackből:" << primary;
         } else {
-            zError() << "❌ Nem található a default settings.ini: " << _readPath;
+            zError() << "❌ Nem sikerült fallbackből létrehozni a primary settings.ini-t";
         }
     }
 
-    // 3) Primary settings.ini inicializálása
-    _store.init(_writePath);
-
+    // 4) store init – CSAK MOST
     if (!_store.isInitialized()) {
-        zError("❌ Nem sikerült settingset inicializálni.");
+        _store.init(primary);
+        if (!_store.isInitialized()) {
+            zError("❌ Nem sikerült settingset inicializálni.");
+        }
+    }
+
+    // 5) teszt mód, fallback, datapath, stb.
+    _store.setTestMode(isTestMode());
+    _store.setFallback(_fallback.get());
+
+    QString dp = dataRootPath();
+    if (dp.isEmpty()) {
+        dp = QDir::home().filePath("CutData");
+        QDir().mkpath(dp);
+    }
+
+    FileNameHelper::instance().setDataRootPath(dp);
+
+    if (_store.isInitialized() && _store.value("datapath").toString().isEmpty()) {
+        _store.setValue_persistent("datapath", dp);
     }
 }
 
-void SettingsManager::detectTestMode(int argc, char* argv[]) {
-    detectTestMode_private(argc, argv);
-
-    // ⭐ Itt már biztosan tudjuk, hogy test mode van-e
-    _store.setTestMode(isTestMode());
-    _store.setFallback(_fallback.get());
-}
 
 void  SettingsManager::detectTestMode_private(int argc, char* argv[]) {
     for (int i = 1; i < argc - 1; ++i) {
