@@ -25,9 +25,17 @@ void CalculationModeDetailManager::connectSignals() {
                 if (!d) return;
 
                 auto updated = *d;
-                updated.formula = _view->findChild<QTableWidget*>()
-                                      ->item(_view->findChild<QTableWidget*>()->currentRow(), 1)
-                                      ->text();
+                auto* table = _view->table();
+                if (!table) return;
+
+                int row = table->currentRow();
+                if (row < 0) return;
+
+                auto* item = table->item(row, 1);
+                if (!item) return;
+
+                updated.formula = item->text();
+
 
                 NeedCalculationDetailRegistry::instance().update(updated);
             });

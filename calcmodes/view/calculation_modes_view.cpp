@@ -2,6 +2,7 @@
 #include "calcmodes/view/calculation_modes_view.h"
 #include <QHeaderView>
 #include <QTableWidgetItem>
+#include "common/utils/font_utils.h"
 #include "mode_row_delegate.h"
 
 CalculationModesView::CalculationModesView(QWidget* parent)
@@ -9,8 +10,11 @@ CalculationModesView::CalculationModesView(QWidget* parent)
 {
     auto* layout = new QVBoxLayout(this);
     layout->setContentsMargins(0,0,0,0);
+
     _table = new QTableWidget(this);
     setup_table();
+    FontUtils::applySafeMonospaceFont(this);
+
     layout->addWidget(_table);
     setLayout(layout);
 
@@ -93,18 +97,18 @@ void CalculationModesView::set_modes(const QVector<ModeRow>& rows) {
 
 
         if (r.hasMissingDetails) {
-            modeItem->setBackground(ColorConstants::ColorRed);
-            cntItem->setBackground(ColorConstants::ColorRed);
+            // modeItem->setBackground(ColorConstants::ColorRed);
+            // cntItem->setBackground(ColorConstants::ColorRed);
         }
         else if (r.detailsCount == 0) {
-            modeItem->setBackground(ColorConstants::ColorYellow);
-            cntItem->setBackground(ColorConstants::ColorYellow);
+            // modeItem->setBackground(ColorConstants::ColorYellow);
+            // cntItem->setBackground(ColorConstants::ColorYellow);
         }
 
         /* removed: matrix-incomplete background */
         else {
-            modeItem->setBackground(Qt::NoBrush);
-            cntItem->setBackground(Qt::NoBrush);
+            // modeItem->setBackground(Qt::NoBrush);
+            // cntItem->setBackground(Qt::NoBrush);
         }
 
 

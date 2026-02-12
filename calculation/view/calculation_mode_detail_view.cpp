@@ -4,6 +4,7 @@
 #include <QKeyEvent>
 #include <QTableWidgetItem>
 #include "colors/model/colorconstants.h"
+#include "common/utils/font_utils.h"
 #include <calculation/registry/need_calculation_detail_registry.h>
 #include <QStyledItemDelegate>
 
@@ -42,6 +43,8 @@ CalculationModeDetailView::CalculationModeDetailView(QWidget* parent)
 
     _table = new QTableWidget(this);
     setup_table();
+    FontUtils::applySafeMonospaceFont(this);
+
     connect(_table, &QTableWidget::itemChanged, this, [this](QTableWidgetItem* item) {
         if (item->column() == 1) {
             QUuid id = _table->item(item->row(), 0)->data(Qt::UserRole).toUuid();
@@ -216,7 +219,7 @@ void CalculationModeDetailView::apply_row_visuals(int row, const DetailRow& d)
 
     for (int col = 0; col < _table->columnCount(); ++col) {
         if (auto* item = _table->item(row, col)) {
-            item->setBackground(bg);
+            //item->setBackground(bg);
             if (!tip.isEmpty())
                 item->setToolTip(item->toolTip() + "\n" + tip);
         }

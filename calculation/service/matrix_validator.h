@@ -15,4 +15,5 @@ public:
 
     // v2: product matrix complete if no mode has missing details
     static bool isProductMatrixComplete(const QUuid& productId);
+    static void logHumanReadableDiagnostics();
 };

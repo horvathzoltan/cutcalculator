@@ -56,6 +56,7 @@ QVector<MissingDetail> MatrixValidator::validateProduct(const QUuid& productId)
 
     return out;
 }
+
 QVector<MissingDetail> MatrixValidator::validateAll()
 {
     QVector<MissingDetail> out;
@@ -69,11 +70,26 @@ QVector<MissingDetail> MatrixValidator::validateAll()
     return out;
 }
 
+// Emberi diagnosztikai log – MissingDetail mezők alapján
+void MatrixValidator::logHumanReadableDiagnostics()
+{
+    auto diag = validateAll();
+    for (const auto& m : diag) {
+        zInfo(QString("❌ Missing detail → Product: %1 (%2), Mode: %3, Material: %4 (%5)")
+                  .arg(m.productName)
+                  .arg(m.productId.toString())
+                  .arg(m.modeName)
+                  .arg(m.materialName)
+                  .arg(m.materialBarcode));
+    }
+}
+
 QVector<MissingDetail> MatrixValidator::validateMode(const QUuid& modeId)
 {
     QVector<MissingDetail> out;
 
-    const auto* mode = NeedCalculationRegistry::instance().findById(modeId);
+    const NeedCalculation *mode =
+        NeedCalculationRegistry::instance().findById(modeId);
     if (!mode) return out;
 
     const auto rules =
@@ -82,13 +98,27 @@ QVector<MissingDetail> MatrixValidator::validateMode(const QUuid& modeId)
     const auto details =
         NeedCalculationDetailRegistry::instance().findByCalculation(modeId);
 
-    QSet<QUuid> existing;
+    const auto* product =
+        ProductRegistry::instance().findById(mode->productId);
+
+        QSet<QUuid> existing;
     for (const auto& d : details)
         existing.insert(d.materialId);
 
     for (const auto& r : rules) {
         if (!existing.contains(r.rightId)) {
-            out.push_back({ mode->productId, modeId, r.rightId });
+            const auto* mat =
+                MaterialRegistry::instance().findById(r.rightId);
+
+            out.push_back({
+                mode->productId,
+                product ? product->name : QString("unknown"),
+                modeId,
+                mode->name,
+                r.rightId,
+                mat ? mat->name : QString("unknown"),
+                mat ? mat->barcode : QString("unknown")
+            });
         }
     }
 

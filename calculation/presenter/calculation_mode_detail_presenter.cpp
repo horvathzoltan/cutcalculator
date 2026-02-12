@@ -101,7 +101,6 @@ void CalculationModeDetailPresenter::refreshForCalculation(const QUuid& calcId,
 void CalculationModeDetailPresenter::onModeSelected(std::optional<QUuid> modeId)
 {
     if (!modeId) {
-        _view->set_details({});
         return;
     }
     const NeedCalculation* mode =
@@ -109,7 +108,11 @@ void CalculationModeDetailPresenter::onModeSelected(std::optional<QUuid> modeId)
     QString modeName = mode ? mode->name : QString("unknown");
 
     _view->set_current_calculation(*modeId, modeName);
-    refreshForCalculation(*modeId, modeName);
+
+    auto details = NeedCalculationDetailRegistry::instance().findByCalculation(*modeId);
+    if (!details.isEmpty()) {
+        refreshForCalculation(*modeId, mode->name);
+    }
 }
 
 void CalculationModeDetailPresenter::refreshOverlayOnly()

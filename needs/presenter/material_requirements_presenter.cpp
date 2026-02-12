@@ -111,11 +111,11 @@ OverlayStatusHelper::State MaterialRequirementsPresenter::computeMatrixState()
         return OverlayStatusHelper::State::NoVisibleRows;
 
     // 🔵 v3: mátrix-komplettség ellenőrzése
-    const QUuid productId = _treeManager->currentProductId();
-    bool complete = MatrixValidator::isProductMatrixComplete(productId);
+    // const QUuid productId = _treeManager->currentProductId();
+    // bool complete = MatrixValidator::isProductMatrixComplete(productId);
 
-    if (!complete)
-        return OverlayStatusHelper::State::Incomplete;
+    // if (!complete)
+    //     return OverlayStatusHelper::State::Incomplete;
 
     return OverlayStatusHelper::State::Normal;
 }

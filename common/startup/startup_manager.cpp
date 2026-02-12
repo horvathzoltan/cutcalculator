@@ -123,30 +123,32 @@ StartupStatus StartupManager::runStartupSequence()
     }
 
     // 🔎 ÚJ: MatrixValidator diagnosztika indulás után
-    MatrixValidator_2();
+    //MatrixValidator_2();
+    MatrixValidator::logHumanReadableDiagnostics();
+
 
     return finalStatus;
 }
 
 
-void StartupManager::MatrixValidator_2(){
-    auto missing = MatrixValidator::validateAll();
-    if (!missing.isEmpty()) {
-        zInfo(QString("🧩 MatrixValidator startup diagnostics: missing details detected: %1")
-                  .arg(missing.size()));
-        zInfo("Strategy: startup diagnostic (no generation)");
+// void StartupManager::MatrixValidator_2(){
+//     auto missing = MatrixValidator::validateAll();
+//     if (!missing.isEmpty()) {
+//         zInfo(QString("🧩 MatrixValidator startup diagnostics: missing details detected: %1")
+//                   .arg(missing.size()));
+//         zInfo("Strategy: startup diagnostic (no generation)");
 
-        QSet<QUuid> products;
-        QSet<QUuid> modes;
+//         QSet<QUuid> products;
+//         QSet<QUuid> modes;
 
-        for (const auto& md : missing) {
-            products.insert(md.productId);
-            modes.insert(md.modeId);
-        }
+//         for (const auto& md : missing) {
+//             products.insert(md.productId);
+//             modes.insert(md.modeId);
+//         }
 
-        zInfo(QString("🧩 Affected products: %1").arg(products.size()));
-        zInfo(QString("🧩 Affected modes: %1").arg(modes.size()));
-    } else {
-        zInfo("🧩 MatrixValidator: no missing details detected.");
-    }
-}
+//         zInfo(QString("🧩 Affected products: %1").arg(products.size()));
+//         zInfo(QString("🧩 Affected modes: %1").arg(modes.size()));
+//     } else {
+//         zInfo("🧩 MatrixValidator: no missing details detected.");
+//     }
+// }

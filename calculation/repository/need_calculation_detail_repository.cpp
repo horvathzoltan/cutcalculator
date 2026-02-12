@@ -46,17 +46,35 @@ NeedCalculationDetailRepository::validateRow(const Row& row, int lineNumber)
 {
     QVector<CsvImporter::RowError> errors;
 
-    if (row.productBarcode.isEmpty())
-        errors.append({ lineNumber, "⚠️ Hiányzó productBarcode", row.productBarcode, row.formula });
+    iif (row.productBarcode.isEmpty()) {
+        errors.append({
+            lineNumber,
+            QString("⚠️ Hiányzó productBarcode (mode=%1, material=%2)")
+                .arg(row.modeName, row.materialBarcode),
+            row.productBarcode,
+            row.formula
+        });
+    }
 
-    if (row.modeName.isEmpty())
-        errors.append({ lineNumber, "⚠️ Hiányzó modeName", row.productBarcode, row.formula });
+    if (row.modeName.isEmpty()) {
+        errors.append({
+            lineNumber,
+            QString("⚠️ Hiányzó modeName (product=%1, material=%2)")
+                .arg(row.productBarcode, row.materialBarcode),
+            row.modeName,
+            row.formula
+        });
+    }
 
-    if (row.materialBarcode.isEmpty())
-        errors.append({ lineNumber, "⚠️ Hiányzó materialBarcode", row.materialBarcode, row.formula });
-
-    if (row.formula.isEmpty())
-        errors.append({ lineNumber, "⚠️ Hiányzó formula", row.productBarcode, row.formula });
+    if (row.materialBarcode.isEmpty()) {
+        errors.append({
+            lineNumber,
+            QString("⚠️ Hiányzó materialBarcode (product=%1, mode=%2)")
+                .arg(row.productBarcode, row.modeName),
+            row.materialBarcode,
+            row.formula
+        });
+    }
 
     return errors;
 }
@@ -64,81 +82,159 @@ NeedCalculationDetailRepository::validateRow(const Row& row, int lineNumber)
 // ------------------------------------------------------------
 // Stage 2: Build (barcode → UUID feloldás)
 // ------------------------------------------------------------
+// std::optional<NeedCalculationDetail>
+// NeedCalculationDetailRepository::buildFromRow(
+//     const Row& row,
+//     CsvImporter::FileContext& ctx)
+// {
+//     auto rowErrors = validateRow(row, ctx.currentLineNumber());
+//     ctx.addErrors(rowErrors);
+//     if (!rowErrors.isEmpty())
+//         return std::nullopt;
+
+//     // 1) Product lookup
+//     const auto* product =
+//         ProductRegistry::instance().findByBarcode(row.productBarcode);
+
+//     if (!product) {
+//         ctx.addError(ctx.currentLineNumber(),
+//                      QString("⚠️ Ismeretlen productBarcode: %1")
+//                          .arg(row.productBarcode),
+//                      row.productBarcode,
+//                      row.formula);
+//         return std::nullopt;
+//     }
+
+//     // 2) NeedCalculation lookup (productId + modeName)
+//     const auto* calc =
+//         NeedCalculationRegistry::instance()
+//             .findByProductAndName(product->id, row.modeName);
+
+//     if (!calc) {
+//         ctx.addError(ctx.currentLineNumber(),
+//                      QString("⚠️ Ismeretlen NeedCalculation: %1 / %2")
+//                          .arg(row.productBarcode, row.modeName),
+//                      row.modeName,
+//                      row.formula);
+//         return std::nullopt;
+//     }
+
+//     if(calc->productId != product->id) {
+//         ctx.addError(ctx.currentLineNumber(),
+//                      QString("⚠️ NeedCalculation nem illeszkedik a Product-hoz: %1 / %2")
+//                          .arg(row.productBarcode, row.modeName),
+//                      row.modeName,
+//                      row.formula);
+//         return std::nullopt;
+//     }
+
+//     // 3) Material lookup
+//     const auto* mat =
+//         MaterialRegistry::instance().findByBarcode(row.materialBarcode);
+
+//     if (!mat) {
+//         ctx.addError(ctx.currentLineNumber(),
+//                      QString("⚠️ Ismeretlen Material barcode: %1")
+//                          .arg(row.materialBarcode),
+//                      row.materialBarcode,
+//                      row.formula);
+//         return std::nullopt;
+//     }
+
+//     // fallback: derive kind from formula if CSV has no kind column
+//     NeedCalculationDetail::DetailKind kind =
+//         row.formula.startsWith("fixed:")
+//             ? NeedCalculationDetail::DetailKind::Kitting
+//             : NeedCalculationDetail::DetailKind::Cutting;
+
+
+//     NeedCalculationDetail d;
+//     d.id                = QUuid::createUuid();
+//     d.needCalculationId = calc->id;
+//     d.materialId        = mat->id;
+//     d.formula           = row.formula;
+//     d.kind = kind;
+
+//     return d;
+// }
 std::optional<NeedCalculationDetail>
 NeedCalculationDetailRepository::buildFromRow(
     const Row& row,
     CsvImporter::FileContext& ctx)
 {
+    // 1) Validáció (formula már nem kötelező – p1)
     auto rowErrors = validateRow(row, ctx.currentLineNumber());
     ctx.addErrors(rowErrors);
     if (!rowErrors.isEmpty())
         return std::nullopt;
 
-    // 1) Product lookup
+    // 2) Product lookup (barcode → UUID)
     const auto* product =
         ProductRegistry::instance().findByBarcode(row.productBarcode);
 
     if (!product) {
         ctx.addError(ctx.currentLineNumber(),
-                     QString("⚠️ Ismeretlen productBarcode: %1")
-                         .arg(row.productBarcode),
+                     QString("⚠️ Ismeretlen productBarcode: '%1' (mode=%2, material=%3)")
+                         .arg(row.productBarcode, row.modeName, row.materialBarcode),
                      row.productBarcode,
                      row.formula);
         return std::nullopt;
     }
 
-    // 2) NeedCalculation lookup (productId + modeName)
+    // 3) NeedCalculation lookup (productId + modeName)
     const auto* calc =
         NeedCalculationRegistry::instance()
             .findByProductAndName(product->id, row.modeName);
 
     if (!calc) {
         ctx.addError(ctx.currentLineNumber(),
-                     QString("⚠️ Ismeretlen NeedCalculation: %1 / %2")
-                         .arg(row.productBarcode, row.modeName),
-                     row.modeName,
-                     row.formula);
+                      QString("⚠️ Ismeretlen Material barcode: '%1' (product=%2, mode=%3)")
+                          .arg(row.materialBarcode, row.productBarcode, row.modeName),
+                      row.materialBarcode,
+                      row.formula);
         return std::nullopt;
     }
 
-    if(calc->productId != product->id) {
+    // Biztonsági ellenőrzés (ritka, de fontos)
+    if (calc->productId != product->id) {
         ctx.addError(ctx.currentLineNumber(),
-                     QString("⚠️ NeedCalculation nem illeszkedik a Product-hoz: %1 / %2")
+                     QString("⚠️ Ismeretlen NeedCalculation: product='%1', mode='%2'")
                          .arg(row.productBarcode, row.modeName),
                      row.modeName,
                      row.formula);
         return std::nullopt;
     }
 
-    // 3) Material lookup
+    // 4) Material lookup (barcode → UUID)
     const auto* mat =
         MaterialRegistry::instance().findByBarcode(row.materialBarcode);
 
     if (!mat) {
         ctx.addError(ctx.currentLineNumber(),
-                     QString("⚠️ Ismeretlen Material barcode: %1")
-                         .arg(row.materialBarcode),
+                     QString("⚠️ Ismeretlen Material barcode: '%1' (product=%2, mode=%3)")
+                         .arg(row.materialBarcode, row.productBarcode, row.modeName),
                      row.materialBarcode,
                      row.formula);
         return std::nullopt;
     }
 
-    // fallback: derive kind from formula if CSV has no kind column
+    // 5) Kind meghatározása (formula alapján)
     NeedCalculationDetail::DetailKind kind =
         row.formula.startsWith("fixed:")
             ? NeedCalculationDetail::DetailKind::Kitting
             : NeedCalculationDetail::DetailKind::Cutting;
 
-
+    // 6) NeedCalculationDetail összeállítása
     NeedCalculationDetail d;
     d.id                = QUuid::createUuid();
     d.needCalculationId = calc->id;
     d.materialId        = mat->id;
     d.formula           = row.formula;
-    d.kind = kind;
+    d.kind              = kind;
 
     return d;
 }
+
 
 // ------------------------------------------------------------
 // Stage 3: Load & Assemble

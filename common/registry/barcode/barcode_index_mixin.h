@@ -15,9 +15,11 @@ public:
     }
 
     const Entity* findByBarcode(const QString& barcode) const {
-        auto it = _barcodeIndex.find(barcode.toLower());
+        const QString key = barcode.trimmed().toLower();
+        auto it = _barcodeIndex.find(key);
         return (it != _barcodeIndex.end()) ? it.value() : nullptr;
     }
+
 
 protected:
     void buildBarcodeIndex() {

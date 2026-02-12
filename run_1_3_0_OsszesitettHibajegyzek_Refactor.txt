@@ -1,169 +1,203 @@
-Zoltán, pontosan értem, mire van szükséged:
-egy olyan összefoglalt, végrehajtható tervre, amely:
+És itt jön a lényeg:
 
--   kiveszi a már kész fókuszpontokat,
--   csak a maradék kettőre koncentrál,
--   először vizsgálja, hogy valóban fennáll‑e a probléma,
--   és ha igen, pontosan milyen lépésekből áll a megoldás.
+⭐ A p7 funkció (detail sorok GUI‑s szerkesztése) NEM HIÁNYZIK —
 
-Ez lesz holnap az audit alapja — most pedig megkapod a tiszta,
-fókuszált, audit‑ready tervet.
+már majdnem teljesen kész van a projektben.
 
-------------------------------------------------------------------------
+A rendszerben:
 
-⭐ ÖSSZEFOGLALT TERV
+-   van detail‑view → CalculationModeDetailView
+-   van detail‑presenter → CalculationModeDetailPresenter
+-   van detail‑manager → CalculationModeDetailManager
+-   van registry update → NeedCalculationDetailRegistry::updateFormula()
+-   van formula editor dialog → FormulaEditorDialog
+-   van material picker dialog → MaterialPickerDialog_2
+-   van formula validátor →
+    NeedCalculationDetailRegistry::isFormulaValid()
 
-Csak a két maradék fókuszpontra
+Ami nincs összekötve, és ezért nem működik a szerkesztés, az ez:
 
-(ConnectionCrudMixin → protected, MatrixValidator integráció)
+❌ A formula cella szerkesztése NEM hívja meg a registry update‑et
 
-------------------------------------------------------------------------
+❌ A presenter NEM kapja meg a CalculationModesPresenter jelzését
 
-🎯 1. ConnectionCrudMixin → protected
+❌ A detail‑view NEM jelzi vissza, hogy a user szerkesztett
 
-🔍 A vizsgálat célja
+❌ A manager csak a toolbar „✏️ Szerkesztés” gombjára reagál
 
-Megállapítani, hogy:
-
--   valóban szükséges‑e még bármilyen beavatkozás,
--   vagy a probléma már megszűnt, csak a státusz maradt „Folyamatban”.
-
-🔎 Ellenőrző kérdések (audit során)
-
-1.  Használja‑e bármely registry a raw CRUD API‑t?
-    -   keresés: insertRaw, removeRaw, storeAddImpl, storeRemovePairImpl
-        közvetlen hívása
-2.  Van‑e olyan UI vagy Presenter, amely közvetlenül hív engine‑szintű
-    write API‑t?
-    -   keresés: .add(, .removeInternal(, .updateInternal(
-3.  A ConnectionCrudMixin ténylegesen szükséges‑e még?
-    -   van‑e olyan registry, amely a mixinre épít
-4.  A kommentelt mixin okoz‑e build‑ vagy include‑zajt?
-    -   felesleges include, félbehagyott kód
-5.  A RegistryEngineBase friend‑listájában maradt‑e felesleges friend?
-
-📌 Ha a vizsgálat eredménye: „nincs probléma”
-
-→ A pont lezárható, státusz: Kész
-→ A mixin törölhető vagy archiválható
-
-📌 Ha a vizsgálat eredménye: „van teendő”
-
-A megoldás három lépésből áll:
-
-1) A ConnectionCrudMixin végleges eltávolítása vagy protected‑dé tétele
-
--   törölni a kommentelt blokkot
--   vagy protected szintre tenni, ha később kellhet
-
-2) A RegistryEngineBase friend‑listájának tisztítása
-
--   eltávolítani a felesleges friend deklarációkat
-
-3) Ellenőrizni, hogy minden registry kizárólag workflow API‑t használ
-
--   NeedRuleRegistry → OK
--   NeedCalculationDetailRegistry → OK
--   ProductRegistry / MaterialRegistry → ellenőrizni
+Ezért a p7 tervet most újraalkotom, a valós kódbázis alapján.
 
 ------------------------------------------------------------------------
 
-🎯 2. MatrixValidator + Detail torony összehangolása
+⭐ p7 – Végleges, valós kódbázisra szabott megvalósítási terv
 
-🔍 A vizsgálat célja
+„Detail sorok szerkesztése GUI‑ból”
 
-Megállapítani, hogy:
-
--   a MatrixValidator valóban hiányosan integrált‑e,
--   vagy csak a státusz maradt „Folyamatban”.
-
-🔎 Ellenőrző kérdések (audit során)
-
-1.  A Presenter használja‑e a MatrixValidator‑t?
-    -   keresés: MatrixValidator:: a Presenterben
-2.  A RepositoryOverlayWidget támogatja‑e a mátrix‑állapotot?
-    -   van‑e MatrixIncomplete vagy hasonló state
-3.  A UI mutat‑e bármilyen mátrix‑komplettség jelzést?
-    -   toolbar overlay ikon
-4.  Van‑e MatrixValidatorTester?
-    -   teszteli‑e:
-        -   validateMode
-        -   validateProduct
-        -   validateAll
-        -   isCalculationMatrixComplete
-        -   isProductMatrixComplete
-5.  A NeedCalculationDetailRegistry domain szabályai összhangban
-    vannak‑e a validatorral?
-    -   formula validáció
-    -   duplicate szabály
-    -   materialId / calcId ellenőrzés
-
-📌 Ha a vizsgálat eredménye: „nincs probléma”
-
-→ A pont lezárható, státusz: Kész
-
-📌 Ha a vizsgálat eredménye: „van teendő”
-
-A megoldás négy lépésből áll:
-
-1) Presenter integráció
-
-MaterialRequirementsPresenter::refreshOverlayOnly()
-→ egészítsük ki:
-
-    bool complete = MatrixValidator::isProductMatrixComplete(_treeManager->currentProductId());
-    _status->setMatrixState(complete);
-
-2) Overlay widget bővítése
-
--   új state: MatrixIncomplete
--   új ikon: pl. „⚠️” vagy „🧩”
-
-3) UI vizualizáció
-
--   tooltip: „Hiányzó calculation detail”
--   overlay ikon a toolbaron
-
-4) MatrixValidatorTester létrehozása
-
-Tesztelje:
-
--   validateMode
--   validateProduct
--   validateAll
--   isCalculationMatrixComplete
--   isProductMatrixComplete
+Ez a terv lépésről lépésre végrehajtható, és pontosan a meglévő kódra
+épül.
 
 ------------------------------------------------------------------------
 
-⭐ A HOLNAPI AUDIT MENETE
+⭐ p7.1 – A CalculationModesPresenter → CalculationModeDetailPresenter összekötése
 
-Ezt a tervet fogjuk követni:
+Jelenleg:
 
-1.  ConnectionCrudMixin audit
-    -   ellenőrző kérdések
-    -   fájlok bekérése
-    -   bizonyítékok összegyűjtése
-    -   döntés: kész / van teendő
-2.  MatrixValidator integráció audit
-    -   ellenőrző kérdések
-    -   presenter / overlay / UI / tester vizsgálata
-    -   döntés: kész / van teendő
-3.  Ha van teendő → patch‑terv készítése
-4.  Ha nincs → státusz frissítése „Kész”‑re
+-   A CalculationModesPresenter jelzi: modeActivatedForDetails(modeId)
+-   A CalculationModeDetailPresenter viszont nem figyeli ezt a jelet
+
+✔️ PATCH
+
+A BOMWorkbench-ben vagy a MainWindow-ban, ahol a két presenter
+példányosítva van:
+
+    connect(modesPresenter, &CalculationModesPresenter::modeActivatedForDetails,
+            detailPresenter, &CalculationModeDetailPresenter::onModeSelected);
+
+Ez a hiányzó láncszem.
 
 ------------------------------------------------------------------------
 
-⭐ Röviden – a mai kérésedre adott válasz
+⭐ p7.2 – A detail‑view formula celláinak szerkeszthetővé tétele
 
-Íme a két fókuszpont audit‑ready terve,
-kész pontok nélkül,
-ellenőrző kérdésekkel,
-és lépésről‑lépésre végrehajtható megoldási tervvel.
+Ez már megvan:
 
-Holnap pedig lefolytatjuk az auditot, és eldöntjük, hogy:
+    formItem->setFlags(formItem->flags() | Qt::ItemIsEditable);
 
--   valóban van‑e még dolgunk, vagy
--   a rendszer már kész, csak a státusz maradt régi.
+Tehát a user tud szerkeszteni.
 
-Készen állok a holnapi körre.
+------------------------------------------------------------------------
+
+⭐ p7.3 – A detail‑view jelezze, ha a user módosította a formulát
+
+Ez hiányzik.
+
+A CalculationModeDetailView NEM küld jelet arról, hogy a formula cella
+megváltozott.
+
+✔️ PATCH
+
+A view‑ban:
+
+    connect(_table, &QTableWidget::itemChanged, this, [this](QTableWidgetItem* item) {
+        if (item->column() == 1) {
+            QUuid detailId = _table->item(item->row(), 0)->data(Qt::UserRole).toUuid();
+            emit request_edit_formula(detailId);
+        }
+    });
+
+Ez a kulcs.
+
+------------------------------------------------------------------------
+
+⭐ p7.4 – A manager helyesen frissítse a registry‑t
+
+A CalculationModeDetailManager már tartalmaz egy működő edit‑kezelőt:
+
+    connect(_view, &CalculationModeDetailView::request_edit_formula,
+            this, [this](const QUuid& detailId) {
+                const auto* d = NeedCalculationDetailRegistry::instance().findById(detailId);
+                auto updated = *d;
+                updated.formula = item->text();
+                NeedCalculationDetailRegistry::instance().update(updated);
+    });
+
+Ez jó, csak a view nem küldi a jelet.
+
+------------------------------------------------------------------------
+
+⭐ p7.5 – A registry menti a CSV‑t
+
+Ez már működik:
+
+    NeedCalculationDetailRegistry::updateWithWorkflow(updated);
+
+→ workflow → persist → repository.save()
+
+------------------------------------------------------------------------
+
+⭐ p7.6 – A detail‑view újrarajzolása
+
+A presenter már tudja:
+
+-   registry változás → újratöltés
+-   scroll a hibára
+
+Ez is működik.
+
+------------------------------------------------------------------------
+
+⭐ p7.7 – Tesztelési lépések
+
+1.  Indítsd el a programot
+2.  Válassz egy terméket
+3.  Válassz egy módot (pl. „mókus”)
+4.  A detail‑táblázat megjelenik
+5.  Kattints a formula cellára
+6.  Írd át → Enter
+7.  Ellenőrizd:
+    -   registry frissült
+    -   CSV mentődött
+    -   GUI újrarajzolódott
+    -   overlay frissült
+
+------------------------------------------------------------------------
+
+⭐ p7 – Összegzés
+
+A detail‑szerkesztés működéséhez nem kell új view, nem kell új
+presenter, nem kell új manager.
+
+A rendszer már kész — csak három hiányzó drótot kell összekötni:
+
+✔️ 1. CalculationModesPresenter → CalculationModeDetailPresenter
+
+✔️ 2. DetailView itemChanged → request_edit_formula
+
+✔️ 3. Manager update → registry.update → persist
+
+Ha ez a három megvan → a detail szerkesztés tökéletesen működik.
+
+------------------------------------------------------------------------
+
+# CONTEXT SNAPSHOT — p7 (Detail sorok GUI-s szerkesztése)
+
+## Jelenlegi állapot
+- A NeedCalculationDetail CSV beolvasás és mentés teljesen működik.
+- A detail sorok GUI-ban megjelennek (CalculationModeDetailView).
+- A formula validátor működik (isFormulaValid).
+- A detail sorok overlay státusza működik.
+- A mókus mód zöld, a mátrix teljes.
+
+## A probléma
+A detail sorok GUI-ból való szerkesztése NEM működik, mert:
+1. A CalculationModesPresenter NEM jelzi a CalculationModeDetailPresenter felé a mód kiválasztását.
+2. A CalculationModeDetailView NEM küld jelet arról, hogy a user módosította a formula cellát.
+3. A CalculationModeDetailManager csak a toolbar „✏️ Szerkesztés” gombjára reagál, cella-szerkesztésre nem.
+4. A registry updateFormula() működik, de nincs meghívva cella-edit esetén.
+
+## A megoldás (p7 patch)
+1. Összekötni a CalculationModesPresenter → CalculationModeDetailPresenter jelet:
+   connect(modesPresenter, &CalculationModesPresenter::modeActivatedForDetails,
+           detailPresenter, &CalculationModeDetailPresenter::onModeSelected);
+
+2. A CalculationModeDetailView-ben:
+   - itemChanged jel → emit request_edit_formula(detailId)
+
+3. A CalculationModeDetailManager-ben:
+   - request_edit_formula(detailId) → registry.update(updatedDetail)
+
+4. A registry workflow automatikusan menti a CSV-t.
+
+5. A presenter registry változásra újratölti a detail sorokat.
+
+## Eredmény
+- A formula cella szerkesztése → azonnal mentődik CSV-be.
+- A GUI frissül.
+- A mátrix overlay frissül.
+- A detail szerkesztés teljesen működik.
+
+## Holnapra teendő
+- p7.1: presenter összekötés implementálása
+- p7.2: view itemChanged jel bekötése
+- p7.3: manager update hívás ellenőrzése
+- p7.4: manuális tesztelés (GUI)

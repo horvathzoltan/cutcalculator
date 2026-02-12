@@ -52,5 +52,5 @@ private:
     StartupStatus initRalColors();
     //StartupStatus initNeedRuleRegistry();
 
-    void MatrixValidator_2();
+    //void MatrixValidator_2();
 };

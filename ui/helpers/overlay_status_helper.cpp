@@ -42,9 +42,9 @@ void OverlayStatusHelper::apply(OverlayIconWidget* w, State s)
         w->setOverlay(OverlayIconWidget::BottomRight, "🟢");
         break;
 
-    case State::Incomplete: // v2: incomplete → blue 🔵
-        w->setOverlay(OverlayIconWidget::BottomRight, "🔵");
-        break;
+    // case State::Incomplete: // v2: incomplete → blue 🔵
+    //     w->setOverlay(OverlayIconWidget::BottomRight, "🔵");
+    //     break;
     }
 }
 

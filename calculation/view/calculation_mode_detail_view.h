@@ -44,6 +44,7 @@ signals:
 public slots:
     void set_current_calculation(const QUuid& calcId, const QString& modeName);
     void scrollToRow(int row);
+    QTableWidget* table() const { return _table; }
 
 private:
     QTableWidget* _table = nullptr;

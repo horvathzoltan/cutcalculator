@@ -1,5 +1,6 @@
 #include "needs/view/material_requirements_view.h"
 #include "colors/model/colorconstants.h"
+#include "common/utils/font_utils.h"
 #include <QHeaderView>
 #include <QTableWidgetItem>
 #include <QGuiApplication>
@@ -18,6 +19,7 @@ MaterialRequirementsView::MaterialRequirementsView(QWidget* parent)
 
     _table = new QTableWidget(this);
     setup_table();
+    FontUtils::applySafeMonospaceFont(this);
 
     layout->addWidget(_table);
     setLayout(layout);
@@ -171,9 +173,10 @@ void MaterialRequirementsView::apply_row_visuals(int row, const RequirementRow& 
         tip = "Material missing.";
     }
     else if (data.hasMissingDetails) {
-        bgColor = ColorConstants::ColorYellow; // missing detail
-        tip = "Missing detail(s) for this material.";
+        bgColor = ColorConstants::ColorYellow;
+        tip = "This material has missing calculation details in one or more modes.";
     }
+
 
     /* removed: matrixIncomplete visual state */
 
@@ -189,7 +192,7 @@ void MaterialRequirementsView::apply_row_visuals(int row, const RequirementRow& 
 
     for (int col = 0; col < _table->columnCount(); ++col) {
         if (auto* item = _table->item(row, col)) {
-            item->setBackground(bgColor);
+            //item->setBackground(bgColor);
             if (!tip.isEmpty())
                 item->setToolTip(item->toolTip() + "\n" + tip);
         }

@@ -165,7 +165,6 @@ HEADERS += \
     needs/manager/material_requirements_manager.h \
     needs/model/need_rule.h \
     needs/presenter/material_requirements_presenter.h \
-    needs/presenter/need_rule_presenter.h \
     needs/registry/need_rule_registry.h \
     needs/repository/need_rule_repository.h \
     needs/repository/need_rule_traits.h \

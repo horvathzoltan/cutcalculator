@@ -32,7 +32,7 @@ CalculationModesPresenter::CalculationModesPresenter(
     QObject::connect(_view, &CalculationModesView::selection_changed,
                      this, [this](std::optional<QUuid> modeId) {
                          emit modeSelected(modeId);
-        // v2: ha a mód hiányos, a detail nézet automatikusan a hibára ugrik
+                         if (modeId) on_mode_activated(*modeId);
                      });
 
     connect(_view, &CalculationModesView::modeActivated,

@@ -10,7 +10,7 @@ bool MaterialRequirementsOverlayTester::run()
     testEmptyRepo();
     testNoVisibleRows();
     testNormal();
-    testIncompleteMatrix();
+    //testIncompleteMatrix();
 
     zInfo("=== MaterialRequirementsOverlayTester END ===");
     return true;
@@ -58,18 +58,18 @@ void MaterialRequirementsOverlayTester::testNormal()
     zInfo("✓ testNormal OK");
 }
 
-void MaterialRequirementsOverlayTester::testIncompleteMatrix()
-{
-    zInfo("→ testIncompleteMatrix");
+// void MaterialRequirementsOverlayTester::testIncompleteMatrix()
+// {
+//     zInfo("→ testIncompleteMatrix");
 
-    // A Presenter ezt így csinálja:
-    // if (!complete) return Incomplete;
-    // A helper NEM tudja ezt, ezért itt direkt teszteljük az apply() működését.
+//     // A Presenter ezt így csinálja:
+//     // if (!complete) return Incomplete;
+//     // A helper NEM tudja ezt, ezért itt direkt teszteljük az apply() működését.
 
-    OverlayStatusHelper::State s = OverlayStatusHelper::State::Incomplete;
+//     OverlayStatusHelper::State s = OverlayStatusHelper::State::Incomplete;
 
-    // Ha a helperben van Incomplete ág, akkor ez a teszt elég:
-    Q_ASSERT(s == OverlayStatusHelper::State::Incomplete);
+//     // Ha a helperben van Incomplete ág, akkor ez a teszt elég:
+//     Q_ASSERT(s == OverlayStatusHelper::State::Incomplete);
 
-    zInfo("✓ testIncompleteMatrix OK");
-}
+//     zInfo("✓ testIncompleteMatrix OK");
+// }
