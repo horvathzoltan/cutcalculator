@@ -110,9 +110,7 @@ void CalculationModeDetailPresenter::onModeSelected(std::optional<QUuid> modeId)
     _view->set_current_calculation(*modeId, modeName);
 
     auto details = NeedCalculationDetailRegistry::instance().findByCalculation(*modeId);
-    if (!details.isEmpty()) {
-        refreshForCalculation(*modeId, mode->name);
-    }
+    refreshForCalculation(*modeId, mode->name);
 }
 
 void CalculationModeDetailPresenter::refreshOverlayOnly()

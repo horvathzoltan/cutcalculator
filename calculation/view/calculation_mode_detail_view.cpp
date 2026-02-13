@@ -46,57 +46,96 @@ CalculationModeDetailView::CalculationModeDetailView(QWidget* parent)
     FontUtils::applySafeMonospaceFont(this);
 
     connect(_table, &QTableWidget::itemChanged, this, [this](QTableWidgetItem* item) {
-        if (item->column() == 1) {
-            QUuid id = _table->item(item->row(), 0)->data(Qt::UserRole).toUuid();
-            emit request_edit_formula(id);
+        if (item->column() != 1)
+            return;
+
+        int row = item->row();
+        QString formula = item->text();
+
+        QUuid id = _table->item(row, 0)->data(Qt::UserRole).toUuid();
+        emit request_edit_formula(id, formula);
+
+        bool formulaValid = NeedCalculationDetailRegistry::isFormulaValid(formula);
+        bool empty = formula.trimmed().isEmpty();
+
+        QColor bg;
+        QString icon;
+
+        if (!formulaValid) {
+            bg = ColorConstants::ColorRed;
+            icon = "❗";
         }
+        else if (empty) {
+            bg = ColorConstants::ColorYellow;
+            icon = "🟡";
+        }
+        else {
+            bg = Qt::NoBrush;
+            icon = "🟢";
+        }
+
+        if (auto* typeItem = _table->item(row, 2))
+            typeItem->setText(icon);
+
+        for (int col = 0; col < _table->columnCount(); ++col)
+            if (auto* it = _table->item(row, col))
+                it->setBackground(bg);
+
+        _undoStack.push_back(_lastFormulaValue);
+        _redoStack.clear();
     });
 
-    connect(_table, &QTableWidget::itemChanged, this, [this](QTableWidgetItem* item) {
-        if (item->column() == 1) {
 
-            // 🔧 ÚJ: üres formula → default érték
-            if (item->text().trimmed().isEmpty()) {
-                item->setText("unknown");
-            }
+    // connect(_table, &QTableWidget::itemChanged, this, [this](QTableWidgetItem* item) {
+    //     if (item->column() == 1) {
+    //         QUuid id = _table->item(item->row(), 0)->data(Qt::UserRole).toUuid();
+    //         emit request_edit_formula(id, item->text());
+    //     }
+    // });
 
-            int row = item->row();
-            QString formula = item->text();
+    // connect(_table, &QTableWidget::itemChanged, this, [this](QTableWidgetItem* item) {
+    //     if (item->column() == 1) {
+
+    //         // 🔧 ÚJ: üres formula → default érték
+    //         // üres formula maradjon üres (domain: empty = valid)
+
+    //         int row = item->row();
+    //         QString formula = item->text();
 
 
-            bool formulaValid = NeedCalculationDetailRegistry::isFormulaValid(formula);
-            bool empty = formula.trimmed().isEmpty();
+    //         bool formulaValid = NeedCalculationDetailRegistry::isFormulaValid(formula);
+    //         bool empty = formula.trimmed().isEmpty();
 
-            QColor bg;
-            QString icon;
+    //         QColor bg;
+    //         QString icon;
 
-            if (!formulaValid) {
-                bg = ColorConstants::ColorRed;
-                icon = "❗";
-            }
-            else if (empty) {
-                bg = ColorConstants::ColorYellow;
-                icon = "🟡";
-            }
-            else if (formula == "unknown") {
-                bg = Qt::NoBrush;
-                icon = "🟢";
-            }
-            else {
-                bg = Qt::NoBrush;
-                icon = "🟢";
-            }
+    //         if (!formulaValid) {
+    //             bg = ColorConstants::ColorRed;
+    //             icon = "❗";
+    //         }
+    //         else if (empty) {
+    //             bg = ColorConstants::ColorYellow;
+    //             icon = "🟡";
+    //         }
+    //         else if (formula == "unknown") {
+    //             bg = Qt::NoBrush;
+    //             icon = "🟢";
+    //         }
+    //         else {
+    //             bg = Qt::NoBrush;
+    //             icon = "🟢";
+    //         }
 
-            auto* typeItem = _table->item(row, 2);
-            if (typeItem)
-                typeItem->setText(icon);
+    //         auto* typeItem = _table->item(row, 2);
+    //         if (typeItem)
+    //             typeItem->setText(icon);
 
-            for (int col = 0; col < _table->columnCount(); ++col) {
-                if (auto* it = _table->item(row, col))
-                    it->setBackground(bg);
-            }
-        }
-    });
+    //         for (int col = 0; col < _table->columnCount(); ++col) {
+    //             if (auto* it = _table->item(row, col))
+    //                 it->setBackground(bg);
+    //         }
+    //     }
+    // });
 
     _table->installEventFilter(this);
     _table->setItemDelegateForColumn(1, new FormulaSyntaxDelegate(_table));
@@ -108,12 +147,12 @@ CalculationModeDetailView::CalculationModeDetailView(QWidget* parent)
         }
     });
 
-    connect(_table, &QTableWidget::itemChanged, this, [this](QTableWidgetItem* item) {
-        if (item->column() == 1) {
-            _undoStack.push_back(_lastFormulaValue);
-            _redoStack.clear();
-        }
-    });
+    // connect(_table, &QTableWidget::itemChanged, this, [this](QTableWidgetItem* item) {
+    //     if (item->column() == 1) {
+    //         _undoStack.push_back(_lastFormulaValue);
+    //         _redoStack.clear();
+    //     }
+    // });
 
     layout->addWidget(_table);
     setLayout(layout);

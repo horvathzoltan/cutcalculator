@@ -201,3 +201,73 @@ A detail sorok GUI-ból való szerkesztése NEM működik, mert:
 - p7.2: view itemChanged jel bekötése
 - p7.3: manager update hívás ellenőrzése
 - p7.4: manuális tesztelés (GUI)
+
+
+***
+
+# MODEL
+  calculation/model/need_calculation_detail.h
+
+  # REPOSITORY
+  calculation/repository/need_calculation_detail_repository.h
+  calculation/repository/need_calculation_detail_repository.cpp
+
+  # REGISTRY
+  calculation/registry/need_calculation_detail_registry.h
+  calculation/registry/need_calculation_detail_registry.cpp
+
+  # DETAIL VIEW
+  calculation/view/calculation_mode_detail_view.h
+  calculation/view/calculation_mode_detail_view.cpp
+
+  # DETAIL PRESENTER
+  calculation/presenter/calculation_mode_detail_presenter.h
+  calculation/presenter/calculation_mode_detail_presenter.cpp
+
+  # DETAIL MANAGER
+  calculation/manager/calculation_mode_detail_manager.h
+  calculation/manager/calculation_mode_detail_manager.cpp
+
+  # MODES VIEW (bal panel)
+  calcmodes/view/calculation_modes_view.h
+  calcmodes/view/calculation_modes_view.cpp
+
+  # MODES PRESENTER (bal panel)
+  calcmodes/presenter/calculation_modes_presenter.h
+  calcmodes/presenter/calculation_modes_presenter.cpp
+
+  # MODES MANAGER
+  calcmodes/manager/calculation_modes_manager.h
+  calcmodes/manager/calculation_modes_manager.cpp
+
+  # CALCULATION REGISTRY
+  calcmodes/registry/need_calculation_registry.h
+  calcmodes/registry/need_calculation_registry.cpp
+
+  # MATERIAL LOOKUP
+  materials/registry/material_registry.h
+  materials/registry/material_registry.cpp
+
+  # PRODUCT LOOKUP
+  products/registry/product_registry.h
+  products/registry/product_registry.cpp
+
+  # FORMULA ENGINE + VALIDÁTOR
+  calculation/service/formula_engine.h
+  calculation/service/formula_engine.cpp
+  calculation/registry/need_calculation_detail_registry.h
+  calculation/registry/need_calculation_detail_registry.cpp
+
+  # MATRIX VALIDÁTOR
+  calculation/service/matrix_validator.h
+  calculation/service/matrix_validator.cpp
+
+  # DIALOGOK
+  calculation/dialogs/formula_editor_dialog.h
+  calculation/dialogs/formula_editor_dialog.cpp
+  calculation/dialogs/material_picker_dialog2.h
+  calculation/dialogs/material_picker_dialog2.cpp
+
+  # WORKBENCH
+  workbench/view/bom_workbench.h
+  workbench/view/bom_workbench.cpp

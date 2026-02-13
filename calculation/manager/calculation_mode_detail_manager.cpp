@@ -19,27 +19,16 @@ CalculationModeDetailManager::CalculationModeDetailManager(CalculationModeDetail
 void CalculationModeDetailManager::connectSignals() {
 
     connect(_view, &CalculationModeDetailView::request_edit_formula,
-            this, [this](const QUuid& detailId) {
+            this, [this](const QUuid& detailId, const QString& newFormula) {
 
                 const auto* d = NeedCalculationDetailRegistry::instance().findById(detailId);
                 if (!d) return;
 
                 auto updated = *d;
-                auto* table = _view->table();
-                if (!table) return;
-
-                int row = table->currentRow();
-                if (row < 0) return;
-
-                auto* item = table->item(row, 1);
-                if (!item) return;
-
-                updated.formula = item->text();
-
+                updated.formula = newFormula;
 
                 NeedCalculationDetailRegistry::instance().update(updated);
             });
-
 }
 
 /**
