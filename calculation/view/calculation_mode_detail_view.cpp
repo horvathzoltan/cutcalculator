@@ -3,6 +3,7 @@
 #include <QHeaderView>
 #include <QKeyEvent>
 #include <QTableWidgetItem>
+#include "calculation/dialogs/formula_editor_dialog.h"
 #include "colors/model/colorconstants.h"
 #include "common/utils/font_utils.h"
 #include <calculation/registry/need_calculation_detail_registry.h>
@@ -52,9 +53,6 @@ CalculationModeDetailView::CalculationModeDetailView(QWidget* parent)
         int row = item->row();
         QString formula = item->text();
 
-        QUuid id = _table->item(row, 0)->data(Qt::UserRole).toUuid();
-        emit request_edit_formula(id, formula);
-
         bool formulaValid = NeedCalculationDetailRegistry::isFormulaValid(formula);
         bool empty = formula.trimmed().isEmpty();
 
@@ -64,12 +62,10 @@ CalculationModeDetailView::CalculationModeDetailView(QWidget* parent)
         if (!formulaValid) {
             bg = ColorConstants::ColorRed;
             icon = "❗";
-        }
-        else if (empty) {
+        } else if (empty) {
             bg = ColorConstants::ColorYellow;
             icon = "🟡";
-        }
-        else {
+        } else {
             bg = Qt::NoBrush;
             icon = "🟢";
         }
@@ -81,10 +77,34 @@ CalculationModeDetailView::CalculationModeDetailView(QWidget* parent)
             if (auto* it = _table->item(row, col))
                 it->setBackground(bg);
 
-        _undoStack.push_back(_lastFormulaValue);
-        _redoStack.clear();
+        if (_lastFormulaValue != item->text()) {
+            _undoStack.push_back(_lastFormulaValue);
+            _redoStack.clear();
+        }
+
+
     });
 
+    connect(this, &CalculationModeDetailView::request_open_formula_editor,
+            this, [this](const QUuid& id) {
+
+                // 1) aktuális formula kiolvasása
+                QString current;
+                for (int row = 0; row < _table->rowCount(); ++row) {
+                    if (_table->item(row, 0)->data(Qt::UserRole).toUuid() == id) {
+                        current = _table->item(row, 1)->text();
+                        break;
+                    }
+                }
+
+                // 2) dialógus megnyitása
+                FormulaEditorDialog dlg(current, this);
+                if (dlg.exec() != QDialog::Accepted)
+                    return;
+
+                // 3) új formula visszaküldése
+                emit request_update_formula(id, dlg.formula());
+            });
 
     // connect(_table, &QTableWidget::itemChanged, this, [this](QTableWidgetItem* item) {
     //     if (item->column() == 1) {
@@ -308,7 +328,11 @@ bool CalculationModeDetailView::eventFilter(QObject* obj, QEvent* ev)
             if (!_undoStack.isEmpty()) {
                 QString prev = _undoStack.takeLast();
                 _redoStack.push_back(_table->currentItem()->text());
-                _table->currentItem()->setText(prev);
+                {
+                    QSignalBlocker b(_table);
+                    _table->currentItem()->setText(prev);
+                }
+
             }
             return true;
         }
@@ -318,7 +342,11 @@ bool CalculationModeDetailView::eventFilter(QObject* obj, QEvent* ev)
             if (!_redoStack.isEmpty()) {
                 QString next = _redoStack.takeLast();
                 _undoStack.push_back(_table->currentItem()->text());
-                _table->currentItem()->setText(next);
+                {
+                    QSignalBlocker b(_table);
+                    _table->currentItem()->setText(next);
+                }
+
             }
             return true;
         }
@@ -347,6 +375,7 @@ bool CalculationModeDetailView::eventFilter(QObject* obj, QEvent* ev)
         // Esc → visszaállítás
         if (key->key() == Qt::Key_Escape) {
             if (_table->currentItem()) {
+                QSignalBlocker b(_table);
                 _table->currentItem()->setText(_lastFormulaValue);
             }
             return true;

@@ -13,21 +13,19 @@
 
 bool NeedCalculationDetailRegistry::isFormulaValid(const QString& f) {
     const auto trimmed = f.trimmed();
-    // v2: empty = valid (unknown), "unknown" = invalid
+
     if (trimmed.isEmpty())
         return true;
     if (trimmed == "unknown")
         return false;
 
-    // v2: len:* prefix → numeric suffix required
+    // v2 DSL
     if (trimmed.startsWith("len:w-") || trimmed.startsWith("len:h-")) {
         bool ok = false;
         trimmed.mid(6).toInt(&ok);
         return ok;
     }
 
-    // v2: qty:* prefix → numeric suffix required
-    // v2: qty:* prefix → numeric suffix required (fixed, perOrder, perArea)
     if (trimmed.startsWith("qty:fixed:") ||
         trimmed.startsWith("qty:perOrder:") ||
         trimmed.startsWith("qty:perArea:")) {
@@ -37,9 +35,26 @@ bool NeedCalculationDetailRegistry::isFormulaValid(const QString& f) {
         return ok;
     }
 
-    // v2: unknown prefix → invalid
+    // v1 DSL (FormulaEngine kompatibilitás)
+    if (trimmed.startsWith("w-") || trimmed.startsWith("h-")) {
+        bool ok = false;
+        trimmed.mid(2).toInt(&ok);
+        return ok;
+    }
+
+    if (trimmed.startsWith("fixed:")) {
+        bool ok = false;
+        trimmed.mid(6).toInt(&ok);
+        return ok;
+    }
+
+    if (trimmed == "w*h") {
+        return true;
+    }
+
     return false;
 }
+
 
 
 // --- Kényelmi API ---
@@ -85,7 +100,8 @@ bool NeedCalculationDetailRegistry::remove(const QUuid &id) {
 // v2: domain validation uses updated formula rules (isFormulaValid)
 bool NeedCalculationDetailRegistry::validateDomain(const NeedCalculationDetail& d) const
 {
-    if(!isFormulaValid(d.formula)) return false;
+    bool ifv = isFormulaValid(d.formula);
+    if(!ifv) return false;
     if(d.kind != NeedCalculationDetail::DetailKind::Cutting &&
         d.kind != NeedCalculationDetail::DetailKind::Kitting) return false;
 

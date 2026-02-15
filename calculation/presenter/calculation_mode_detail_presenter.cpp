@@ -41,24 +41,7 @@ QToolBar* CalculationModeDetailPresenter::buildToolbar(QWidget* parent)
 
     refreshOverlayOnly();
 
-    //QAction* addAct    = tb->addAction("➕ Új formula");
-    //QAction* removeAct = tb->addAction("🗑️ Törlés");
     QAction* editAct   = tb->addAction("✏️ Szerkesztés");
-
-    // QObject::connect(addAct, &QAction::triggered, this, [this]() {
-    //     emit _view->request_add_detail(_view->currentCalculationId());
-    // });
-
-    // QObject::connect(removeAct, &QAction::triggered, this, [this]() {
-    //     auto tables = _view->findChildren<QTableWidget*>();
-    //     if (tables.isEmpty()) return;
-    //     auto* t = tables.first();
-    //     auto r = t->selectedRanges();
-    //     if (r.isEmpty()) return;
-    //     auto* item = t->item(r.first().topRow(), 0);
-    //     if (!item) return;
-    //     emit _view->request_remove_detail(item->data(Qt::UserRole).toUuid());
-    // });
 
     QObject::connect(editAct, &QAction::triggered, this, [this]() {
         auto tables = _view->findChildren<QTableWidget*>();
@@ -68,9 +51,9 @@ QToolBar* CalculationModeDetailPresenter::buildToolbar(QWidget* parent)
         if (r.isEmpty()) return;
         auto* item = t->item(r.first().topRow(), 0);
         if (!item) return;
-        //emit _view->request_edit_formula(item->data(Qt::UserRole).toUuid());
+
         QUuid id = item->data(Qt::UserRole).toUuid();
-        emit _view->request_edit_formula(id);
+        emit _view->request_open_formula_editor(id);
 
     });
 

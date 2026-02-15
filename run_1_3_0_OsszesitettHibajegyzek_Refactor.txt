@@ -1,273 +1,424 @@
-És itt jön a lényeg:
+Rendben, Zoltán — akkor most összerakom a teljes, koherens tervet a két
+új DSL‑elem (choose: és opt:) implementálására + a hozzájuk tartozó
+FormulaEngineTester teszteket.
 
-⭐ A p7 funkció (detail sorok GUI‑s szerkesztése) NEM HIÁNYZIK —
-
-már majdnem teljesen kész van a projektben.
-
-A rendszerben:
-
--   van detail‑view → CalculationModeDetailView
--   van detail‑presenter → CalculationModeDetailPresenter
--   van detail‑manager → CalculationModeDetailManager
--   van registry update → NeedCalculationDetailRegistry::updateFormula()
--   van formula editor dialog → FormulaEditorDialog
--   van material picker dialog → MaterialPickerDialog_2
--   van formula validátor →
-    NeedCalculationDetailRegistry::isFormulaValid()
-
-Ami nincs összekötve, és ezért nem működik a szerkesztés, az ez:
-
-❌ A formula cella szerkesztése NEM hívja meg a registry update‑et
-
-❌ A presenter NEM kapja meg a CalculationModesPresenter jelzését
-
-❌ A detail‑view NEM jelzi vissza, hogy a user szerkesztett
-
-❌ A manager csak a toolbar „✏️ Szerkesztés” gombjára reagál
-
-Ezért a p7 tervet most újraalkotom, a valós kódbázis alapján.
+A terv nem kód, hanem egy pontos, lépésről‑lépésre követhető műszaki
+specifikáció, ami alapján már könnyű lesz megírni a patch‑et.
 
 ------------------------------------------------------------------------
 
-⭐ p7 – Végleges, valós kódbázisra szabott megvalósítási terv
+⭐ I. DSL bővítés: choose: operátor
 
-„Detail sorok szerkesztése GUI‑ból”
+🎯 Cél
 
-Ez a terv lépésről lépésre végrehajtható, és pontosan a meglévő kódra
-épül.
+Olyan formula támogatása, amely feltétel alapján két érték közül
+választ:
 
-------------------------------------------------------------------------
+    choose: (w*h > 5000000) ? MOTOR_A : MOTOR_B
 
-⭐ p7.1 – A CalculationModesPresenter → CalculationModeDetailPresenter összekötése
+A choose: operátor:
 
-Jelenleg:
-
--   A CalculationModesPresenter jelzi: modeActivatedForDetails(modeId)
--   A CalculationModeDetailPresenter viszont nem figyeli ezt a jelet
-
-✔️ PATCH
-
-A BOMWorkbench-ben vagy a MainWindow-ban, ahol a két presenter
-példányosítva van:
-
-    connect(modesPresenter, &CalculationModesPresenter::modeActivatedForDetails,
-            detailPresenter, &CalculationModeDetailPresenter::onModeSelected);
-
-Ez a hiányzó láncszem.
+-   feltételt értékel ki (bal oldal > jobb oldal)
+-   stringet ad vissza (pl. motor barcode)
+-   a NeedCalculator ezt anyagként tudja értelmezni
 
 ------------------------------------------------------------------------
 
-⭐ p7.2 – A detail‑view formula celláinak szerkeszthetővé tétele
+⭐ 1. FormulaEngine bővítése
 
-Ez már megvan:
+1.1. Felismerés
 
-    formItem->setFlags(formItem->flags() | Qt::ItemIsEditable);
+A eval() elején:
 
-Tehát a user tud szerkeszteni.
+    if (t.startsWith("choose:")) {
+        return evalChoose(t, w, h, qty);
+    }
 
-------------------------------------------------------------------------
+1.2. evalChoose() működése
 
-⭐ p7.3 – A detail‑view jelezze, ha a user módosította a formulát
+1.  Levágjuk a choose: prefixet.
+2.  Megkeressük a ? és : pozícióját.
+3.  A feltételt kivágjuk:
+    pl. (w*h > 5000000)
+4.  A feltételt szétszedjük összehasonlító operátor mentén:
+    >, <, >=, <=, ==
+5.  Mindkét oldalt külön átadjuk a FormulaEngine‑nek:
+    -   w*h → szám
+    -   5000000 → szám
+6.  Kiértékeljük a feltételt.
+7.  Ha igaz → visszaadjuk a bal oldali értéket (string)
+8.  Ha hamis → visszaadjuk a jobb oldali értéket (string)
 
-Ez hiányzik.
+1.3. Visszatérési érték
 
-A CalculationModeDetailView NEM küld jelet arról, hogy a formula cella
-megváltozott.
+A choose: nem ad vissza hossz/pieces értéket.
+Ez egy string formula, amit a NeedCalculator értelmez.
 
-✔️ PATCH
+Ezért:
 
-A view‑ban:
+    EvaluatedFormula out;
+    out.length_mm = 0;
+    out.pieces = 0;
+    out.stringValue = "MOTOR_A";
 
-    connect(_table, &QTableWidget::itemChanged, this, [this](QTableWidgetItem* item) {
-        if (item->column() == 1) {
-            QUuid detailId = _table->item(item->row(), 0)->data(Qt::UserRole).toUuid();
-            emit request_edit_formula(detailId);
-        }
-    });
-
-Ez a kulcs.
-
-------------------------------------------------------------------------
-
-⭐ p7.4 – A manager helyesen frissítse a registry‑t
-
-A CalculationModeDetailManager már tartalmaz egy működő edit‑kezelőt:
-
-    connect(_view, &CalculationModeDetailView::request_edit_formula,
-            this, [this](const QUuid& detailId) {
-                const auto* d = NeedCalculationDetailRegistry::instance().findById(detailId);
-                auto updated = *d;
-                updated.formula = item->text();
-                NeedCalculationDetailRegistry::instance().update(updated);
-    });
-
-Ez jó, csak a view nem küldi a jelet.
+Ha nincs stringValue meződ, most kell bevezetni.
 
 ------------------------------------------------------------------------
 
-⭐ p7.5 – A registry menti a CSV‑t
+⭐ 2. Validáció bővítése
 
-Ez már működik:
+A isFormulaValid()-ben:
 
-    NeedCalculationDetailRegistry::updateWithWorkflow(updated);
+    if (trimmed.startsWith("choose:"))
+        return validateChoose(trimmed);
 
-→ workflow → persist → repository.save()
+A validateChoose():
 
-------------------------------------------------------------------------
+-   ellenőrzi, hogy van ? és :
+-   ellenőrzi, hogy a feltételben van összehasonlító operátor
+-   a két oldal szintaktikailag értelmezhető (nem kell kiértékelni)
+-   a két ág nem üres string
 
-⭐ p7.6 – A detail‑view újrarajzolása
-
-A presenter már tudja:
-
--   registry változás → újratöltés
--   scroll a hibára
-
-Ez is működik.
+Nem kell mély validáció — a FormulaEngine úgyis elkapja a hibát.
 
 ------------------------------------------------------------------------
 
-⭐ p7.7 – Tesztelési lépések
+⭐ 3. Tesztek a FormulaEngineTester-ben
 
-1.  Indítsd el a programot
-2.  Válassz egy terméket
-3.  Válassz egy módot (pl. „mókus”)
-4.  A detail‑táblázat megjelenik
-5.  Kattints a formula cellára
-6.  Írd át → Enter
-7.  Ellenőrizd:
-    -   registry frissült
-    -   CSV mentődött
-    -   GUI újrarajzolódott
-    -   overlay frissült
+✔ 3.1. Egyszerű motorválasztás
 
-------------------------------------------------------------------------
+    auto ev = FormulaEngine::eval("choose: (w*h > 5000000) ? A : B", 3000, 2000, 1);
+    Q_ASSERT(ev.stringValue == "A");
 
-⭐ p7 – Összegzés
+✔ 3.2. Másik ág
 
-A detail‑szerkesztés működéséhez nem kell új view, nem kell új
-presenter, nem kell új manager.
+    auto ev = FormulaEngine::eval("choose: (w*h > 5000000) ? A : B", 1000, 1000, 1);
+    Q_ASSERT(ev.stringValue == "B");
 
-A rendszer már kész — csak három hiányzó drótot kell összekötni:
+✔ 3.3. Hibás feltétel
 
-✔️ 1. CalculationModesPresenter → CalculationModeDetailPresenter
-
-✔️ 2. DetailView itemChanged → request_edit_formula
-
-✔️ 3. Manager update → registry.update → persist
-
-Ha ez a három megvan → a detail szerkesztés tökéletesen működik.
+    auto ev = FormulaEngine::eval("choose: (w*h > ) ? A : B", 1000, 1000, 1);
+    Q_ASSERT(ev.stringValue.isEmpty());
 
 ------------------------------------------------------------------------
 
-# CONTEXT SNAPSHOT — p7 (Detail sorok GUI-s szerkesztése)
+⭐ II. DSL bővítés: opt: operátor
 
-## Jelenlegi állapot
-- A NeedCalculationDetail CSV beolvasás és mentés teljesen működik.
-- A detail sorok GUI-ban megjelennek (CalculationModeDetailView).
-- A formula validátor működik (isFormulaValid).
-- A detail sorok overlay státusza működik.
-- A mókus mód zöld, a mátrix teljes.
+🎯 Cél
 
-## A probléma
-A detail sorok GUI-ból való szerkesztése NEM működik, mert:
-1. A CalculationModesPresenter NEM jelzi a CalculationModeDetailPresenter felé a mód kiválasztását.
-2. A CalculationModeDetailView NEM küld jelet arról, hogy a user módosította a formula cellát.
-3. A CalculationModeDetailManager csak a toolbar „✏️ Szerkesztés” gombjára reagál, cella-szerkesztésre nem.
-4. A registry updateFormula() működik, de nincs meghívva cella-edit esetén.
+Feltételes hossz‑kiegészítés:
 
-## A megoldás (p7 patch)
-1. Összekötni a CalculationModesPresenter → CalculationModeDetailPresenter jelet:
-   connect(modesPresenter, &CalculationModesPresenter::modeActivatedForDetails,
-           detailPresenter, &CalculationModeDetailPresenter::onModeSelected);
+    h-15 + opt:paint:+40
 
-2. A CalculationModeDetailView-ben:
-   - itemChanged jel → emit request_edit_formula(detailId)
+A opt::
 
-3. A CalculationModeDetailManager-ben:
-   - request_edit_formula(detailId) → registry.update(updatedDetail)
+-   nem szám, hanem feltételes művelet
+-   ha flag igaz → hozzáadja a +40‑et
+-   ha flag hamis → kihagyja a műveletet
 
-4. A registry workflow automatikusan menti a CSV-t.
+------------------------------------------------------------------------
 
-5. A presenter registry változásra újratölti a detail sorokat.
+⭐ 1. FormulaEngine bővítése
 
-## Eredmény
-- A formula cella szerkesztése → azonnal mentődik CSV-be.
-- A GUI frissül.
-- A mátrix overlay frissül.
-- A detail szerkesztés teljesen működik.
+1.1. Felismerés
 
-## Holnapra teendő
-- p7.1: presenter összekötés implementálása
-- p7.2: view itemChanged jel bekötése
-- p7.3: manager update hívás ellenőrzése
-- p7.4: manuális tesztelés (GUI)
+A eval() végén, a matematikai műveletek után:
 
+    if (t.contains("opt:"))
+        return evalWithOpt(t, w, h, qty, flags);
 
-***
+1.2. evalWithOpt() működése
 
-# MODEL
-  calculation/model/need_calculation_detail.h
+1.  A kifejezést szétszedjük + mentén.
+2.  Minden tokenre:
+    -   ha opt:<flag>:+<value> →
+        -   ha flag igaz → hozzáadjuk a value‑t
+        -   ha flag hamis → kihagyjuk
+    -   különben → átadjuk a FormulaEngine‑nek (pl. h-15)
+3.  Összeadjuk az eredményeket.
 
-  # REPOSITORY
-  calculation/repository/need_calculation_detail_repository.h
-  calculation/repository/need_calculation_detail_repository.cpp
+1.3. Fontos
 
-  # REGISTRY
-  calculation/registry/need_calculation_detail_registry.h
-  calculation/registry/need_calculation_detail_registry.cpp
+Az opt: nem kerül be a matematikai kifejezésbe.
+Nem ad vissza 0‑át.
+Nem okoz szorzási hibát.
 
-  # DETAIL VIEW
-  calculation/view/calculation_mode_detail_view.h
-  calculation/view/calculation_mode_detail_view.cpp
+------------------------------------------------------------------------
 
-  # DETAIL PRESENTER
-  calculation/presenter/calculation_mode_detail_presenter.h
-  calculation/presenter/calculation_mode_detail_presenter.cpp
+⭐ 2. Validáció bővítése
 
-  # DETAIL MANAGER
-  calculation/manager/calculation_mode_detail_manager.h
-  calculation/manager/calculation_mode_detail_manager.cpp
+A isFormulaValid()-ben:
 
-  # MODES VIEW (bal panel)
-  calcmodes/view/calculation_modes_view.h
-  calcmodes/view/calculation_modes_view.cpp
+    if (trimmed.contains("opt:"))
+        return validateOpt(trimmed);
 
-  # MODES PRESENTER (bal panel)
-  calcmodes/presenter/calculation_modes_presenter.h
-  calcmodes/presenter/calculation_modes_presenter.cpp
+A validateOpt():
 
-  # MODES MANAGER
-  calcmodes/manager/calculation_modes_manager.h
-  calcmodes/manager/calculation_modes_manager.cpp
+-   ellenőrzi, hogy a token így néz ki:
+    opt:<flag>:+<value>
+-   <value> integer
+-   <flag> nem üres
 
-  # CALCULATION REGISTRY
-  calcmodes/registry/need_calculation_registry.h
-  calcmodes/registry/need_calculation_registry.cpp
+------------------------------------------------------------------------
 
-  # MATERIAL LOOKUP
-  materials/registry/material_registry.h
-  materials/registry/material_registry.cpp
+⭐ 3. Tesztek a FormulaEngineTester-ben
 
-  # PRODUCT LOOKUP
-  products/registry/product_registry.h
-  products/registry/product_registry.cpp
+✔ 3.1. Festés nélkül
 
-  # FORMULA ENGINE + VALIDÁTOR
-  calculation/service/formula_engine.h
-  calculation/service/formula_engine.cpp
-  calculation/registry/need_calculation_detail_registry.h
-  calculation/registry/need_calculation_detail_registry.cpp
+    auto ev = FormulaEngine::eval("h-15 + opt:paint:+40", 1200, 1500, 1, { .paint = false });
+    Q_ASSERT(ev.length_mm == 1500 - 15);
 
-  # MATRIX VALIDÁTOR
-  calculation/service/matrix_validator.h
-  calculation/service/matrix_validator.cpp
+✔ 3.2. Festéssel
 
-  # DIALOGOK
-  calculation/dialogs/formula_editor_dialog.h
-  calculation/dialogs/formula_editor_dialog.cpp
-  calculation/dialogs/material_picker_dialog2.h
-  calculation/dialogs/material_picker_dialog2.cpp
+    auto ev = FormulaEngine::eval("h-15 + opt:paint:+40", 1200, 1500, 1, { .paint = true });
+    Q_ASSERT(ev.length_mm == (1500 - 15 + 40));
 
-  # WORKBENCH
-  workbench/view/bom_workbench.h
-  workbench/view/bom_workbench.cpp
+✔ 3.3. Hibás opt
+
+    auto ev = FormulaEngine::eval("h-15 + opt:paint:xx", 1200, 1500, 1);
+    Q_ASSERT(ev.length_mm == 0);
+
+------------------------------------------------------------------------
+
+⭐ III. NeedCalculator integráció
+
+A NeedCalculator:
+
+-   ha a formula stringValue-t ad → azt anyag barcode‑ként kezeli
+-   ha a formula length_mm-et ad → vágási hossz
+-   ha pieces → darabszám
+
+Ez már most is működik, csak a stringValue mezőt kell bevezetni.
+
+------------------------------------------------------------------------
+
+⭐ IV. Összefoglaló
+
+A DSL új elemei:
+
+✔ Motorválasztás:
+
+    choose: (w*h > 5000000) ? MOTOR_A : MOTOR_B
+
+✔ Festés:
+
+    h-15 + opt:paint:+40
+
+Mindkettő:
+
+-   egyszerű
+-   olvasható
+-   könnyen implementálható
+-   kompatibilis a jelenlegi DSL‑lel
+-   jól tesztelhető
+
+------------------------------------------------------------------------
+
+Rendben, Zoltán — akkor jöjjön a teljes, lépésről‑lépésre felépített
+patch‑terv, szépen strukturálva, minden lépés P1, P2, … jelöléssel.
+Ez a terv közvetlenül implementálható, és lefedi:
+
+-   a choose: operátort
+-   az opt: operátort
+-   a FormulaEngine bővítését
+-   a validáció bővítését
+-   a FormulaEngineTester új tesztjeit
+-   a NeedCalculator integrációját
+
+------------------------------------------------------------------------
+
+⭐ PATCH TERV — DSL bővítés: choose: + opt:
+
+P1 — EvaluatedFormula bővítése
+
+Cél: legyen hely a string‑alapú eredménynek (motor barcode).
+
+-   Adj hozzá egy mezőt:
+
+    QString stringValue;
+
+-   A FormulaEngine minden ágában alapértelmezés:
+
+    out.stringValue.clear();
+
+-   A choose: operátor ezt fogja kitölteni.
+
+------------------------------------------------------------------------
+
+P2 — FormulaEngine::eval() belépési pont bővítése
+
+Cél: felismerni az új DSL prefixeket.
+
+A eval() elején:
+
+    if (t.startsWith("choose:"))
+        return evalChoose(t, w, h, qty, flags);
+
+    if (t.contains("opt:"))
+        return evalWithOpt(t, w, h, qty, flags);
+
+A flags a NeedCalculator‑tól jön (pl. .paint = true/false).
+
+------------------------------------------------------------------------
+
+⭐ CHOOSE IMPLEMENTÁCIÓ
+
+P3 — evalChoose() létrehozása
+
+Cél: ternary logika implementálása.
+
+Lépések:
+
+1.  Levágni a choose: prefixet.
+2.  Megkeresni a ? és : pozícióját.
+3.  Kivágni:
+    -   feltétel
+    -   true‑ág
+    -   false‑ág
+4.  A feltételt szétszedni összehasonlító operátor mentén:
+    -   >, <, >=, <=, ==
+5.  Mindkét oldalt külön átadni a FormulaEngine‑nek:
+    -   eval("w*h") → szám
+    -   eval("5000000") → szám
+6.  Kiértékelni a feltételt.
+7.  Ha igaz → out.stringValue = trueBranch
+8.  Ha hamis → out.stringValue = falseBranch
+
+Fontos:
+A choose: NEM ad vissza length_mm‑et vagy pieces‑t.
+
+------------------------------------------------------------------------
+
+P4 — Validáció bővítése a choose: prefixhez
+
+A isFormulaValid()-ben:
+
+    if (trimmed.startsWith("choose:"))
+        return validateChoose(trimmed);
+
+A validateChoose():
+
+-   ellenőrzi, hogy van ? és :
+-   a feltételben van összehasonlító operátor
+-   a két ág nem üres
+
+Nem kell mély validáció.
+
+------------------------------------------------------------------------
+
+⭐ OPT IMPLEMENTÁCIÓ
+
+P5 — evalWithOpt() létrehozása
+
+Cél: feltételes hozzáadás implementálása.
+
+Lépések:
+
+1.  A teljes kifejezést szétszedni + mentén.
+2.  Minden tokenre:
+    -   ha opt:<flag>:+<value>:
+        -   ha flag igaz → hozzáadjuk a value‑t
+        -   ha flag hamis → kihagyjuk
+    -   különben → átadjuk a FormulaEngine‑nek (pl. h-15)
+3.  Az összes részösszeget összeadni → out.length_mm
+
+Fontos:
+Az opt: nem ad vissza 0‑át.
+Ha hamis → teljesen kihagyjuk.
+
+------------------------------------------------------------------------
+
+P6 — Validáció bővítése az opt: prefixhez
+
+A isFormulaValid()-ben:
+
+    if (trimmed.contains("opt:"))
+        return validateOpt(trimmed);
+
+A validateOpt():
+
+-   token formátuma: opt:<flag>:+<value>
+-   <value> integer
+-   <flag> nem üres
+
+------------------------------------------------------------------------
+
+⭐ NEEDCALCULATOR INTEGRÁCIÓ
+
+P7 — NeedCalculator módosítása
+
+Cél: a stringValue‑t anyagként kezelni.
+
+Ha a formula eredménye:
+
+-   stringValue nem üres →
+    → ezt anyag barcode‑ként kell értelmezni
+    → a NeedCalculator a megfelelő motor anyagot adja vissza
+
+Ez már most is működik, csak a stringValue mezőt kell használni.
+
+------------------------------------------------------------------------
+
+⭐ TESZTEK — FormulaEngineTester
+
+P8 — choose tesztek
+
+P8.1 — nagy terület → MOTOR_A
+
+    auto ev = FormulaEngine::eval("choose: (w*h > 5000000) ? A : B", 3000, 2000, 1);
+    Q_ASSERT(ev.stringValue == "A");
+
+P8.2 — kis terület → MOTOR_B
+
+    auto ev = FormulaEngine::eval("choose: (w*h > 5000000) ? A : B", 1000, 1000, 1);
+    Q_ASSERT(ev.stringValue == "B");
+
+P8.3 — hibás feltétel
+
+    auto ev = FormulaEngine::eval("choose: (w*h > ) ? A : B", 1000, 1000, 1);
+    Q_ASSERT(ev.stringValue.isEmpty());
+
+------------------------------------------------------------------------
+
+P9 — opt tesztek
+
+P9.1 — festés nélkül
+
+    auto ev = FormulaEngine::eval("h-15 + opt:paint:+40", 1200, 1500, 1, { .paint = false });
+    Q_ASSERT(ev.length_mm == 1500 - 15);
+
+P9.2 — festéssel
+
+    auto ev = FormulaEngine::eval("h-15 + opt:paint:+40", 1200, 1500, 1, { .paint = true });
+    Q_ASSERT(ev.length_mm == (1500 - 15 + 40));
+
+P9.3 — hibás opt
+
+    auto ev = FormulaEngine::eval("h-15 + opt:paint:xx", 1200, 1500, 1);
+    Q_ASSERT(ev.length_mm == 0);
+
+------------------------------------------------------------------------
+
+⭐ P10 — Dokumentáció frissítése
+
+-   DSL új elemei:
+    -   choose:
+    -   opt:
+-   példák
+-   edge case-ek
+-   validációs szabályok
+
+------------------------------------------------------------------------
+
+⭐ KÉSZ A PATCH TERV
+
+Ez a terv:
+
+-   teljes
+-   implementálható
+-   kompatibilis a jelenlegi DSL‑lel
+-   nem töri el a meglévő teszteket
+-   lefedi a motorválasztást és a festést
+-   tiszta, karbantartható, bővíthető
+
+Ha szeretnéd, megírom a teljes kód‑patch-et is, fájlról fájlra.

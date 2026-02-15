@@ -5,7 +5,9 @@
 #include "product/product_registry_tester.h"
 #include "settings_manager_tester.h"
 #include "test/calcmode/need_calculation_registry_tester.h"
+#include "test/calculation/formula_engine_tester.h"
 #include "test/calculation/need_calculation_detail_registry_tester.h"
+
 #include "test/eventlogger/event_logger_tester.h"
 #include "test/filenamehelper/filenamehelper_tests.h"
 #include "test/need/need_rule_registry_tester.h"
@@ -61,6 +63,9 @@ void TestManager::runBusinessLogicTests(const QString& profile) {
     }
     else if (profile == "settings") {
         runModule<SettingsManagerTester>();
+    }
+    else if (profile == "formula") {
+        runModule<FormulaEngineTester>();
     }
 
     /**/

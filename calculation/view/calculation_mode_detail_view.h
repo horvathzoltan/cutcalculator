@@ -39,7 +39,8 @@ public:
     int rowCount() const;
 
 signals:
-    void request_edit_formula(const QUuid& detailId, const QString& newFormula);
+    void request_open_formula_editor(const QUuid& detailId);
+    void request_update_formula(const QUuid& detailId, const QString& newFormula);
 
 public slots:
     void set_current_calculation(const QUuid& calcId, const QString& modeName);

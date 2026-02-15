@@ -8,27 +8,18 @@ CalculationModeDetailManager::CalculationModeDetailManager(CalculationModeDetail
     connectSignals();
 }
 
-/**
- * A view jeleinek bekötése:
- * - request_add_detail(calcId): új sor felvétele (material + formula) – itt egyelőre placeholder.
- * - request_remove_detail(detailId): törlés a registryben.
- * - request_edit_formula(detailId): formula frissítése – egyszerű demo érték.
- *
- * A valódi workflow-hoz anyagválasztó és formula szerkesztő dialogokat érdemes beépíteni.
- */
+
 void CalculationModeDetailManager::connectSignals() {
 
-    connect(_view, &CalculationModeDetailView::request_edit_formula,
-            this, [this](const QUuid& detailId, const QString& newFormula) {
+    connect(_view, &CalculationModeDetailView::request_update_formula,
+        this, [this](const QUuid& detailId, const QString& newFormula) {
 
-                const auto* d = NeedCalculationDetailRegistry::instance().findById(detailId);
-                if (!d) return;
+            const auto* d = NeedCalculationDetailRegistry::instance().findById(detailId);
+            if (!d) return;
 
-                auto updated = *d;
-                updated.formula = newFormula;
-
-                NeedCalculationDetailRegistry::instance().update(updated);
-            });
+            auto updated = *d;
+            updated.formula = newFormula;
+    });
 }
 
 /**

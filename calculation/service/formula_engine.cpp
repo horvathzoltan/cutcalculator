@@ -88,5 +88,11 @@ EvaluatedFormula FormulaEngine::eval(const QString& f, int w, int h, int qty)
         return out;
     }
 
+    if (t == "w*h") {
+        out.length_mm = w * h;
+        out.pieces = qty;
+        return out;
+    }
+
     return out;
 }

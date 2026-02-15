@@ -46,7 +46,7 @@ NeedCalculationDetailRepository::validateRow(const Row& row, int lineNumber)
 {
     QVector<CsvImporter::RowError> errors;
 
-    iif (row.productBarcode.isEmpty()) {
+    if (row.productBarcode.isEmpty()) {
         errors.append({
             lineNumber,
             QString("⚠️ Hiányzó productBarcode (mode=%1, material=%2)")
