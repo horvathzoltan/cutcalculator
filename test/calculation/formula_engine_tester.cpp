@@ -32,6 +32,13 @@ bool FormulaEngineTester::run()
     testNeedCalculatorSimpleRoletta();
     testNeedCalculatorInvalidFormulaAudit();
 
+    testChooseSimple();
+    testChooseFalseBranch();
+    testOptSimple();
+
+    testNeedCalculatorChooseTrue();
+    testNeedCalculatorChooseFalse();
+
     zInfo("=== FormulaEngine TESTS END ===");
     return true;
 }
@@ -204,4 +211,136 @@ void FormulaEngineTester::testNeedCalculatorInvalidFormulaAudit()
 
     zInfo("✓ testNeedCalculatorInvalidFormulaAudit OK");
 
+}
+
+
+void FormulaEngineTester::testChooseSimple()
+{
+    zInfo("→ testChooseSimple");
+
+    // nagy terület → igaz ág
+    auto ev = FormulaEngine::eval("choose: (w*h > 1000000) ? MOTOR_A : MOTOR_B",
+                                  2000, 2000, 1);
+
+    Q_ASSERT(ev.stringValue == "MOTOR_A");
+    Q_ASSERT(ev.length_mm == 0);
+    Q_ASSERT(ev.pieces == 0);
+
+    zInfo("✓ testChooseSimple OK");
+}
+
+void FormulaEngineTester::testChooseFalseBranch()
+{
+    zInfo("→ testChooseFalseBranch");
+
+    // kis terület → hamis ág
+    auto ev = FormulaEngine::eval("choose: (w*h > 5000000) ? MOTOR_A : MOTOR_B",
+                                  1000, 1000, 1);
+
+    Q_ASSERT(ev.stringValue == "MOTOR_B");
+    Q_ASSERT(ev.length_mm == 0);
+    Q_ASSERT(ev.pieces == 0);
+
+    zInfo("✓ testChooseFalseBranch OK");
+}
+
+void FormulaEngineTester::testOptSimple()
+{
+    zInfo("→ testOptSimple");
+
+    // opt: token figyelmen kívül hagyva (flag hiányában)
+    auto ev = FormulaEngine::eval("h-10 + opt:paint:+40", 1200, 1500, 1);
+
+    // h-10 = 1490
+    // opt:paint:+40 → flag hiányában kihagyva
+    Q_ASSERT(ev.length_mm == 1490);
+    Q_ASSERT(ev.pieces == 1);
+
+    zInfo("✓ testOptSimple OK");
+}
+
+void FormulaEngineTester::testNeedCalculatorChooseTrue()
+{
+    zInfo("→ testNeedCalculatorChooseTrue");
+
+    // 1) Tiszta indulás
+    ProductRegistry::instance().clearForTest();
+    MaterialRegistry::instance().clearForTest();
+    NeedRuleRegistry::instance().clearForTest();
+    NeedCalculationRegistry::instance().clearForTest();
+    NeedCalculationDetailRegistry::instance().clearForTest();
+
+    // 2) Tesztadatok
+    auto ids = TestDataBuilder::prepareStandard(); // P1, M1, M2
+
+    // 3) NeedRule: P1 → M1, M2
+    NeedRuleRegistry::instance().insert(ids.P1, ids.M1);
+    NeedRuleRegistry::instance().insert(ids.P1, ids.M2);
+
+    // 4) Mode
+    auto mode = TestDataBuilder::makeCalculation(ids.P1, "Manufacturing");
+    NeedCalculationRegistry::instance().insert(mode);
+
+    // 5) choose: formula → MOTOR_A (M1 barcode)
+    auto d = TestDataBuilder::makeDetail(mode.id, ids.M1,
+                                         QString("choose: (w*h > 1000000) ? %1 : %2")
+                                             .arg(ids.M1_barcode, ids.M2_barcode));
+
+    NeedCalculationDetailRegistry::instance().insert(d);
+
+    // 6) OrderLine
+    int w = 2000;
+    int h = 2000;
+    int qty = 1;
+
+    auto cuts = NeedCalculator::makeCutList({ ids.P1, w, h, qty }, "Manufacturing");
+
+    Q_ASSERT(cuts.size() == 1);
+    Q_ASSERT(cuts[0].materialId == ids.M1);  // MOTOR_A → M1
+    Q_ASSERT(cuts[0].pieces == 1);
+
+    zInfo("✓ testNeedCalculatorChooseTrue OK");
+}
+
+void FormulaEngineTester::testNeedCalculatorChooseFalse()
+{
+    zInfo("→ testNeedCalculatorChooseFalse");
+
+    // 1) Tiszta indulás
+    ProductRegistry::instance().clearForTest();
+    MaterialRegistry::instance().clearForTest();
+    NeedRuleRegistry::instance().clearForTest();
+    NeedCalculationRegistry::instance().clearForTest();
+    NeedCalculationDetailRegistry::instance().clearForTest();
+
+    // 2) Tesztadatok
+    auto ids = TestDataBuilder::prepareStandard(); // P1, M1, M2
+
+    // 3) NeedRule: P1 → M1, M2
+    NeedRuleRegistry::instance().insert(ids.P1, ids.M1);
+    NeedRuleRegistry::instance().insert(ids.P1, ids.M2);
+
+    // 4) Mode
+    auto mode = TestDataBuilder::makeCalculation(ids.P1, "Manufacturing");
+    NeedCalculationRegistry::instance().insert(mode);
+
+    // 5) choose: formula → MOTOR_B (M2 barcode)
+    auto d = TestDataBuilder::makeDetail(mode.id, ids.M1,
+                                         QString("choose: (w*h > 5000000) ? %1 : %2")
+                                             .arg(ids.M1_barcode, ids.M2_barcode));
+
+    NeedCalculationDetailRegistry::instance().insert(d);
+
+    // 6) OrderLine
+    int w = 1000;
+    int h = 1000;
+    int qty = 1;
+
+    auto cuts = NeedCalculator::makeCutList({ ids.P1, w, h, qty }, "Manufacturing");
+
+    Q_ASSERT(cuts.size() == 1);
+    Q_ASSERT(cuts[0].materialId == ids.M2);  // MOTOR_B → M2
+    Q_ASSERT(cuts[0].pieces == 1);
+
+    zInfo("✓ testNeedCalculatorChooseFalse OK");
 }

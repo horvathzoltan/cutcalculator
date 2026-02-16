@@ -37,6 +37,11 @@ TestDataIds TestDataBuilder::prepareStandard()
     m2.barcode = "M2";
     mreg.addForTest(m2);
 
+
+    ids.P1_barcode = p.barcode;
+    ids.M1_barcode = m.barcode;
+    ids.M2_barcode = m2.barcode;
+
     return ids;
 }
 

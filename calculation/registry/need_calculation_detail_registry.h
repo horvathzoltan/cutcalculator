@@ -95,5 +95,8 @@ private:
 
     bool validateMaterial(const NeedCalculationDetail& d);
     static bool materialExists(const QUuid& materialId);
+    static bool validateOpt(const QString& f);
+    static bool validateChoose(const QString& f);
+
 };
 

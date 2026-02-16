@@ -19,6 +19,16 @@ bool NeedCalculationDetailRegistry::isFormulaValid(const QString& f) {
     if (trimmed == "unknown")
         return false;
 
+    // --- ÚJ DSL: choose ---
+    if (trimmed.startsWith("choose:")) {
+        return validateChoose(trimmed);
+    }
+
+    // --- ÚJ DSL: opt ---
+    if (trimmed.contains("opt:")) {
+        return validateOpt(trimmed);
+    }
+
     // v2 DSL
     if (trimmed.startsWith("len:w-") || trimmed.startsWith("len:h-")) {
         bool ok = false;
@@ -55,6 +65,84 @@ bool NeedCalculationDetailRegistry::isFormulaValid(const QString& f) {
     return false;
 }
 
+// --- ÚJ: opt: validáció ---
+bool NeedCalculationDetailRegistry::validateOpt(const QString& f)
+{
+    const QString trimmed = f.trimmed();
+    if (trimmed.isEmpty())
+        return true;
+
+    // Tokenizálás: minden + jel mentén
+    QStringList tokens = trimmed.split('+', Qt::SkipEmptyParts);
+
+    for (QString tok : tokens) {
+        tok = tok.trimmed();
+
+        // Csak az opt: tokeneket vizsgáljuk
+        if (!tok.startsWith("opt:"))
+            continue;
+
+        // opt:<flag>:+<value>
+        // Példa: opt:paint:+40
+
+        int first = tok.indexOf(':');             // "opt:"
+        int second = tok.indexOf(':', first + 1); // flag után
+
+        if (second < 0)
+            return false;
+
+        QString flag = tok.mid(first + 1, second - first - 1).trimmed();
+        if (flag.isEmpty())
+            return false;
+
+        QString valStr = tok.mid(second + 1).trimmed(); // +40 vagy -5
+
+        bool ok = false;
+        valStr.toInt(&ok);
+        if (!ok)
+            return false;
+    }
+
+    return true;
+}
+
+// --- ÚJ: choose: validáció ---
+bool NeedCalculationDetailRegistry::validateChoose(const QString& f)
+{
+    QString t = f.trimmed();
+    if (!t.startsWith("choose:"))
+        return false;
+
+    // Levágjuk a prefixet
+    t = t.mid(QStringLiteral("choose:").size()).trimmed();
+
+    // Kell benne lennie '?' és ':' jeleknek
+    int q = t.indexOf('?');
+    int c = t.indexOf(':', q + 1);
+
+    if (q < 0 || c < 0)
+        return false;
+
+    // Három rész: feltétel, true ág, false ág
+    QString cond = t.left(q).trimmed();
+    QString trueBranch = t.mid(q + 1, c - q - 1).trimmed();
+    QString falseBranch = t.mid(c + 1).trimmed();
+
+    // Egyik sem lehet üres
+    if (cond.isEmpty()) return false;
+    if (trueBranch.isEmpty()) return false;
+    if (falseBranch.isEmpty()) return false;
+
+    // Feltételben legyen valamilyen összehasonlító operátor
+    if (!(cond.contains(">=") ||
+          cond.contains("<=") ||
+          cond.contains("==") ||
+          cond.contains(">")  ||
+          cond.contains("<")))
+        return false;
+
+    return true;
+}
 
 
 // --- Kényelmi API ---

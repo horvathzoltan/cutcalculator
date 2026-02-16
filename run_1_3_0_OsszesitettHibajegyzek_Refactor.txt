@@ -1,424 +1,219 @@
-Rendben, Zoltán — akkor most összerakom a teljes, koherens tervet a két
-új DSL‑elem (choose: és opt:) implementálására + a hozzájuk tartozó
-FormulaEngineTester teszteket.
+Zoltán, tökéletes, hogy most megálltunk és rendet teszünk.
+Amit kérsz — implementációs terv + context snapshot + token snapshot —
+pontosan az a fajta „iránytű”, ami holnap reggelre is megőrzi a
+gondolatmenetet, és amivel könnyedén folytathatod a munkát.
 
-A terv nem kód, hanem egy pontos, lépésről‑lépésre követhető műszaki
-specifikáció, ami alapján már könnyű lesz megírni a patch‑et.
+Az alábbi jegyzetet úgy állítottam össze, hogy:
 
-------------------------------------------------------------------------
-
-⭐ I. DSL bővítés: choose: operátor
-
-🎯 Cél
-
-Olyan formula támogatása, amely feltétel alapján két érték közül
-választ:
-
-    choose: (w*h > 5000000) ? MOTOR_A : MOTOR_B
-
-A choose: operátor:
-
--   feltételt értékel ki (bal oldal > jobb oldal)
--   stringet ad vissza (pl. motor barcode)
--   a NeedCalculator ezt anyagként tudja értelmezni
+-   világos legyen a teljes architektúra,
+-   tudd, hol tartunk,
+-   tudd, mi a következő lépés,
+-   és ne vesszen el a gondolatmenet.
 
 ------------------------------------------------------------------------
 
-⭐ 1. FormulaEngine bővítése
+⭐ IMPLEMENTÁCIÓS TERV
 
-1.1. Felismerés
+Cél: általános kifejezéskezelés a FormulaEngine-ben, minden DSL → függvény formára fordítva
 
-A eval() elején:
+1) A FormulaEngine NEM számol többé.
 
-    if (t.startsWith("choose:")) {
-        return evalChoose(t, w, h, qty);
-    }
+Csak fordít:
 
-1.2. evalChoose() működése
+    DSL → Expression string → Expression::Parse() → Expression::Calculate()
 
-1.  Levágjuk a choose: prefixet.
-2.  Megkeressük a ? és : pozícióját.
-3.  A feltételt kivágjuk:
-    pl. (w*h > 5000000)
-4.  A feltételt szétszedjük összehasonlító operátor mentén:
-    >, <, >=, <=, ==
-5.  Mindkét oldalt külön átadjuk a FormulaEngine‑nek:
-    -   w*h → szám
-    -   5000000 → szám
-6.  Kiértékeljük a feltételt.
-7.  Ha igaz → visszaadjuk a bal oldali értéket (string)
-8.  Ha hamis → visszaadjuk a jobb oldali értéket (string)
+2) A DSL fordító (dslToExpression) a kulcs.
 
-1.3. Visszatérési érték
+Ez fogja felismerni:
 
-A choose: nem ad vissza hossz/pieces értéket.
-Ez egy string formula, amit a NeedCalculator értelmez.
+-   w-10 → sub(w,10)
+-   h-15 → sub(h,15)
+-   w*h → mul(w,h)
+-   (w*h)/1000 → div(mul(w,h),1000)
+-   qty:fixed:3 → mul(qty,3)
+-   choose: → if(...)
+-   opt: → ignorálás vagy későbbi flag-kezelés
 
-Ezért:
+3) Általános aritmetikai kifejezések támogatása
 
-    EvaluatedFormula out;
-    out.length_mm = 0;
-    out.pieces = 0;
-    out.stringValue = "MOTOR_A";
+Ehhez kell:
 
-Ha nincs stringValue meződ, most kell bevezetni.
+-   tokenizáló (változó, literál, operátor, zárójel)
+-   shunting-yard (precedencia + zárójelek)
+-   AST építés
+-   AST → Expression string fordító
 
-------------------------------------------------------------------------
+Ez a rész lesz a „motor”.
 
-⭐ 2. Validáció bővítése
+4) A choose: operátor Expression formára fordítása
 
-A isFormulaValid()-ben:
+Példa:
 
-    if (trimmed.startsWith("choose:"))
-        return validateChoose(trimmed);
+    choose: (w*h > 1000000) ? A : B
+    → if(gt(mul(w,h),1000000), A, B)
 
-A validateChoose():
+5) Az opt: részek leválasztása
 
--   ellenőrzi, hogy van ? és :
--   ellenőrzi, hogy a feltételben van összehasonlító operátor
--   a két oldal szintaktikailag értelmezhető (nem kell kiértékelni)
--   a két ág nem üres string
+A fő kifejezés:
 
-Nem kell mély validáció — a FormulaEngine úgyis elkapja a hibát.
+    h-10 + opt:paint:+40
+    → h-10
+
+A többi ignorálható, amíg nincs flag-kezelés.
+
+6) A FormulaEngine::eval() végül így néz ki:
+
+    QString expr = dslToExpression(f);
+    Expression e = Expression::Parse(expr);
+    QVariant v = e.Calculate();
 
 ------------------------------------------------------------------------
 
-⭐ 3. Tesztek a FormulaEngineTester-ben
+⭐ CONTEXT SNAPSHOT
 
-✔ 3.1. Egyszerű motorválasztás
+(ez a „hol tartunk most” jegyzet, hogy holnap is világos legyen)
 
-    auto ev = FormulaEngine::eval("choose: (w*h > 5000000) ? A : B", 3000, 2000, 1);
-    Q_ASSERT(ev.stringValue == "A");
+✔ Már van egy működő Expression rendszered
 
-✔ 3.2. Másik ág
+-   függvények: avg, sum, add, sub, mul, div, overdrill
+-   paraméterlista
+-   változók
+-   literálok
+-   rekurzió
+-   whitespace tolerancia
+-   zárójelek kezelése
 
-    auto ev = FormulaEngine::eval("choose: (w*h > 5000000) ? A : B", 1000, 1000, 1);
-    Q_ASSERT(ev.stringValue == "B");
+Ez egy mini interpreter, AST-szerű működéssel.
 
-✔ 3.3. Hibás feltétel
+✔ A FormulaEngine jelenlegi DSL-je törékeny
 
-    auto ev = FormulaEngine::eval("choose: (w*h > ) ? A : B", 1000, 1000, 1);
-    Q_ASSERT(ev.stringValue.isEmpty());
+-   w-10, h-15, w*h → hardcode minták
+-   choose: → kézzel szétszedve
+-   opt: → szétesik a split miatt
+-   nincs általános operátor-kezelés
+-   nincs precedencia
+-   nincs tokenizálás
+-   nincs AST
 
-------------------------------------------------------------------------
+✔ A helyes irány:
 
-⭐ II. DSL bővítés: opt: operátor
+A FormulaEngine DSL → Expression nyelvre fordítása.
 
-🎯 Cél
+✔ A hiányzó elem:
 
-Feltételes hossz‑kiegészítés:
+általános kifejezéskezelés (tokenizálás + shunting-yard + AST)
 
-    h-15 + opt:paint:+40
-
-A opt::
-
--   nem szám, hanem feltételes művelet
--   ha flag igaz → hozzáadja a +40‑et
--   ha flag hamis → kihagyja a műveletet
-
-------------------------------------------------------------------------
-
-⭐ 1. FormulaEngine bővítése
-
-1.1. Felismerés
-
-A eval() végén, a matematikai műveletek után:
-
-    if (t.contains("opt:"))
-        return evalWithOpt(t, w, h, qty, flags);
-
-1.2. evalWithOpt() működése
-
-1.  A kifejezést szétszedjük + mentén.
-2.  Minden tokenre:
-    -   ha opt:<flag>:+<value> →
-        -   ha flag igaz → hozzáadjuk a value‑t
-        -   ha flag hamis → kihagyjuk
-    -   különben → átadjuk a FormulaEngine‑nek (pl. h-15)
-3.  Összeadjuk az eredményeket.
-
-1.3. Fontos
-
-Az opt: nem kerül be a matematikai kifejezésbe.
-Nem ad vissza 0‑át.
-Nem okoz szorzási hibát.
+Ez lesz a holnapi feladat.
 
 ------------------------------------------------------------------------
 
-⭐ 2. Validáció bővítése
+⭐ TOKEN SNAPSHOT
 
-A isFormulaValid()-ben:
+(ez a „hogyan fog kinézni a tokenizálás” jegyzet)
 
-    if (trimmed.contains("opt:"))
-        return validateOpt(trimmed);
+A tokenizáló feladata:
 
-A validateOpt():
+Bemenet:
 
--   ellenőrzi, hogy a token így néz ki:
-    opt:<flag>:+<value>
--   <value> integer
--   <flag> nem üres
+    (w-10) * (h-20) / 1000
 
-------------------------------------------------------------------------
+Tokenek:
 
-⭐ 3. Tesztek a FormulaEngineTester-ben
+    [
+      "(", "w", "-", "10", ")",
+      "*",
+      "(", "h", "-", "20", ")",
+      "/",
+      "1000"
+    ]
 
-✔ 3.1. Festés nélkül
+Token típusok:
 
-    auto ev = FormulaEngine::eval("h-15 + opt:paint:+40", 1200, 1500, 1, { .paint = false });
-    Q_ASSERT(ev.length_mm == 1500 - 15);
+-   Identifier: w, h, qty, A, B
+-   Number: 10, 20, 1000, 1e6, 5.5
+-   Operator: +, -, *, /, >, <, >=, <=, ==
+-   Paren: (, )
+-   Keyword: opt:, choose:, len:, qty:fixed:, stb. (külön kezelve)
+-   Whitespace: ignorálva
 
-✔ 3.2. Festéssel
+Operátorprecedencia:
 
-    auto ev = FormulaEngine::eval("h-15 + opt:paint:+40", 1200, 1500, 1, { .paint = true });
-    Q_ASSERT(ev.length_mm == (1500 - 15 + 40));
+1.  *, /
+2.  +, -
+3.  összehasonlítók: >, <, >=, <=, ==
 
-✔ 3.3. Hibás opt
+Shunting-yard output (postfix):
 
-    auto ev = FormulaEngine::eval("h-15 + opt:paint:xx", 1200, 1500, 1);
-    Q_ASSERT(ev.length_mm == 0);
+    w 10 - h 20 - * 1000 /
 
-------------------------------------------------------------------------
+AST:
 
-⭐ III. NeedCalculator integráció
+            div
+           /    \
+         mul    1000
+        /   \
+     sub     sub
+    /   \   /   \
+    w   10 h    20
 
-A NeedCalculator:
+Expression string:
 
--   ha a formula stringValue-t ad → azt anyag barcode‑ként kezeli
--   ha a formula length_mm-et ad → vágási hossz
--   ha pieces → darabszám
+    div(
+        mul(
+            sub(w,10),
+            sub(h,20)
+        ),
+        1000
+    )
 
-Ez már most is működik, csak a stringValue mezőt kell bevezetni.
-
-------------------------------------------------------------------------
-
-⭐ IV. Összefoglaló
-
-A DSL új elemei:
-
-✔ Motorválasztás:
-
-    choose: (w*h > 5000000) ? MOTOR_A : MOTOR_B
-
-✔ Festés:
-
-    h-15 + opt:paint:+40
-
-Mindkettő:
-
--   egyszerű
--   olvasható
--   könnyen implementálható
--   kompatibilis a jelenlegi DSL‑lel
--   jól tesztelhető
+És ezt már tudja a meglévő Expression rendszer.
 
 ------------------------------------------------------------------------
 
-Rendben, Zoltán — akkor jöjjön a teljes, lépésről‑lépésre felépített
-patch‑terv, szépen strukturálva, minden lépés P1, P2, … jelöléssel.
-Ez a terv közvetlenül implementálható, és lefedi:
-
--   a choose: operátort
--   az opt: operátort
--   a FormulaEngine bővítését
--   a validáció bővítését
--   a FormulaEngineTester új tesztjeit
--   a NeedCalculator integrációját
-
-------------------------------------------------------------------------
-
-⭐ PATCH TERV — DSL bővítés: choose: + opt:
-
-P1 — EvaluatedFormula bővítése
-
-Cél: legyen hely a string‑alapú eredménynek (motor barcode).
-
--   Adj hozzá egy mezőt:
-
-    QString stringValue;
-
--   A FormulaEngine minden ágában alapértelmezés:
-
-    out.stringValue.clear();
-
--   A choose: operátor ezt fogja kitölteni.
-
-------------------------------------------------------------------------
-
-P2 — FormulaEngine::eval() belépési pont bővítése
-
-Cél: felismerni az új DSL prefixeket.
-
-A eval() elején:
-
-    if (t.startsWith("choose:"))
-        return evalChoose(t, w, h, qty, flags);
-
-    if (t.contains("opt:"))
-        return evalWithOpt(t, w, h, qty, flags);
-
-A flags a NeedCalculator‑tól jön (pl. .paint = true/false).
-
-------------------------------------------------------------------------
-
-⭐ CHOOSE IMPLEMENTÁCIÓ
-
-P3 — evalChoose() létrehozása
-
-Cél: ternary logika implementálása.
-
-Lépések:
-
-1.  Levágni a choose: prefixet.
-2.  Megkeresni a ? és : pozícióját.
-3.  Kivágni:
-    -   feltétel
-    -   true‑ág
-    -   false‑ág
-4.  A feltételt szétszedni összehasonlító operátor mentén:
-    -   >, <, >=, <=, ==
-5.  Mindkét oldalt külön átadni a FormulaEngine‑nek:
-    -   eval("w*h") → szám
-    -   eval("5000000") → szám
-6.  Kiértékelni a feltételt.
-7.  Ha igaz → out.stringValue = trueBranch
-8.  Ha hamis → out.stringValue = falseBranch
-
-Fontos:
-A choose: NEM ad vissza length_mm‑et vagy pieces‑t.
-
-------------------------------------------------------------------------
-
-P4 — Validáció bővítése a choose: prefixhez
-
-A isFormulaValid()-ben:
-
-    if (trimmed.startsWith("choose:"))
-        return validateChoose(trimmed);
-
-A validateChoose():
-
--   ellenőrzi, hogy van ? és :
--   a feltételben van összehasonlító operátor
--   a két ág nem üres
-
-Nem kell mély validáció.
-
-------------------------------------------------------------------------
-
-⭐ OPT IMPLEMENTÁCIÓ
-
-P5 — evalWithOpt() létrehozása
-
-Cél: feltételes hozzáadás implementálása.
-
-Lépések:
-
-1.  A teljes kifejezést szétszedni + mentén.
-2.  Minden tokenre:
-    -   ha opt:<flag>:+<value>:
-        -   ha flag igaz → hozzáadjuk a value‑t
-        -   ha flag hamis → kihagyjuk
-    -   különben → átadjuk a FormulaEngine‑nek (pl. h-15)
-3.  Az összes részösszeget összeadni → out.length_mm
-
-Fontos:
-Az opt: nem ad vissza 0‑át.
-Ha hamis → teljesen kihagyjuk.
-
-------------------------------------------------------------------------
-
-P6 — Validáció bővítése az opt: prefixhez
-
-A isFormulaValid()-ben:
-
-    if (trimmed.contains("opt:"))
-        return validateOpt(trimmed);
-
-A validateOpt():
-
--   token formátuma: opt:<flag>:+<value>
--   <value> integer
--   <flag> nem üres
-
-------------------------------------------------------------------------
-
-⭐ NEEDCALCULATOR INTEGRÁCIÓ
-
-P7 — NeedCalculator módosítása
-
-Cél: a stringValue‑t anyagként kezelni.
-
-Ha a formula eredménye:
-
--   stringValue nem üres →
-    → ezt anyag barcode‑ként kell értelmezni
-    → a NeedCalculator a megfelelő motor anyagot adja vissza
-
-Ez már most is működik, csak a stringValue mezőt kell használni.
-
-------------------------------------------------------------------------
-
-⭐ TESZTEK — FormulaEngineTester
-
-P8 — choose tesztek
-
-P8.1 — nagy terület → MOTOR_A
-
-    auto ev = FormulaEngine::eval("choose: (w*h > 5000000) ? A : B", 3000, 2000, 1);
-    Q_ASSERT(ev.stringValue == "A");
-
-P8.2 — kis terület → MOTOR_B
-
-    auto ev = FormulaEngine::eval("choose: (w*h > 5000000) ? A : B", 1000, 1000, 1);
-    Q_ASSERT(ev.stringValue == "B");
-
-P8.3 — hibás feltétel
-
-    auto ev = FormulaEngine::eval("choose: (w*h > ) ? A : B", 1000, 1000, 1);
-    Q_ASSERT(ev.stringValue.isEmpty());
-
-------------------------------------------------------------------------
-
-P9 — opt tesztek
-
-P9.1 — festés nélkül
-
-    auto ev = FormulaEngine::eval("h-15 + opt:paint:+40", 1200, 1500, 1, { .paint = false });
-    Q_ASSERT(ev.length_mm == 1500 - 15);
-
-P9.2 — festéssel
-
-    auto ev = FormulaEngine::eval("h-15 + opt:paint:+40", 1200, 1500, 1, { .paint = true });
-    Q_ASSERT(ev.length_mm == (1500 - 15 + 40));
-
-P9.3 — hibás opt
-
-    auto ev = FormulaEngine::eval("h-15 + opt:paint:xx", 1200, 1500, 1);
-    Q_ASSERT(ev.length_mm == 0);
-
-------------------------------------------------------------------------
-
-⭐ P10 — Dokumentáció frissítése
-
--   DSL új elemei:
+⭐ HOLNAPI FOLYTATÁS (lépésről lépésre)
+
+1.  Tokenizáló megírása
+    -   20–30 sor
+    -   whitespace ignorálása
+    -   többjegyű számok
+    -   változónevek
+    -   operátorok felismerése
+2.  Shunting-yard implementálása
+    -   30–40 sor
+    -   precedencia
+    -   zárójelek
+    -   balról jobbra kiértékelés
+3.  AST építő
+    -   postfix → AST
+    -   20–30 sor
+4.  AST → Expression string fordító
+    -   20–30 sor
+5.  dslToExpression() integrálása
     -   choose:
     -   opt:
--   példák
--   edge case-ek
--   validációs szabályok
+    -   qty:fixed:
+    -   len:w-
+    -   stb.
+6.  FormulaEngine::eval() egyszerűsítése
+    -   Expression::Parse
+    -   Expression::Calculate
 
 ------------------------------------------------------------------------
 
-⭐ KÉSZ A PATCH TERV
+⭐ Készen áll a holnapi folytatásra
 
-Ez a terv:
+Ez a jegyzet pontosan arra készült, hogy:
 
--   teljes
--   implementálható
--   kompatibilis a jelenlegi DSL‑lel
--   nem töri el a meglévő teszteket
--   lefedi a motorválasztást és a festést
--   tiszta, karbantartható, bővíthető
+-   ne vesszen el a gondolatmenet
+-   világos legyen a következő lépés
+-   könnyen folytathasd a munkát
+-   ne kelljen újra átgondolni az egészet
 
-Ha szeretnéd, megírom a teljes kód‑patch-et is, fájlról fájlra.
+Ha szeretnéd, holnap:
+
+-   megírjuk a tokenizálót
+-   megírjuk a shunting-yardot
+-   megírjuk az AST-et
+-   összerakjuk a teljes új FormulaEngine-et
+
+Csak szólj, és megyünk tovább.

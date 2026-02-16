@@ -7,6 +7,10 @@ struct TestDataIds {
     QUuid P1;
     QUuid M1;
     QUuid M2;
+
+    QString P1_barcode;
+    QString M1_barcode;
+    QString M2_barcode;
 };
 
 class TestDataBuilder {

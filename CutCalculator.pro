@@ -22,6 +22,7 @@ SOURCES += \
     calculation/dialogs/material_picker_dialog2.cpp \
     calculation/presenter/calculation_mode_detail_presenter.cpp \
     calculation/service/formula_engine.cpp \
+    calculation/service/formula_normalizer.cpp \
     calculation/service/matrix_generator.cpp \
     calculation/service/matrix_validator.cpp \
     common/layout/layout_default_store.cpp \
@@ -114,6 +115,7 @@ HEADERS += \
     calculation/dialogs/material_picker_dialog2.h \
     calculation/presenter/calculation_mode_detail_presenter.h \
     calculation/service/formula_engine.h \
+    calculation/service/formula_normalizer.h \
     calculation/service/matrix_generator.h \
     calculation/service/matrix_missing_detail.h \
     calculation/service/matrix_validator.h \
@@ -266,6 +268,7 @@ DISTFILES += \
     docs/barcodes_module_overview.md \
     docs/entity_contract.md \
     docs/entity_matrix.md \
+    docs/formula_engine_dsl.md \
     docs/overlay_ux_rules.md \
     docs/registry_contract.md \
     docs/registry_matrix.md \

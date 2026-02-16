@@ -1,9 +1,44 @@
+#include <QList>
+
 #include "formula_engine.h"
+#include "formula_normalizer.h"
 
 EvaluatedFormula FormulaEngine::eval(const QString& f, int w, int h, int qty)
 {
     EvaluatedFormula out;
-    const QString t = f.trimmed();
+    out.stringValue.clear();
+
+    QString t = FormulaNormalizer::normalizeWhitespace(f);
+    t = FormulaNormalizer::stripOuterParens(t);
+
+
+    // --- ÚJ: szám literál támogatás ---
+    bool okNum = false;
+    int num = t.toInt(&okNum);
+    if (okNum) {
+        out.length_mm = num;
+        out.pieces = qty;
+        return out;
+    }
+
+    // --- ÚJ: szám literál (double) támogatás ---
+    if (FormulaNormalizer::isNumberLiteral(t)) {
+        double dval = t.toDouble();
+        out.length_mm = static_cast<int>(dval);
+        out.pieces = qty;
+        return out;
+    }
+
+
+    // --- ÚJ DSL: choose: ---
+    if (t.startsWith("choose:")) {
+        return evalChoose(t, w, h, qty);
+    }
+
+    // --- ÚJ DSL: opt: ---
+    if (t.contains("opt:")) {
+        return evalWithOpt(t, w, h, qty);
+    }
 
     // --- ÚJ DSL: len:w-10 ---
     if (t.startsWith("len:w-")) {
@@ -96,3 +131,114 @@ EvaluatedFormula FormulaEngine::eval(const QString& f, int w, int h, int qty)
 
     return out;
 }
+
+EvaluatedFormula FormulaEngine::evalChoose(const QString& t, int w, int h, int qty)
+{
+    EvaluatedFormula out;
+
+    // 1) choose: prefix levágása + normalizálás
+    QString expr = t.mid(QStringLiteral("choose:").size()).trimmed();
+    expr = FormulaNormalizer::normalizeWhitespace(expr);
+    expr = FormulaNormalizer::stripOuterParens(expr);
+
+    // 2) ? és : pozíciók
+    int q = expr.indexOf('?');
+    int c = expr.indexOf(':', q + 1);
+    if (q < 0 || c < 0)
+        return out;
+
+    // 3) feltétel normalizálása
+    QString cond = expr.left(q);
+    cond = FormulaNormalizer::normalizeCondition(cond);
+
+    // 4) ágak
+    QString trueBranch = expr.mid(q + 1, c - q - 1).trimmed();
+    QString falseBranch = expr.mid(c + 1).trimmed();
+
+    // 5) operátor felismerése
+    QString op;
+    if (cond.contains(">=")) op = ">=";
+    else if (cond.contains("<=")) op = "<=";
+    else if (cond.contains("==")) op = "==";
+    else if (cond.contains(">"))  op = ">";
+    else if (cond.contains("<"))  op = "<";
+    else return out;
+
+    // 6) bal és jobb oldal szétválasztása
+    auto parts = cond.split(op);
+    if (parts.size() != 2)
+        return out;
+
+    QString leftExpr  = FormulaNormalizer::stripOuterParens(parts[0]);
+    QString rightExpr = FormulaNormalizer::stripOuterParens(parts[1]);
+
+    leftExpr  = FormulaNormalizer::normalizeWhitespace(leftExpr);
+    rightExpr = FormulaNormalizer::normalizeWhitespace(rightExpr);
+
+    // 7) kiértékelés
+    int leftVal  = eval(leftExpr,  w, h, qty).length_mm;
+    int rightVal = eval(rightExpr, w, h, qty).length_mm;
+
+    // 8) összehasonlítás
+    bool result = false;
+    if (op == ">")  result = (leftVal >  rightVal);
+    if (op == "<")  result = (leftVal <  rightVal);
+    if (op == ">=") result = (leftVal >= rightVal);
+    if (op == "<=") result = (leftVal <= rightVal);
+    if (op == "==") result = (leftVal == rightVal);
+
+    // 9) eredmény
+    out.stringValue = result ? trueBranch : falseBranch;
+    return out;
+}
+
+
+EvaluatedFormula FormulaEngine::evalWithOpt(const QString& t, int w, int h, int qty)
+{
+    EvaluatedFormula out;
+    out.stringValue.clear();
+
+    // 1) normalizálás
+    QString expr = FormulaNormalizer::normalizeWhitespace(t);
+    expr = FormulaNormalizer::stripOuterParens(expr);
+
+    // 2) tokenizálás
+    QStringList tokens = expr.split('+', Qt::SkipEmptyParts);
+
+    int total = 0;
+
+    for (QString tok : tokens) {
+        tok = FormulaNormalizer::normalizeWhitespace(tok);
+
+        // 3) opt: token
+        if (tok.startsWith("opt:")) {
+
+            // opt:flag:+value
+            int first  = tok.indexOf(':');
+            int second = tok.indexOf(':', first + 1);
+            if (second < 0)
+                continue;
+
+            QString flag   = tok.mid(first + 1, second - first - 1).trimmed();
+            QString valStr = tok.mid(second + 1).trimmed();
+
+            // érték parse (double is mehet)
+            bool ok = false;
+            double dval = valStr.toDouble(&ok);
+            if (!ok)
+                continue;
+
+            // FLAG KEZELÉS – később
+            continue;
+        }
+
+        // 4) normál rész → eval()
+        auto ev = eval(tok, w, h, qty);
+        total += ev.length_mm;
+    }
+
+    out.length_mm = total;
+    out.pieces = qty;
+    return out;
+}
+

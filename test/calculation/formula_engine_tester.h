@@ -18,6 +18,11 @@ private:
     void testAreaLike();
     void testInvalidEmpty();
     void testInvalidGarbage();
+    void testChooseSimple();
+    void testChooseFalseBranch();
+    void testOptSimple();
+    void testNeedCalculatorChooseTrue();
+    void testNeedCalculatorChooseFalse();
 
     // Integráció NeedCalculator-ral (OrderLine → NeedResult)
     void testNeedCalculatorSimpleRoletta();
