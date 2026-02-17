@@ -13,5 +13,4 @@ public:
 
     static EvaluatedFormula evalChoose(const QString& t, int w, int h, int qty);
     static EvaluatedFormula evalWithOpt(const QString& t, int w, int h, int qty);
-
 };

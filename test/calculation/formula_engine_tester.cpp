@@ -4,7 +4,7 @@
 #include "test/common/test_data_builder.h"
 
 // Ha van publikus FormulaEngine API, ide húzd be:
-#include "calculation/service/formula_engine.h"
+#include "expression/formula_engine.h"
 #include "calculation/service/need_calculator.h"
 
 #include "needs/registry/need_rule_registry.h"

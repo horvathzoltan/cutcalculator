@@ -21,8 +21,10 @@ SOURCES += \
     calculation/dialogs/formula_editor_dialog.cpp \
     calculation/dialogs/material_picker_dialog2.cpp \
     calculation/presenter/calculation_mode_detail_presenter.cpp \
-    calculation/service/formula_engine.cpp \
-    calculation/service/formula_normalizer.cpp \
+    expression/ast_builder.cpp \
+    expression/ast_to_expression.cpp \
+    expression/formula_engine.cpp \
+    expression/formula_normalizer.cpp \
     calculation/service/matrix_generator.cpp \
     calculation/service/matrix_validator.cpp \
     common/layout/layout_default_store.cpp \
@@ -35,6 +37,11 @@ SOURCES += \
     common/utils/cursor_aware_placement.cpp \
     common/utils/geometry_helper.cpp \
     common/utils/table_formatter.cpp \
+    expression/expression.cpp \
+    expression/keyword.cpp \
+    expression/parser.cpp \
+    expression/tokenizer.cpp \
+    expression/variable.cpp \
     mainwindow.cpp \
     materials/view/color_badge.cpp \
     needs/manager/material_requirements_manager.cpp \
@@ -114,8 +121,11 @@ HEADERS += \
     calculation/dialogs/formula_editor_dialog.h \
     calculation/dialogs/material_picker_dialog2.h \
     calculation/presenter/calculation_mode_detail_presenter.h \
-    calculation/service/formula_engine.h \
-    calculation/service/formula_normalizer.h \
+    expression/ast.h \
+    expression/ast_builder.h \
+    expression/ast_to_expression.h \
+    expression/formula_engine.h \
+    expression/formula_normalizer.h \
     calculation/service/matrix_generator.h \
     calculation/service/matrix_missing_detail.h \
     calculation/service/matrix_validator.h \
@@ -164,6 +174,13 @@ HEADERS += \
     connections/connection_importer.h \
     connections/connection_registry_engine.h \
     connections/connection_repository.h \
+    expression/expression.h \
+    expression/function.h \
+    expression/keyword.h \
+    expression/parser.h \
+    expression/token.h \
+    expression/tokenizer.h \
+    expression/variable.h \
     materials/view/color_badge.h \
     needs/manager/material_requirements_manager.h \
     needs/model/need_rule.h \
