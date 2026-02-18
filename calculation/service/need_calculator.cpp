@@ -1,4 +1,5 @@
 #include "expression/formula_engine.h"
+#include "expression/variable.h"
 #include "need_calculator.h"
 #include "calcmodes/registry/need_calculation_registry.h"
 #include "calculation/registry/need_calculation_detail_registry.h"
@@ -21,7 +22,13 @@ QVector<CutItem> NeedCalculator::makeCutList(const OrderLine& ol, const QString&
     for (const auto& d : details) {
         // Heurisztika: formula w/h → cutting; fixed → kitting (másik listába)
         if (d.kind != NeedCalculationDetail::DetailKind::Cutting) continue;
-        auto ev = FormulaEngine::eval(d.formula, ol.w_mm, ol.h_mm, ol.qty);
+
+        auto& vars = VariableRepository::instance();
+        vars.set("w", ol.w_mm);
+        vars.set("h", ol.h_mm);
+        vars.set("qty", ol.qty);
+
+        auto ev = FormulaEngine::eval(d.formula);
 
         // --- ÚJ: choose: operátor kezelése ---
         if (!ev.stringValue.isEmpty()) {
@@ -58,7 +65,12 @@ QVector<KitItem> NeedCalculator::makeKitList(const OrderLine& ol, const QString&
 
     for (const auto& d : details) {
         if (d.kind == NeedCalculationDetail::DetailKind::Kitting) {
-            auto ev = FormulaEngine::eval(d.formula, ol.w_mm, ol.h_mm, ol.qty);
+            auto& vars = VariableRepository::instance();
+            vars.set("w", ol.w_mm);
+            vars.set("h", ol.h_mm);
+            vars.set("qty", ol.qty);
+
+            auto ev = FormulaEngine::eval(d.formula);
 
             // --- ÚJ: choose: operátor ---
             if (!ev.stringValue.isEmpty()) {

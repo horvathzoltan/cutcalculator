@@ -1,6 +1,6 @@
 #pragma once
 
-#include "variable‎.h"
+#include "variable.h"
 
 #include <QList>
 #include <QVariant>

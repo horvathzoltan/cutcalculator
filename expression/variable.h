@@ -3,6 +3,11 @@
 #include <QString>
 #include <QVariant>
 
+#pragma once
+#include <QMap>
+#include <QString>
+#include <QVariant>
+
 class VariableRepository {
 public:
     static VariableRepository& instance() {
@@ -18,7 +23,12 @@ public:
         return _values.value(key, {});
     }
 
+    void clear() {
+        _values.clear();
+    }
+
 private:
     QMap<QString, QVariant> _values;
 };
+
 

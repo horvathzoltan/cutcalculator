@@ -11,6 +11,7 @@ public:
     bool run() override;
 
 private:
+    static void setVars(int w, int h, int qty);
     // Alap DSL minták
     void testWidthMinus();
     void testHeightMinus();

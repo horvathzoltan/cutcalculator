@@ -5,6 +5,7 @@
 
 // Ha van publikus FormulaEngine API, ide húzd be:
 #include "expression/formula_engine.h"
+#include "expression/variable.h"
 #include "calculation/service/need_calculator.h"
 
 #include "needs/registry/need_rule_registry.h"
@@ -43,6 +44,14 @@ bool FormulaEngineTester::run()
     return true;
 }
 
+void FormulaEngineTester::setVars(int w, int h, int qty)
+{
+    auto& vars = VariableRepository::instance();
+    vars.set("w", w);
+    vars.set("h", h);
+    vars.set("qty", qty);
+}
+
 // A NeedCalculator már a FormulaEngine v2 DSL-t használja.
 
 // ---------------------------------------------------------------------
@@ -53,7 +62,8 @@ void FormulaEngineTester::testWidthMinus()
 {
     zInfo("→ testWidthMinus");
 
-    auto ev = FormulaEngine::eval("w-15", 1200, 1500, 1);
+    setVars(1200, 1500, 1);
+    auto ev = FormulaEngine::eval("w-15");
     Q_ASSERT(ev.length_mm == 1185);
     Q_ASSERT(ev.pieces == 1);
 
@@ -64,7 +74,8 @@ void FormulaEngineTester::testHeightMinus()
 {
     zInfo("→ testHeightMinus");
 
-    auto ev = FormulaEngine::eval("h-10", 1200, 1500, 1);
+    setVars(1200, 1500, 1);
+    auto ev = FormulaEngine::eval("h-10");
     Q_ASSERT(ev.length_mm == 1490);
     Q_ASSERT(ev.pieces == 1);
 
@@ -75,7 +86,8 @@ void FormulaEngineTester::testFixedPieces()
 {
     zInfo("→ testFixedPieces");
 
-    auto ev = FormulaEngine::eval("fixed:2", 1200, 1500, 1);
+    setVars(1200, 1500, 1);
+    auto ev = FormulaEngine::eval("fixed:2");
     Q_ASSERT(ev.pieces == 2);
 
     zInfo("✓ testFixedPieces OK");
@@ -85,7 +97,8 @@ void FormulaEngineTester::testAreaLike()
 {
     zInfo("→ testAreaLike");
 
-    auto ev = FormulaEngine::eval("w*h", 1200, 1500, 1);
+    setVars(1200, 1500, 1);
+    auto ev = FormulaEngine::eval("w*h");
     Q_ASSERT(ev.length_mm == 1200 * 1500);
     Q_ASSERT(ev.pieces == 1);
 
@@ -96,7 +109,8 @@ void FormulaEngineTester::testInvalidEmpty()
 {
     zInfo("→ testInvalidEmpty");
 
-    auto ev = FormulaEngine::eval("", 1200, 1500, 1);
+    setVars(1200, 1500, 1);
+    auto ev = FormulaEngine::eval("");
     Q_ASSERT(ev.length_mm == 0);
     Q_ASSERT(ev.pieces == 0);
 
@@ -107,7 +121,8 @@ void FormulaEngineTester::testInvalidGarbage()
 {
     zInfo("→ testInvalidGarbage");
 
-    auto ev = FormulaEngine::eval("this_is_not_valid", 1200, 1500, 1);
+    setVars(1200, 1500, 1);
+    auto ev = FormulaEngine::eval("this_is_not_valid");
     Q_ASSERT(ev.length_mm == 0);
     Q_ASSERT(ev.pieces == 0);
 
@@ -219,8 +234,9 @@ void FormulaEngineTester::testChooseSimple()
     zInfo("→ testChooseSimple");
 
     // nagy terület → igaz ág
-    auto ev = FormulaEngine::eval("choose: (w*h > 1000000) ? MOTOR_A : MOTOR_B",
-                                  2000, 2000, 1);
+    setVars(2000, 2000, 1);
+    auto ev = FormulaEngine::eval("choose: (w*h > 1000000) ? MOTOR_A : MOTOR_B");
+
 
     Q_ASSERT(ev.stringValue == "MOTOR_A");
     Q_ASSERT(ev.length_mm == 0);
@@ -234,8 +250,9 @@ void FormulaEngineTester::testChooseFalseBranch()
     zInfo("→ testChooseFalseBranch");
 
     // kis terület → hamis ág
-    auto ev = FormulaEngine::eval("choose: (w*h > 5000000) ? MOTOR_A : MOTOR_B",
-                                  1000, 1000, 1);
+    setVars(1000, 1000, 1);
+    auto ev = FormulaEngine::eval("choose: (w*h > 5000000) ? MOTOR_A : MOTOR_B");
+
 
     Q_ASSERT(ev.stringValue == "MOTOR_B");
     Q_ASSERT(ev.length_mm == 0);
@@ -249,7 +266,9 @@ void FormulaEngineTester::testOptSimple()
     zInfo("→ testOptSimple");
 
     // opt: token figyelmen kívül hagyva (flag hiányában)
-    auto ev = FormulaEngine::eval("h-10 + opt:paint:+40", 1200, 1500, 1);
+    setVars(1200, 1500, 1);
+    auto ev = FormulaEngine::eval("h-10 + opt:paint:+40");
+
 
     // h-10 = 1490
     // opt:paint:+40 → flag hiányában kihagyva

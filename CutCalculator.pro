@@ -62,6 +62,7 @@ SOURCES += \
     products/presenter/product_tree_presenter.cpp \
     products/view/product_tree_panel.cpp \
     test/calcmode/need_calculation_registry_tester.cpp \
+    test/calculation/formula_engine_pipeline_tester.cpp \
     test/calculation/formula_engine_tester.cpp \
     test/calculation/need_calculation_detail_registry_tester.cpp \
     test/common/test_data_builder.cpp \
@@ -204,6 +205,7 @@ HEADERS += \
     products/presenter/product_tree_presenter.h \
     products/view/product_tree_panel.h \
     test/calcmode/need_calculation_registry_tester.h \
+    test/calculation/formula_engine_pipeline_tester.h \
     test/calculation/formula_engine_tester.h \
     test/calculation/need_calculation_detail_registry_tester.h \
     test/common/test_data_builder.h \

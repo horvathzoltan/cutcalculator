@@ -1,3 +1,272 @@
+Zoltán, ez most az a pont, ahol a FormulaEngine DSL‑ből valódi nyelvvé
+válhat.
+A dual‑syntax (operátor + függvény) choose/opt integrációja pontosan az
+a lépés, amitől a motorod:
+
+-   egységes lesz,
+-   AST‑szinten működik,
+-   nem kell hozzá külön mini‑interpreter,
+-   és a teljes DSL bekerül a végrehajtási fába.
+
+Amit most kapsz, az a teljes, lépésről‑lépésre végrehajtható terv,
+minden komponenssel, minden szükséges módosítással, tisztán és
+átláthatóan.
+
+------------------------------------------------------------------------
+
+⭐ A DUAL‑SYNTAX CHOOSE/OPT AST INTEGRÁCIÓ TELJES TERVE
+
+(A FormulaEngine következő evolúciós szintje)
+
+A cél:
+
+-   A choose és opt AST node legyen.
+-   A choose és opt Expression‑függvényként is működjön.
+-   A choose és opt operátor‑szintaxisa is működjön.
+-   A FormulaEngine::eval() ne tartalmazzon külön choose/opt ágakat.
+-   A DSL minden eleme ugyanabba a végrehajtási fába kerüljön.
+
+------------------------------------------------------------------------
+
+⭐ 1. LÉPÉS – Tokenizer bővítése (DSL kulcsszavak felismerése)
+
+A Tokenizer jelenleg csak operátorokat és az Expression‑függvényeket
+ismeri.
+
+Most hozzáadjuk:
+
+-   choose
+-   opt
+-   qty
+-   fixed
+-   perOrder
+-   perArea
+
+Ezeket Identifier tokenként ismerjük fel, de fontos, hogy a Tokenizer ne
+törje szét a choose: vagy opt: mintákat.
+
+Tokenizer módosítás:
+
+-   Ha egy identifier után : jön → külön token legyen:
+    -   choose
+    -   :
+    -   opt
+    -   :
+    -   stb.
+
+Ez kell ahhoz, hogy a Parser felismerje a DSL‑szintaxist.
+
+------------------------------------------------------------------------
+
+⭐ 2. LÉPÉS – Parser bővítése (DSL operátorok felismerése)
+
+A Parser jelenleg:
+
+-   infix operátorokat kezel (+ - * / > < ==)
+-   függvényhívásokat kezel (avg(…))
+
+Most hozzáadjuk:
+
+✔ choose operátor felismerése
+
+A Parser‑ben be kell tenni egy új precedenciát:
+
+    cond ? A : B
+
+Ez egy ternary operátor.
+
+A Parser‑ben:
+
+-   amikor ? token jön → új AST node: AstChoose
+-   a : token a false‑ág kezdete
+
+✔ opt operátor felismerése
+
+A DSL‑szintaxis:
+
+    opt:flag:+value
+
+Ezt a Parser‑ben így kezeljük:
+
+-   opt → függvényhívás neve
+-   : → argumentum elválasztó
+-   flag → első argumentum
+-   : → második elválasztó
+-   value → második argumentum
+
+Parser‑szinten ez:
+
+    opt(flag, value)
+
+------------------------------------------------------------------------
+
+⭐ 3. LÉPÉS – Új AST node‑ok
+
+✔ AstChoose
+
+    struct AstChoose : AstNode {
+        AstNode* cond;
+        AstNode* trueExpr;
+        AstNode* falseExpr;
+    };
+
+✔ AstOpt
+
+    struct AstOpt : AstNode {
+        AstNode* flagExpr;
+        AstNode* valueExpr;
+    };
+
+✔ AstQty (opcionális)
+
+Ha a qty DSL‑t is be akarod emelni:
+
+    qty:fixed:2
+    qty:perArea:10000
+
+→ AstQtyFixed, AstQtyPerArea, stb.
+
+------------------------------------------------------------------------
+
+⭐ 4. LÉPÉS – AstToExpression bővítése
+
+Itt történik a DSL → Expression konverzió.
+
+✔ choose → Expression ternary vagy függvény
+
+Két lehetőség:
+
+A) Expression ternary:
+
+    cond ? trueExpr : falseExpr
+
+B) Expression függvény:
+
+    choose(cond, trueExpr, falseExpr)
+
+Mindkettő működik.
+
+✔ opt → Expression függvény
+
+    opt(flagExpr, valueExpr)
+
+------------------------------------------------------------------------
+
+⭐ 5. LÉPÉS – Expression motor bővítése
+
+A choose és opt Expression‑szintű függvény lesz.
+
+✔ choose(cond, A, B)
+
+    if (cond != 0) return A;
+    else return B;
+
+✔ opt(flag, value)
+
+    if (flag == true) return value;
+    else return 0;
+
+Ez a jelenlegi DSL‑eddel 100% kompatibilis.
+
+------------------------------------------------------------------------
+
+⭐ 6. LÉPÉS – FormulaEngine::eval() egyszerűsítése
+
+A jelenlegi:
+
+-   külön ág choose‑ra
+-   külön ág opt‑ra
+-   külön ág qty‑ra
+
+A dual‑syntax AST után:
+
+✔ Minden DSL elem Expression‑ként fut
+
+A FormulaEngine::eval() így néz ki:
+
+    1) normalize
+    2) multiline
+    3) assignment
+    4) string literal
+    5) Expression pipeline
+
+És kész.
+
+Nem kell:
+
+-   evalChoose()
+-   evalWithOpt()
+-   qty: ágak
+
+Mert mind bekerül az AST‑be.
+
+------------------------------------------------------------------------
+
+⭐ 7. LÉPÉS – Dual‑syntax működés
+
+A felhasználó írhatja:
+
+Operátor-szerű:
+
+    choose: w>1000 ? A : B
+    opt:premium:+(w/10)
+
+Függvény-szerű:
+
+    choose(w>1000, A, B)
+    opt(premium, w/10)
+
+Mindkettő ugyanarra az AST‑re fordul.
+
+------------------------------------------------------------------------
+
+⭐ 8. LÉPÉS – Tesztek
+
+A pipeline‑testerhez hozzáadjuk:
+
+-   choose(cond, A, B)
+-   opt(flag, value)
+-   nested choose függvény-szintaxissal
+-   nested opt függvény-szintaxissal
+-   assignment + choose függvény-szintaxissal
+-   assignment + opt függvény-szintaxissal
+
+------------------------------------------------------------------------
+
+⭐ Összegzés
+
+A dual‑syntax choose/opt AST integráció:
+
+-   egységesíti a DSL‑t
+-   megszünteti a külön mini‑interpretereket
+-   a teljes nyelvet Expression‑szintre emeli
+-   egyszerűbbé teszi a FormulaEngine‑t
+-   sokkal könnyebb lesz bővíteni
+-   sokkal kevesebb hibalehetőséget tartalmaz
+
+Ez a FormulaEngine „2.0” alapja.
+
+------------------------------------------------------------------------
+
+Ha szeretnéd, megcsinálom a konkrét patch‑csomagot is:
+
+-   Tokenizer diff
+-   Parser diff
+-   AST diff
+-   AstToExpression diff
+-   Expression diff
+-   FormulaEngine cleanup diff
+
+Csak mondd:
+
+👉 „kérem a dual‑syntax choose/opt AST patch‑csomagot”
+
+
+***
+***
+***
+
+
 ------------------------------------------------------------------------
 
 ⭐ IMPLEMENTÁCIÓS TERV

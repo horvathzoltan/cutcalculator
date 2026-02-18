@@ -9,8 +9,9 @@ struct EvaluatedFormula {
 
 class FormulaEngine {
 public:
-    static EvaluatedFormula eval(const QString& f, int w, int h, int qty);
+    static EvaluatedFormula eval(const QString& f);
 
-    static EvaluatedFormula evalChoose(const QString& t, int w, int h, int qty);
-    static EvaluatedFormula evalWithOpt(const QString& t, int w, int h, int qty);
+    static EvaluatedFormula evalChoose(const QString& t);
+    static EvaluatedFormula evalWithOpt(const QString& t);
+
 };
