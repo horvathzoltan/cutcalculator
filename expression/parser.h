@@ -12,7 +12,7 @@ public:
     static QVector<Token> toRpn(const QVector<Token>& tokens);
 
 private:
-    static int precedence(TokenType t);
+    static int precedence(const Token& t);
     static bool isLeftAssociative(TokenType t);
     static bool isOperator(TokenType t);
 };

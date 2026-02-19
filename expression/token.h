@@ -2,20 +2,25 @@
 #include <QString>
 
 enum class TokenType {
+    // --- Literálok ---
     Number,
-    Identifier,
-    Variable,
-    Function,      // ÚJ: függvénynév (avg, sum, stb.)
+    StringLiteral,
 
+    // --- Azonosítók ---
+    Variable,      // w, h, qty, x, base, margin, stb.
+    Function,      // avg, min, max, stb.
+    Identifier,    // (jelenleg nem használt; későbbi opt-flag / speciális azonosítók számára fenntartva)
+
+    // --- DSL kulcsszavak ---
+    Choose,        // choose
+    Opt,           // opt
+    Qty,           // qty
+
+    // --- Operátorok ---
     Plus,
     Minus,
     Star,
     Slash,
-    LParen,
-    RParen,
-    Comma,
-    Colon,
-    Question,
 
     Greater,
     Less,
@@ -23,8 +28,19 @@ enum class TokenType {
     LessEqual,
     Equal,
 
+    Question,      // ?
+    Colon,         // :
+    Comma,         // ,
+    LParen,        // (
+    RParen,        // )
+
+    Assign,      // '='
+    Return,      // 'return'
+
     End,
     Unknown
+
+
 };
 
 struct Token {

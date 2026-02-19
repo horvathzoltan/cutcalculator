@@ -9,7 +9,12 @@ struct AstNode {
         Number,
         Variable,
         Function,
-        Operator
+        Operator,
+        Choose,
+        Opt,
+        StringLiteral,
+        Assignment,   // NEW
+        Return        // NEW
     };
 
     Type type;

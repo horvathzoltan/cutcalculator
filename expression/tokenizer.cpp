@@ -22,7 +22,22 @@ QVector<Token> Tokenizer::tokenize(const QString& input)
             continue;
         }
 
+        // String literal: "...."
+        if (c == '"') {
+            advance(); // opening quote
+            int start = i;
+            while (i < n && peek() != '"') {
+                advance();
+            }
+            QString text = input.mid(start, i - start);
+            if (peek() == '"')
+                advance(); // closing quote
+            tokens.append({TokenType::StringLiteral, text});
+            continue;
+        }
+
         if (c.isDigit() || (c == '.' && peek(1).isDigit())) {
+
             int start = i;
             bool hasDot = false;
             while (i < n) {
@@ -51,14 +66,47 @@ QVector<Token> Tokenizer::tokenize(const QString& input)
             continue;
         }
 
+        // --- Identifier / DSL keyword / Variable / Function ---
         if (c.isLetter() || c == '_') {
             int start = i;
             while (i < n && (peek().isLetterOrNumber() || peek() == '_')) {
                 advance();
             }
-            tokens.append({TokenType::Identifier, input.mid(start, i - start)});
+            QString ident = input.mid(start, i - start);
+
+            // DSL kulcsszavak
+            if (ident == "choose") {
+                tokens.append({TokenType::Choose, ident});
+                continue;
+            }
+            if (ident == "opt") {
+                tokens.append({TokenType::Opt, ident});
+                continue;
+            }
+            if (ident == "qty") {
+                tokens.append({TokenType::Qty, ident});
+                continue;
+            }
+
+            // Függvény: ha utána '(' jön
+            if (peek() == '(') {
+                tokens.append({TokenType::Function, ident});
+                continue;
+            }
+
+            if (ident == "return") {
+                tokens.append({TokenType::Return, ident});
+                continue;
+            }
+
+
+
+
+            // Minden más → Variable
+            tokens.append({TokenType::Variable, ident});
             continue;
         }
+
 
         // --- Relációs operátorok ---
         if (c == '>' && peek(1) == '=') {
@@ -101,6 +149,11 @@ QVector<Token> Tokenizer::tokenize(const QString& input)
         case ',': tokens.append({TokenType::Comma, QString(c)});   advance(); break;
         case ':': tokens.append({TokenType::Colon, QString(c)});   advance(); break;
         case '?': tokens.append({TokenType::Question, QString(c)});advance(); break;
+        case '=':
+            tokens.append({TokenType::Assign, "="});
+            advance();
+            break;
+
         default:
             tokens.append({TokenType::Unknown, QString(c)});
             advance();

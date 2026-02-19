@@ -19,6 +19,8 @@
 
 #include "common/system/verbose_class_initializer.h"
 #include "common/registry/feature/registry_catalog.h"
+
+#include <expression/function_registry.h>
 //extern void registerAllVerbose();
 
 int main(int argc, char *argv[])
@@ -67,6 +69,8 @@ int main(int argc, char *argv[])
 
     // 🔵 1) Registryk explicit inicializálása
     RegistryCatalog::initializeAll();//initializeAllRegistries();
+
+    auto& R = FunctionRegistry::instance();
 
     // --test eventlogger
     if (SettingsManager::instance().isTestMode()) {

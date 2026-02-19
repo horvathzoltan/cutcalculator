@@ -1,17 +1,14 @@
 #pragma once
 #include <QString>
-
-struct EvaluatedFormula {
-    int length_mm = 0;
-    int pieces = 0;
-    QString stringValue = "";
-};
+#include "expression/eval_result.h"
+#include "value.h"
+#include "ast.h"
 
 class FormulaEngine {
 public:
-    static EvaluatedFormula eval(const QString& f);
+    static EvalResult eval(const QString& code);
 
-    static EvaluatedFormula evalChoose(const QString& t);
-    static EvaluatedFormula evalWithOpt(const QString& t);
-
+private:
+    static Value evalNode(AstNode* n);
+    static QVector<Value> evalChildren(AstNode* n);
 };

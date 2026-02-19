@@ -1,90 +1,132 @@
-#include "formula_engine_pipeline_tester.h"
+#include "formula_engine_tester.h"
+
+#include "common/logger/logger.h"
+#include "test/common/test_data_builder.h"
 
 #include "expression/formula_engine.h"
 #include "expression/variable.h"
-#include "common/logger/logger.h"
+#include "calculation/service/need_calculator.h"
 
-bool FormulaEnginePipelineTester::run()
+#include "needs/registry/need_rule_registry.h"
+#include "calcmodes/registry/need_calculation_registry.h"
+#include "calculation/registry/need_calculation_detail_registry.h"
+#include "products/registry/product_registry.h"
+#include "materials/registry/material_registry.h"
+#include "common/utils/filename_helper.h"
+
+// ---------------------------------------------------------------------
+// RUN
+// ---------------------------------------------------------------------
+
+bool FormulaEngineTester::run()
 {
-    zInfo("=== FormulaEngine PIPELINE TESTS START ===");
+    zInfo("=== FormulaEngine TESTS START ===");
 
+    // 1) Alap DSL
     testLiteralInt();
     testLiteralDouble();
     testSimpleExpression();
     testAssignment();
     testMultiLine();
+
+    // 2) DSL hibák
+    testInvalidEmpty();
+    testInvalidGarbage();
+    testUndefinedVariable();
+    testUndefinedFunction();
+    testDivisionByZero();
+
+    // 3) choose / opt
     testChooseSimple();
     testChooseNested();
+    testChooseFalseBranch();
     testOptSimple();
     testOptExpression();
-    testCombined();
 
-    zInfo("=== FormulaEngine PIPELINE TESTS END ===");
+    // 4) NeedCalculator integráció
+    testNeedCalculatorSimpleRoletta();
+    testNeedCalculatorInvalidFormulaAudit();
+    testNeedCalculatorChooseTrue();
+    testNeedCalculatorChooseFalse();
+
+    zInfo("=== FormulaEngine TESTS END ===");
     return true;
 }
+
+// ---------------------------------------------------------------------
+// Helper
+// ---------------------------------------------------------------------
 
 static void setVars(int w, int h, int qty)
 {
     auto& vars = VariableRepository::instance();
     vars.clear();
-    vars.set("w", w);
-    vars.set("h", h);
-    vars.set("qty", qty);
+    vars.set("w", Value::numberValue(w));
+    vars.set("h", Value::numberValue(h));
+    vars.set("qty", Value::numberValue(qty));
 }
 
-// ------------------------------------------------------------
-// 1) Alapesetek
-// ------------------------------------------------------------
+// ---------------------------------------------------------------------
+// 1) Alap DSL minták
+// ---------------------------------------------------------------------
 
-void FormulaEnginePipelineTester::testLiteralInt()
+void FormulaEngineTester::testLiteralInt()
 {
     zInfo("→ testLiteralInt");
 
     setVars(1000, 2000, 1);
-    auto ev = FormulaEngine::eval("42");
+    auto r = FormulaEngine::eval("42");
+    Q_ASSERT(r.ok);
 
-    Q_ASSERT(ev.length_mm == 42);
-    Q_ASSERT(ev.pieces == 1);
+    auto v = VariableRepository::instance().get("_result");
+    Q_ASSERT(v.number == 42);
+
+    zInfo("✓ testLiteralInt OK");
 }
 
-void FormulaEnginePipelineTester::testLiteralDouble()
+void FormulaEngineTester::testLiteralDouble()
 {
     zInfo("→ testLiteralDouble");
 
     setVars(1000, 2000, 1);
-    auto ev = FormulaEngine::eval("3.14");
+    auto r = FormulaEngine::eval("3.14");
+    Q_ASSERT(r.ok);
 
-    Q_ASSERT(ev.length_mm == 3);
-    Q_ASSERT(ev.pieces == 1);
+    auto v = VariableRepository::instance().get("_result");
+    Q_ASSERT((int)v.number == 3);
+
+    zInfo("✓ testLiteralDouble OK");
 }
 
-void FormulaEnginePipelineTester::testSimpleExpression()
+void FormulaEngineTester::testSimpleExpression()
 {
     zInfo("→ testSimpleExpression");
 
     setVars(1200, 1500, 1);
-    auto ev = FormulaEngine::eval("w - 10");
+    auto r = FormulaEngine::eval("w - 10");
+    Q_ASSERT(r.ok);
 
-    Q_ASSERT(ev.length_mm == 1190);
-    Q_ASSERT(ev.pieces == 1);
+    auto v = VariableRepository::instance().get("_result");
+    Q_ASSERT(v.number == 1190);
+
+    zInfo("✓ testSimpleExpression OK");
 }
 
-// ------------------------------------------------------------
-// 2) Assignment + Multi-line
-// ------------------------------------------------------------
-
-void FormulaEnginePipelineTester::testAssignment()
+void FormulaEngineTester::testAssignment()
 {
     zInfo("→ testAssignment");
 
     setVars(1200, 1500, 1);
-    auto ev = FormulaEngine::eval("x = w - 15");
+    auto r = FormulaEngine::eval("x = w - 15");
+    Q_ASSERT(r.ok);
 
-    Q_ASSERT(ev.length_mm == 1185);
-    Q_ASSERT(VariableRepository::instance().get("x").toInt() == 1185);
+    auto x = VariableRepository::instance().get("x");
+    Q_ASSERT(x.number == 1185);
+
+    zInfo("✓ testAssignment OK");
 }
 
-void FormulaEnginePipelineTester::testMultiLine()
+void FormulaEngineTester::testMultiLine()
 {
     zInfo("→ testMultiLine");
 
@@ -95,26 +137,98 @@ void FormulaEnginePipelineTester::testMultiLine()
         "b = a * 2\n"
         "b";
 
-    auto ev = FormulaEngine::eval(script);
+    auto r = FormulaEngine::eval(script);
+    Q_ASSERT(r.ok);
 
-    Q_ASSERT(ev.length_mm == (1190 * 2));
+    auto v = VariableRepository::instance().get("_result");
+    Q_ASSERT(v.number == 1190 * 2);
+
+    zInfo("✓ testMultiLine OK");
 }
 
-// ------------------------------------------------------------
-// 3) choose: DSL
-// ------------------------------------------------------------
+// ---------------------------------------------------------------------
+// 2) DSL hibák
+// ---------------------------------------------------------------------
 
-void FormulaEnginePipelineTester::testChooseSimple()
+void FormulaEngineTester::testInvalidEmpty()
+{
+    zInfo("→ testInvalidEmpty");
+
+    setVars(1200, 1500, 1);
+    auto r = FormulaEngine::eval("");
+
+    Q_ASSERT(!r.ok);
+
+    zInfo("✓ testInvalidEmpty OK");
+}
+
+void FormulaEngineTester::testInvalidGarbage()
+{
+    zInfo("→ testInvalidGarbage");
+
+    setVars(1200, 1500, 1);
+    auto r = FormulaEngine::eval("this_is_not_valid");
+
+    Q_ASSERT(!r.ok);
+
+    zInfo("✓ testInvalidGarbage OK");
+}
+
+void FormulaEngineTester::testUndefinedVariable()
+{
+    zInfo("→ testUndefinedVariable");
+
+    setVars(1200, 1500, 1);
+    auto r = FormulaEngine::eval("foo + 10");
+
+    Q_ASSERT(!r.ok);
+
+    zInfo("✓ testUndefinedVariable OK");
+}
+
+void FormulaEngineTester::testUndefinedFunction()
+{
+    zInfo("→ testUndefinedFunction");
+
+    setVars(1200, 1500, 1);
+    auto r = FormulaEngine::eval("unknownFn(10)");
+
+    Q_ASSERT(!r.ok);
+
+    zInfo("✓ testUndefinedFunction OK");
+}
+
+void FormulaEngineTester::testDivisionByZero()
+{
+    zInfo("→ testDivisionByZero");
+
+    setVars(1200, 1500, 1);
+    auto r = FormulaEngine::eval("div(10,0)");
+
+    Q_ASSERT(!r.ok);
+
+    zInfo("✓ testDivisionByZero OK");
+}
+
+// ---------------------------------------------------------------------
+// 3) choose / opt
+// ---------------------------------------------------------------------
+
+void FormulaEngineTester::testChooseSimple()
 {
     zInfo("→ testChooseSimple");
 
     setVars(2000, 2000, 1);
-    auto ev = FormulaEngine::eval("choose: (w*h > 1000000) ? A : B");
+    auto r = FormulaEngine::eval("choose: (w*h > 1000000) ? A : B");
+    Q_ASSERT(r.ok);
 
-    Q_ASSERT(ev.stringValue == "A");
+    auto v = VariableRepository::instance().get("_result");
+    Q_ASSERT(v.text == "A");
+
+    zInfo("✓ testChooseSimple OK");
 }
 
-void FormulaEnginePipelineTester::testChooseNested()
+void FormulaEngineTester::testChooseNested()
 {
     zInfo("→ testChooseNested");
 
@@ -125,65 +239,193 @@ void FormulaEnginePipelineTester::testChooseNested()
         "    choose: (h > 1500) ? X : Y "
         "  : Z";
 
-    auto ev = FormulaEngine::eval(script);
+    auto r = FormulaEngine::eval(script);
+    Q_ASSERT(r.ok);
 
-    Q_ASSERT(ev.stringValue == "X");
+    auto v = VariableRepository::instance().get("_result");
+    Q_ASSERT(v.text == "X");
+
+    zInfo("✓ testChooseNested OK");
 }
 
-// ------------------------------------------------------------
-// 4) opt: DSL
-// ------------------------------------------------------------
+void FormulaEngineTester::testChooseFalseBranch()
+{
+    zInfo("→ testChooseFalseBranch");
 
-void FormulaEnginePipelineTester::testOptSimple()
+    setVars(1000, 1000, 1);
+    auto r = FormulaEngine::eval("choose: (w*h > 5000000) ? A : B");
+    Q_ASSERT(r.ok);
+
+    auto v = VariableRepository::instance().get("_result");
+    Q_ASSERT(v.text == "B");
+
+    zInfo("✓ testChooseFalseBranch OK");
+}
+
+void FormulaEngineTester::testOptSimple()
 {
     zInfo("→ testOptSimple");
 
     setVars(1200, 1500, 1);
-
     auto& vars = VariableRepository::instance();
-    vars.set("paint", false);
+    vars.set("paint", Value::boolValue(false));
 
-    auto ev = FormulaEngine::eval("h - 10 + opt:paint:+40");
+    auto r = FormulaEngine::eval("h - 10 + opt:paint:+40");
+    Q_ASSERT(r.ok);
 
-    Q_ASSERT(ev.length_mm == 1490);
+    auto v = vars.get("_result");
+    Q_ASSERT(v.number == 1490);
+
+    zInfo("✓ testOptSimple OK");
 }
 
-void FormulaEnginePipelineTester::testOptExpression()
+void FormulaEngineTester::testOptExpression()
 {
     zInfo("→ testOptExpression");
 
     setVars(1200, 1500, 1);
-
     auto& vars = VariableRepository::instance();
-    vars.set("premium", true);
+    vars.set("premium", Value::boolValue(true));
 
-    auto ev = FormulaEngine::eval("w - 10 + opt:premium:+(w/10)");
+    auto r = FormulaEngine::eval("w - 10 + opt:premium:+(w/10)");
+    Q_ASSERT(r.ok);
 
-    Q_ASSERT(ev.length_mm == (1190 + 120));
+    auto v = vars.get("_result");
+    Q_ASSERT(v.number == 1190 + 120);
+
+    zInfo("✓ testOptExpression OK");
 }
 
-// ------------------------------------------------------------
-// 5) Kombinált eset
-// ------------------------------------------------------------
+// ---------------------------------------------------------------------
+// 4) NeedCalculator integráció
+// ---------------------------------------------------------------------
 
-void FormulaEnginePipelineTester::testCombined()
+void FormulaEngineTester::testNeedCalculatorSimpleRoletta()
 {
-    zInfo("→ testCombined");
+    zInfo("→ testNeedCalculatorSimpleRoletta");
 
-    setVars(2000, 2000, 1);
+    ProductRegistry::instance().clearForTest();
+    MaterialRegistry::instance().clearForTest();
+    NeedRuleRegistry::instance().clearForTest();
+    NeedCalculationRegistry::instance().clearForTest();
+    NeedCalculationDetailRegistry::instance().clearForTest();
 
-    auto& vars = VariableRepository::instance();
-    vars.set("premium", true);
+    auto ids = TestDataBuilder::prepareStandard();
 
-    QString script =
-        "base = w - 20\n"
-        "opt:premium:+(base/2)\n"
-        "choose: base > 1500 ? base + opt : base";
+    NeedRuleRegistry::instance().insert(ids.P1, ids.M1);
+    NeedRuleRegistry::instance().insert(ids.P1, ids.M2);
 
-    auto ev = FormulaEngine::eval(script);
+    auto mode = TestDataBuilder::makeCalculation(ids.P1, "Manufacturing");
+    NeedCalculationRegistry::instance().insert(mode);
 
-    // base = 1980
-    // opt = 990
-    // choose → true ág → 1980 + 990 = 2970
-    Q_ASSERT(ev.length_mm == 2970);
+    auto d1 = TestDataBuilder::makeDetail(mode.id, ids.M1, "w-15");
+    auto d2 = TestDataBuilder::makeDetail(mode.id, ids.M2, "w-10");
+
+    NeedCalculationDetailRegistry::instance().insert(d1);
+    NeedCalculationDetailRegistry::instance().insert(d2);
+
+    auto cuts = NeedCalculator::makeCutList({ ids.P1, 1200, 1500, 1 }, "Manufacturing");
+
+    Q_ASSERT(cuts.size() == 2);
+    Q_ASSERT(cuts[0].length_mm == 1185);
+    Q_ASSERT(cuts[1].length_mm == 1190);
+
+    zInfo("✓ testNeedCalculatorSimpleRoletta OK");
+}
+
+void FormulaEngineTester::testNeedCalculatorInvalidFormulaAudit()
+{
+    zInfo("→ testNeedCalculatorInvalidFormulaAudit");
+
+    ProductRegistry::instance().clearForTest();
+    MaterialRegistry::instance().clearForTest();
+    NeedRuleRegistry::instance().clearForTest();
+    NeedCalculationRegistry::instance().clearForTest();
+    NeedCalculationDetailRegistry::instance().clearForTest();
+
+    auto ids = TestDataBuilder::prepareStandard();
+
+    NeedRuleRegistry::instance().insert(ids.P1, ids.M1);
+
+    auto mode = TestDataBuilder::makeCalculation(ids.P1, "Manufacturing");
+    NeedCalculationRegistry::instance().insert(mode);
+
+    NeedCalculationDetail d;
+    d.id = QUuid::createUuid();
+    d.needCalculationId = mode.id;
+    d.materialId = ids.M1;
+    d.formula = "w-"; // hibás
+    Q_ASSERT(!NeedCalculationDetailRegistry::instance().insert(d));
+
+    auto cuts = NeedCalculator::makeCutList({ ids.P1, 1200, 1500, 1 }, "Manufacturing");
+
+    Q_ASSERT(cuts.isEmpty());
+
+    zInfo("✓ testNeedCalculatorInvalidFormulaAudit OK");
+}
+
+void FormulaEngineTester::testNeedCalculatorChooseTrue()
+{
+    zInfo("→ testNeedCalculatorChooseTrue");
+
+    ProductRegistry::instance().clearForTest();
+    MaterialRegistry::instance().clearForTest();
+    NeedRuleRegistry::instance().clearForTest();
+    NeedCalculationRegistry::instance().clearForTest();
+    NeedCalculationDetailRegistry::instance().clearForTest();
+
+    auto ids = TestDataBuilder::prepareStandard();
+
+    NeedRuleRegistry::instance().insert(ids.P1, ids.M1);
+    NeedRuleRegistry::instance().insert(ids.P1, ids.M2);
+
+    auto mode = TestDataBuilder::makeCalculation(ids.P1, "Manufacturing");
+    NeedCalculationRegistry::instance().insert(mode);
+
+    auto d = TestDataBuilder::makeDetail(
+        mode.id, ids.M1,
+        QString("choose: (w*h > 1000000) ? %1 : %2")
+            .arg(ids.M1_barcode, ids.M2_barcode));
+
+    NeedCalculationDetailRegistry::instance().insert(d);
+
+    auto cuts = NeedCalculator::makeCutList({ ids.P1, 2000, 2000, 1 }, "Manufacturing");
+
+    Q_ASSERT(cuts.size() == 1);
+    Q_ASSERT(cuts[0].materialId == ids.M1);
+
+    zInfo("✓ testNeedCalculatorChooseTrue OK");
+}
+
+void FormulaEngineTester::testNeedCalculatorChooseFalse()
+{
+    zInfo("→ testNeedCalculatorChooseFalse");
+
+    ProductRegistry::instance().clearForTest();
+    MaterialRegistry::instance().clearForTest();
+    NeedRuleRegistry::instance().clearForTest();
+    NeedCalculationRegistry::instance().clearForTest();
+    NeedCalculationDetailRegistry::instance().clearForTest();
+
+    auto ids = TestDataBuilder::prepareStandard();
+
+    NeedRuleRegistry::instance().insert(ids.P1, ids.M1);
+    NeedRuleRegistry::instance().insert(ids.P1, ids.M2);
+
+    auto mode = TestDataBuilder::makeCalculation(ids.P1, "Manufacturing");
+    NeedCalculationRegistry::instance().insert(mode);
+
+    auto d = TestDataBuilder::makeDetail(
+        mode.id, ids.M1,
+        QString("choose: (w*h > 5000000) ? %1 : %2")
+            .arg(ids.M1_barcode, ids.M2_barcode));
+
+    NeedCalculationDetailRegistry::instance().insert(d);
+
+    auto cuts = NeedCalculator::makeCutList({ ids.P1, 1000, 1000, 1 }, "Manufacturing");
+
+    Q_ASSERT(cuts.size() == 1);
+    Q_ASSERT(cuts[0].materialId == ids.M2);
+
+    zInfo("✓ testNeedCalculatorChooseFalse OK");
 }

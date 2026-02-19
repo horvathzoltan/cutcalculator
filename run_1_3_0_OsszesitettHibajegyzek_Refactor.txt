@@ -1,674 +1,254 @@
-Zoltán, ez most az a pont, ahol a FormulaEngine DSL‑ből valódi nyelvvé
-válhat.
-A dual‑syntax (operátor + függvény) choose/opt integrációja pontosan az
-a lépés, amitől a motorod:
+Zoltán, akkor most tényleg elérkeztünk ahhoz a ponthoz, ahol a
+FormulaEngine teljesen új alapokra kerül.
+A P8 nem toldozás, nem finomhangolás — ez a végső, letisztult
+architektúra, amit eddig építettünk elő.
 
--   egységes lesz,
--   AST‑szinten működik,
--   nem kell hozzá külön mini‑interpreter,
--   és a teljes DSL bekerül a végrehajtási fába.
+És hadd mondjam ki: amit most csinálunk, az már nem „javítgatás”, hanem
+nyelvmotor‑tervezés.
+Ez a jó fajta munka.
 
-Amit most kapsz, az a teljes, lépésről‑lépésre végrehajtható terv,
-minden komponenssel, minden szükséges módosítással, tisztán és
-átláthatóan.
+Az alábbi terv nem kompromisszumos, nem „jó lesz ez így is”, hanem a
+lehető legtisztább, legegyszerűbb, legkarbantarthatóbb modell.
 
 ------------------------------------------------------------------------
 
-⭐ A DUAL‑SYNTAX CHOOSE/OPT AST INTEGRÁCIÓ TELJES TERVE
+⭐ P8 – A FormulaEngine teljes újraírása
 
-(A FormulaEngine következő evolúciós szintje)
+A kompromisszummentes, pengeéles verzió
 
-A cél:
+1) A FormulaEngine::eval visszatérési típusa: bool
 
--   A choose és opt AST node legyen.
--   A choose és opt Expression‑függvényként is működjön.
--   A choose és opt operátor‑szintaxisa is működjön.
--   A FormulaEngine::eval() ne tartalmazzon külön choose/opt ágakat.
--   A DSL minden eleme ugyanabba a végrehajtási fába kerüljön.
+Pontosan, ahogy mondtad.
 
-------------------------------------------------------------------------
+A FormulaEngine:
 
-⭐ 1. LÉPÉS – Tokenizer bővítése (DSL kulcsszavak felismerése)
+-   AST‑et futtat
+-   változókat ír a VariableRepository‑ba
+-   nem ad vissza értéket
+-   nem csomagol semmit
+-   nem találgat
+-   csak azt mondja: sikerült / nem sikerült
 
-A Tokenizer jelenleg csak operátorokat és az Expression‑függvényeket
-ismeri.
+    bool FormulaEngine::eval(const QString& code);
 
-Most hozzáadjuk:
+A hívó kód:
 
--   choose
--   opt
--   qty
--   fixed
--   perOrder
--   perArea
+    FormulaEngine::eval("a = 10");
+    int a = vars.get("a").toInt();
 
-Ezeket Identifier tokenként ismerjük fel, de fontos, hogy a Tokenizer ne
-törje szét a choose: vagy opt: mintákat.
-
-Tokenizer módosítás:
-
--   Ha egy identifier után : jön → külön token legyen:
-    -   choose
-    -   :
-    -   opt
-    -   :
-    -   stb.
-
-Ez kell ahhoz, hogy a Parser felismerje a DSL‑szintaxist.
+Ez a tiszta modell.
 
 ------------------------------------------------------------------------
 
-⭐ 2. LÉPÉS – Parser bővítése (DSL operátorok felismerése)
+⭐ 2) A FormulaEngine NEM tart fenn saját értéket
 
-A Parser jelenleg:
+Nincs EvaluatedFormula.
+Nincs length_mm.
+Nincs pieces.
+Nincs text.
 
--   infix operátorokat kezel (+ - * / > < ==)
--   függvényhívásokat kezel (avg(…))
+A FormulaEngine nem tud semmit arról, hogy a hívó kód mire használja az
+értékeket.
 
-Most hozzáadjuk:
+A FormulaEngine csak:
 
-✔ choose operátor felismerése
+-   értelmez,
+-   számol,
+-   repo‑ba ír.
 
-A Parser‑ben be kell tenni egy új precedenciát:
-
-    cond ? A : B
-
-Ez egy ternary operátor.
-
-A Parser‑ben:
-
--   amikor ? token jön → új AST node: AstChoose
--   a : token a false‑ág kezdete
-
-✔ opt operátor felismerése
-
-A DSL‑szintaxis:
-
-    opt:flag:+value
-
-Ezt a Parser‑ben így kezeljük:
-
--   opt → függvényhívás neve
--   : → argumentum elválasztó
--   flag → első argumentum
--   : → második elválasztó
--   value → második argumentum
-
-Parser‑szinten ez:
-
-    opt(flag, value)
+Ez a helyes rétegzés.
 
 ------------------------------------------------------------------------
 
-⭐ 3. LÉPÉS – Új AST node‑ok
+⭐ 3) A nyelv runtime‑típusa: Value
 
-✔ AstChoose
+Nem QVariant.
+Nem EvaluatedFormula.
+Nem QString/int/bool keverék.
 
-    struct AstChoose : AstNode {
-        AstNode* cond;
-        AstNode* trueExpr;
-        AstNode* falseExpr;
+Egyetlen, tiszta, típusos érték:
+
+    struct Value {
+        enum class Type { Number, String, Bool, Null };
+
+        Type type = Type::Null;
+        double number = 0.0;
+        QString text;
+        bool boolean = false;
+
+        static Value number(double n) { Value v; v.type=Type::Number; v.number=n; return v; }
+        static Value string(const QString& s) { Value v; v.type=Type::String; v.text=s; return v; }
+        static Value boolean(bool b) { Value v; v.type=Type::Bool; v.boolean=b; return v; }
+        static Value null() { return {}; }
     };
 
-✔ AstOpt
+Ez:
 
-    struct AstOpt : AstNode {
-        AstNode* flagExpr;
-        AstNode* valueExpr;
-    };
+-   gyors,
+-   egyszerű,
+-   típusbiztos,
+-   nincs implicit konverzió,
+-   nincs heurisztika,
+-   nincs QVariant‑mágia.
 
-✔ AstQty (opcionális)
-
-Ha a qty DSL‑t is be akarod emelni:
-
-    qty:fixed:2
-    qty:perArea:10000
-
-→ AstQtyFixed, AstQtyPerArea, stb.
+Ez a nyelv runtime‑ja.
 
 ------------------------------------------------------------------------
 
-⭐ 4. LÉPÉS – AstToExpression bővítése
+⭐ 4) A VariableRepository is Value‑t tárol
 
-Itt történik a DSL → Expression konverzió.
+    QMap<QString, Value> vars;
 
-✔ choose → Expression ternary vagy függvény
+És:
 
-Két lehetőség:
+    Value VariableRepository::get(const QString& name);
+    void VariableRepository::set(const QString& name, const Value& v);
 
-A) Expression ternary:
-
-    cond ? trueExpr : falseExpr
-
-B) Expression függvény:
-
-    choose(cond, trueExpr, falseExpr)
-
-Mindkettő működik.
-
-✔ opt → Expression függvény
-
-    opt(flagExpr, valueExpr)
+Ennyi.
 
 ------------------------------------------------------------------------
 
-⭐ 5. LÉPÉS – Expression motor bővítése
+⭐ 5) A FormulaEngine AST‑evalja közvetlenül Value‑t ad vissza
 
-A choose és opt Expression‑szintű függvény lesz.
+Nincs AstToExpression.
+Nincs Expression::Parse.
+Nincs Expression::Calculate.
+Nincs mini DSL.
 
-✔ choose(cond, A, B)
+A teljes eval így néz ki:
 
-    if (cond != 0) return A;
-    else return B;
-
-✔ opt(flag, value)
-
-    if (flag == true) return value;
-    else return 0;
-
-Ez a jelenlegi DSL‑eddel 100% kompatibilis.
-
-------------------------------------------------------------------------
-
-⭐ 6. LÉPÉS – FormulaEngine::eval() egyszerűsítése
-
-A jelenlegi:
-
--   külön ág choose‑ra
--   külön ág opt‑ra
--   külön ág qty‑ra
-
-A dual‑syntax AST után:
-
-✔ Minden DSL elem Expression‑ként fut
-
-A FormulaEngine::eval() így néz ki:
-
-    1) normalize
-    2) multiline
-    3) assignment
-    4) string literal
-    5) Expression pipeline
-
-És kész.
-
-Nem kell:
-
--   evalChoose()
--   evalWithOpt()
--   qty: ágak
-
-Mert mind bekerül az AST‑be.
-
-------------------------------------------------------------------------
-
-⭐ 7. LÉPÉS – Dual‑syntax működés
-
-A felhasználó írhatja:
-
-Operátor-szerű:
-
-    choose: w>1000 ? A : B
-    opt:premium:+(w/10)
-
-Függvény-szerű:
-
-    choose(w>1000, A, B)
-    opt(premium, w/10)
-
-Mindkettő ugyanarra az AST‑re fordul.
-
-------------------------------------------------------------------------
-
-⭐ 8. LÉPÉS – Tesztek
-
-A pipeline‑testerhez hozzáadjuk:
-
--   choose(cond, A, B)
--   opt(flag, value)
--   nested choose függvény-szintaxissal
--   nested opt függvény-szintaxissal
--   assignment + choose függvény-szintaxissal
--   assignment + opt függvény-szintaxissal
-
-------------------------------------------------------------------------
-
-⭐ Összegzés
-
-A dual‑syntax choose/opt AST integráció:
-
--   egységesíti a DSL‑t
--   megszünteti a külön mini‑interpretereket
--   a teljes nyelvet Expression‑szintre emeli
--   egyszerűbbé teszi a FormulaEngine‑t
--   sokkal könnyebb lesz bővíteni
--   sokkal kevesebb hibalehetőséget tartalmaz
-
-Ez a FormulaEngine „2.0” alapja.
-
-------------------------------------------------------------------------
-
-Ha szeretnéd, megcsinálom a konkrét patch‑csomagot is:
-
--   Tokenizer diff
--   Parser diff
--   AST diff
--   AstToExpression diff
--   Expression diff
--   FormulaEngine cleanup diff
-
-Csak mondd:
-
-👉 „kérem a dual‑syntax choose/opt AST patch‑csomagot”
-
-
-***
-***
-***
-
-
-------------------------------------------------------------------------
-
-⭐ IMPLEMENTÁCIÓS TERV
-
-Cél: általános kifejezéskezelés a FormulaEngine-ben, minden DSL → függvény formára fordítva
-
-1) A FormulaEngine NEM számol többé.
-
-Csak fordít:
-
-    DSL → Expression string → Expression::Parse() → Expression::Calculate()
-
-2) A DSL fordító (dslToExpression) a kulcs.
-
-Ez fogja felismerni:
-
--   w-10 → sub(w,10)
--   h-15 → sub(h,15)
--   w*h → mul(w,h)
--   (w*h)/1000 → div(mul(w,h),1000)
--   qty:fixed:3 → mul(qty,3)
--   choose: → if(...)
--   opt: → ignorálás vagy későbbi flag-kezelés
-
-3) Általános aritmetikai kifejezések támogatása
-
-Ehhez kell:
-
--   tokenizáló (változó, literál, operátor, zárójel)
--   shunting-yard (precedencia + zárójelek)
--   AST építés
--   AST → Expression string fordító
-
-Ez a rész lesz a „motor”.
-
-4) A choose: operátor Expression formára fordítása
-
-Példa:
-
-    choose: (w*h > 1000000) ? A : B
-    → if(gt(mul(w,h),1000000), A, B)
-
-5) Az opt: részek leválasztása
-
-A fő kifejezés:
-
-    h-10 + opt:paint:+40
-    → h-10
-
-A többi ignorálható, amíg nincs flag-kezelés.
-
-6) A FormulaEngine::eval() végül így néz ki:
-
-    QString expr = dslToExpression(f);
-    Expression e = Expression::Parse(expr);
-    QVariant v = e.Calculate();
-
-------------------------------------------------------------------------
-
-⭐ CONTEXT SNAPSHOT
-
-(ez a „hol tartunk most” jegyzet, hogy holnap is világos legyen)
-
-✔ Már van egy működő Expression rendszered
-
--   függvények: avg, sum, add, sub, mul, div, overdrill
--   paraméterlista
--   változók
--   literálok
--   rekurzió
--   whitespace tolerancia
--   zárójelek kezelése
-
-Ez egy mini interpreter, AST-szerű működéssel.
-
-✔ A FormulaEngine jelenlegi DSL-je törékeny
-
--   w-10, h-15, w*h → hardcode minták
--   choose: → kézzel szétszedve
--   opt: → szétesik a split miatt
--   nincs általános operátor-kezelés
--   nincs precedencia
--   nincs tokenizálás
--   nincs AST
-
-✔ A helyes irány:
-
-A FormulaEngine DSL → Expression nyelvre fordítása.
-
-✔ A hiányzó elem:
-
-általános kifejezéskezelés (tokenizálás + shunting-yard + AST)
-
-Ez lesz a holnapi feladat.
-
-------------------------------------------------------------------------
-
-⭐ TOKEN SNAPSHOT
-
-(ez a „hogyan fog kinézni a tokenizálás” jegyzet)
-
-A tokenizáló feladata:
-
-Bemenet:
-
-    (w-10) * (h-20) / 1000
-
-Tokenek:
-
-    [
-      "(", "w", "-", "10", ")",
-      "*",
-      "(", "h", "-", "20", ")",
-      "/",
-      "1000"
-    ]
-
-Token típusok:
-
--   Identifier: w, h, qty, A, B
--   Number: 10, 20, 1000, 1e6, 5.5
--   Operator: +, -, *, /, >, <, >=, <=, ==
--   Paren: (, )
--   Keyword: opt:, choose:, len:, qty:fixed:, stb. (külön kezelve)
--   Whitespace: ignorálva
-
-Operátorprecedencia:
-
-1.  *, /
-2.  +, -
-3.  összehasonlítók: >, <, >=, <=, ==
-
-Shunting-yard output (postfix):
-
-    w 10 - h 20 - * 1000 /
-
-AST:
-
-            div
-           /    \
-         mul    1000
-        /   \
-     sub     sub
-    /   \   /   \
-    w   10 h    20
-
-Expression string:
-
-    div(
-        mul(
-            sub(w,10),
-            sub(h,20)
-        ),
-        1000
-    )
-
-És ezt már tudja a meglévő Expression rendszer.
-
-------------------------------------------------------------------------
-
-⭐ HOLNAPI FOLYTATÁS (lépésről lépésre)
-
-1.  Tokenizáló megírása
-    -   20–30 sor
-    -   whitespace ignorálása
-    -   többjegyű számok
-    -   változónevek
-    -   operátorok felismerése
-2.  Shunting-yard implementálása
-    -   30–40 sor
-    -   precedencia
-    -   zárójelek
-    -   balról jobbra kiértékelés
-3.  AST építő
-    -   postfix → AST
-    -   20–30 sor
-4.  AST → Expression string fordító
-    -   20–30 sor
-5.  dslToExpression() integrálása
-    -   choose:
-    -   opt:
-    -   qty:fixed:
-    -   len:w-
-    -   stb.
-6.  FormulaEngine::eval() egyszerűsítése
-    -   Expression::Parse
-    -   Expression::Calculate
-
-------------------------------------------------------------------------
-
-***
-***
-***
-
-Patch terv – FormulaEngine átalakítása változó‑alapú működésre
-
-Alapelv:
-FormulaEngine ezentúl csak kifejezést kap (QString expr), minden input
-és output a VariableRegistry‑n keresztül megy.
-
-------------------------------------------------------------------------
-
-1. FormulaEngine API átalakítása
-
-Most:
-
-    static EvaluatedFormula eval(const QString& f, int w, int h, int qty);
-
-Lesz:
-
-    static EvaluatedFormula eval(const QString& f);
-
-Teendők
-
--   Minden eval(..., w, h, qty) hívást átírni úgy, hogy:
-    -   a hívás előtt a VariableRepository‑be bekerüljenek:
-        -   w, h, qty (és később bármi más: margin, area, stb.)
-    -   a FormulaEngine::eval(f) már nem kapja meg ezeket paraméterként.
-
-------------------------------------------------------------------------
-
-2. evalExpressionGeneric átalakítása
-
-Most:
-
-    static QVariant evalExpressionGeneric(const QString& expr, int w, int h, int qty)
+    Value FormulaEngine::evalNode(AstNode* n)
     {
-        auto& vars = VariableRepository::instance();
-        vars.set("w",   w);
-        vars.set("h",   h);
-        vars.set("qty", qty);
-        ...
+        switch (n->type) {
+
+            case AstNode::Type::Number:
+                return Value::number(n->value.toDouble());
+
+            case AstNode::Type::StringLiteral:
+                return Value::string(n->value);
+
+            case AstNode::Type::Variable:
+                return vars.get(n->value);
+
+            case AstNode::Type::Operator:
+                return callFunction(n->value, evalChildren(n));
+
+            case AstNode::Type::Function:
+                return callFunction(n->value, evalChildren(n));
+
+            case AstNode::Type::Assignment:
+                vars.set(n->value, evalNode(n->children[0]));
+                return Value::null();
+
+            case AstNode::Type::Return:
+                return evalReturn(n);
+
+            case AstNode::Type::Choose:
+                return evalChoose(n);
+
+            case AstNode::Type::Opt:
+                return evalOpt(n);
+        }
     }
 
-Lesz:
+Ez a tiszta, direkt AST‑eval.
 
-    static QVariant evalExpressionGeneric(const QString& expr)
+------------------------------------------------------------------------
+
+⭐ 6) Függvénycentrikus világ
+
+Ez a nyelv lényege.
+
+Minden művelet → függvény.
+
+-   + → add
+-   - → sub
+-   * → mul
+-   / → div
+-   > → gt
+-   < → lt
+-   >= → ge
+-   <= → le
+-   == → eq
+-   choose → choose
+-   opt → opt
+-   qty_fixed → qty_fixed
+-   qty_perOrder → qty_perOrder
+-   qty_perArea → qty_perArea
+-   a = expr → set(a, expr)
+-   return a=..., b=... → return struct
+
+A FunctionRegistry:
+
+    using NativeFn = std::function<Value(const QVector<Value>&)>;
+
+    QMap<QString, NativeFn> registry;
+
+    registry["add"] = [](auto args){ return Value::number(args[0].number + args[1].number); };
+    registry["mul"] = [](auto args){ return Value::number(args[0].number * args[1].number); };
+    registry["qty_fixed"] = [](auto args){ return Value::number(args[0].number * args[1].number); };
+    ...
+
+Ez a Lisp‑szerű, egységes, tiszta modell.
+
+------------------------------------------------------------------------
+
+⭐ 7) A FormulaEngine::eval() végleges formája
+
+    bool FormulaEngine::eval(const QString& code)
     {
-        auto& vars = VariableRepository::instance();
-        // itt már NEM állítunk be semmit, csak olvasunk
-        ...
+        auto tokens = Tokenizer::tokenize(code);
+        auto rpn    = Parser::toRpn(tokens);
+        AstNode* ast = AstBuilder::fromRpn(rpn);
+
+        if (!ast)
+            return false;
+
+        try {
+            evalNode(ast);
+            return true;
+        } catch (...) {
+            return false;
+        }
     }
 
-Teendők
-
--   Kivenni a w/h/qty beállítását innen.
--   Mindenhol, ahol eddig evalExpressionGeneric(t, w, h, qty) volt,
-    átírni evalExpressionGeneric(t)‑re.
--   Biztosítani, hogy a hívó fél már előtte feltöltötte a registry‑t.
+Ennyi.
 
 ------------------------------------------------------------------------
 
-3. FormulaEngine::eval belső logika módosítása
+⭐ 8) Mi marad a hívó C++ kódra?
 
-Most:
+A hívó:
 
-    EvaluatedFormula FormulaEngine::eval(const QString& f, int w, int h, int qty)
-    {
-        ...
-        // qty: DSL-ek w,h,qty alapján
-        // choose: evalChoose(t, w, h, qty)
-        // opt: evalWithOpt(t, w, h, qty)
-        // általános kifejezés: evalExpressionGeneric(t, w, h, qty)
-    }
+-   meghívja az eval‑t,
+-   majd a repo‑ból olvas.
 
-Lesz:
+Például:
 
-    EvaluatedFormula FormulaEngine::eval(const QString& f)
-    {
-        EvaluatedFormula out;
-        out.stringValue.clear();
+    FormulaEngine::eval("length = w*h/1000");
+    double len = vars.get("length").number;
 
-        QString t = FormulaNormalizer::normalizeWhitespace(f);
-        t = FormulaNormalizer::stripOuterParens(t);
+Vagy:
 
-        // szám literálok (ugyanaz maradhat)
-        // qty: DSL-ek → VariableRepository-ből olvasott w,h,qty-vel számolnak
-        // choose: → evalChoose(t)
-        // opt: → evalWithOpt(t)
-        // minden más → evalExpressionGeneric(t)
+    FormulaEngine::eval("return length = w*h/1000, pieces = qty_fixed(qty,3)");
+    double len = vars.get("length").number;
+    double pcs = vars.get("pieces").number;
 
-        return out;
-    }
-
-Teendők
-
--   Kivenni a w, h, qty paramétereket a függvény aláírásából és
-    belsejéből.
--   A qty: DSL ágakban w és h értékét a VariableRepository‑ből
-    kiolvasni:
-    -   pl. vars.get("w").toInt() stb.
--   evalChoose és evalWithOpt aláírását is módosítani: csak
-    const QString& t.
+Ez a tiszta, kompromisszummentes modell.
 
 ------------------------------------------------------------------------
 
-4. evalChoose és evalWithOpt átalakítása
+⭐ 9) Készen állok megírni a teljes P8 diffet
 
-Most:
+Ha szeretnéd, megcsinálom:
 
-    EvaluatedFormula FormulaEngine::evalChoose(const QString& t, int w, int h, int qty);
-    EvaluatedFormula FormulaEngine::evalWithOpt(const QString& t, int w, int h, int qty);
+-   a Value típust,
+-   a VariableRepository módosítását,
+-   a FormulaEngine teljes újraírását,
+-   a FunctionRegistry‑t,
+-   az AST‑evalt,
+-   a régi Expression/Keyword/AstToExpression réteg eltávolítását.
 
-Lesz:
+Csak mondd ki:
 
-    EvaluatedFormula FormulaEngine::evalChoose(const QString& t);
-    EvaluatedFormula FormulaEngine::evalWithOpt(const QString& t);
-
-Belső változás
-
--   Ahol eddig eval(branch, w, h, qty) volt, ott most simán eval(branch)
-    lesz.
--   A feltétel kiértékelése (condExpr) már így is az új pipeline‑on
-    megy, csak a változókat most a registry‑ből veszi az Expression.
-
-------------------------------------------------------------------------
-
-5. VariableRepository használatának egységesítése
-
-Teendők
-
--   Bevezetni egy konvenciót: minden FormulaEngine hívás előtt a hívó
-    fél:
-    -   törli vagy reseteli a releváns változókat (opcionális, ha kell),
-    -   beállítja:
-        -   w, h, qty,
-        -   később: margin, extra, discount, stb.
--   A FormulaEngine soha többé nem állít be input változót, csak:
-    -   olvas belőlük,
-    -   és opcionálisan eredményt ír vissza (pl. result_length,
-        result_pieces).
-
-------------------------------------------------------------------------
-
-6. area kezelésének előkészítése
-
-Két lépésben:
-
-6.1. Függvényként
-
--   Expression oldalon bevezetni egy area(a,b) függvényt:
-    -   Function::area(double a, double b) { return a*b; }
--   A DSL‑ben használható lesz:
-    -   area(w,h)/1000
-
-6.2. Változóként (ha akarod)
-
--   A hívó fél (pl. NeedCalculator) induláskor:
-    -   vars.set("area", w*h);
--   A formula:
-    -   area / 1000
-
-Első körben elég a függvényes verziót megcélozni.
-
-------------------------------------------------------------------------
-
-7. Hívó kódok átírása (NeedCalculator, tesztek)
-
-NeedCalculator
-
-Most:
-
-    auto ev = FormulaEngine::eval(detail.formula, width, height, qty);
-
-Lesz:
-
-    auto& vars = VariableRepository::instance();
-    vars.set("w", width);
-    vars.set("h", height);
-    vars.set("qty", qty);
-
-    auto ev = FormulaEngine::eval(detail.formula);
-
-FormulaEngineTester
-
-Mindenhol, ahol:
-
-    FormulaEngine::eval("w-15", 1200, 1500, 1);
-
-→ átírni:
-
-    auto& vars = VariableRepository::instance();
-    vars.set("w", 1200);
-    vars.set("h", 1500);
-    vars.set("qty", 1);
-
-    auto ev = FormulaEngine::eval("w-15");
-
-------------------------------------------------------------------------
-
-8. Tesztkör bővítése (holnapra előkészítve)
-
-Miután a fenti patch megvan:
-
--   új tesztek:
-    -   Tokenizer/Parser/AST/Expression külön modulban,
-    -   összetett kifejezések (zárójelek, függvények, nested
-        choose/opt),
-    -   qty: DSL új verziójára célzott tesztek.
-
-------------------------------------------------------------------------
-
-Ha szeretnéd, holnapra meg tudjuk írni a konkrét kódrészleteket is (új
-eval aláírás, evalChoose/evalWithOpt módosítás, NeedCalculator hívások
-átírása) ezen patch terv mentén.
+„jöhet a P8 diff”

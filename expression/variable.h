@@ -1,9 +1,6 @@
 #pragma once
-#include <QMap>
-#include <QString>
-#include <QVariant>
+#include "value.h"
 
-#pragma once
 #include <QMap>
 #include <QString>
 #include <QVariant>
@@ -15,11 +12,11 @@ public:
         return inst;
     }
 
-    void set(const QString& key, const QVariant& v) {
+    void set(const QString& key, const Value& v) {
         _values[key] = v;
     }
 
-    QVariant get(const QString& key) const {
+    Value get(const QString& key) const {
         return _values.value(key, {});
     }
 
@@ -28,7 +25,7 @@ public:
     }
 
 private:
-    QMap<QString, QVariant> _values;
+    QMap<QString, Value> _values;
 };
 
 

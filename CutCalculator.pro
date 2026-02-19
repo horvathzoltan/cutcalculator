@@ -125,6 +125,7 @@ HEADERS += \
     expression/ast.h \
     expression/ast_builder.h \
     expression/ast_to_expression.h \
+    expression/eval_result.h \
     expression/formula_engine.h \
     expression/formula_normalizer.h \
     calculation/service/matrix_generator.h \
@@ -177,10 +178,13 @@ HEADERS += \
     connections/connection_repository.h \
     expression/expression.h \
     expression/function.h \
+    expression/function_registry.h \
     expression/keyword.h \
+    expression/node_pool.h \
     expression/parser.h \
     expression/token.h \
     expression/tokenizer.h \
+    expression/value.h \
     expression/variable.h \
     materials/view/color_badge.h \
     needs/manager/material_requirements_manager.h \

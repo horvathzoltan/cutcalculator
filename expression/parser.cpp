@@ -2,26 +2,6 @@
 #include "tokenizer.h"
 #include <QStack>
 
-int Parser::precedence(TokenType t)
-{
-    switch (t) {
-    case TokenType::Star:
-    case TokenType::Slash:
-        return 3;
-    case TokenType::Plus:
-    case TokenType::Minus:
-        return 2;
-    case TokenType::Greater:
-    case TokenType::Less:
-    case TokenType::GreaterEqual:
-    case TokenType::LessEqual:
-    case TokenType::Equal:
-        return 1;
-    default:
-        return 0;
-    }
-}
-
 bool Parser::isLeftAssociative(TokenType t)
 {
     // minden bináris operátor balról asszociatív most
@@ -65,90 +45,157 @@ QVector<Token> Parser::parseToRpn(const QString& input)
     return toRpn(tokens);
 }
 
+int Parser::precedence(const Token& t)
+{
+    switch (t.type) {
+    case TokenType::Assign:
+        return 0;   // legalacsonyabb precedencia
+
+    case TokenType::Question:
+    case TokenType::Colon:
+        return 1;
+
+    case TokenType::Plus:
+    case TokenType::Minus:
+        return 2;
+
+    case TokenType::Star:
+    case TokenType::Slash:
+        return 3;
+
+    case TokenType::Greater:
+    case TokenType::Less:
+    case TokenType::GreaterEqual:
+    case TokenType::LessEqual:
+    case TokenType::Equal:
+        return 4;
+
+    default:
+        return 0;
+    }
+}
+
+
 QVector<Token> Parser::toRpn(const QVector<Token>& tokens)
 {
     QVector<Token> output;
-    QStack<Token>  stack;
+    QStack<Token> opStack;
 
-    for (int i = 0; i < tokens.size(); ++i) {
-        const Token& tok = tokens[i];
+    int i = 0;
+    const int n = tokens.size();
 
-        if (tok.type == TokenType::Number ||
-            tok.type == TokenType::Variable) {
-            output.append(tok);
-            continue;
-        }
+    while (i < n) {
+        Token t = tokens[i++];
 
-        // Identifier → lehet függvény, ha utána '(' jön
-        if (tok.type == TokenType::Identifier) {
-            bool isFunc = false;
-            if (i + 1 < tokens.size() && tokens[i + 1].type == TokenType::LParen) {
-                isFunc = true;
-            }
-
-            if (isFunc) {
-                Token funcTok{TokenType::Function, tok.text};
-                stack.push(funcTok);
-            } else {
-                // ha sima azonosítóként akarod kezelni, mehet operandusnak
-                output.append(tok);
-            }
-            continue;
-        }
-
-        if (tok.type == TokenType::Comma) {
-            // argumentum elválasztó: pop-olunk, amíg LParen vagy stack üres
-            while (!stack.isEmpty() && stack.top().type != TokenType::LParen) {
-                output.append(stack.pop());
-            }
-            continue;
-        }
-
-        if (tok.type == TokenType::LParen) {
-            stack.push(tok);
-            continue;
-        }
-
-        if (tok.type == TokenType::RParen) {
-            while (!stack.isEmpty() && stack.top().type != TokenType::LParen) {
-                output.append(stack.pop());
-            }
-            if (!stack.isEmpty() && stack.top().type == TokenType::LParen) {
-                stack.pop(); // '(' le
-            }
-            // ha a '(' előtt függvény volt, azt is kidobjuk az outputra
-            if (!stack.isEmpty() && stack.top().type == TokenType::Function) {
-                output.append(stack.pop());
-            }
-            continue;
-        }
-
-        if (isOperator(tok.type)) {
-            while (!stack.isEmpty() && isOperator(stack.top().type)) {
-                TokenType topType = stack.top().type;
-                int p1 = precedence(tok.type);
-                int p2 = precedence(topType);
-
-                if ((isLeftAssociative(tok.type) && p1 <= p2) ||
-                    (!isLeftAssociative(tok.type) && p1 < p2)) {
-                    output.append(stack.pop());
-                } else {
-                    break;
-                }
-            }
-            stack.push(tok);
-            continue;
-        }
-
-        if (tok.type == TokenType::End) {
+        if (t.type == TokenType::End) {
             break;
         }
 
-        // Unknown stb.: most ignorálhatjuk vagy kidobhatjuk
+        // --- Literálok, változók ---
+        if (t.type == TokenType::Number ||
+            t.type == TokenType::Variable)
+        {
+            output.append(t);
+            continue;
+        }
+
+        // --- Függvény név ---
+        if (t.type == TokenType::Function) {
+            opStack.push(t);
+            continue;
+        }
+
+        // --- Vessző: függvény argumentum elválasztó ---
+        if (t.type == TokenType::Comma) {
+            while (!opStack.isEmpty() && opStack.top().type != TokenType::LParen) {
+                output.append(opStack.pop());
+            }
+            continue;
+        }
+
+        // --- Bal zárójel ---
+        if (t.type == TokenType::LParen) {
+            opStack.push(t);
+            continue;
+        }
+
+        // --- Jobb zárójel ---
+        if (t.type == TokenType::RParen) {
+            while (!opStack.isEmpty() && opStack.top().type != TokenType::LParen) {
+                output.append(opStack.pop());
+            }
+            if (!opStack.isEmpty() && opStack.top().type == TokenType::LParen)
+                opStack.pop(); // '('
+
+            // Ha függvény áll a zárójel előtt, azt is kitesszük
+            if (!opStack.isEmpty() && opStack.top().type == TokenType::Function) {
+                output.append(opStack.pop());
+            }
+            continue;
+        }
+
+        // --- Ternary ? ---
+        if (t.type == TokenType::Question) {
+            opStack.push(t);
+            continue;
+        }
+
+        // --- Ternary : ---
+        if (t.type == TokenType::Colon) {
+            while (!opStack.isEmpty() &&
+                   opStack.top().type != TokenType::Question)
+            {
+                output.append(opStack.pop());
+            }
+            // ':' nem kerül a stackre
+            continue;
+        }
+
+
+        // --- Bináris operátorok ---
+        if (t.type == TokenType::Plus  ||
+            t.type == TokenType::Minus ||
+            t.type == TokenType::Star  ||
+            t.type == TokenType::Slash ||
+            t.type == TokenType::Greater ||
+            t.type == TokenType::Less    ||
+            t.type == TokenType::GreaterEqual ||
+            t.type == TokenType::LessEqual    ||
+            t.type == TokenType::Equal ||
+            t.type == TokenType::Assign)
+
+        {
+            while (!opStack.isEmpty()) {
+                Token top = opStack.top();
+
+                if (top.type == TokenType::LParen ||
+                    top.type == TokenType::Function)
+                    break;
+
+                if (precedence(top) < precedence(t))
+                    break;
+
+                output.append(opStack.pop());
+            }
+
+            opStack.push(t);
+            continue;
+        }
+
+
+        if (t.type == TokenType::Return) {
+            // A return token egyszerűen bekerül az outputba a végén.
+            // A return után jövő assignmentek RPN-be kerülnek normál módon.
+            opStack.push(t);
+            continue;
+        }
+
+        // Minden más: ignoráljuk
     }
 
-    while (!stack.isEmpty()) {
-        output.append(stack.pop());
+    // A végén mindent kipakolunk
+    while (!opStack.isEmpty()) {
+        output.append(opStack.pop());
     }
 
     return output;
