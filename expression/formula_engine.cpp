@@ -8,6 +8,27 @@
 
 EvalResult FormulaEngine::eval(const QString& code)
 {
+    // Több soros script: soronként értékeljük, a végső sor eredménye lesz _result
+    if (code.contains('\n')) {
+        QStringList lines = code.split('\n', Qt::SkipEmptyParts);
+        Value last = Value::nullValue();
+
+        for (const QString& line : lines) {
+            QString trimmed = line.trimmed();
+            if (trimmed.isEmpty())
+                continue;
+
+            auto r = eval(trimmed);
+            if (!r.ok)
+                return r;
+
+            last = VariableRepository::instance().get("_result");
+        }
+
+        VariableRepository::instance().set("_result", last);
+        return EvalResult::success();
+    }
+
     NodePool pool;
     auto tokens = Tokenizer::tokenize(code);
     auto rpn    = Parser::toRpn(tokens);
@@ -27,6 +48,7 @@ EvalResult FormulaEngine::eval(const QString& code)
         return EvalResult::failure("Unknown error");
     }
 }
+
 
 QVector<Value> FormulaEngine::evalChildren(AstNode* n)
 {
@@ -93,6 +115,17 @@ Value FormulaEngine::evalNode(AstNode* n)
             return evalNode(n->children[1]);
         return Value::numberValue(0.0);
     }
+
+    case AstNode::Type::Statement:
+        return evalNode(n->children[0]);
+
+    case AstNode::Type::Sequence: {
+        Value last = Value::nullValue();
+        for (AstNode* stmt : n->children)
+            last = evalNode(stmt);
+        return last;
+    }
+
     }
 
     return Value::nullValue();

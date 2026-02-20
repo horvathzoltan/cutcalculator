@@ -55,3 +55,82 @@ REGISTER_FN(eq,  [](auto a){ return Value::boolValue(a[0].number == a[1].number)
 REGISTER_FN(qty_fixed,    [](auto a){ return Value::numberValue(a[0].number * a[1].number); });
 REGISTER_FN(qty_perOrder, [](auto a){ return Value::numberValue(a[0].number); });
 REGISTER_FN(qty_perArea,  [](auto a){ return Value::numberValue((a[0].number * a[1].number) / a[2].number); });
+
+
+// --- Operator overloads (nem használunk makrót, mert a név nem lehet identifier) ---
+
+static bool _reg_op_plus = [](){
+    FunctionRegistry::instance().registerFn("+",
+                                            [](const QVector<Value>& a){
+                                                return Value::numberValue(a[0].number + a[1].number);
+                                            });
+    return true;
+}();
+
+static bool _reg_op_minus = [](){
+    FunctionRegistry::instance().registerFn("-",
+                                            [](const QVector<Value>& a){
+                                                return Value::numberValue(a[0].number - a[1].number);
+                                            });
+    return true;
+}();
+
+static bool _reg_op_mul = [](){
+    FunctionRegistry::instance().registerFn("*",
+                                            [](const QVector<Value>& a){
+                                                return Value::numberValue(a[0].number * a[1].number);
+                                            });
+    return true;
+}();
+
+static bool _reg_op_div = [](){
+    FunctionRegistry::instance().registerFn("/",
+                                            [](const QVector<Value>& a){
+                                                if (a[1].number == 0.0)
+                                                    throw QString("Division by zero");
+                                                return Value::numberValue(a[0].number / a[1].number);
+                                            });
+    return true;
+}();
+
+// --- Relációs operátorok ---
+
+static bool _reg_op_gt = [](){
+    FunctionRegistry::instance().registerFn(">",
+                                            [](const QVector<Value>& a){
+                                                return Value::boolValue(a[0].number > a[1].number);
+                                            });
+    return true;
+}();
+
+static bool _reg_op_lt = [](){
+    FunctionRegistry::instance().registerFn("<",
+                                            [](const QVector<Value>& a){
+                                                return Value::boolValue(a[0].number < a[1].number);
+                                            });
+    return true;
+}();
+
+static bool _reg_op_ge = [](){
+    FunctionRegistry::instance().registerFn(">=",
+                                            [](const QVector<Value>& a){
+                                                return Value::boolValue(a[0].number >= a[1].number);
+                                            });
+    return true;
+}();
+
+static bool _reg_op_le = [](){
+    FunctionRegistry::instance().registerFn("<=",
+                                            [](const QVector<Value>& a){
+                                                return Value::boolValue(a[0].number <= a[1].number);
+                                            });
+    return true;
+}();
+
+static bool _reg_op_eq = [](){
+    FunctionRegistry::instance().registerFn("==",
+                                            [](const QVector<Value>& a){
+                                                return Value::boolValue(a[0].number == a[1].number);
+                                            });
+    return true;
+}();

@@ -92,12 +92,31 @@ QVector<Token> Parser::toRpn(const QVector<Token>& tokens)
         }
 
         // --- Literálok, változók ---
+        if (t.type == TokenType::Newline) {
+            while (!opStack.isEmpty())
+                output.append(opStack.pop());
+            output.append({TokenType::StatementEnd, ";"});
+            continue;
+        }
+
         if (t.type == TokenType::Number ||
             t.type == TokenType::Variable)
         {
             output.append(t);
             continue;
         }
+
+        if (t.type == TokenType::Opt) {
+            opStack.push(t);
+            continue;
+        }
+
+
+        if (t.type == TokenType::Choose) {
+            opStack.push(t);
+            continue;
+        }
+
 
         // --- Függvény név ---
         if (t.type == TokenType::Function) {
@@ -140,14 +159,15 @@ QVector<Token> Parser::toRpn(const QVector<Token>& tokens)
             continue;
         }
 
-        // --- Ternary : ---
+        // --- Ternary / opt : ---
         if (t.type == TokenType::Colon) {
             while (!opStack.isEmpty() &&
-                   opStack.top().type != TokenType::Question)
+                   opStack.top().type != TokenType::Question &&
+                   opStack.top().type != TokenType::Choose &&
+                   opStack.top().type != TokenType::Opt)
             {
                 output.append(opStack.pop());
             }
-            // ':' nem kerül a stackre
             continue;
         }
 
@@ -195,8 +215,10 @@ QVector<Token> Parser::toRpn(const QVector<Token>& tokens)
 
     // A végén mindent kipakolunk
     while (!opStack.isEmpty()) {
-        output.append(opStack.pop());
+        Token top = opStack.pop();
+        output.append(top);
     }
+
 
     return output;
 }

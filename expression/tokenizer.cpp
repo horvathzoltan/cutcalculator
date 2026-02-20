@@ -17,6 +17,12 @@ QVector<Token> Tokenizer::tokenize(const QString& input)
     while (i < n) {
         QChar c = peek();
 
+        if (c == '\n') {
+            tokens.append({TokenType::Newline, "\\n"});
+            advance();
+            continue;
+        }
+
         if (c.isSpace()) {
             advance();
             continue;
@@ -83,8 +89,10 @@ QVector<Token> Tokenizer::tokenize(const QString& input)
                 tokens.append({TokenType::Opt, ident});
                 continue;
             }
-            if (ident == "qty") {
-                tokens.append({TokenType::Qty, ident});
+
+            // Ha az előző token Opt volt → a következő azonosító mindig flag (Variable)
+            if (!tokens.isEmpty() && tokens.last().type == TokenType::Opt) {
+                tokens.append({TokenType::Variable, ident});
                 continue;
             }
 
@@ -99,8 +107,10 @@ QVector<Token> Tokenizer::tokenize(const QString& input)
                 continue;
             }
 
-
-
+            if (!ident.isEmpty() && ident[0].isUpper()) {
+                tokens.append({TokenType::StringLiteral, ident});
+                continue;
+            }
 
             // Minden más → Variable
             tokens.append({TokenType::Variable, ident});

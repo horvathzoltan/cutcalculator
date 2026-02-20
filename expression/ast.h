@@ -14,7 +14,9 @@ struct AstNode {
         Opt,
         StringLiteral,
         Assignment,   // NEW
-        Return        // NEW
+        Return,       // NEW
+        Sequence,
+        Statement
     };
 
     Type type;

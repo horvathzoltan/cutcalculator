@@ -4,6 +4,7 @@
 AstNode* AstBuilder::fromRpn(const QVector<Token>& rpn, NodePool& pool)
 {
     QStack<AstNode*> stack;
+    QVector<AstNode*> statements;
 
     for (const Token& t : rpn) {
 
@@ -24,46 +25,41 @@ AstNode* AstBuilder::fromRpn(const QVector<Token>& rpn, NodePool& pool)
             continue;
         }
 
+        if (t.type == TokenType::Choose) {
+            if (stack.size() < 3)
+                return nullptr;
+
+            AstNode* falseExpr = stack.pop();
+            AstNode* trueExpr  = stack.pop();
+            AstNode* cond      = stack.pop();
+
+            AstNode* node = pool.create(AstNode::Type::Choose, "choose");
+            node->children.append(cond);
+            node->children.append(trueExpr);
+            node->children.append(falseExpr);
+
+            stack.push(node);
+            continue;
+        }
+
+        if (t.type == TokenType::Opt) {
+            if (stack.size() < 2)
+                return nullptr;
+
+            AstNode* value = stack.pop();
+            AstNode* flag  = stack.pop();
+
+            AstNode* node = pool.create(AstNode::Type::Opt, "opt");
+            node->children.append(flag);
+            node->children.append(value);
+
+            stack.push(node);
+            continue;
+        }
+
         // Függvény
         // --- Függvények ---
         if (t.type == TokenType::Function) {
-
-            // --- choose(cond, trueExpr, falseExpr) ---
-            if (t.text == "choose") {
-                if (stack.size() < 3) {
-                    qWarning() << "AstBuilder: choose() requires 3 arguments";
-                    return nullptr;
-                }
-                AstNode* falseExpr = stack.pop();
-                AstNode* trueExpr  = stack.pop();
-                AstNode* cond      = stack.pop();
-
-                AstNode* node = pool.create(AstNode::Type::Choose, "choose");
-                node->children.append(cond);
-                node->children.append(trueExpr);
-                node->children.append(falseExpr);
-
-                stack.push(node);
-                continue;
-            }
-
-            // --- opt(flag, value) ---
-            if (t.text == "opt") {
-                if (stack.size() < 2) {
-                    qWarning() << "AstBuilder: opt() requires 2 arguments";
-                    return nullptr;
-                }
-                AstNode* value = stack.pop();
-                AstNode* flag  = stack.pop();
-
-                AstNode* node = pool.create(AstNode::Type::Opt, "opt");
-                node->children.append(flag);
-                node->children.append(value);
-
-                stack.push(node);
-                continue;
-            }
-
             // --- fallback: 1 paraméteres függvény ---
             if (stack.isEmpty()) {
                 qWarning() << "AstBuilder: function" << t.text << "has no argument";
@@ -124,11 +120,37 @@ AstNode* AstBuilder::fromRpn(const QVector<Token>& rpn, NodePool& pool)
         }
 
 
+        if (t.type == TokenType::StatementEnd) {
+            if (stack.isEmpty())
+                return nullptr;
+
+            AstNode* expr = stack.pop();
+            AstNode* stmt = pool.create(AstNode::Type::Statement, "");
+            stmt->children.append(expr);
+            statements.append(stmt);
+            continue;
+        }
+
         // End vagy Unknown → ignoráljuk
     }
 
     if (stack.isEmpty())
         return nullptr;
 
+    if (!statements.isEmpty()) {
+        AstNode* expr = stack.pop();
+        AstNode* stmt = pool.create(AstNode::Type::Statement, "");
+        stmt->children.append(expr);
+        statements.append(stmt);
+
+        if (statements.size() == 1)
+            return statements[0];
+
+        AstNode* seq = pool.create(AstNode::Type::Sequence, "");
+        seq->children = statements;
+        return seq;
+    }
+
     return stack.pop();
+
 }

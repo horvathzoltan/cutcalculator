@@ -1,4 +1,3 @@
-#include "formula_engine_tester.h"
 
 #include "common/logger/logger.h"
 #include "test/common/test_data_builder.h"
@@ -13,12 +12,13 @@
 #include "products/registry/product_registry.h"
 #include "materials/registry/material_registry.h"
 #include "common/utils/filename_helper.h"
+#include "formula_engine_pipeline_tester.h"
 
 // ---------------------------------------------------------------------
 // RUN
 // ---------------------------------------------------------------------
 
-bool FormulaEngineTester::run()
+bool FormulaEnginePipelineTester::run()
 {
     zInfo("=== FormulaEngine TESTS START ===");
 
@@ -36,7 +36,7 @@ bool FormulaEngineTester::run()
     testUndefinedFunction();
     testDivisionByZero();
 
-    // 3) choose / opt
+    // 3) choose / opt (modern prefix DSL)
     testChooseSimple();
     testChooseNested();
     testChooseFalseBranch();
@@ -67,10 +67,11 @@ static void setVars(int w, int h, int qty)
 }
 
 // ---------------------------------------------------------------------
-// 1) Alap DSL minták
+// A modern DSL több soros scriptet Sequence/Statement AST‑ként futtat
+// 1) Alap DSL minták (modern AST‑alapú DSL)
 // ---------------------------------------------------------------------
 
-void FormulaEngineTester::testLiteralInt()
+void FormulaEnginePipelineTester::testLiteralInt()
 {
     zInfo("→ testLiteralInt");
 
@@ -84,7 +85,7 @@ void FormulaEngineTester::testLiteralInt()
     zInfo("✓ testLiteralInt OK");
 }
 
-void FormulaEngineTester::testLiteralDouble()
+void FormulaEnginePipelineTester::testLiteralDouble()
 {
     zInfo("→ testLiteralDouble");
 
@@ -98,7 +99,7 @@ void FormulaEngineTester::testLiteralDouble()
     zInfo("✓ testLiteralDouble OK");
 }
 
-void FormulaEngineTester::testSimpleExpression()
+void FormulaEnginePipelineTester::testSimpleExpression()
 {
     zInfo("→ testSimpleExpression");
 
@@ -112,7 +113,7 @@ void FormulaEngineTester::testSimpleExpression()
     zInfo("✓ testSimpleExpression OK");
 }
 
-void FormulaEngineTester::testAssignment()
+void FormulaEnginePipelineTester::testAssignment()
 {
     zInfo("→ testAssignment");
 
@@ -126,7 +127,7 @@ void FormulaEngineTester::testAssignment()
     zInfo("✓ testAssignment OK");
 }
 
-void FormulaEngineTester::testMultiLine()
+void FormulaEnginePipelineTester::testMultiLine()
 {
     zInfo("→ testMultiLine");
 
@@ -150,7 +151,7 @@ void FormulaEngineTester::testMultiLine()
 // 2) DSL hibák
 // ---------------------------------------------------------------------
 
-void FormulaEngineTester::testInvalidEmpty()
+void FormulaEnginePipelineTester::testInvalidEmpty()
 {
     zInfo("→ testInvalidEmpty");
 
@@ -162,7 +163,7 @@ void FormulaEngineTester::testInvalidEmpty()
     zInfo("✓ testInvalidEmpty OK");
 }
 
-void FormulaEngineTester::testInvalidGarbage()
+void FormulaEnginePipelineTester::testInvalidGarbage()
 {
     zInfo("→ testInvalidGarbage");
 
@@ -174,7 +175,7 @@ void FormulaEngineTester::testInvalidGarbage()
     zInfo("✓ testInvalidGarbage OK");
 }
 
-void FormulaEngineTester::testUndefinedVariable()
+void FormulaEnginePipelineTester::testUndefinedVariable()
 {
     zInfo("→ testUndefinedVariable");
 
@@ -186,7 +187,7 @@ void FormulaEngineTester::testUndefinedVariable()
     zInfo("✓ testUndefinedVariable OK");
 }
 
-void FormulaEngineTester::testUndefinedFunction()
+void FormulaEnginePipelineTester::testUndefinedFunction()
 {
     zInfo("→ testUndefinedFunction");
 
@@ -198,7 +199,7 @@ void FormulaEngineTester::testUndefinedFunction()
     zInfo("✓ testUndefinedFunction OK");
 }
 
-void FormulaEngineTester::testDivisionByZero()
+void FormulaEnginePipelineTester::testDivisionByZero()
 {
     zInfo("→ testDivisionByZero");
 
@@ -214,7 +215,7 @@ void FormulaEngineTester::testDivisionByZero()
 // 3) choose / opt
 // ---------------------------------------------------------------------
 
-void FormulaEngineTester::testChooseSimple()
+void FormulaEnginePipelineTester::testChooseSimple()
 {
     zInfo("→ testChooseSimple");
 
@@ -228,7 +229,7 @@ void FormulaEngineTester::testChooseSimple()
     zInfo("✓ testChooseSimple OK");
 }
 
-void FormulaEngineTester::testChooseNested()
+void FormulaEnginePipelineTester::testChooseNested()
 {
     zInfo("→ testChooseNested");
 
@@ -236,8 +237,8 @@ void FormulaEngineTester::testChooseNested()
 
     QString script =
         "choose: (w > 1500) ? "
-        "    choose: (h > 1500) ? X : Y "
-        "  : Z";
+        "choose: (h > 1500) ? X : Y "
+        ": Z";
 
     auto r = FormulaEngine::eval(script);
     Q_ASSERT(r.ok);
@@ -248,7 +249,7 @@ void FormulaEngineTester::testChooseNested()
     zInfo("✓ testChooseNested OK");
 }
 
-void FormulaEngineTester::testChooseFalseBranch()
+void FormulaEnginePipelineTester::testChooseFalseBranch()
 {
     zInfo("→ testChooseFalseBranch");
 
@@ -262,7 +263,7 @@ void FormulaEngineTester::testChooseFalseBranch()
     zInfo("✓ testChooseFalseBranch OK");
 }
 
-void FormulaEngineTester::testOptSimple()
+void FormulaEnginePipelineTester::testOptSimple()
 {
     zInfo("→ testOptSimple");
 
@@ -279,7 +280,7 @@ void FormulaEngineTester::testOptSimple()
     zInfo("✓ testOptSimple OK");
 }
 
-void FormulaEngineTester::testOptExpression()
+void FormulaEnginePipelineTester::testOptExpression()
 {
     zInfo("→ testOptExpression");
 
@@ -300,7 +301,7 @@ void FormulaEngineTester::testOptExpression()
 // 4) NeedCalculator integráció
 // ---------------------------------------------------------------------
 
-void FormulaEngineTester::testNeedCalculatorSimpleRoletta()
+void FormulaEnginePipelineTester::testNeedCalculatorSimpleRoletta()
 {
     zInfo("→ testNeedCalculatorSimpleRoletta");
 
@@ -333,7 +334,7 @@ void FormulaEngineTester::testNeedCalculatorSimpleRoletta()
     zInfo("✓ testNeedCalculatorSimpleRoletta OK");
 }
 
-void FormulaEngineTester::testNeedCalculatorInvalidFormulaAudit()
+void FormulaEnginePipelineTester::testNeedCalculatorInvalidFormulaAudit()
 {
     zInfo("→ testNeedCalculatorInvalidFormulaAudit");
 
@@ -364,7 +365,7 @@ void FormulaEngineTester::testNeedCalculatorInvalidFormulaAudit()
     zInfo("✓ testNeedCalculatorInvalidFormulaAudit OK");
 }
 
-void FormulaEngineTester::testNeedCalculatorChooseTrue()
+void FormulaEnginePipelineTester::testNeedCalculatorChooseTrue()
 {
     zInfo("→ testNeedCalculatorChooseTrue");
 
@@ -397,7 +398,7 @@ void FormulaEngineTester::testNeedCalculatorChooseTrue()
     zInfo("✓ testNeedCalculatorChooseTrue OK");
 }
 
-void FormulaEngineTester::testNeedCalculatorChooseFalse()
+void FormulaEnginePipelineTester::testNeedCalculatorChooseFalse()
 {
     zInfo("→ testNeedCalculatorChooseFalse");
 

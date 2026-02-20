@@ -86,18 +86,6 @@ public:
         return d[0]/d[1];
     }
 
-
-    static QVariant opt(const QList<QVariant>& params){
-        if(params.length() < 2) return {};
-        bool okFlag = false;
-        double flag = params[0].toDouble(&okFlag);
-        if(!okFlag) return {};
-        if(flag != 0.0)
-            return params[1];
-        return 0.0;
-    }
-
-
     static QVariant qtyFixed(const QList<QVariant>& params) {
         if (params.size() < 2)
             return {};

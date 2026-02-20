@@ -22,7 +22,6 @@ SOURCES += \
     calculation/dialogs/material_picker_dialog2.cpp \
     calculation/presenter/calculation_mode_detail_presenter.cpp \
     expression/ast_builder.cpp \
-    expression/ast_to_expression.cpp \
     expression/formula_engine.cpp \
     expression/formula_normalizer.cpp \
     calculation/service/matrix_generator.cpp \
@@ -37,8 +36,6 @@ SOURCES += \
     common/utils/cursor_aware_placement.cpp \
     common/utils/geometry_helper.cpp \
     common/utils/table_formatter.cpp \
-    expression/expression.cpp \
-    expression/keyword.cpp \
     expression/parser.cpp \
     expression/tokenizer.cpp \
     expression/variable.cpp \
@@ -124,7 +121,6 @@ HEADERS += \
     calculation/presenter/calculation_mode_detail_presenter.h \
     expression/ast.h \
     expression/ast_builder.h \
-    expression/ast_to_expression.h \
     expression/eval_result.h \
     expression/formula_engine.h \
     expression/formula_normalizer.h \
@@ -176,10 +172,8 @@ HEADERS += \
     connections/connection_importer.h \
     connections/connection_registry_engine.h \
     connections/connection_repository.h \
-    expression/expression.h \
     expression/function.h \
     expression/function_registry.h \
-    expression/keyword.h \
     expression/node_pool.h \
     expression/parser.h \
     expression/token.h \
@@ -291,7 +285,7 @@ DISTFILES += \
     docs/barcodes_module_overview.md \
     docs/entity_contract.md \
     docs/entity_matrix.md \
-    docs/formula_engine_dsl.md \
+    docs/formula_engine_dsl_v3.md \
     docs/overlay_ux_rules.md \
     docs/registry_contract.md \
     docs/registry_matrix.md \

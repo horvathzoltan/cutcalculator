@@ -14,7 +14,6 @@ enum class TokenType {
     // --- DSL kulcsszavak ---
     Choose,        // choose
     Opt,           // opt
-    Qty,           // qty
 
     // --- Operátorok ---
     Plus,
@@ -37,6 +36,8 @@ enum class TokenType {
     Assign,      // '='
     Return,      // 'return'
 
+    Newline,
+    StatementEnd,
     End,
     Unknown
 
