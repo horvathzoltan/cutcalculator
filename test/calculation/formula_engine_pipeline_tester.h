@@ -23,6 +23,7 @@ private:
     void testUndefinedVariable();
     void testUndefinedFunction();
     void testDivisionByZero();
+    void testNestedFunctionCall();
 
     // --- 3) choose / opt DSL ---
     void testChooseSimple();

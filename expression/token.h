@@ -47,4 +47,6 @@ enum class TokenType {
 struct Token {
     TokenType type;
     QString   text;
+    int       argc = 0;   // ÚJ: függvény argumentumszáma
 };
+

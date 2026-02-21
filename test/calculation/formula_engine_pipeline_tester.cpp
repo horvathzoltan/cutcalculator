@@ -36,6 +36,8 @@ bool FormulaEnginePipelineTester::run()
     testUndefinedFunction();
     testDivisionByZero();
 
+    testNestedFunctionCall();
+
     // 3) choose / opt (modern prefix DSL)
     testChooseSimple();
     testChooseNested();
@@ -209,6 +211,25 @@ void FormulaEnginePipelineTester::testDivisionByZero()
     Q_ASSERT(!r.ok);
 
     zInfo("✓ testDivisionByZero OK");
+}
+
+void FormulaEnginePipelineTester::testNestedFunctionCall()
+{
+    zInfo("→ testNestedFunctionCall");
+
+    // nincs szükség w,h,qty változókra
+    VariableRepository::instance().clear();
+
+    auto r = FormulaEngine::eval("mul(2, add(3,4))");
+
+    Q_ASSERT(r.ok);
+
+    Value result = VariableRepository::instance().get("_result");
+
+    Q_ASSERT(result.type == Value::Type::Number);
+    Q_ASSERT(result.number == 14.0);
+
+    zInfo("✓ testNestedFunctionCall OK");
 }
 
 // ---------------------------------------------------------------------

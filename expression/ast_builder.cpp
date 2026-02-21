@@ -60,15 +60,22 @@ AstNode* AstBuilder::fromRpn(const QVector<Token>& rpn, NodePool& pool)
         // Függvény
         // --- Függvények ---
         if (t.type == TokenType::Function) {
-            // --- fallback: 1 paraméteres függvény ---
-            if (stack.isEmpty()) {
-                qWarning() << "AstBuilder: function" << t.text << "has no argument";
+            int argc = t.argc;
+
+            if (stack.size() < argc) {
+                qWarning() << "AstBuilder: function" << t.text
+                           << "requires" << argc << "arguments, but stack has"
+                           << stack.size();
                 return nullptr;
             }
 
-            AstNode* arg = stack.pop();
             AstNode* fn = pool.create(AstNode::Type::Function, t.text);
-            fn->children.append(arg);
+
+            QVector<AstNode*> args;
+            for (int i = 0; i < argc; ++i)
+                args.prepend(stack.pop());   // helyes sorrend
+
+            fn->children = args;
             stack.push(fn);
             continue;
         }

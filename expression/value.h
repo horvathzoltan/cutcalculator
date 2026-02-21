@@ -35,4 +35,60 @@ struct Value {
         if (type == Type::String) return !text.isEmpty();
         return false;
     }
+
+    double toDouble(bool* ok = nullptr) const {
+        switch (type) {
+        case Type::Number:
+            if (ok) *ok = true;
+            return number;
+
+        case Type::Bool:
+            if (ok) *ok = true;
+            return boolean ? 1.0 : 0.0;
+
+        case Type::String: {
+            bool localOk = false;
+            double d = text.toDouble(&localOk);
+            if (ok) *ok = localOk;
+            return d;
+        }
+
+        case Type::Null:
+        default:
+            if (ok) *ok = false;
+            return qQNaN();
+        }
+    }
+
+    QString toString() const {
+        switch (type) {
+        case Type::Number: return QString::number(number);
+        case Type::Bool:   return boolean ? "true" : "false";
+        case Type::String: return text;
+        case Type::Null:   return "";
+        }
+        return "";
+    }
+
+    bool toBool(bool* ok = nullptr) const {
+        switch (type) {
+        case Type::Bool:
+            if (ok) *ok = true;
+            return boolean;
+
+        case Type::Number:
+            if (ok) *ok = true;
+            return number != 0.0;
+
+        case Type::String:
+            if (ok) *ok = true;
+            return !text.isEmpty();
+
+        case Type::Null:
+        default:
+            if (ok) *ok = false;
+            return false;
+        }
+    }
+
 };

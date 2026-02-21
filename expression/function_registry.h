@@ -21,8 +21,14 @@ public:
         auto it = fns.find(name);
         if (it == fns.end())
             throw QString("Undefined function: %1").arg(name);
+
+        if (args.isEmpty()) {
+            throw QString("Function %1 called with no arguments").arg(name);
+        }
+
         return it.value()(args);
     }
+
 
 private:
     QMap<QString, NativeFn> fns;
