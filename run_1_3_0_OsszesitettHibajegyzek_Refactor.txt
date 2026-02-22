@@ -1,254 +1,397 @@
-Zoltán, akkor most tényleg elérkeztünk ahhoz a ponthoz, ahol a
-FormulaEngine teljesen új alapokra kerül.
-A P8 nem toldozás, nem finomhangolás — ez a végső, letisztult
-architektúra, amit eddig építettünk elő.
+Nagyon jó, hogy most megállsz—ilyenkor szoktak elszállni a parser‑refaktorok. Csináljunk egy **jó, másnapi‑fejjel‑olvasható** tervet.
 
-És hadd mondjam ki: amit most csinálunk, az már nem „javítgatás”, hanem
-nyelvmotor‑tervezés.
-Ez a jó fajta munka.
+---
 
-Az alábbi terv nem kompromisszumos, nem „jó lesz ez így is”, hanem a
-lehető legtisztább, legegyszerűbb, legkarbantarthatóbb modell.
+### Kontextus snapshot (hol tartunk most)
 
-------------------------------------------------------------------------
+**Jelenlegi állapot:**
 
-⭐ P8 – A FormulaEngine teljes újraírása
+- A `Parser::toRpn`:
+  - kezeli:
+    - literálok, változók
+    - függvényhívás + `argc`
+    - bináris operátorok precedenciával
+    - `?` → csak push a stackre
+    - `:` → kipucol bináris opokat a `?`‑ig, de nem zár
+  - a végső drain‑ben:
+    - `?` → `Choose` tokenné alakul
+    - `Choose` / `Opt` nem kerül RPN‑be (prefix jelölőként voltak használva)
+- A nested `choose` most ilyen RPN‑t ad:
 
-A kompromisszummentes, pengeéles verzió
+  ```txt
+  w 1500 > h 1500 > X Y Z choose choose
+  ```
 
-1) A FormulaEngine::eval visszatérési típusa: bool
+- Az AST‑builder ezt így értelmezi:
 
-Pontosan, ahogy mondtad.
+  ```txt
+  Choose
+    ├─ cond1: (w > 1500)
+    ├─ cond2: (h > 1500)
+    └─ Choose(X, Y, Z)
+  ```
 
-A FormulaEngine:
+- Az `eval`‑ban volt/van egy speciális `Choose` ág, ami ezt a mintát kézzel értelmezi.
+- A felismerés: **ez nem általános beágyazás**, hanem egy konkrét AST‑minta kézi kezelése.
 
--   AST‑et futtat
--   változókat ír a VariableRepository‑ba
--   nem ad vissza értéket
--   nem csomagol semmit
--   nem találgat
--   csak azt mondja: sikerült / nem sikerült
+**Cél holnapra / p11‑től:**
 
-    bool FormulaEngine::eval(const QString& code);
+- A parser **általánosan** tudjon beágyazást:
+  - bármilyen operátorral
+  - bármilyen mélységben
+  - choose/opt/függvény/assignment/stb. kombinációkban
+- A ternary (`? :`) legyen:
+  - rendes, right‑associative, 3‑operandusú operátor
+  - prefix `choose:` csak „ráül” erre, nem külön hack
 
-A hívó kód:
+---
 
-    FormulaEngine::eval("a = 10");
-    int a = vars.get("a").toInt();
+## „Általános beágyazást kezelő parser” – patch terv (p1…pN)
 
-Ez a tiszta modell.
+### p1 – Fogalmi tisztázás, invariánsok
 
-------------------------------------------------------------------------
+**Cél:** legyen 3 kristálytiszta invariáns:
 
-⭐ 2) A FormulaEngine NEM tart fenn saját értéket
+1. **Expression**: egy összefüggő kifejezés, amit RPN‑re fordítunk.
+2. **Ternary**: `cond ? a : b` → mindig pontosan 3 operandus.
+3. **Prefix blokk**: `choose: <expression>` → egy teljes expressionre vonatkozik.
 
-Nincs EvaluatedFormula.
-Nincs length_mm.
-Nincs pieces.
-Nincs text.
+**Teendő (csak komment / jegyzet):**
 
-A FormulaEngine nem tud semmit arról, hogy a hívó kód mire használja az
-értékeket.
+- A `parser.h` / `parser.cpp` tetejére rövid komment:
+  - mit tekintünk expressionnek
+  - hogyan kezeljük a ternaryt
+  - hogyan kötjük a prefix `choose:`‑t egy expressionhöz
 
-A FormulaEngine csak:
+---
 
--   értelmez,
--   számol,
--   repo‑ba ír.
+### p2 – Új struktúra: ExpressionContext
 
-Ez a helyes rétegzés.
+**Cél:** a parser tudja, mi történik egy adott expressionen belül.
 
-------------------------------------------------------------------------
+**Teendő:**
 
-⭐ 3) A nyelv runtime‑típusa: Value
+- `parser.cpp`‑ben (fent, `toRpn` fölött) definiálni:
 
-Nem QVariant.
-Nem EvaluatedFormula.
-Nem QString/int/bool keverék.
+  ```cpp
+  struct ExpressionContext {
+      int openQuestions = 0;   // hány '?' van nyitva ebben az expressionben
+      bool hasPrefixChoose = false; // volt-e 'choose:' az elején
+  };
+  ```
 
-Egyetlen, tiszta, típusos érték:
+- `toRpn` elején:
 
-    struct Value {
-        enum class Type { Number, String, Bool, Null };
+  ```cpp
+  QStack<ExpressionContext> exprStack;
+  exprStack.push(ExpressionContext{}); // globális top-level expression
+  ```
 
-        Type type = Type::Null;
-        double number = 0.0;
-        QString text;
-        bool boolean = false;
+---
 
-        static Value number(double n) { Value v; v.type=Type::Number; v.number=n; return v; }
-        static Value string(const QString& s) { Value v; v.type=Type::String; v.text=s; return v; }
-        static Value boolean(bool b) { Value v; v.type=Type::Bool; v.boolean=b; return v; }
-        static Value null() { return {}; }
-    };
+### p3 – `?` kezelése: ternary state
 
-Ez:
+**Cél:** a `?` ne csak egy sima token legyen, hanem állapot is.
 
--   gyors,
--   egyszerű,
--   típusbiztos,
--   nincs implicit konverzió,
--   nincs heurisztika,
--   nincs QVariant‑mágia.
+**Teendő:**
 
-Ez a nyelv runtime‑ja.
+- A `Question` ágban:
 
-------------------------------------------------------------------------
+  ```cpp
+  if (t.type == TokenType::Question) {
+      opStack.push(t);
+      exprStack.top().openQuestions++;
+      continue;
+  }
+  ```
+
+- Ezzel jelezzük: ebben az expressionben van egy nyitott ternary.
 
-⭐ 4) A VariableRepository is Value‑t tárol
+---
+
+### p4 – `:` kezelése: csak true‑ág vége
+
+**Cél:** `:` ne zárja le a ternaryt, csak a true‑ágot.
+
+**Teendő:**
+
+- A `Colon` ág maradjon **nagyon egyszerű**:
+
+  ```cpp
+  if (t.type == TokenType::Colon) {
+      while (!opStack.isEmpty() && opStack.top().type != TokenType::Question) {
+          output.append(opStack.pop());
+      }
+      // A '?' a stacken marad, a ternary még nyitva.
+      continue;
+  }
+  ```
+
+- NINCS:
+  - `?` pop
+  - `Choose` generálás
+  - prefix choose kezelés
+
+---
+
+### p5 – Prefix `choose:` mint expression‑nyitó
+
+**Cél:** `choose:` ne operátor legyen, hanem expression‑scope jelölő.
+
+**Teendő:**
+
+- A `Choose` ágban:
+
+  ```cpp
+  if (t.type == TokenType::Choose) {
+      // prefix choose: új expression context
+      ExpressionContext ctx;
+      ctx.hasPrefixChoose = true;
+      exprStack.push(ctx);
+
+      // a tényleges 'choose' tokent tegyük az opStack-re,
+      // de csak jelölőként (nem kerül közvetlenül az RPN-be)
+      opStack.push(t);
+      continue;
+  }
+  ```
+
+- Fontos: a prefix choose **nem kerül azonnal az outputba**.
+
+---
+
+### p6 – Expression boundary fogalma
+
+**Cél:** definiálni, mikor ér véget egy expression.
+
+**Expression vége lehet:**
 
-    QMap<QString, Value> vars;
+- `RParen` (jobb zárójel)
+- `Comma` (függvény argumentum vége)
+- `End` (sor vége)
+- top‑level `Newline` (nálad már van statementEnd)
+- prefix `choose:` által nyitott expression lezárása (implicit, amikor a külső expression továbbmegy)
+
+**Teendő:**
+
+- Bevezetni egy segédfüggvényt (lokális lambda a `toRpn`‑ben):
+
+  ```cpp
+  auto closeExpression = [&](bool isFinal) {
+      // 1) kipakoljuk a bináris operátorokat, amíg:
+      //    - LParen
+      //    - Function
+      //    - Question
+      //    - Choose (prefix jelölő)
+      while (!opStack.isEmpty()) {
+          Token top = opStack.top();
+          if (top.type == TokenType::LParen ||
+              top.type == TokenType::Function ||
+              top.type == TokenType::Question ||
+              top.type == TokenType::Choose)
+              break;
+          output.append(opStack.pop());
+      }
 
-És:
+      // 2) lezárjuk az összes nyitott '?' ebben az expressionben
+      while (exprStack.top().openQuestions > 0) {
+          // keresünk egy '?'‑t a stacken
+          while (!opStack.isEmpty() && opStack.top().type != TokenType::Question) {
+              output.append(opStack.pop());
+          }
+          if (opStack.isEmpty())
+              break;
 
-    Value VariableRepository::get(const QString& name);
-    void VariableRepository::set(const QString& name, const Value& v);
+          opStack.pop(); // levesszük a '?'
+          exprStack.top().openQuestions--;
 
-Ennyi.
+          Token chooseTok;
+          chooseTok.type = TokenType::Choose;
+          chooseTok.text = "choose";
+          output.append(chooseTok);
+      }
 
-------------------------------------------------------------------------
+      // 3) ha prefix choose volt ezen az expressionön → most kerül az RPN-be
+      if (exprStack.top().hasPrefixChoose) {
+          // a hozzá tartozó Choose token a stacken van
+          while (!opStack.isEmpty() && opStack.top().type != TokenType::Choose) {
+              output.append(opStack.pop());
+          }
+          if (!opStack.isEmpty() && opStack.top().type == TokenType::Choose) {
+              Token ch = opStack.pop();
+              ch.text = "choose"; // vagy "choose:" ha külön akarod jelölni
+              output.append(ch);
+          }
+      }
 
-⭐ 5) A FormulaEngine AST‑evalja közvetlenül Value‑t ad vissza
+      if (!isFinal)
+          exprStack.pop();
+  };
+  ```
 
-Nincs AstToExpression.
-Nincs Expression::Parse.
-Nincs Expression::Calculate.
-Nincs mini DSL.
+- A végső drain‑nél `closeExpression(true)` hívás.
 
-A teljes eval így néz ki:
+---
 
-    Value FormulaEngine::evalNode(AstNode* n)
-    {
-        switch (n->type) {
+### p7 – `RParen` integrálása az expression‑lezárásba
 
-            case AstNode::Type::Number:
-                return Value::number(n->value.toDouble());
+**Teendő:**
 
-            case AstNode::Type::StringLiteral:
-                return Value::string(n->value);
+- A `RParen` ágban:
 
-            case AstNode::Type::Variable:
-                return vars.get(n->value);
+  1. kipakolni, amíg `LParen`
+  2. `LParen` pop
+  3. ha utána `Function` van → függvény lezárás (most is így van)
+  4. **expression lezárás**:
 
-            case AstNode::Type::Operator:
-                return callFunction(n->value, evalChildren(n));
+  ```cpp
+  if (t.type == TokenType::RParen) {
+      while (!opStack.isEmpty() && opStack.top().type != TokenType::LParen) {
+          output.append(opStack.pop());
+      }
+      if (!opStack.isEmpty() && opStack.top().type == TokenType::LParen)
+          opStack.pop();
 
-            case AstNode::Type::Function:
-                return callFunction(n->value, evalChildren(n));
+      // függvény lezárás (maradhat, ahogy most van)
 
-            case AstNode::Type::Assignment:
-                vars.set(n->value, evalNode(n->children[0]));
-                return Value::null();
+      closeExpression(false);
+      continue;
+  }
+  ```
 
-            case AstNode::Type::Return:
-                return evalReturn(n);
+---
 
-            case AstNode::Type::Choose:
-                return evalChoose(n);
+### p8 – `Comma` integrálása expression‑lezárásba
 
-            case AstNode::Type::Opt:
-                return evalOpt(n);
-        }
-    }
+**Teendő:**
 
-Ez a tiszta, direkt AST‑eval.
+- A `Comma` ágban:
 
-------------------------------------------------------------------------
+  ```cpp
+  if (t.type == TokenType::Comma) {
+      closeExpression(false);
+      if (!argCountStack.isEmpty())
+          argCountStack.top()++;
+      continue;
+  }
+  ```
 
-⭐ 6) Függvénycentrikus világ
+- A függvény argumentumok így szépen külön expressionök lesznek.
 
-Ez a nyelv lényege.
+---
 
-Minden művelet → függvény.
+### p9 – `End` / sorvége integrálása expression‑lezárásba
 
--   + → add
--   - → sub
--   * → mul
--   / → div
--   > → gt
--   < → lt
--   >= → ge
--   <= → le
--   == → eq
--   choose → choose
--   opt → opt
--   qty_fixed → qty_fixed
--   qty_perOrder → qty_perOrder
--   qty_perArea → qty_perArea
--   a = expr → set(a, expr)
--   return a=..., b=... → return struct
+**Teendő:**
 
-A FunctionRegistry:
+- A `End` / `Newline` kezelésnél:
 
-    using NativeFn = std::function<Value(const QVector<Value>&)>;
+  - a mostani „mindent kipakolunk” helyett:
 
-    QMap<QString, NativeFn> registry;
+  ```cpp
+  if (t.type == TokenType::End) {
+      break;
+  }
 
-    registry["add"] = [](auto args){ return Value::number(args[0].number + args[1].number); };
-    registry["mul"] = [](auto args){ return Value::number(args[0].number * args[1].number); };
-    registry["qty_fixed"] = [](auto args){ return Value::number(args[0].number * args[1].number); };
-    ...
+  if (t.type == TokenType::Newline) {
+      closeExpression(false);
+      output.append({TokenType::StatementEnd, ";"});
+      exprStack.push(ExpressionContext{}); // új top-level expression
+      continue;
+  }
+  ```
 
-Ez a Lisp‑szerű, egységes, tiszta modell.
+- A végén, a `while (!opStack.isEmpty())` helyett:
 
-------------------------------------------------------------------------
+  ```cpp
+  closeExpression(true);
+  ```
 
-⭐ 7) A FormulaEngine::eval() végleges formája
+---
 
-    bool FormulaEngine::eval(const QString& code)
-    {
-        auto tokens = Tokenizer::tokenize(code);
-        auto rpn    = Parser::toRpn(tokens);
-        AstNode* ast = AstBuilder::fromRpn(rpn);
+### p10 – Bináris operátorok: csak precedencia, semmi ternary‑logika
 
-        if (!ast)
-            return false;
+**Teendő:**
 
-        try {
-            evalNode(ast);
-            return true;
-        } catch (...) {
-            return false;
-        }
-    }
+- A bináris operátor ág maradjon tisztán:
 
-Ennyi.
+  ```cpp
+  if (/* bináris op */) {
+      while (!opStack.isEmpty()) {
+          Token top = opStack.top();
+          if (top.type == TokenType::LParen ||
+              top.type == TokenType::Function ||
+              top.type == TokenType::Question ||
+              top.type == TokenType::Choose)
+              break;
 
-------------------------------------------------------------------------
+          if (precedence(top) < precedence(t))
+              break;
 
-⭐ 8) Mi marad a hívó C++ kódra?
+          output.append(opStack.pop());
+      }
+      opStack.push(t);
+      continue;
+  }
+  ```
 
-A hívó:
+- NINCS benne ternary lezárás.
 
--   meghívja az eval‑t,
--   majd a repo‑ból olvas.
+---
 
-Például:
+### p11 – Takarítás: régi ternary‑hackek eltávolítása
 
-    FormulaEngine::eval("length = w*h/1000");
-    double len = vars.get("length").number;
+**Teendő:**
 
-Vagy:
+- A végső drain‑ből:
+  - kivenni a `Question`‑speciális ágat (mert most már `closeExpression` kezeli)
+  - kivenni a `Choose` / `Opt` „ne kerüljön RPN‑be” hackeket (prefix choose már context‑szinten van kezelve)
 
-    FormulaEngine::eval("return length = w*h/1000, pieces = qty_fixed(qty,3)");
-    double len = vars.get("length").number;
-    double pcs = vars.get("pieces").number;
+---
 
-Ez a tiszta, kompromisszummentes modell.
+### p12 – Teszt mátrix
 
-------------------------------------------------------------------------
+**Holnapra jó lesz, ha ezt lefuttatod:**
 
-⭐ 9) Készen állok megírni a teljes P8 diffet
+1. `choose: (w*h > 1000000) ? A : B`
+2. `choose: (w > 1500) ? choose: (h > 1500) ? X : Y : Z`
+3. `w > 10 ? 1 : 2`
+4. `w > 10 ? 1 : 2 + 3`
+5. `w > 10 ? 1 : x > 5 ? 2 : 3`
+6. `opt: flag * (w > 10 ? 1 : 2)`
 
-Ha szeretnéd, megcsinálom:
+Mindegyiknél:
 
--   a Value típust,
--   a VariableRepository módosítását,
--   a FormulaEngine teljes újraírását,
--   a FunctionRegistry‑t,
--   az AST‑evalt,
--   a régi Expression/Keyword/AstToExpression réteg eltávolítását.
+- RPN dump
+- AST dump
+- eredmény
 
-Csak mondd ki:
+---
 
-„jöhet a P8 diff”
+## Holnapi `files.txt` – mit érdemes betölteni contextnek?
+
+Holnapra, amikor visszajössz, egy ilyen `files.txt` nagyon megkönnyíti a folytatást:
+
+```txt
+source/repos/CutCalculator/src/calculation/parser.cpp
+source/repos/CutCalculator/src/calculation/parser.h
+source/repos/CutCalculator/src/calculation/tokenizer.h
+source/repos/CutCalculator/src/calculation/tokenizer.cpp
+source/repos/CutCalculator/src/calculation/ast_builder.cpp
+source/repos/CutCalculator/src/calculation/ast_builder.h
+source/repos/CutCalculator/src/calculation/formula_engine.cpp
+source/repos/CutCalculator/src/calculation/formula_engine.h
+source/repos/CutCalculator/test/calculation/formula_engine_pipeline_tester.cpp
+```
+
+Ha ezt holnap „felolvastatod”, akkor:
+
+- látom a teljes parser‑környezetet
+- látom, hogyan épül az AST
+- látom, hogyan értékelődik ki a `Choose` és `Opt`
+- és a p11 tervet konkrét, beilleszthető patch‑re tudjuk fordítani.
+
+---
+
+Ha ma már nem akarsz semmit piszkálni (teljesen jogos), ez a terv holnap reggel **tiszta fejjel is érthető** lesz.
+Ha visszaolvasod majd, figyeld meg: minden lépés egyetlen, jól körülhatárolt változtatás—nem fog szétesni a parser.

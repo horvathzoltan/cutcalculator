@@ -52,9 +52,9 @@ int Parser::precedence(const Token& t)
     case TokenType::Assign:
         return 0;
 
-    case TokenType::Question:
-    case TokenType::Colon:
-        return 1;
+        // Ternary ? : már külön ágon kezelve, nem bináris operátor:
+        // case TokenType::Question:
+        // case TokenType::Colon:
 
     case TokenType::Greater:
     case TokenType::Less:
@@ -73,10 +73,8 @@ int Parser::precedence(const Token& t)
 
     default:
         return 0;
-
     }
 }
-
 
 QVector<Token> Parser::toRpn(const QVector<Token>& tokens)
 {
@@ -111,16 +109,19 @@ QVector<Token> Parser::toRpn(const QVector<Token>& tokens)
         }
 
 
-        if (t.type == TokenType::Opt) {
-            opStack.push(t);
-            continue;
-        }
-
-
+        // Prefix choose: → megy a stackre (ternary-hez kapcsolódik)
+        // Prefix opt: → NEM megy a stackre, azonnal outputba kerül
         if (t.type == TokenType::Choose) {
             opStack.push(t);
             continue;
         }
+
+        if (t.type == TokenType::Opt) {
+            // Az opt két operandust vár, prefix operátor → outputba tesszük
+            output.append(t);
+            continue;
+        }
+
 
 
         // --- Függvény név ---
@@ -174,34 +175,25 @@ QVector<Token> Parser::toRpn(const QVector<Token>& tokens)
         }
 
 
-        // --- Ternary ? ---
+        // Ternary: ? → push
         if (t.type == TokenType::Question) {
             opStack.push(t);
             continue;
         }
 
-        // --- Ternary / opt : ---
+        // Ternary: ':' → kipucoljuk a bináris operátorokat a '?'-ig,
+        // de a '?' a stacken marad, a ternary még nem zárul le.
         if (t.type == TokenType::Colon) {
-            while (!opStack.isEmpty()) {
-                TokenType tt = opStack.top().type;
-
-                // Ezekig pop-olunk:
-                if (tt == TokenType::Question ||
-                    tt == TokenType::Choose ||
-                    tt == TokenType::Opt)
-                    break;
-
-                // Ezeket NEM szabad pop-olni:
-                if (tt == TokenType::Function ||
-                    tt == TokenType::LParen)
-                    break;
-
+            while (!opStack.isEmpty() && opStack.top().type != TokenType::Question) {
                 output.append(opStack.pop());
             }
             continue;
         }
 
-        // --- Bináris operátorok ---
+
+
+        // --- Bináris operátorok (és = ) ---
+        // --- Bináris operátorok (és =) ---
         if (t.type == TokenType::Plus  ||
             t.type == TokenType::Minus ||
             t.type == TokenType::Star  ||
@@ -212,15 +204,36 @@ QVector<Token> Parser::toRpn(const QVector<Token>& tokens)
             t.type == TokenType::LessEqual    ||
             t.type == TokenType::Equal ||
             t.type == TokenType::Assign)
-
         {
             while (!opStack.isEmpty()) {
                 Token top = opStack.top();
 
+                // Zárójel / függvény megállítja
                 if (top.type == TokenType::LParen ||
                     top.type == TokenType::Function)
                     break;
 
+                // // --- TERNARY LEZÁRÁSA ---
+                // // Ha '?' van a stacken → előbb zárjuk le a ternary-t
+                // if (top.type == TokenType::Question) {
+                //     opStack.pop(); // levesszük a '?'
+
+                //     Token chooseTok;
+                //     chooseTok.type = TokenType::Choose;
+
+                //     // Prefix choose támogatása
+                //     if (!opStack.isEmpty() && opStack.top().type == TokenType::Choose) {
+                //         chooseTok.text = "choose:";
+                //         opStack.pop();
+                //     } else {
+                //         chooseTok.text = "choose";
+                //     }
+
+                //     output.append(chooseTok);
+                //     continue;
+                // }
+
+                // --- Normál bináris precedencia ---
                 if (precedence(top) < precedence(t))
                     break;
 
@@ -245,8 +258,32 @@ QVector<Token> Parser::toRpn(const QVector<Token>& tokens)
     // A végén mindent kipakolunk
     while (!opStack.isEmpty()) {
         Token top = opStack.pop();
+
+        // Ha '?' van a stacken → előbb zárjuk le a ternary-t
+        if (top.type == TokenType::Question) {
+            opStack.pop();
+            Token chooseTok;
+            chooseTok.type = TokenType::Choose;
+            chooseTok.text = "choose";
+            output.append(chooseTok);
+            continue;
+        }
+
+
+        if (top.type == TokenType::Colon) {
+            // ':' soha nem kerülhet az outputba
+            continue;
+        }
+
+        // Prefix choose: / opt: csak jelölő volt → NE kerüljön az RPN-be
+        if (top.type == TokenType::Choose || top.type == TokenType::Opt) {
+            continue;
+        }
+
         output.append(top);
     }
+
+
 
 
     // IDEIGLENES DEBUG:

@@ -168,7 +168,7 @@ void FormulaEngineTester::testNeedCalculatorSimpleRoletta()
     int height = 1500;
     int qty    = 1;
 
-    auto cuts = NeedCalculator::makeCutList({ ids.P1, width, height, qty }, "Manufacturing");
+    auto cuts = NeedCalculator::makeCutList({ ids.P1, width, height, qty, "" }, "Manufacturing");
 
     Q_ASSERT(cuts.size() == 2);
     Q_ASSERT(cuts[0].materialId == ids.M1);
@@ -207,7 +207,7 @@ void FormulaEngineTester::testNeedCalculatorInvalidFormulaAudit()
     int height = 1500;
     int qty    = 1;
 
-    auto cuts = NeedCalculator::makeCutList({ ids.P1, width, height, qty }, "Manufacturing");
+    auto cuts = NeedCalculator::makeCutList({ ids.P1, width, height, qty , ""}, "Manufacturing");
 
     Q_ASSERT(cuts.isEmpty());
 
@@ -302,7 +302,7 @@ void FormulaEngineTester::testNeedCalculatorChooseTrue()
     int h = 2000;
     int qty = 1;
 
-    auto cuts = NeedCalculator::makeCutList({ ids.P1, w, h, qty }, "Manufacturing");
+    auto cuts = NeedCalculator::makeCutList({ ids.P1, w, h, qty, "" }, "Manufacturing");
 
     Q_ASSERT(cuts.size() == 1);
     Q_ASSERT(cuts[0].materialId == ids.M1);
@@ -340,7 +340,7 @@ void FormulaEngineTester::testNeedCalculatorChooseFalse()
     int h = 1000;
     int qty = 1;
 
-    auto cuts = NeedCalculator::makeCutList({ ids.P1, w, h, qty }, "Manufacturing");
+    auto cuts = NeedCalculator::makeCutList({ ids.P1, w, h, qty, "" }, "Manufacturing");
 
     Q_ASSERT(cuts.size() == 1);
     Q_ASSERT(cuts[0].materialId == ids.M2);

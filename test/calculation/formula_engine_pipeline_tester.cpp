@@ -1,5 +1,6 @@
 
 #include "common/logger/logger.h"
+#include "expression/node_pool.h"
 #include "test/common/test_data_builder.h"
 
 #include "expression/formula_engine.h"
@@ -11,8 +12,8 @@
 #include "calculation/registry/need_calculation_detail_registry.h"
 #include "products/registry/product_registry.h"
 #include "materials/registry/material_registry.h"
-#include "common/utils/filename_helper.h"
 #include "formula_engine_pipeline_tester.h"
+#include "expression/ast_printer.h"
 
 // ---------------------------------------------------------------------
 // RUN
@@ -241,7 +242,12 @@ void FormulaEnginePipelineTester::testChooseSimple()
     zInfo("→ testChooseSimple");
 
     setVars(2000, 2000, 1);
-    auto r = FormulaEngine::eval("choose: (w*h > 1000000) ? A : B");
+
+    QString code = "choose: (w*h > 1000000) ? A : B";
+    EvalResult r = FormulaEngine::eval(code);
+
+    debugPipeline(code, r);
+
     Q_ASSERT(r.ok);
 
     auto v = VariableRepository::instance().get("_result");
@@ -249,6 +255,7 @@ void FormulaEnginePipelineTester::testChooseSimple()
 
     zInfo("✓ testChooseSimple OK");
 }
+
 
 void FormulaEnginePipelineTester::testChooseNested()
 {
@@ -346,7 +353,7 @@ void FormulaEnginePipelineTester::testNeedCalculatorSimpleRoletta()
     NeedCalculationDetailRegistry::instance().insert(d1);
     NeedCalculationDetailRegistry::instance().insert(d2);
 
-    auto cuts = NeedCalculator::makeCutList({ ids.P1, 1200, 1500, 1 }, "Manufacturing");
+    auto cuts = NeedCalculator::makeCutList({ ids.P1, 1200, 1500, 1, "" }, "Manufacturing");
 
     Q_ASSERT(cuts.size() == 2);
     Q_ASSERT(cuts[0].length_mm == 1185);
@@ -379,7 +386,7 @@ void FormulaEnginePipelineTester::testNeedCalculatorInvalidFormulaAudit()
     d.formula = "w-"; // hibás
     Q_ASSERT(!NeedCalculationDetailRegistry::instance().insert(d));
 
-    auto cuts = NeedCalculator::makeCutList({ ids.P1, 1200, 1500, 1 }, "Manufacturing");
+    auto cuts = NeedCalculator::makeCutList({ ids.P1, 1200, 1500, 1, "" }, "Manufacturing");
 
     Q_ASSERT(cuts.isEmpty());
 
@@ -411,7 +418,7 @@ void FormulaEnginePipelineTester::testNeedCalculatorChooseTrue()
 
     NeedCalculationDetailRegistry::instance().insert(d);
 
-    auto cuts = NeedCalculator::makeCutList({ ids.P1, 2000, 2000, 1 }, "Manufacturing");
+    auto cuts = NeedCalculator::makeCutList({ ids.P1, 2000, 2000, 1, "" }, "Manufacturing");
 
     Q_ASSERT(cuts.size() == 1);
     Q_ASSERT(cuts[0].materialId == ids.M1);
@@ -444,7 +451,7 @@ void FormulaEnginePipelineTester::testNeedCalculatorChooseFalse()
 
     NeedCalculationDetailRegistry::instance().insert(d);
 
-    auto cuts = NeedCalculator::makeCutList({ ids.P1, 1000, 1000, 1 }, "Manufacturing");
+    auto cuts = NeedCalculator::makeCutList({ ids.P1, 1000, 1000, 1, "" }, "Manufacturing");
 
     Q_ASSERT(cuts.size() == 1);
     Q_ASSERT(cuts[0].materialId == ids.M2);

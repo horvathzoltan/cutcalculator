@@ -9,6 +9,9 @@ public:
     static EvalResult eval(const QString& code);
 
 private:
-    static Value evalNode(AstNode* n);
-    static QVector<Value> evalChildren(AstNode* n);
+    static Value evalNode(AstNode* n, EvalResult* traceOut);
+    static QVector<Value> evalChildren(AstNode* n, EvalResult* traceOut);
+    static EvalResult evalSingleLine(const QString &code);
+    static EvalResult evalMultiLine(const QStringList &lines);
 };
+

@@ -24,6 +24,9 @@ public:
         _values.clear();
     }
 
+    QMap<QString, Value> dump() const { return _values; }
+
+
 private:
     QMap<QString, Value> _values;
 };

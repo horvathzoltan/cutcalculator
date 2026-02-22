@@ -121,6 +121,7 @@ HEADERS += \
     calculation/presenter/calculation_mode_detail_presenter.h \
     expression/ast.h \
     expression/ast_builder.h \
+    expression/ast_printer.h \
     expression/eval_result.h \
     expression/formula_engine.h \
     expression/formula_normalizer.h \
