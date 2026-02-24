@@ -3,7 +3,7 @@
 #include "common/logger/logger.h"
 #include "expression/eval_result.h"
 #include "value.h"
-#include <QDebug>
+//#include <QDebug>
 
 inline QString astTypeName(AstNode::Type t)
 {
@@ -23,57 +23,57 @@ inline QString astTypeName(AstNode::Type t)
     return "Unknown";
 }
 
-inline void printAstNode(AstNode* n, int indent = 0)
-{
-    if (!n) {
-        zInfo() << QString(indent, ' ') + "<null>";
-        return;
-    }
+// inline void printAstNode(AstNode* n, int indent = 0)
+// {
+//     if (!n) {
+//         zInfo() << QString(indent, ' ') + "<null>";
+//         return;
+//     }
 
-    QString ind(indent, ' ');
-    zInfo()
-        << ind
-        << astTypeName(n->type)
-        << "(" << n->value << ")";
+//     QString ind(indent, ' ');
+//     zInfo()
+//         << ind
+//         << astTypeName(n->type)
+//         << "(" << n->value << ")";
 
-    for (int i = 0; i < n->children.size(); ++i) {
-        printAstNode(n->children[i], indent + 2);
-    }
-}
+//     for (int i = 0; i < n->children.size(); ++i) {
+//         printAstNode(n->children[i], indent + 2);
+//     }
+// }
 
-inline void printAstTree(AstNode* node,
-                         const QString& prefix = "",
-                         bool isLast = true,
-                         bool isRoot = true)
-{
-    if (isRoot)
-        zInfo() << "\n=== AST TREE ===";
+// inline void printAstTree(AstNode* node,
+//                          const QString& prefix = "",
+//                          bool isLast = true,
+//                          bool isRoot = true)
+// {
+//     if (isRoot)
+//         zInfo() << "\n=== AST TREE ===";
 
-    if (!node) {
-        zInfo() << prefix << (isLast ? "└── " : "├── ") << "<null>";
-        return;
-    }
+//     if (!node) {
+//         zInfo() << prefix << (isLast ? "└── " : "├── ") << "<null>";
+//         return;
+//     }
 
-    QString connector = isLast ? "└── " : "├── ";
+//     QString connector = isLast ? "└── " : "├── ";
 
-    // Node header
-    zInfo()
-        << prefix
-        << connector
-        << astTypeName(node->type)
-        << "(" << node->value << ")";
+//     // Node header
+//     zInfo()
+//         << prefix
+//         << connector
+//         << astTypeName(node->type)
+//         << "(" << node->value << ")";
 
-    // Gyerekek
-    const auto& kids = node->children;
-    for (int i = 0; i < kids.size(); ++i) {
-        bool lastChild = (i == kids.size() - 1);
-        QString newPrefix = prefix + (isLast ? "    " : "│   ");
-        printAstTree(kids[i], newPrefix, lastChild, false);
-    }
+//     // Gyerekek
+//     const auto& kids = node->children;
+//     for (int i = 0; i < kids.size(); ++i) {
+//         bool lastChild = (i == kids.size() - 1);
+//         QString newPrefix = prefix + (isLast ? "    " : "│   ");
+//         printAstTree(kids[i], newPrefix, lastChild, false);
+//     }
 
-    if (isRoot)
-        zInfo() << "================\n";
-}
+//     if (isRoot)
+//         zInfo() << "================\n";
+// }
 
 inline void collectVariables(AstNode* n,
                              QSet<QString>& readVars,
@@ -102,37 +102,37 @@ inline void collectVariables(AstNode* n,
 }
 
 
-inline void printVariables(const QMap<QString, Value>& vars,
-                           const QString& title = "Variables")
-{
-    zInfo() << "\n=== " << title << " ===";
+// inline void printVariables(const QMap<QString, Value>& vars,
+//                            const QString& title = "Variables")
+// {
+//     zInfo() << "\n=== " << title << " ===";
 
-    if (vars.isEmpty()) {
-        zInfo() << "(empty)";
-        return;
-    }
+//     if (vars.isEmpty()) {
+//         zInfo() << "(empty)";
+//         return;
+//     }
 
-    QStringList keys = vars.keys();
-    keys.sort();
+//     QStringList keys = vars.keys();
+//     keys.sort();
 
-    for (int i = 0; i < keys.size(); ++i) {
-        const QString& key = keys[i];
-        const Value& val = vars[key];
+//     for (int i = 0; i < keys.size(); ++i) {
+//         const QString& key = keys[i];
+//         const Value& val = vars[key];
 
-        QString repr;
+//         QString repr;
 
-        switch (val.type) {
-        case Value::Type::Number: repr = QString::number(val.number); break;
-        case Value::Type::Bool:   repr = val.boolean ? "true" : "false"; break;
-        case Value::Type::String: repr = "\"" + val.text + "\""; break;
-        case Value::Type::Null:   repr = "null"; break;
-        }
+//         switch (val.type) {
+//         case Value::Type::Number: repr = QString::number(val.number); break;
+//         case Value::Type::Bool:   repr = val.boolean ? "true" : "false"; break;
+//         case Value::Type::String: repr = "\"" + val.text + "\""; break;
+//         case Value::Type::Null:   repr = "null"; break;
+//         }
 
-        zInfo() << " " << key << "=" << repr;
-    }
+//         zInfo() << " " << key << "=" << repr;
+//     }
 
-    zInfo() << "====================\n";
-}
+//     zInfo() << "====================\n";
+// }
 
 inline QString tokenTypeName(TokenType t)
 {
@@ -184,100 +184,100 @@ inline QString tokenTypeName(TokenType t)
 
 
 
-inline void printTokens(const QList<Token>& tokens,
-                        const QString& title = "Tokens")
-{
-    zInfo() << "\n=== " << title << " ===";
+// inline void printTokens(const QList<Token>& tokens,
+//                         const QString& title = "Tokens")
+// {
+//     zInfo() << "\n=== " << title << " ===";
 
-    if (tokens.isEmpty()) {
-        zInfo() << "(empty)";
-        return;
-    }
+//     if (tokens.isEmpty()) {
+//         zInfo() << "(empty)";
+//         return;
+//     }
 
-    for (int i = 0; i < tokens.size(); ++i) {
-        const Token& t = tokens[i];
-        zInfo() << " "
-                << tokenTypeName(t.type)
-                << "('" << t.text << "')"
-                << " argc=" << t.argc;
-    }
-
-
-    zInfo() << "====================\n";
-}
+//     for (int i = 0; i < tokens.size(); ++i) {
+//         const Token& t = tokens[i];
+//         zInfo() << " "
+//                 << tokenTypeName(t.type)
+//                 << "('" << t.text << "')"
+//                 << " argc=" << t.argc;
+//     }
 
 
-
-inline void printRpn(const QList<Token>& rpn,
-                     const QString& title = "RPN")
-{
-    zInfo() << "\n=== " << title << " ===";
-
-    if (rpn.isEmpty()) {
-        zInfo() << "(empty)";
-        return;
-    }
-
-    for (int i = 0; i < rpn.size(); ++i) {
-        const Token& t = rpn[i];
-        zInfo() << " "
-                << t.text
-                << " (" << tokenTypeName(t.type)
-                << ", argc=" << t.argc << ")";
-    }
-
-    zInfo() << "====================\n";
-}
-
-inline QString setToString(const QSet<QString>& s)
-{
-    QStringList list = QStringList(s.begin(), s.end());
-    list.sort();
-    return "{" + list.join(", ") + "}";
-}
-
-inline void debugPipeline(const QString& code, const EvalResult& r)
-{
-    zInfo() << "\n================ DEBUG PIPELINE ================";
-    zInfo() << "Code:" << code;
-
-    // Token dump
-    if (!r.tokensDump.isEmpty()) {
-        zInfo() << "\n=== Tokens ===";
-        for (const QString& s : r.tokensDump)
-            zInfo() << " " << s;
-    }
-
-    // RPN dump
-    if (!r.rpnDump.isEmpty()) {
-        zInfo() << "\n=== RPN ===";
-        for (const QString& s : r.rpnDump)
-            zInfo() << " " << s;
-    }
-
-    // AST
-    //printAstTree(r.ast);
-    // AST dump
-    if (!r.astDump.isEmpty()) {
-        zInfo() << "\n=== AST DUMP ===" << "\n" << r.astDump;
-    }
+//     zInfo() << "====================\n";
+// }
 
 
-    // Variables
-    zInfo() << "Read variables:" << setToString(r.readVars);
-    zInfo() << "Written variables:" << setToString(r.writtenVars);
 
-    // Execution trace
-    if (!r.trace.isEmpty()) {
-        zInfo() << "\n=== Execution Trace ===";
-        for (int i = 0; i < r.trace.size(); ++i) {
-            const TraceEntry& te = r.trace[i];
-            zInfo() << " " << te.nodeType << "(" << te.nodeValue << ") => " << te.result;
-        }
-    }
+// inline void printRpn(const QList<Token>& rpn,
+//                      const QString& title = "RPN")
+// {
+//     zInfo() << "\n=== " << title << " ===";
 
-    zInfo() << "================================================\n";
-}
+//     if (rpn.isEmpty()) {
+//         zInfo() << "(empty)";
+//         return;
+//     }
+
+//     for (int i = 0; i < rpn.size(); ++i) {
+//         const Token& t = rpn[i];
+//         zInfo() << " "
+//                 << t.text
+//                 << " (" << tokenTypeName(t.type)
+//                 << ", argc=" << t.argc << ")";
+//     }
+
+//     zInfo() << "====================\n";
+// }
+
+// inline QString setToString(const QSet<QString>& s)
+// {
+//     QStringList list = QStringList(s.begin(), s.end());
+//     list.sort();
+//     return "{" + list.join(", ") + "}";
+// }
+
+// inline void debugPipeline(const QString& code, const EvalResult& r)
+// {
+//     zInfo() << "\n================ DEBUG PIPELINE ================";
+//     zInfo() << "Code:" << code;
+
+//     // Token dump
+//     if (!r.tokensDump.isEmpty()) {
+//         zInfo() << "\n=== Tokens ===";
+//         for (const QString& s : r.tokensDump)
+//             zInfo() << " " << s;
+//     }
+
+//     // RPN dump
+//     if (!r.rpnDump.isEmpty()) {
+//         zInfo() << "\n=== RPN ===";
+//         for (const QString& s : r.rpnDump)
+//             zInfo() << " " << s;
+//     }
+
+//     // AST
+//     //printAstTree(r.ast);
+//     // AST dump
+//     if (!r.astDump.isEmpty()) {
+//         zInfo() << "\n=== AST DUMP ===" << "\n" << r.astDump;
+//     }
+
+
+//     // Variables
+//     zInfo() << "Read variables:" << setToString(r.readVars);
+//     zInfo() << "Written variables:" << setToString(r.writtenVars);
+
+//     // Execution trace
+//     if (!r.trace.isEmpty()) {
+//         zInfo() << "\n=== Execution Trace ===";
+//         for (int i = 0; i < r.trace.size(); ++i) {
+//             const TraceEntry& te = r.trace[i];
+//             zInfo() << " " << te.nodeType << "(" << te.nodeValue << ") => " << te.result;
+//         }
+//     }
+
+//     zInfo() << "================================================\n";
+// }
 
 
 

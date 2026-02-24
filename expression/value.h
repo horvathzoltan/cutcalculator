@@ -64,10 +64,22 @@ struct Value {
         switch (type) {
         case Type::Number: return QString::number(number);
         case Type::Bool:   return boolean ? "true" : "false";
-        case Type::String: return text;
-        case Type::Null:   return "";
+        case Type::String: return "\"" + text + "\"";
+        case Type::Null:   return "null";
         }
         return "";
+    }
+
+
+    QString typeName() const
+    {
+        switch (type) {
+        case Type::Number: return "Number";
+        case Type::String: return "String";
+        case Type::Bool:   return "Bool";
+        case Type::Null:   return "Null";
+        }
+        return "Unknown";
     }
 
     bool toBool(bool* ok = nullptr) const {

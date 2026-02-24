@@ -246,7 +246,7 @@ void FormulaEnginePipelineTester::testChooseSimple()
     QString code = "choose: (w*h > 1000000) ? A : B";
     EvalResult r = FormulaEngine::eval(code);
 
-    debugPipeline(code, r);
+    r.debugDump();
 
     Q_ASSERT(r.ok);
 
@@ -299,11 +299,14 @@ void FormulaEnginePipelineTester::testOptSimple()
     auto& vars = VariableRepository::instance();
     vars.set("paint", Value::boolValue(false));
 
-    auto r = FormulaEngine::eval("h - 10 + opt:paint:+40");
+    QString code = "h - 10 + opt: paint ? +40";
+    EvalResult r = FormulaEngine::eval(code);
+    r.debugDump();
+
     Q_ASSERT(r.ok);
 
-    auto v = vars.get("_result");
-    Q_ASSERT(v.number == 1490);
+    auto result = vars.get("_result");
+    Q_ASSERT(result.number == 1490);
 
     zInfo("✓ testOptSimple OK");
 }
@@ -316,11 +319,13 @@ void FormulaEnginePipelineTester::testOptExpression()
     auto& vars = VariableRepository::instance();
     vars.set("premium", Value::boolValue(true));
 
-    auto r = FormulaEngine::eval("w - 10 + opt:premium:+(w/10)");
+    auto r = FormulaEngine::eval("w - 10 + opt: premium ? +(w/10)");
+    r.debugDump();
+
     Q_ASSERT(r.ok);
 
-    auto v = vars.get("_result");
-    Q_ASSERT(v.number == 1190 + 120);
+    auto result = vars.get("_result");
+    Q_ASSERT(result.number == 1190 + 120);
 
     zInfo("✓ testOptExpression OK");
 }

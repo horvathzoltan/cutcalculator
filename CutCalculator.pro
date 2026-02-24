@@ -22,6 +22,7 @@ SOURCES += \
     calculation/dialogs/material_picker_dialog2.cpp \
     calculation/presenter/calculation_mode_detail_presenter.cpp \
     expression/ast_builder.cpp \
+    expression/eval_result.cpp \
     expression/formula_engine.cpp \
     expression/formula_normalizer.cpp \
     calculation/service/matrix_generator.cpp \
@@ -36,6 +37,7 @@ SOURCES += \
     common/utils/cursor_aware_placement.cpp \
     common/utils/geometry_helper.cpp \
     common/utils/table_formatter.cpp \
+    expression/operator_info.cpp \
     expression/parser.cpp \
     expression/tokenizer.cpp \
     expression/variable.cpp \
@@ -176,6 +178,7 @@ HEADERS += \
     expression/function.h \
     expression/function_registry.h \
     expression/node_pool.h \
+    expression/operator_info.h \
     expression/parser.h \
     expression/token.h \
     expression/tokenizer.h \

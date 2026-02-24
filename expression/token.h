@@ -18,6 +18,10 @@ enum class TokenType {
     // --- Operátorok ---
     Plus,
     Minus,
+
+    PrefixPlus,
+    PrefixMinus,
+
     Star,
     Slash,
 

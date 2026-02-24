@@ -1,397 +1,217 @@
-Nagyon jó, hogy most megállsz—ilyenkor szoktak elszállni a parser‑refaktorok. Csináljunk egy **jó, másnapi‑fejjel‑olvasható** tervet.
+Zoltán, akkor jöjjön a holnapra előkészített, lépésről‑lépésre
+végrehajtható SKIP‑NODE PATCH TERV, pontosan úgy strukturálva, hogy:
 
----
+-   pontosan tudd, mit kell módosítani,
+-   melyik fájlban,
+-   milyen sorrendben,
+-   és legyen egy files.txt, amit be tudsz tölteni,
+-   plusz egy jegyzet, ami rögzíti a jelenlegi állapotot (context
+    snapshot).
 
-### Kontextus snapshot (hol tartunk most)
+Ez most nem kód, hanem műveleti terv, amit holnap végrehajthatsz.
 
-**Jelenlegi állapot:**
+------------------------------------------------------------------------
 
-- A `Parser::toRpn`:
-  - kezeli:
-    - literálok, változók
-    - függvényhívás + `argc`
-    - bináris operátorok precedenciával
-    - `?` → csak push a stackre
-    - `:` → kipucol bináris opokat a `?`‑ig, de nem zár
-  - a végső drain‑ben:
-    - `?` → `Choose` tokenné alakul
-    - `Choose` / `Opt` nem kerül RPN‑be (prefix jelölőként voltak használva)
-- A nested `choose` most ilyen RPN‑t ad:
+✅ SKIP‑NODE PATCH – LÉPÉSRŐL LÉPÉSRE TERV
 
-  ```txt
-  w 1500 > h 1500 > X Y Z choose choose
-  ```
+A skip‑node modell lényege:
 
-- Az AST‑builder ezt így értelmezi:
+-   Az Opt node nem ad vissza értéket, ha a feltétel hamis.
+-   A szülő operátorok (pl. +) kihagyják a skip‑et.
+-   A DSL szemantikája ettől még tisztább lesz.
 
-  ```txt
-  Choose
-    ├─ cond1: (w > 1500)
-    ├─ cond2: (h > 1500)
-    └─ Choose(X, Y, Z)
-  ```
+A patch 5 pontból áll.
 
-- Az `eval`‑ban volt/van egy speciális `Choose` ág, ami ezt a mintát kézzel értelmezi.
-- A felismerés: **ez nem általános beágyazás**, hanem egy konkrét AST‑minta kézi kezelése.
+------------------------------------------------------------------------
 
-**Cél holnapra / p11‑től:**
+1️⃣ LÉPÉS – Value típus bővítése (Skip hozzáadása)
 
-- A parser **általánosan** tudjon beágyazást:
-  - bármilyen operátorral
-  - bármilyen mélységben
-  - choose/opt/függvény/assignment/stb. kombinációkban
-- A ternary (`? :`) legyen:
-  - rendes, right‑associative, 3‑operandusú operátor
-  - prefix `choose:` csak „ráül” erre, nem külön hack
+Fájl: expression/value.h
 
----
+Módosítás:
 
-## „Általános beágyazást kezelő parser” – patch terv (p1…pN)
+1.  Add hozzá az új típust:
 
-### p1 – Fogalmi tisztázás, invariánsok
+    enum class Type { Number, String, Bool, Null, Skip };
 
-**Cél:** legyen 3 kristálytiszta invariáns:
+2.  Adj hozzá egy gyári függvényt:
 
-1. **Expression**: egy összefüggő kifejezés, amit RPN‑re fordítunk.
-2. **Ternary**: `cond ? a : b` → mindig pontosan 3 operandus.
-3. **Prefix blokk**: `choose: <expression>` → egy teljes expressionre vonatkozik.
+    static Value skipValue() {
+        Value v;
+        v.type = Type::Skip;
+        return v;
+    }
 
-**Teendő (csak komment / jegyzet):**
+3.  A toString()‑ben kezeld:
 
-- A `parser.h` / `parser.cpp` tetejére rövid komment:
-  - mit tekintünk expressionnek
-  - hogyan kezeljük a ternaryt
-  - hogyan kötjük a prefix `choose:`‑t egy expressionhöz
+    case Type::Skip: return "<skip>";
 
----
+4.  A toBool()‑ban:
 
-### p2 – Új struktúra: ExpressionContext
+    case Type::Skip:
+        if (ok) *ok = false;
+        return false;
 
-**Cél:** a parser tudja, mi történik egy adott expressionen belül.
+------------------------------------------------------------------------
 
-**Teendő:**
+2️⃣ LÉPÉS – Opt node módosítása SKIP visszaadásra
 
-- `parser.cpp`‑ben (fent, `toRpn` fölött) definiálni:
+Fájl: expression/formula_engine.cpp
 
-  ```cpp
-  struct ExpressionContext {
-      int openQuestions = 0;   // hány '?' van nyitva ebben az expressionben
-      bool hasPrefixChoose = false; // volt-e 'choose:' az elején
-  };
-  ```
+Módosítás:
 
-- `toRpn` elején:
+A jelenlegi Opt ág:
 
-  ```cpp
-  QStack<ExpressionContext> exprStack;
-  exprStack.push(ExpressionContext{}); // globális top-level expression
-  ```
+    else
+        return Value();
 
----
+→ cseréld erre:
 
-### p3 – `?` kezelése: ternary state
+    else
+        return Value::skipValue();
 
-**Cél:** a `?` ne csak egy sima token legyen, hanem állapot is.
+Ez jelzi a szülőnek: ezt az értéket hagyd ki.
 
-**Teendő:**
+------------------------------------------------------------------------
 
-- A `Question` ágban:
+3️⃣ LÉPÉS – Operátorok módosítása, hogy kihagyják a SKIP‑et
 
-  ```cpp
-  if (t.type == TokenType::Question) {
-      opStack.push(t);
-      exprStack.top().openQuestions++;
-      continue;
-  }
-  ```
-
-- Ezzel jelezzük: ebben az expressionben van egy nyitott ternary.
+Fájl: expression/formula_engine.cpp
+Függvény: Value FormulaEngine::evalNode(AstNode* n, ...)
 
----
-
-### p4 – `:` kezelése: csak true‑ág vége
-
-**Cél:** `:` ne zárja le a ternaryt, csak a true‑ágot.
-
-**Teendő:**
-
-- A `Colon` ág maradjon **nagyon egyszerű**:
-
-  ```cpp
-  if (t.type == TokenType::Colon) {
-      while (!opStack.isEmpty() && opStack.top().type != TokenType::Question) {
-          output.append(opStack.pop());
-      }
-      // A '?' a stacken marad, a ternary még nyitva.
-      continue;
-  }
-  ```
-
-- NINCS:
-  - `?` pop
-  - `Choose` generálás
-  - prefix choose kezelés
-
----
-
-### p5 – Prefix `choose:` mint expression‑nyitó
-
-**Cél:** `choose:` ne operátor legyen, hanem expression‑scope jelölő.
-
-**Teendő:**
-
-- A `Choose` ágban:
-
-  ```cpp
-  if (t.type == TokenType::Choose) {
-      // prefix choose: új expression context
-      ExpressionContext ctx;
-      ctx.hasPrefixChoose = true;
-      exprStack.push(ctx);
-
-      // a tényleges 'choose' tokent tegyük az opStack-re,
-      // de csak jelölőként (nem kerül közvetlenül az RPN-be)
-      opStack.push(t);
-      continue;
-  }
-  ```
-
-- Fontos: a prefix choose **nem kerül azonnal az outputba**.
-
----
-
-### p6 – Expression boundary fogalma
-
-**Cél:** definiálni, mikor ér véget egy expression.
-
-**Expression vége lehet:**
+Módosítás:
 
-- `RParen` (jobb zárójel)
-- `Comma` (függvény argumentum vége)
-- `End` (sor vége)
-- top‑level `Newline` (nálad már van statementEnd)
-- prefix `choose:` által nyitott expression lezárása (implicit, amikor a külső expression továbbmegy)
-
-**Teendő:**
-
-- Bevezetni egy segédfüggvényt (lokális lambda a `toRpn`‑ben):
-
-  ```cpp
-  auto closeExpression = [&](bool isFinal) {
-      // 1) kipakoljuk a bináris operátorokat, amíg:
-      //    - LParen
-      //    - Function
-      //    - Question
-      //    - Choose (prefix jelölő)
-      while (!opStack.isEmpty()) {
-          Token top = opStack.top();
-          if (top.type == TokenType::LParen ||
-              top.type == TokenType::Function ||
-              top.type == TokenType::Question ||
-              top.type == TokenType::Choose)
-              break;
-          output.append(opStack.pop());
-      }
+A case AstNode::Type::Operator: ágban, mielőtt meghívod:
 
-      // 2) lezárjuk az összes nyitott '?' ebben az expressionben
-      while (exprStack.top().openQuestions > 0) {
-          // keresünk egy '?'‑t a stacken
-          while (!opStack.isEmpty() && opStack.top().type != TokenType::Question) {
-              output.append(opStack.pop());
-          }
-          if (opStack.isEmpty())
-              break;
+    Value v = reg.call(n->value, evalChildren(n, traceOut));
 
-          opStack.pop(); // levesszük a '?'
-          exprStack.top().openQuestions--;
+→ módosítsd úgy, hogy a skip‑eket kiszűrd:
 
-          Token chooseTok;
-          chooseTok.type = TokenType::Choose;
-          chooseTok.text = "choose";
-          output.append(chooseTok);
-      }
+    QVector<Value> args = evalChildren(n, traceOut);
 
-      // 3) ha prefix choose volt ezen az expressionön → most kerül az RPN-be
-      if (exprStack.top().hasPrefixChoose) {
-          // a hozzá tartozó Choose token a stacken van
-          while (!opStack.isEmpty() && opStack.top().type != TokenType::Choose) {
-              output.append(opStack.pop());
-          }
-          if (!opStack.isEmpty() && opStack.top().type == TokenType::Choose) {
-              Token ch = opStack.pop();
-              ch.text = "choose"; // vagy "choose:" ha külön akarod jelölni
-              output.append(ch);
-          }
-      }
+    // skip-ek kiszűrése
+    QVector<Value> filtered;
+    for (const Value& a : args) {
+        if (a.type != Value::Type::Skip)
+            filtered.append(a);
+    }
 
-      if (!isFinal)
-          exprStack.pop();
-  };
-  ```
+    // ha nincs operandus → null
+    if (filtered.isEmpty()) {
+        Value v = Value::nullValue();
+        addTrace(v);
+        return v;
+    }
 
-- A végső drain‑nél `closeExpression(true)` hívás.
+    // ha egy operandus → azt add vissza
+    if (filtered.size() == 1) {
+        Value v = filtered[0];
+        addTrace(v);
+        return v;
+    }
 
----
+    // különben → normál operátorhívás
+    Value v = reg.call(n->value, filtered);
+    addTrace(v);
+    return v;
 
-### p7 – `RParen` integrálása az expression‑lezárásba
+Ez a skip‑node modell szíve.
 
-**Teendő:**
+------------------------------------------------------------------------
 
-- A `RParen` ágban:
+4️⃣ LÉPÉS – Function hívásoknál is szűrd a SKIP‑et
 
-  1. kipakolni, amíg `LParen`
-  2. `LParen` pop
-  3. ha utána `Function` van → függvény lezárás (most is így van)
-  4. **expression lezárás**:
+Fájl: expression/formula_engine.cpp
+Függvény: case AstNode::Type::Function:
 
-  ```cpp
-  if (t.type == TokenType::RParen) {
-      while (!opStack.isEmpty() && opStack.top().type != TokenType::LParen) {
-          output.append(opStack.pop());
-      }
-      if (!opStack.isEmpty() && opStack.top().type == TokenType::LParen)
-          opStack.pop();
+Ugyanaz a logika, mint az operátoroknál:
 
-      // függvény lezárás (maradhat, ahogy most van)
+-   skip → kihagyás
+-   0 operandus → null
+-   1 operandus → azt add vissza
+-   több operandus → normál function call
 
-      closeExpression(false);
-      continue;
-  }
-  ```
+------------------------------------------------------------------------
 
----
+5️⃣ LÉPÉS – AST builder NEM módosul
 
-### p8 – `Comma` integrálása expression‑lezárásba
+Fájl: expression/ast_builder.cpp
 
-**Teendő:**
+A skip‑node modell nem igényel AST módosítást, mert:
 
-- A `Comma` ágban:
+-   az Opt node továbbra is 2 gyereket tartalmaz,
+-   csak az evalNode viselkedése változik.
 
-  ```cpp
-  if (t.type == TokenType::Comma) {
-      closeExpression(false);
-      if (!argCountStack.isEmpty())
-          argCountStack.top()++;
-      continue;
-  }
-  ```
+------------------------------------------------------------------------
 
-- A függvény argumentumok így szépen külön expressionök lesznek.
+📄 files.txt – a holnapi patchhez
 
----
+    expression/value.h
+    expression/formula_engine.cpp
+    expression/ast_builder.cpp
+    expression/ast.h
+    expression/operator_info.cpp
+    expression/operator_info.h
 
-### p9 – `End` / sorvége integrálása expression‑lezárásba
+(Az utolsó kettő csak ellenőrzésre kell, nem módosulnak.)
 
-**Teendő:**
+------------------------------------------------------------------------
 
-- A `End` / `Newline` kezelésnél:
+🧾 Jegyzet – Context Snapshot (hol tartunk most)
 
-  - a mostani „mindent kipakolunk” helyett:
+Ez a snapshot segít holnap visszarázódni:
 
-  ```cpp
-  if (t.type == TokenType::End) {
-      break;
-  }
+------------------------------------------------------------------------
 
-  if (t.type == TokenType::Newline) {
-      closeExpression(false);
-      output.append({TokenType::StatementEnd, ";"});
-      exprStack.push(ExpressionContext{}); // új top-level expression
-      continue;
-  }
-  ```
+DSL állapot – 2026.02.24.
 
-- A végén, a `while (!opStack.isEmpty())` helyett:
+✔ Choose működik
 
-  ```cpp
-  closeExpression(true);
-  ```
+-   runtime értékválasztó
+-   cond → trueExpr / falseExpr
+-   AST node: 3 gyerek
+-   eval: tiszta, trace‑elt
 
----
+✔ Opt működik
 
-### p10 – Bináris operátorok: csak precedencia, semmi ternary‑logika
+-   runtime feltételes mellék‑kifejezés
+-   cond → expr / null
+-   AST node: 2 gyerek
+-   eval: tiszta, trace‑elt
+-   skip‑node modellre készülünk
 
-**Teendő:**
+✔ Parser stabil
 
-- A bináris operátor ág maradjon tisztán:
+-   choose/opt NEM operátor
+-   OPINFO tiszta
+-   RPN helyes
+-   prefix + működik
+-   zárójelek működnek
+-   nested choose/opt működik
 
-  ```cpp
-  if (/* bináris op */) {
-      while (!opStack.isEmpty()) {
-          Token top = opStack.top();
-          if (top.type == TokenType::LParen ||
-              top.type == TokenType::Function ||
-              top.type == TokenType::Question ||
-              top.type == TokenType::Choose)
-              break;
+✔ AST builder stabil
 
-          if (precedence(top) < precedence(t))
-              break;
+-   choose → 3 operandus
+-   opt → 2 operandus
+-   minden más operátor → 2 operandus
+-   function → variadic
 
-          output.append(opStack.pop());
-      }
-      opStack.push(t);
-      continue;
-  }
-  ```
+✔ Evaluator stabil
 
-- NINCS benne ternary lezárás.
+-   minden node típus működik
+-   trace működik
+-   skip‑node modellhez csak operátor/function ág módosul
 
----
+------------------------------------------------------------------------
 
-### p11 – Takarítás: régi ternary‑hackek eltávolítása
+🎯 Holnapra készen állsz
 
-**Teendő:**
+A skip‑node patch:
 
-- A végső drain‑ből:
-  - kivenni a `Question`‑speciális ágat (mert most már `closeExpression` kezeli)
-  - kivenni a `Choose` / `Opt` „ne kerüljön RPN‑be” hackeket (prefix choose már context‑szinten van kezelve)
+-   tisztább DSL szemantikát ad,
+-   nem keveri a „0” és „nincs érték” fogalmát,
+-   egyszerűbbé teszi a szülő operátorok logikáját,
+-   és még bővíthetőbbé teszi a nyelvet.
 
----
-
-### p12 – Teszt mátrix
-
-**Holnapra jó lesz, ha ezt lefuttatod:**
-
-1. `choose: (w*h > 1000000) ? A : B`
-2. `choose: (w > 1500) ? choose: (h > 1500) ? X : Y : Z`
-3. `w > 10 ? 1 : 2`
-4. `w > 10 ? 1 : 2 + 3`
-5. `w > 10 ? 1 : x > 5 ? 2 : 3`
-6. `opt: flag * (w > 10 ? 1 : 2)`
-
-Mindegyiknél:
-
-- RPN dump
-- AST dump
-- eredmény
-
----
-
-## Holnapi `files.txt` – mit érdemes betölteni contextnek?
-
-Holnapra, amikor visszajössz, egy ilyen `files.txt` nagyon megkönnyíti a folytatást:
-
-```txt
-source/repos/CutCalculator/src/calculation/parser.cpp
-source/repos/CutCalculator/src/calculation/parser.h
-source/repos/CutCalculator/src/calculation/tokenizer.h
-source/repos/CutCalculator/src/calculation/tokenizer.cpp
-source/repos/CutCalculator/src/calculation/ast_builder.cpp
-source/repos/CutCalculator/src/calculation/ast_builder.h
-source/repos/CutCalculator/src/calculation/formula_engine.cpp
-source/repos/CutCalculator/src/calculation/formula_engine.h
-source/repos/CutCalculator/test/calculation/formula_engine_pipeline_tester.cpp
-```
-
-Ha ezt holnap „felolvastatod”, akkor:
-
-- látom a teljes parser‑környezetet
-- látom, hogyan épül az AST
-- látom, hogyan értékelődik ki a `Choose` és `Opt`
-- és a p11 tervet konkrét, beilleszthető patch‑re tudjuk fordítani.
-
----
-
-Ha ma már nem akarsz semmit piszkálni (teljesen jogos), ez a terv holnap reggel **tiszta fejjel is érthető** lesz.
-Ha visszaolvasod majd, figyeld meg: minden lépés egyetlen, jól körülhatárolt változtatás—nem fog szétesni a parser.
+Ha szeretnéd, holnap végigmegyünk együtt a patchen, és megnézzük a
+tesztek kimenetét is.

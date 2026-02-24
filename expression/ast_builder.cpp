@@ -92,6 +92,9 @@ AstNode* AstBuilder::fromRpn(const QVector<Token>& rpn, NodePool& pool)
             t.type == TokenType::LessEqual ||
             t.type == TokenType::Equal)
         {
+            if (stack.size() < 2)
+                return nullptr;
+
             AstNode* right = stack.pop();
             AstNode* left  = stack.pop();
 
@@ -105,6 +108,9 @@ AstNode* AstBuilder::fromRpn(const QVector<Token>& rpn, NodePool& pool)
 
         // Assignment: name = expr
         if (t.type == TokenType::Assign) {
+            if (stack.size() < 2)
+                return nullptr;
+
             AstNode* expr = stack.pop();
             AstNode* var  = stack.pop();
             AstNode* node = pool.create(AstNode::Type::Assignment, var->value);

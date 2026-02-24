@@ -1,297 +1,347 @@
 #include "parser.h"
 #include "common/logger/logger.h"
+#include "operator_info.h"
 #include "tokenizer.h"
 #include <QStack>
 
-bool Parser::isLeftAssociative(TokenType t)
+Parser::ParseResult Parser::parse(const QString& input)
 {
-    // minden bináris operátor balról asszociatív most
-    switch (t) {
-    case TokenType::Plus:
-    case TokenType::Minus:
-    case TokenType::Star:
-    case TokenType::Slash:
-    case TokenType::Greater:
-    case TokenType::Less:
-    case TokenType::GreaterEqual:
-    case TokenType::LessEqual:
-    case TokenType::Equal:
-        return true;
-    default:
-        return false;
-    }
-}
-
-bool Parser::isOperator(TokenType t)
-{
-    switch (t) {
-    case TokenType::Plus:
-    case TokenType::Minus:
-    case TokenType::Star:
-    case TokenType::Slash:
-    case TokenType::Greater:
-    case TokenType::Less:
-    case TokenType::GreaterEqual:
-    case TokenType::LessEqual:
-    case TokenType::Equal:
-        return true;
-    default:
-        return false;
-    }
-}
-
-QVector<Token> Parser::parseToRpn(const QString& input)
-{
-    auto tokens = Tokenizer::tokenize(input);
-    return toRpn(tokens);
-}
-
-int Parser::precedence(const Token& t)
-{
-    switch (t.type) {
-    case TokenType::Assign:
-        return 0;
-
-        // Ternary ? : már külön ágon kezelve, nem bináris operátor:
-        // case TokenType::Question:
-        // case TokenType::Colon:
-
-    case TokenType::Greater:
-    case TokenType::Less:
-    case TokenType::GreaterEqual:
-    case TokenType::LessEqual:
-    case TokenType::Equal:
-        return 2;
-
-    case TokenType::Plus:
-    case TokenType::Minus:
-        return 3;
-
-    case TokenType::Star:
-    case TokenType::Slash:
-        return 4;
-
-    default:
-        return 0;
-    }
+    ParseResult pr;
+    pr.tokens = Tokenizer::tokenize(input);
+    pr.rpn    = toRpn(pr.tokens);
+    return pr;
 }
 
 QVector<Token> Parser::toRpn(const QVector<Token>& tokens)
 {
     QVector<Token> output;
-    QStack<Token> opStack;
-    QStack<int> argCountStack;   // ÚJ: függvény argumentumszámláló
+    QStack<Token>  opStack;
+    QStack<int>    argCountStack;
+
+    // Ternary állapot: csak a klasszikus cond ? A : B → choose
+    QStack<bool> questionHasColon;
+
+    bool expectOperand = true;
+    bool optMode       = false;   // épp egy opt: flag ? expr belsejében vagyunk
 
     int i = 0;
     const int n = tokens.size();
 
+    auto emitChoose = [&]() {
+        Token chooseTok;
+        chooseTok.type = TokenType::Choose;
+        chooseTok.text = "choose";
+        output.append(chooseTok);
+    };
+
+    auto flushUntil = [&](TokenType stop) {
+        while (!opStack.isEmpty() && opStack.top().type != stop) {
+            output.append(opStack.pop());
+        }
+    };
+
+    auto closeOneTernaryIfPossible = [&]() {
+        int idx = opStack.size() - 1;
+        while (idx >= 0 && opStack[idx].type != TokenType::Question)
+            --idx;
+
+        if (idx < 0)
+            return;
+
+        if (questionHasColon.isEmpty() || !questionHasColon.top())
+            return;
+
+        while (opStack.size() - 1 > idx)
+            output.append(opStack.pop());
+
+        if (!opStack.isEmpty() && opStack.top().type == TokenType::Question) {
+            opStack.pop();
+            questionHasColon.pop();
+            emitChoose();
+        }
+    };
+
+    auto closeAllTernaries = [&]() {
+        while (true) {
+            int idx = opStack.size() - 1;
+            while (idx >= 0 && opStack[idx].type != TokenType::Question)
+                --idx;
+
+            if (idx < 0)
+                break;
+
+            if (questionHasColon.isEmpty() || !questionHasColon.top())
+                break;
+
+            closeOneTernaryIfPossible();
+        }
+    };
+
+    auto flushAll = [&]() {
+        closeAllTernaries();
+        while (!opStack.isEmpty()) {
+            Token top = opStack.pop();
+            if (top.type == TokenType::Question)
+                emitChoose();
+            else
+                output.append(top);
+        }
+    };
+
+    // OPT lezárása: flag ? expr → flag expr opt
+    auto closeOptIfPending = [&]() {
+        if (!optMode)
+            return;
+
+        // keressük a legutóbbi '?'-t
+        int idx = opStack.size() - 1;
+        while (idx >= 0 && opStack[idx].type != TokenType::Question)
+            --idx;
+
+        if (idx < 0)
+            return;
+
+        // a '?' fölötti operátorokat kiírjuk
+        while (opStack.size() - 1 > idx)
+            output.append(opStack.pop());
+
+        // levesszük a '?'-t
+        if (!opStack.isEmpty() && opStack.top().type == TokenType::Question)
+            opStack.pop();
+
+        // Itt az output stack tetején:
+        //   ... flag expr
+        // és most tesszük rá az opt‑ot postfixként
+        Token optTok;
+        optTok.type = TokenType::Opt;
+        optTok.text = "opt";
+        output.append(optTok);
+
+        optMode = false;
+    };
+
     while (i < n) {
         Token t = tokens[i++];
 
+        // END
         if (t.type == TokenType::End) {
+            closeOptIfPending();
             break;
         }
 
-        // --- Literálok, változók ---
+        // NEWLINE
         if (t.type == TokenType::Newline) {
-            while (!opStack.isEmpty())
-                output.append(opStack.pop());
+            closeOptIfPending();
+            flushAll();
             output.append({TokenType::StatementEnd, ";"});
+            expectOperand = true;
             continue;
         }
 
+        // LITERÁLOK / VÁLTOZÓK / STRINGEK
         if (t.type == TokenType::Number ||
             t.type == TokenType::Variable ||
-            t.type == TokenType::StringLiteral)   // <-- EZ HIÁNYZOTT
+            t.type == TokenType::StringLiteral)
         {
             output.append(t);
+            expectOperand = false;
             continue;
         }
 
-
-        // Prefix choose: → megy a stackre (ternary-hez kapcsolódik)
-        // Prefix opt: → NEM megy a stackre, azonnal outputba kerül
-        if (t.type == TokenType::Choose) {
-            opStack.push(t);
-            continue;
-        }
-
+        // OPT PREFIX: "opt:" – csak módot kapcsolunk
         if (t.type == TokenType::Opt) {
-            // Az opt két operandust vár, prefix operátor → outputba tesszük
-            output.append(t);
+            optMode = true;
+            // maga az Opt token NEM kerül stackre, postfixként tesszük majd ki
             continue;
         }
 
-
-
-        // --- Függvény név ---
-        if (t.type == TokenType::Function) {
+        // TERNARY '?'
+        if (t.type == TokenType::Question) {
             opStack.push(t);
-            argCountStack.push(0);   // ÚJ: indul az argumentumszámlálás
+            questionHasColon.push(false);
+            expectOperand = true;
             continue;
         }
 
-
-        // --- Vessző: függvény argumentum elválasztó ---
-        if (t.type == TokenType::Comma) {
-            while (!opStack.isEmpty() && opStack.top().type != TokenType::LParen) {
-                output.append(opStack.pop());
-            }
-            if (!argCountStack.isEmpty())
-                argCountStack.top()++;   // ÚJ: új argumentum
-            continue;
-        }
-
-
-        // --- Bal zárójel ---
+        // BAL ZÁRÓJEL
         if (t.type == TokenType::LParen) {
             opStack.push(t);
+            expectOperand = true;
             continue;
         }
 
-        // --- Jobb zárójel ---
+        // JOBB ZÁRÓJEL
         if (t.type == TokenType::RParen) {
-            while (!opStack.isEmpty() && opStack.top().type != TokenType::LParen) {
-                output.append(opStack.pop());
-            }
-
+            //closeOptIfPending();
+            flushUntil(TokenType::LParen);
             if (!opStack.isEmpty() && opStack.top().type == TokenType::LParen)
                 opStack.pop();
 
-            // Függvény lezárása
+            // függvény lezárása
             if (!opStack.isEmpty() && opStack.top().type == TokenType::Function) {
                 Token fn = opStack.pop();
-
-                int argc = 1;  // legalább 1 paraméter
-                if (!argCountStack.isEmpty()) {
+                int argc = 1;
+                if (!argCountStack.isEmpty())
                     argc += argCountStack.pop();
-                }
-
-                fn.argc = argc;   // ÚJ: paraméterszám beállítása
+                fn.argc = argc;
                 output.append(fn);
             }
 
+            closeAllTernaries();
+            expectOperand = false;
             continue;
         }
 
-
-        // Ternary: ? → push
-        if (t.type == TokenType::Question) {
-            opStack.push(t);
+        // FÜGGVÉNY ARGUMENTUM VESSZŐ
+        if (t.type == TokenType::Comma) {
+            closeOptIfPending();
+            flushUntil(TokenType::LParen);
+            if (!argCountStack.isEmpty())
+                argCountStack.top()++;
+            closeAllTernaries();
+            expectOperand = true;
             continue;
         }
 
-        // Ternary: ':' → kipucoljuk a bináris operátorokat a '?'-ig,
-        // de a '?' a stacken marad, a ternary még nem zárul le.
+        // COLON – TERNARY VAGY OPT
         if (t.type == TokenType::Colon) {
-            while (!opStack.isEmpty() && opStack.top().type != TokenType::Question) {
-                output.append(opStack.pop());
-            }
-            continue;
-        }
 
+            // OPT‑mód: opt: flag ? expr
+            if (optMode) {
+                // az expr végét jelzi – kiértékeljük a '?' utáni kifejezést
+                flushUntil(TokenType::Question);
 
+                // a '?'‑t levesszük, de NEM choose‑t generálunk,
+                // hanem majd closeOptIfPending() teszi rá az Opt‑ot
+                if (!opStack.isEmpty() && opStack.top().type == TokenType::Question)
+                    opStack.pop();
 
-        // --- Bináris operátorok (és = ) ---
-        // --- Bináris operátorok (és =) ---
-        if (t.type == TokenType::Plus  ||
-            t.type == TokenType::Minus ||
-            t.type == TokenType::Star  ||
-            t.type == TokenType::Slash ||
-            t.type == TokenType::Greater ||
-            t.type == TokenType::Less    ||
-            t.type == TokenType::GreaterEqual ||
-            t.type == TokenType::LessEqual    ||
-            t.type == TokenType::Equal ||
-            t.type == TokenType::Assign)
-        {
-            while (!opStack.isEmpty()) {
-                Token top = opStack.top();
+                // Itt az output tetején: ... flag expr
+                Token optTok;
+                optTok.type = TokenType::Opt;
+                optTok.text = "opt";
+                output.append(optTok);
 
-                // Zárójel / függvény megállítja
-                if (top.type == TokenType::LParen ||
-                    top.type == TokenType::Function)
-                    break;
-
-                // // --- TERNARY LEZÁRÁSA ---
-                // // Ha '?' van a stacken → előbb zárjuk le a ternary-t
-                // if (top.type == TokenType::Question) {
-                //     opStack.pop(); // levesszük a '?'
-
-                //     Token chooseTok;
-                //     chooseTok.type = TokenType::Choose;
-
-                //     // Prefix choose támogatása
-                //     if (!opStack.isEmpty() && opStack.top().type == TokenType::Choose) {
-                //         chooseTok.text = "choose:";
-                //         opStack.pop();
-                //     } else {
-                //         chooseTok.text = "choose";
-                //     }
-
-                //     output.append(chooseTok);
-                //     continue;
-                // }
-
-                // --- Normál bináris precedencia ---
-                if (precedence(top) < precedence(t))
-                    break;
-
-                output.append(opStack.pop());
+                optMode = false;
+                expectOperand = false;
+                continue;
             }
 
-            opStack.push(t);
+            // CHOOSE‑mód: klasszikus cond ? A : B
+            while (!opStack.isEmpty() && opStack.top().type != TokenType::Question)
+                output.append(opStack.pop());
+
+            if (!questionHasColon.isEmpty()) {
+                if (!questionHasColon.top())
+                    questionHasColon.top() = true;
+                else
+                    closeOneTernaryIfPossible();
+            }
+
+            expectOperand = true;
             continue;
         }
 
-
-        if (t.type == TokenType::Return) {
-            // A return token egyszerűen bekerül az outputba a végén.
-            // A return után jövő assignmentek RPN-be kerülnek normál módon.
-            opStack.push(t);
+        // SPECIAL CASE: +Number mint pozitív literál, ha operandust várunk
+        if (t.type == TokenType::Plus && expectOperand && i < n && tokens[i].type == TokenType::Number) {
+            output.append(tokens[i]);  // Number
+            ++i;
+            expectOperand = false;
             continue;
         }
 
-        // Minden más: ignoráljuk
+        // SPECIAL CASE: unary '+' zárójel előtt: +(w/10) → (w/10)
+        if (t.type == TokenType::Plus && expectOperand && i < n && tokens[i].type == TokenType::LParen) {
+            // a '+' itt no‑op, egyszerűen eldobjuk
+            continue;
+        }
+
+        // OPERÁTOROK
+        if (isOperator(t)) {
+
+            // PREFIX / INFIX felismerés a + és - operátorokra
+            if (t.type == TokenType::Plus || t.type == TokenType::Minus) {
+
+                if (expectOperand) {
+                    // PREFIX
+                    t.type = (t.type == TokenType::Plus)
+                                 ? TokenType::PrefixPlus
+                                 : TokenType::PrefixMinus;
+
+                    opStack.push(t);
+                    expectOperand = true;
+                    continue;
+                }
+                // különben INFIX – esünk tovább az általános logikára
+            }
+
+            const OperatorInfo* info = getOpInfo(t);
+
+            if (!info) {
+                opStack.push(t);
+                expectOperand = true;
+                continue;
+            }
+
+            if (info->fixity == Fixity::Prefix) {
+
+                if (t.type == TokenType::Choose)
+                    continue;
+
+                if (t.type == TokenType::Function) {
+                    opStack.push(t);
+                    argCountStack.push(0);
+                    expectOperand = true;
+                    continue;
+                }
+
+                if (t.type == TokenType::Return) {
+                    opStack.push(t);
+                    expectOperand = true;
+                    continue;
+                }
+
+                opStack.push(t);
+                expectOperand = true;
+                continue;
+            }
+
+            // INFIX
+            if (info->fixity == Fixity::Infix) {
+                //closeOptIfPending();
+
+                while (!opStack.isEmpty()) {
+                    const Token& top = opStack.top();
+                    const OperatorInfo* topInfo = getOpInfo(top);
+                    if (!topInfo)
+                        break;
+
+                    if (top.type == TokenType::LParen ||
+                        top.type == TokenType::Question)
+                        break;
+
+                    bool shouldPop =
+                        (!info->rightAssociative && topInfo->precedence >= info->precedence) ||
+                        (info->rightAssociative && topInfo->precedence > info->precedence);
+
+                    if (!shouldPop)
+                        break;
+
+                    output.append(opStack.pop());
+                }
+
+                opStack.push(t);
+                expectOperand = true;
+                continue;
+            }
+
+            continue;
+        }
+
+        // minden más ignorálva
     }
 
-    // A végén mindent kipakolunk
-    while (!opStack.isEmpty()) {
-        Token top = opStack.pop();
-
-        // Ha '?' van a stacken → előbb zárjuk le a ternary-t
-        if (top.type == TokenType::Question) {
-            opStack.pop();
-            Token chooseTok;
-            chooseTok.type = TokenType::Choose;
-            chooseTok.text = "choose";
-            output.append(chooseTok);
-            continue;
-        }
-
-
-        if (top.type == TokenType::Colon) {
-            // ':' soha nem kerülhet az outputba
-            continue;
-        }
-
-        // Prefix choose: / opt: csak jelölő volt → NE kerüljön az RPN-be
-        if (top.type == TokenType::Choose || top.type == TokenType::Opt) {
-            continue;
-        }
-
-        output.append(top);
-    }
-
-
-
-
-    // IDEIGLENES DEBUG:
-    zInfo() << "RPN for choose test:";
-    for (const auto& tok : output) {
-        zInfo() << "  " << (int)tok.type << tok.text << "argc=" << tok.argc;
-    }
-
-
+    closeOptIfPending();
+    flushAll();
     return output;
 }

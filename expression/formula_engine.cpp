@@ -54,33 +54,37 @@ QString dumpAst(AstNode* n, const QString& prefix = "", bool isLast = true)
 EvalResult FormulaEngine::evalSingleLine(const QString& code)
 {
     NodePool pool;
-    auto tokens = Tokenizer::tokenize(code);
-    auto rpn    = Parser::toRpn(tokens);
-    AstNode* ast = AstBuilder::fromRpn(rpn, pool);
+
+    // Itt hívjuk a debugolt wrappert:
+
+    Parser::ParseResult pr = Parser::parse(code);
+
+    // Ha akarod, a tokeneket is visszakaphatod külön, de most az RPN a lényeg.
+    AstNode* ast = AstBuilder::fromRpn(pr.rpn, pool);
 
     if (!ast)
-        return EvalResult::failure("AST build failed");
-
+        return EvalResult::failure(code, "AST build failed");
     EvalResult r = EvalResult::success();
 
     try {
         Value result = evalNode(ast, &r);
         VariableRepository::instance().set("_result", result);
 
-        dumpTokensAndRpn(tokens, rpn, r.tokensDump, r.rpnDump);
+        dumpTokensAndRpn(pr.tokens, pr.rpn, r.tokensDump, r.rpnDump);
 
         QSet<QString> readVars, writtenVars;
         collectVariables(ast, readVars, writtenVars);
         r.readVars = readVars;
         r.writtenVars = writtenVars;
         r.astDump = dumpAst(ast);
+        r.variableSnapshot = VariableRepository::instance().dump();
 
         return r;
 
     } catch (const QString& err) {
-        return EvalResult::failure(err);
+        return EvalResult::failure(code, err);
     } catch (...) {
-        return EvalResult::failure("Unknown error");
+        return EvalResult::failure(code, "Unknown error");
     }
 }
 
@@ -94,22 +98,27 @@ EvalResult FormulaEngine::evalMultiLine(const QStringList& lines)
 
     QStringList allTokenDump;
     QStringList allRpnDump;
+    QString code = lines.join("\n");
 
     for (int i = 0; i < lines.size(); ++i) {
         QString trimmed = lines[i].trimmed();
         if (trimmed.isEmpty())
             continue;
 
-        auto tokens = Tokenizer::tokenize(trimmed);
-        auto rpn    = Parser::toRpn(tokens);
-        AstNode* ast = AstBuilder::fromRpn(rpn, pool);
+        // auto tokens = Tokenizer::tokenize(trimmed);
+        // auto rpn    = Parser::toRpn(tokens);
+        // AstNode* ast = AstBuilder::fromRpn(rpn, pool);
+
+        Parser::ParseResult pr = Parser::parse(trimmed);
+        AstNode* ast = AstBuilder::fromRpn(pr.rpn, pool);
+        dumpTokensAndRpn(pr.tokens, pr.rpn, allTokenDump, allRpnDump);
 
         if (!ast)
-            return EvalResult::failure("AST build failed in multi-line script");
+            return EvalResult::failure(code, "AST build failed in multi-line script");
 
         root->children.append(ast);
 
-        dumpTokensAndRpn(tokens, rpn, allTokenDump, allRpnDump);
+        dumpTokensAndRpn(pr.tokens, pr.rpn, allTokenDump, allRpnDump);
     }
 
     EvalResult r = EvalResult::success();
@@ -126,13 +135,14 @@ EvalResult FormulaEngine::evalMultiLine(const QStringList& lines)
         r.readVars = readVars;
         r.writtenVars = writtenVars;
         r.astDump = dumpAst(root); // 🔥 EZ HIÁNYZOTT
+        r.variableSnapshot = VariableRepository::instance().dump();
 
         return r;
 
     } catch (const QString& err) {
-        return EvalResult::failure(err);
+        return EvalResult::failure(code, err);
     } catch (...) {
-        return EvalResult::failure("Unknown error");
+        return EvalResult::failure(code, "Unknown error");
     }
 }
 
@@ -216,33 +226,38 @@ Value FormulaEngine::evalNode(AstNode* n, EvalResult* traceOut)
         return last;
     }
 
+    // cond ? trueExpr : falseExpr
     case AstNode::Type::Choose: {
-        // cond ? trueExpr : falseExpr
-        if (n->children.size() == 3) {
-            Value cond = evalNode(n->children[0], traceOut);
-            if (cond.toBool())
-                return evalNode(n->children[1], traceOut);
-            else
-                return evalNode(n->children[2], traceOut);
+        if (n->children.size() != 3) return Value();
+
+        Value cond = evalNode(n->children[0], traceOut);
+        addTrace(cond);
+        if (cond.toBool()){
+            auto v = evalNode(n->children[1], traceOut);
+            addTrace(v);
+            return v;
         }
-
-        // Biztonsági fallback
-        return Value();
+        else{
+            auto v = evalNode(n->children[2], traceOut);
+            addTrace(v);
+            return v;
+        }
     }
-
-
-
 
     case AstNode::Type::Opt: {
-        Value flag = evalNode(n->children[0], traceOut);
-        Value v;
-        if (flag.type == Value::Type::Number && flag.number != 0.0)
-            v = evalNode(n->children[1], traceOut);
+        if (n->children.size() != 2) return Value();
+
+        Value cond = evalNode(n->children[0], traceOut);
+        addTrace(cond);
+        if (cond.toBool()){
+            auto v = evalNode(n->children[1], traceOut);
+            addTrace(v);
+            return v;
+        }
         else
-            v = Value::numberValue(0.0);
-        addTrace(v);
-        return v;
+            return Value();
     }
+
 
     case AstNode::Type::Statement: {
         Value v = evalNode(n->children[0], traceOut);
