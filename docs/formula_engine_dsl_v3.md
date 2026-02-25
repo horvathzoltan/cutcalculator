@@ -1,16 +1,20 @@
-# 📘 **FormulaEngine DSL – v3 (Modern AST‑alapú DSL)**  
-**/docs/formula_engine_dsl_v3.md**
+# 📘 **FormulaEngine DSL – v3.1 (AST‑alapú modern DSL)**  
+**Fájl:** `/docs/formula_engine_dsl_v3.md`  
+**Státusz:** *Frissítve a SKIP‑NODE modell és a Function‑hívások új szemantikája szerint*
 
-## 1. Áttekintés
+---
+
+# 1. Áttekintés
 
 A FormulaEngine egy **AST‑alapú**, determinisztikus mini‑nyelv, amely a NeedCalculationDetail `formula` mezőjét értékeli ki.  
 A DSL célja:
 
-- numerikus hossz (mm) számítása,
-- darabszám számítása,
-- anyagválasztás (barcode) feltétel alapján.
+- numerikus hossz (mm) számítása,  
+- darabszám számítása,  
+- anyagválasztás feltétel alapján,  
+- opcionális ráhagyások kezelése.
 
-A FormulaEngine minden kifejezést **AST‑re fordít**, majd közvetlenül végrehajtja.
+A FormulaEngine minden kifejezést **tokenizál**, **RPN‑re fordít**, majd **AST‑re épít**, és végrehajtja.
 
 A NeedCalculator a FormulaEngine eredményét így értelmezi:
 
@@ -24,7 +28,7 @@ struct EvaluatedFormula {
 
 ---
 
-## 2. A DSL fő elemei
+# 2. A DSL fő elemei
 
 A DSL három nagy kategóriából áll:
 
@@ -34,22 +38,22 @@ A DSL három nagy kategóriából áll:
 
 A DSL NEM tartalmaz:
 
-- régi függvényes choose()/opt() hívásokat,
-- régi prefixeket (fixed:, len:, qty:…),
+- régi függvényes choose()/opt() hívásokat,  
+- régi prefixeket (fixed:, len:, qty:…),  
 - Expression/Keyword rendszert.
 
 ---
 
-## 3. Numerikus kifejezések
+# 3. Numerikus kifejezések
 
 A FormulaEngine támogatja:
 
-- összeadás: `+`
-- kivonás: `-`
-- szorzás: `*`
-- osztás: `/`
-- zárójelek: `( … )`
-- változók: `w`, `h`, `qty`, saját változók
+- összeadás: `+`  
+- kivonás: `-`  
+- szorzás: `*`  
+- osztás: `/`  
+- zárójelek: `( … )`  
+- változók: `w`, `h`, `qty`, saját változók  
 - értékadás: `x = w - 10`
 
 ### Példák:
@@ -69,7 +73,29 @@ A numerikus eredmény a NeedCalculator számára:
 
 ---
 
-## 4. Feltételes anyagválasztás – `choose:` (v3)
+# 3.1. Függvényhívások (belső operátor‑API)
+
+A DSL nem tartalmaz felhasználói függvényeket, de a FormulaEngine belső operátorai **függvényként vannak regisztrálva**:
+
+- `add(a,b)`  
+- `sub(a,b)`  
+- `mul(a,b)`  
+- `div(a,b)`  
+- relációs operátorok: `>`, `<`, `>=`, `<=`, `==`  
+
+### Függvényhívás szemantikája (v3.1):
+
+- A függvény **mindig meghívódik**, függetlenül az argumentumok számától.  
+- A skip‑node modell miatt a Skip értékek kiszűrésre kerülnek, de a hívás akkor is megtörténik.  
+- Ha a függvény nem létezik → `Undefined function: NAME`  
+- Ha nincs argumentum → `Function NAME called with no arguments`  
+- Ha runtime hiba történik (pl. div(10,0)) → a hiba továbbdobódik.
+
+Ez a viselkedés teljesen egységes a FormulaEngine‑ben.
+
+---
+
+# 4. Feltételes anyagválasztás – `choose:` (v3)
 
 A `choose:` egy **prefix DSL‑konstrukció**, nem függvény.
 
@@ -87,22 +113,29 @@ choose: (w*h > 5000000) ? MOTOR_A : MOTOR_B
 
 ### Eredmény:
 
-- `stringValue = "MOTOR_A"` vagy `"MOTOR_B"`
-- `length_mm = 0`
-- `pieces = 0`
+- `stringValue = "MOTOR_A"` vagy `"MOTOR_B"`  
+- `length_mm = 0`  
+- `pieces = 0`  
 
 A NeedCalculator a `stringValue` alapján választ anyagot.
 
+### choose: tulajdonságai:
+
+- mindig **string** eredményt ad,  
+- nem keverhető numerikus kifejezéssel,  
+- nem ad Skip értéket,  
+- teljesen determinisztikus.
+
 ---
 
-## 5. Opcionális ráhagyás – `opt:` (v3)
+# 5. Opcionális ráhagyás – `opt:` (v3)
 
 Az `opt:` egy **prefix DSL‑konstrukció**, amely opcionális numerikus értéket ad hozzá.
 
 ### Szintaxis:
 
 ```
-<base_expr> + opt:<flag>:+<value_expr>
+opt:<flag>:+<value_expr>
 ```
 
 ### Példák:
@@ -115,15 +148,47 @@ w - 10 + opt:premium:+(w/10)
 ### Jelentés:
 
 - ha a flag igaz (`true` vagy nem 0) → hozzáadja a value‑t  
-- ha hamis → +0  
-
-A flag a VariableRepository‑ban szereplő bool/number érték.
+- ha hamis → `<skip>` → az operátor kihagyja  
 
 ---
 
-## 6. Több soros DSL
+# 5.1. Skip‑node modell (v3.1)
 
-A modern FormulaEngine több soros scriptet is támogat:
+A skip‑node modell a DSL egyik alapvető szemantikája.
+
+### Opt hamis ágban:
+
+```
+opt:flag:+expr
+```
+
+→ ha `flag` hamis → `<skip>`
+
+### Operátorok viselkedése Skip esetén:
+
+- `x + <skip>` → `x`  
+- `<skip> + x` → `x`  
+- `<skip> + <skip>` → `null`  
+
+### Függvények viselkedése Skip esetén:
+
+- a Skip értékek kiszűrésre kerülnek  
+- a függvény **mindig meghívódik**  
+- ha nincs argumentum → hiba  
+
+### Trace:
+
+A Skip érték így jelenik meg:
+
+```
+Opt(opt) => <skip>
+```
+
+---
+
+# 6. Több soros DSL
+
+A FormulaEngine több soros scriptet is támogat:
 
 ```
 a = w - 10
@@ -135,7 +200,7 @@ Ez AST‑ben `Sequence` node‑ként fut.
 
 ---
 
-## 7. Validáció
+# 7. Validáció
 
 A validáció a `NeedCalculationDetailRegistry::isFormulaValid()` metódusban történik.
 
@@ -143,7 +208,7 @@ A validáció a `NeedCalculationDetailRegistry::isFormulaValid()` metódusban t�
 
 Érvényes, ha:
 
-- tartalmaz `?` és `:` jelet,
+- tartalmaz `?` és `:` jelet,  
 - a három rész nem üres.
 
 ### 7.2. opt:
@@ -156,13 +221,13 @@ opt:<flag>:+<expr>
 
 A `<expr>` lehet:
 
-- szám,
-- változó,
+- szám,  
+- változó,  
 - zárójeles kifejezés.
 
 ---
 
-## 8. NeedCalculator integráció
+# 8. NeedCalculator integráció
 
 ### 8.1. Anyagválasztás (`choose:`)
 
@@ -181,9 +246,15 @@ if (ev.length_mm > 0) {
 }
 ```
 
+### 8.3. Skip‑node hatása
+
+- opt: hamis → `<skip>` → nem változtatja a hossz értékét  
+- choose: → stringValue → anyagválasztás  
+- numerikus kifejezések → Skip automatikusan kihagyódik
+
 ---
 
-## 9. Példák
+# 9. Példák
 
 ### 9.1. Anyagválasztás terület alapján
 
@@ -206,17 +277,27 @@ choose: (w > 1500) ? AXLE_BIG : AXLE_SMALL
 
 ---
 
-## 10. Tesztlefedettség
+# 10. Tesztlefedettség
 
 A következő tesztek ellenőrzik a DSL működését:
 
-- `testLiteralInt()`
-- `testSimpleExpression()`
-- `testChooseSimple()`
-- `testChooseNested()`
-- `testOptSimple()`
-- `testOptExpression()`
-- `testNeedCalculatorChooseTrue()`
-- `testNeedCalculatorChooseFalse()`
+- `testLiteralInt()`  
+- `testSimpleExpression()`  
+- `testChooseSimple()`  
+- `testChooseNested()`  
+- `testOptSimple()`  
+- `testOptExpression()`  
+- `testUndefinedFunction()`  
+- `testDivisionByZero()`  
+- `testNeedCalculatorChooseTrue()`  
+- `testNeedCalculatorChooseFalse()`  
 
 ---
+
+# Kész is a teljesen frissített DSL dokumentum  
+Ez most már **tökéletesen illeszkedik** a FormulaEngine jelenlegi implementációjához és a skip‑node modellhez.
+
+Ha szeretnéd, megcsinálhatom:
+
+- a `/docs/` könyvtárba illeszkedő Markdown‑formázást,  
+- vagy egy külön CHANGELOG‑ot a v3 → v3.1 változásokról.

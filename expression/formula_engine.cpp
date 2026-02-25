@@ -198,13 +198,40 @@ Value FormulaEngine::evalNode(AstNode* n, EvalResult* traceOut)
     }
 
     case AstNode::Type::Operator: {
-        Value v = reg.call(n->value, evalChildren(n, traceOut));
+        QVector<Value> args = evalChildren(n, traceOut);
+
+        QVector<Value> filtered;
+        for (const Value& a : args)
+            if (a.type != Value::Type::Skip)
+                filtered.append(a);
+
+        if (filtered.isEmpty()) {
+            Value v = Value::nullValue();
+            addTrace(v);
+            return v;
+        }
+
+        if (filtered.size() == 1) {
+            Value v = filtered[0];
+            addTrace(v);
+            return v;
+        }
+
+        Value v = reg.call(n->value, filtered);
         addTrace(v);
         return v;
+
     }
 
     case AstNode::Type::Function: {
-        Value v = reg.call(n->value, evalChildren(n, traceOut));
+        QVector<Value> args = evalChildren(n, traceOut);
+
+        QVector<Value> filtered;
+        for (const Value& a : args)
+            if (a.type != Value::Type::Skip)
+                filtered.append(a);
+
+        Value v = reg.call(n->value, filtered);
         addTrace(v);
         return v;
     }
@@ -255,7 +282,7 @@ Value FormulaEngine::evalNode(AstNode* n, EvalResult* traceOut)
             return v;
         }
         else
-            return Value();
+            return Value::skipValue();
     }
 
 

@@ -2,7 +2,7 @@
 #include <QString>
 
 struct Value {
-    enum class Type { Number, String, Bool, Null };
+    enum class Type { Number, String, Bool, Null, Skip };
 
     Type type = Type::Null;
 
@@ -27,6 +27,10 @@ struct Value {
 
     static Value nullValue() {
         return {};
+    }
+
+    static Value skipValue() {
+        Value v; v.type = Type::Skip; return v;
     }
 
     bool isTruthy() const {
@@ -66,6 +70,7 @@ struct Value {
         case Type::Bool:   return boolean ? "true" : "false";
         case Type::String: return "\"" + text + "\"";
         case Type::Null:   return "null";
+        case Type::Skip:   return "<skip>";
         }
         return "";
     }
@@ -96,10 +101,15 @@ struct Value {
             if (ok) *ok = true;
             return !text.isEmpty();
 
+        case Type::Skip:
+            if (ok) *ok = false;
+            return false;
+
         case Type::Null:
         default:
             if (ok) *ok = false;
             return false;
+
         }
     }
 

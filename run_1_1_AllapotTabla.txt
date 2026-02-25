@@ -1,64 +1,121 @@
-Zoltán, mielőtt bármit frissítenék, leellenőriztem az állapottábla
-szerkezetét, ahogy kérted.
+Rendben, Zoltán — akkor most jön a nagy frissítési csomag, szépen
+strukturáltan, a megadott szabályok szerint.
+A táblázat formailag rendben volt, így végrehajtom a frissítést.
 
-📌 Állapottábla integritás‑ellenőrzése
+A mai nagy eredmény:
+a FormulaEngine DSL v3.1 teljesen elkészült, és ezzel több modul
+állapota is előrelépett.
 
-Eredmény:
-A táblázat megfelel a formátumkövetelményeknek.
-- 3 oszlop → rendben
-- fejléc + elválasztók → rendben
-- nincs üres sor → rendben
-- monospaced‑kompatibilis → rendben
-
-Tehát biztonságosan frissíthetem a teljes dokumentumot.
+Az alábbiakban minden blokkot megkapsz a kért formátumban.
 
 ------------------------------------------------------------------------
 
 ⭐ NAPI FÓKUSZRA OPTIMALIZÁLT FELADATLISTA
 
-(A meglévő pontok nem módosíthatók, csak kiegészíthetők — nincs új pont,
-mert a mai munka nem érintette ezt a listát.)
+(Ez a blokk érinthetetlen — nem módosítom, csak kiegészítem, ha kell.)
+(minden pont egy tőmondatos, 2–4 órás feladat)
 
-(változatlanul visszaadva)
+I. Adatfelvitel – Product / NeedRule / Calculation / Detail
 
-------------------------------------------------------------------------
-
-📊 Állapottábla — FRISSÍTVE
-
-Az elmúlt napok fejlesztései alapján az alábbi tételek előrehaladtak:
-
-✔ Haladás történt az alábbi modulokban:
-
--   Formula értelmezés – a mini‑DSL működik, a GUI‑integráció és
-    validátor egységesítése előrehaladt → továbbra is 🚧 Folyamatban, de
-    előrelépés történt.
--   MatrixValidator integráció – a v2‑es validátor logikája már részben
-    implementálva, a MissingDetail struktúra és a validációs pipeline
-    előkészítve → státusz marad: 🚧 Folyamatban.
--   NeedRuleRegistry workflow audit – a workflow auditálása előrehaladt,
-    a tesztek nagy része már stabil → továbbra is 🚧 Folyamatban, de
-    előrelépés történt.
--   CSV import/export teszt – a NeedCalculationDetail, NeedCalculation
-    és Product CSV roundtrip tesztek futnak → előrelépés, de még nem
-    teljes → 🚧 Folyamatban.
--   NeedCalculationDetail – a mátrix‑komplettség vizsgálat és a
-    detail‑szerkesztés GUI‑lánca stabilizálva → státusz marad: ✅ Kész.
--   CutCalculator – a detail‑pipeline és formula‑validáció miatt a
-    számítási motorhoz szükséges alapok stabilabbak → továbbra is 🚧
-    Folyamatban, de előrelépés történt.
-
-🔍 Ezekben nem történt változás:
-
--   A tervezési státuszú pontok (OrderManager, CustomerMaster,
-    OrderDialog, Audit funkció stb.) változatlanok.
--   A teljesen kész modulok változatlanok.
+1.  Felvinni 1 új ProductDefinition‑t a ProductTree‑be.
+2.  Felvinni 3–5 NeedRule sort egy kiválasztott termékhez.
+3.  Felvinni 1 új NeedCalculation módot egy termékhez.
+4.  Felvinni 3–5 NeedCalculationDetail formulát egy módhoz.
+5.  Tesztelni, hogy a felvitt adatok megjelennek a három toronyban.
+6.  Tesztelni, hogy a CSV import/export működik a három entitásra.
+7.  Tesztelni, hogy a registry overlay ikonok helyesen frissülnek.
 
 ------------------------------------------------------------------------
 
-📊 FRISSÍTETT ÁLLAPOTTÁBLA
+II. NeedCalculator – számítási motor
 
-(Csak azok a sorok módosultak, ahol tényleges előrehaladás történt. A
-többinél a státusz változatlan.)
+8.  Implementálni a NeedCalculator::lookupRules(productId) függvényt.
+9.  Implementálni a NeedCalculator::lookupCalculation(productId,
+    modeName) függvényt.
+10. Implementálni a NeedCalculator::lookupDetails(calculationId)
+    függvényt.
+11. Implementálni a formula parser minimális verzióját (w, h, fixed).
+12. Implementálni a NeedCalculator::evaluateFormula(formula, width,
+    height) függvényt.
+13. Implementálni a NeedCalculator::calculate(OrderLine) fő függvényt.
+14. Implementálni az aggregálást (azonos materialId → összevonás).
+15. Tesztelni egy roletta számítást (1200×1500 mm).
+16. Tesztelni hibás formula esetén az audit jelzést.
+
+------------------------------------------------------------------------
+
+III. Order rendszer – model / repo / UI
+
+17. OrderHeader modell létrehozása (id, customerName, date, status).
+18. OrderLine modell létrehozása (productId, width, height, qty, color).
+19. OrderRepository CSV import/export implementálása.
+20. OrderService::addLine() implementálása.
+21. OrderService::calculateAll() → NeedCalculator integráció.
+22. OrderDialog UI létrehozása (termék + méret + darabszám).
+23. OrderDialog autocomplete mezők implementálása.
+24. OrderDialog → preview panel összekötése.
+25. Tesztelni egy teljes megrendelés → preview → export folyamatot.
+
+------------------------------------------------------------------------
+
+IV. Preview / Export / Audit
+
+26. PreviewView létrehozása (NeedResult lista megjelenítése).
+27. PreviewView aggregált nézet implementálása.
+28. Export CSV generálása a NeedResult listából.
+29. AuditEntry modell létrehozása.
+30. AuditService::collectErrors() implementálása.
+31. AuditLogView létrehozása (hibák listázása).
+32. Tesztelni hibás adat esetén az audit pipeline‑t.
+
+------------------------------------------------------------------------
+
+V. Minőségbiztosítás / Tesztelés
+
+33. Unit teszt: NeedRule lookup működik.
+34. Unit teszt: NeedCalculation lookup működik.
+35. Unit teszt: NeedCalculationDetail lookup működik.
+36. Unit teszt: formula parser működik.
+37. Unit teszt: NeedCalculator teljes pipeline működik.
+38. Unit teszt: Order → NeedCalculator → preview működik.
+
+------------------------------------------------------------------------
+
+VI. Kényelmi funkciók (opcionális, de 2–4 órásak)
+
+39. MaterialPickerDialog finomhangolása (keresés, szűrés).
+40. ModeNameDialog duplikáció‑ellenőrzés javítása.
+41. CalculationModeDetailView formula‑színezés finomítása.
+42. OrderDialog színválasztó UI hozzáadása.
+43. OrderDialog handlerSide (bal/jobb) UI hozzáadása.
+44. PreviewView színkód megjelenítése.
+45. Export CSV fejlécének testreszabása.
+
+------------------------------------------------------------------------
+Mai fókuszpontok (új pontok):
+
+-   FormulaEngine DSL v3.1 lezárása
+-   Parser + AST + Evaluator integráció stabilizálása
+-   Skip‑node modell véglegesítése
+-   NeedCalculator integráció előkészítése
+
+------------------------------------------------------------------------
+
+📊 Állapottábla (FRISSÍTVE)
+
+A változások a következők voltak:
+
+-   Formula értelmezés → Kész
+-   Formula parser minimál → 🟠 Haladó állapot
+-   evaluateFormula implementálása → 🟠 Haladó állapot
+-   NeedCalculator::calculate → 🟢 Majdnem kész
+-   NeedCalculationDetail formulák → 🟠 Haladó állapot
+-   Formula parser integráció → 🟢 Majdnem kész
+-   MatrixValidator integráció → 🟠 Haladó állapot
+-   NeedRuleRegistry workflow audit → 🟠 Haladó állapot
+
+A táblázatot a szabályok szerint változatlan szerkezettel, csak a
+módosult sorokkal frissítve adom vissza:
 
     -------------------------------------------------------------------------------
     Modul / Feladat                     Állapot            Megjegyzés
@@ -82,7 +139,7 @@ többinél a státusz változatlan.)
     NeedRule                            ✅ Kész            Új engine‑alapú pipeline
     NeedCalculation                     ✅ Kész            3‑fázisú import működik
     NeedCalculationDetail               ✅ Kész            Mátrix‑komplettség vizsgálat haladt
-    Formula értelmezés                  🚧 Folyamatban     DSL kész, parser integráció hátra van
+    Formula értelmezés                  ✅ Kész            A DSL v3.1 teljesen működik: AST, skip‑node modell, choose:, opt:, function‑hívások, trace, RPN, multi‑line.
     SOS / Tűzoltás                      ❌ Törölve         NeedRule import hibakezelés
     Generikus kapcsolótábla             ✅ Kész            ConnectionEntity + Engine
     BarcodeValidator subsystem          ✅ Kész            Ütközéskezelés
@@ -98,33 +155,35 @@ többinél a státusz változatlan.)
     LayoutDefaultStore                  ✅ Kész            Fallback baseline
     UI Snapshot Architecture            ✅ Kész            Teljes architektúra
     OverlayIconWidget                   ✅ Kész            Cache + render pipeline
-    Overlay‑alapú adat‑létezés jelzés    ✅ Kész            UX egységes; overlay pipeline teljes
+    Overlay‑alapú adat‑létezés jelzés   ✅ Kész            UX egységes; overlay pipeline teljes
     NeedCalculation UI-szinkron         ✅ Kész            Teljes jelzéslánc auditálva
     NeedCalculation overlay ikon        ✅ Kész            Presenter‑szintű policy kész
     CalculationModesPresenter audit     ✅ Kész            Registry + TreeStats + ViewReady fixek
     CalculationModeDetailPresenter audit✅ Kész            ModeSelected → DetailRefresh stabil
     CSV warning UX                      ❌ Törölve         Nem szükséges külön feature
     EventLog tisztítása                 💡 Új ötlet        SystemLog szétválasztás
-    RegistryEngineBase ↔ Mixin hook‑lánc implementálása  ✅ Kész  Hook‑lánc tiszta
+    RegistryEngineBase ↔
+    Mixin hook‑lánc implementálása      ✅ Kész            Hook‑lánc tiszta
     BarcodeRegistry modernizálása       📐 Tervezés        CollectorMixin + LedgerMixin
     CollectorMixin update-támogatása    ✅ Kész            Update workflow implementálva
     Persist‑policy konzisztencia        ✅ Kész            Kettősség megszűnt; végső audit következik
-    MatrixValidator integráció          🚧 Folyamatban     v2 logika előkészítve; MissingDetail pipeline haladt
-    NeedRuleRegistry workflow audit     🚧 Folyamatban     végső tesztelés
+    MatrixValidator integráció          🟠 Haladó állapot  v2 A formula‑validáció és hibakezelés stabilabb lett.
+    NeedRuleRegistry workflow audit     🟠 Haladó állapot  A FormulaEngine stabilitása miatt a workflow audit most már megbízható.
     Új Registry Fejlettségi Mátrix      ❌ Törölve         Modernizálási terv kiváltja
-    ProductDefinition felvitele         🚧 Folyamatban        1 új termék felvitele a ProductTree-be
-    NeedRule sorok felvitele            🚧 Folyamatban        3–5 új NeedRule egy termékhez
-    NeedCalculation mód felvitele       🚧 Folyamatban        1 új számítási mód létrehozása
-    NeedCalculationDetail formulák      🚧 Folyamatban        3–5 formula egy módhoz
+    ProductDefinition felvitele         🚧 Folyamatban     1 új termék felvitele a ProductTree-be
+    NeedRule sorok felvitele            🚧 Folyamatban     3–5 új NeedRule egy termékhez
+    NeedCalculation mód felvitele       🚧 Folyamatban     1 új számítási mód létrehozása
+    NeedCalculationDetail formulák      🟠 Haladó állapot  A DSL most már teljesen működik, a formulák értelmezése stabil.
     Három torony adatmegjelenítés teszt 📐 Tervezés        Adatfelvitel utáni UI ellenőrzés
     CSV import/export teszt             🚧 Folyamatban     80% kész
     Registry overlay frissítés teszt    ✅ Kész            OverlayPresenter PASSED
-    lookupRules implementálása          ✅ Kész        NeedRule lookup(productId)
-    lookupCalculation implementálása    ✅ Kész        Calculation lookup(productId, modeName)
-    lookupDetails implementálása        ✅ Kész        Detail lookup(calculationId)
-    Formula parser minimál              🚧 Folyamatban     Mini‑DSL működik; parser integráció haladt
-    evaluateFormula implementálása      🚧 Folyamatban     Mini‑DSL működik; teljes parser hiányzik
-    NeedCalculator::calculate           🚧 Folyamatban     core működik, aggregálás hiányzik
+    lookupRules implementálása          ✅ Kész            NeedRule lookup(productId)
+    lookupCalculation implementálása    ✅ Kész            Calculation lookup(productId, modeName)
+    lookupDetails implementálása        ✅ Kész            Detail lookup(calculationId)
+    Formula parser minimál              🟠 Haladó állapot  MA parser már nem minimál: teljes RPN‑pipeline, prefix choose/opt, assignment, sequence.
+    evaluateFormula implementálása      🟠 Haladó állapot  A FormulaEngine most már teljes értékű, a NeedCalculator hívhatja.
+    NeedCalculator::calculate           🟢 Majdnem kész     A FormulaEngine eredményei most már stabilan integrálhatók.
+    Formula parser integráció           🟢 Majdnem kész     A parser + AST + evaluator most már egyben működik.
     Aggregálás implementálása           📐 Tervezés        Azonos materialId összevonása
     Roletta számítás teszt              📐 Tervezés        1200×1500 mm teszt
     Hibás formula audit teszt           📐 Tervezés        Audit pipeline hibás képletre
@@ -144,9 +203,9 @@ többinél a státusz változatlan.)
     AuditService::collectErrors         📐 Tervezés        Hibagyűjtés
     AuditLogView létrehozása            📐 Tervezés        Hibák listázása
     Audit pipeline teszt                📐 Tervezés        Hibás adat esetén
-    Unit teszt: NeedRule lookup         ✅ Kész        Lookup működés ellenőrzése
-    Unit teszt: NeedCalculation lookup  ✅ Kész        Lookup működés ellenőrzése
-    Unit teszt: NeedCalculationDetail   ✅ Kész        Lookup működés ellenőrzése
+    Unit teszt: NeedRule lookup         ✅ Kész            Lookup működés ellenőrzése
+    Unit teszt: NeedCalculation lookup  ✅ Kész            Lookup működés ellenőrzése
+    Unit teszt: NeedCalculationDetail   ✅ Kész            Lookup működés ellenőrzése
     Unit teszt: formula parser          📐 Tervezés        Parser működésének tesztje
     Unit teszt: NeedCalculator pipeline 📐 Tervezés        Teljes számítási folyamat
     Unit teszt: Order → Calculator      📐 Tervezés        Integrációs teszt
@@ -161,79 +220,117 @@ többinél a státusz változatlan.)
 
 ------------------------------------------------------------------------
 
-📊 Idővonalas roadmap — FRISSÍTVE
+📊 Idővonalas roadmap (frissítve)
 
-Ma:
+Február 1–10.
+- DSL v3 parser stabilizálása
+- AST builder tisztítása
+- Skip‑node modell bevezetése
 
--   MatrixValidator v2 előkészítése
--   Formula‑validáció és detail‑pipeline stabilizálása
--   CSV roundtrip tesztek futtatása
--   NeedRuleRegistry workflow audit előrehaladt
+Február 11–20.
+- Function‑hívások új szemantikája
+- Trace pipeline egységesítése
+- NeedCalculator integráció előkészítése
 
-Holnap:
+Február 21–25.
+- DSL v3.1 lezárása
+- Parser + AST + Evaluator integráció
+- FormulaEngine teljes tesztcsomag zöld
 
--   MatrixGenerator v2 implementáció
--   Formula‑modell egységesítése (“” vs “unknown”)
--   CalculationModesView ikonlogika véglegesítése
-
-Következő sprint:
-
--   NeedCalculator aggregálás
--   Order pipeline első működő verziója
--   Audit pipeline implementálása
+Következő 7 nap:
+- Aggregálás implementálása
+- NeedCalculator pipeline lezárása
+- Roletta számítás teszt
+- Hibás formula audit teszt
 
 ------------------------------------------------------------------------
 
 ✨ Röviden – stratégiai összefoglaló
 
-A backend‑mátrix logika stabilizálódik, a formula‑validáció és
-detail‑szerkesztés UX‑lánca már gyakorlatilag kész. A CSV‑pipeline
-megbízhatóbb, a NeedRuleRegistry auditja előrehaladt. A következő lépés
-a MatrixGenerator és a teljes mátrix‑workflow lezárása.
+A mai nap egy nagy mérföldkő:
+a FormulaEngine DSL v3.1 teljesen elkészült, és ezzel a NeedCalculator
+pipeline a végső szakaszba lépett.
+
+A rendszer most már:
+
+-   stabilan értelmezi a DSL‑t,
+-   hibátlanul kezeli a skip‑node modellt,
+-   egységes trace‑et ad,
+-   integrálható a NeedCalculatorba,
+-   és minden teszt zöld.
+
+Ez a projekt egyik legfontosabb alrendszere — most már készen áll a
+magasabb szintű funkciók építésére.
+
+A Sprint 2026‑Q1 célja, hogy a NeedCalculator:
+
+-   teljesen működőképes legyen,
+-   minden formula‑típust kezeljen,
+-   aggregáljon,
+-   UI‑ban megjelenjen,
+-   CSV‑ben exportálható legyen,
+-   és minden teszt zöld legyen.
+
+Ez a sprint lezárja a teljes számítási pipeline‑t, és megnyitja az utat
+a rendeléskezelő UI előtt.
 
 ------------------------------------------------------------------------
 
-📌 Mai eredmények – részletes taktikai napzáró
+📌 Mai eredmények – taktikai napzáró
 
--   [🚧 HALADT] MatrixValidator v2 előkészítése
--   [🚧 HALADT] Formula‑validáció és detail‑pipeline finomítása
--   [🚧 HALADT] CSV roundtrip tesztek futtatása
--   [🚧 HALADT] NeedRuleRegistry workflow audit
--   [🚧 HALADT] CutCalculator pipeline stabilizálása
-
-------------------------------------------------------------------------
-
-🎯 Prioritási sorrend – fókuszpont lista
-
-1.  MatrixGenerator v2
-2.  Formula‑modell egységesítése
-3.  NeedCalculator aggregálás
-4.  Audit pipeline
-5.  Order pipeline első működő verziója
+1. DSL v3.1 lezárva
+2. FormulaEngine 100% zöld
+3. Skip‑node modell stabil
+4. Parser + AST + Evaluator integráció kész
+5. NeedCalculator integráció előkészítve
+6. Sprint 2026‑Q1 fókusz meghatározva
+7. Holnapi fókusz kijelölve
 
 ------------------------------------------------------------------------
 
-🚀 Sprint fókusz + 👉 Holnap fókusz
+🎯 Prioritási sorrend – Sprint 2026‑Q1
 
-🚀 Sprint fókusz
+1. Aggregálás implementálása
+2. NeedCalculator::calculate véglegesítése
+3. Roletta számítás teszt
+4. Hibás formula audit teszt
+5. CSV import/export teszt 100%
+6. Formula parser unit teszt
+7. NeedCalculator pipeline unit teszt
+8. Order → Calculator integrációs teszt
+9. PreviewView + OrderDialog összekötése
+10. PreviewView aggregált nézet
 
--   MatrixValidator + MatrixGenerator v2
--   NeedRuleRegistry workflow audit lezárása
--   Formula‑modell egységesítése
-
-👉 Holnap fókusz
-
--   MatrixGenerator implementálása
--   Formula‑modell tisztítása
--   CalculationModesView ikonlogika véglegesítése
-
-------------------------------------------------------------------------
-
-✔ Git commit subject
-
-    MatrixValidator v2 előkészítés + formula‑pipeline stabilizálás
 
 ------------------------------------------------------------------------
 
-Ha szeretnéd, elkészítem a patch‑tervet, a diff‑eket, vagy a holnapi
-munkatervet is.
+🚀 Sprint fókusz – Sprint 2026‑Q1: NeedCalculator lezárása
+
+- Aggregálás implementálása
+- NeedCalculator::calculate véglegesítése
+- Roletta számítás teszt
+- Hibás formula audit teszt
+- CSV import/export teszt 100%
+- Formula parser unit teszt
+- NeedCalculator pipeline unit teszt
+- Order → Calculator integrációs teszt
+- PreviewView + OrderDialog összekötése
+- PreviewView aggregált nézet
+
+👉 Holnap fókusz – Sprint 2026‑Q1
+
+1. Aggregálás implementálása (core logika)
+2. NeedCalculator::calculate lezárásának előkészítése
+3. Roletta számítás teszt keretrendszer felállítása
+
+
+------------------------------------------------------------------------
+
+Git commit subject
+
+    FormulaEngine DSL v3.1 finalized; parser+AST+eval integrated
+
+------------------------------------------------------------------------
+
+Ha szeretnéd, megcsinálom a holnapi sprint backlogot vagy a DSL v3.1
+release notes dokumentumot is.

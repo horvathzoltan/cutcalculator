@@ -80,6 +80,8 @@ void FormulaEnginePipelineTester::testLiteralInt()
 
     setVars(1000, 2000, 1);
     auto r = FormulaEngine::eval("42");
+    r.debugDump();
+
     Q_ASSERT(r.ok);
 
     auto v = VariableRepository::instance().get("_result");
@@ -94,6 +96,8 @@ void FormulaEnginePipelineTester::testLiteralDouble()
 
     setVars(1000, 2000, 1);
     auto r = FormulaEngine::eval("3.14");
+    r.debugDump();
+
     Q_ASSERT(r.ok);
 
     auto v = VariableRepository::instance().get("_result");
@@ -108,6 +112,8 @@ void FormulaEnginePipelineTester::testSimpleExpression()
 
     setVars(1200, 1500, 1);
     auto r = FormulaEngine::eval("w - 10");
+    r.debugDump();
+
     Q_ASSERT(r.ok);
 
     auto v = VariableRepository::instance().get("_result");
@@ -122,6 +128,8 @@ void FormulaEnginePipelineTester::testAssignment()
 
     setVars(1200, 1500, 1);
     auto r = FormulaEngine::eval("x = w - 15");
+    r.debugDump();
+
     Q_ASSERT(r.ok);
 
     auto x = VariableRepository::instance().get("x");
@@ -142,6 +150,8 @@ void FormulaEnginePipelineTester::testMultiLine()
         "b";
 
     auto r = FormulaEngine::eval(script);
+    r.debugDump();
+
     Q_ASSERT(r.ok);
 
     auto v = VariableRepository::instance().get("_result");
@@ -160,6 +170,7 @@ void FormulaEnginePipelineTester::testInvalidEmpty()
 
     setVars(1200, 1500, 1);
     auto r = FormulaEngine::eval("");
+    r.debugDump();
 
     Q_ASSERT(!r.ok);
 
@@ -172,6 +183,7 @@ void FormulaEnginePipelineTester::testInvalidGarbage()
 
     setVars(1200, 1500, 1);
     auto r = FormulaEngine::eval("this_is_not_valid");
+    r.debugDump();
 
     Q_ASSERT(!r.ok);
 
@@ -184,6 +196,7 @@ void FormulaEnginePipelineTester::testUndefinedVariable()
 
     setVars(1200, 1500, 1);
     auto r = FormulaEngine::eval("foo + 10");
+    r.debugDump();
 
     Q_ASSERT(!r.ok);
 
@@ -196,6 +209,7 @@ void FormulaEnginePipelineTester::testUndefinedFunction()
 
     setVars(1200, 1500, 1);
     auto r = FormulaEngine::eval("unknownFn(10)");
+    r.debugDump();
 
     Q_ASSERT(!r.ok);
 
@@ -208,6 +222,7 @@ void FormulaEnginePipelineTester::testDivisionByZero()
 
     setVars(1200, 1500, 1);
     auto r = FormulaEngine::eval("div(10,0)");
+    r.debugDump();
 
     Q_ASSERT(!r.ok);
 
@@ -222,6 +237,7 @@ void FormulaEnginePipelineTester::testNestedFunctionCall()
     VariableRepository::instance().clear();
 
     auto r = FormulaEngine::eval("mul(2, add(3,4))");
+    r.debugDump();
 
     Q_ASSERT(r.ok);
 
@@ -245,7 +261,6 @@ void FormulaEnginePipelineTester::testChooseSimple()
 
     QString code = "choose: (w*h > 1000000) ? A : B";
     EvalResult r = FormulaEngine::eval(code);
-
     r.debugDump();
 
     Q_ASSERT(r.ok);
@@ -269,6 +284,7 @@ void FormulaEnginePipelineTester::testChooseNested()
         ": Z";
 
     auto r = FormulaEngine::eval(script);
+    r.debugDump();
     Q_ASSERT(r.ok);
 
     auto v = VariableRepository::instance().get("_result");
@@ -283,6 +299,8 @@ void FormulaEnginePipelineTester::testChooseFalseBranch()
 
     setVars(1000, 1000, 1);
     auto r = FormulaEngine::eval("choose: (w*h > 5000000) ? A : B");
+    r.debugDump();
+
     Q_ASSERT(r.ok);
 
     auto v = VariableRepository::instance().get("_result");

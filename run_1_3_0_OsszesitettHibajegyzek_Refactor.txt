@@ -146,12 +146,12 @@ A skip‑node modell nem igényel AST módosítást, mert:
 
 📄 files.txt – a holnapi patchhez
 
-    expression/value.h
-    expression/formula_engine.cpp
-    expression/ast_builder.cpp
-    expression/ast.h
-    expression/operator_info.cpp
-    expression/operator_info.h
+expression/value.h
+expression/formula_engine.cpp
+expression/ast_builder.cpp
+expression/ast.h
+expression/operator_info.cpp
+expression/operator_info.h
 
 (Az utolsó kettő csak ellenőrzésre kell, nem módosulnak.)
 
