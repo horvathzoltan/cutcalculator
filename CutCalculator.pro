@@ -21,6 +21,7 @@ SOURCES += \
     calculation/dialogs/formula_editor_dialog.cpp \
     calculation/dialogs/material_picker_dialog2.cpp \
     calculation/presenter/calculation_mode_detail_presenter.cpp \
+    calculation/service/cut_aggregator.cpp \
     expression/ast_builder.cpp \
     expression/eval_result.cpp \
     expression/formula_engine.cpp \
@@ -64,6 +65,7 @@ SOURCES += \
     test/calculation/formula_engine_pipeline_tester.cpp \
     test/calculation/formula_engine_tester.cpp \
     test/calculation/need_calculation_detail_registry_tester.cpp \
+    test/calculation/need_calculator_pipeline_tester.cpp \
     test/common/test_data_builder.cpp \
     test/common/test_file_helper.cpp \
     test/eventlogger/event_logger_tester.cpp \
@@ -121,6 +123,9 @@ HEADERS += \
     calculation/dialogs/formula_editor_dialog.h \
     calculation/dialogs/material_picker_dialog2.h \
     calculation/presenter/calculation_mode_detail_presenter.h \
+    calculation/service/cut_aggregator.h \
+    calculation/service/cut_key.h \
+    calculation/service/piece.h \
     expression/ast.h \
     expression/ast_builder.h \
     expression/ast_printer.h \
@@ -210,6 +215,7 @@ HEADERS += \
     test/calculation/formula_engine_pipeline_tester.h \
     test/calculation/formula_engine_tester.h \
     test/calculation/need_calculation_detail_registry_tester.h \
+    test/calculation/need_calculator_pipeline_tester.h \
     test/common/test_data_builder.h \
     test/common/test_file_helper.h \
     test/common/test_module_base.h \
@@ -290,6 +296,7 @@ DISTFILES += \
     docs/entity_contract.md \
     docs/entity_matrix.md \
     docs/formula_engine_dsl_v3.md \
+    docs/formula_engine_syntax.txt \
     docs/overlay_ux_rules.md \
     docs/registry_contract.md \
     docs/registry_matrix.md \

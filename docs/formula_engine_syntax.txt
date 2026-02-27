@@ -1,0 +1,136 @@
+🧩 A FormulaEngine teljes szintaxisa (a kódból kiolvasva)
+
+📌 Literálok
+
+-   Számok: 10, 3.14, .5
+-   Stringek: "M1", "hello"
+-   Bool: nincs külön literal, de összehasonlításból jön (w > 10 → bool)
+
+📌 Változók
+
+Bármilyen azonosító:
+
+-   w, h, qty, flag, base_margin, X1
+-   A NeedCalculator ezeket tölti fel a line alapján.
+
+A VariableRepository kezeli őket.
+
+------------------------------------------------------------------------
+
+🧮 Operátorok
+
+A tokenizer + operator_info alapján:
+
+-   +, -, *, /
+-   >, <, >=, <=, ==
+-   = (assignment)
+-   prefix +x, -x
+
+Minden operátor függvényként is regisztrálva van, tehát AST‑ben
+egységesen működik.
+
+------------------------------------------------------------------------
+
+❓ Ternary operátor (choose)
+
+A parser teljes C‑szerű ternary‑t támogat:
+
+    cond ? expr1 : expr2
+
+Ez AST‑ben AstNode::Choose.
+
+Ez pont ugyanaz, mint a NeedCalculator „choose:” logikája — csak
+FE‑szintaxissal.
+
+------------------------------------------------------------------------
+
+🎛 Opt operátor
+
+A tokenizer felismeri:
+
+    opt: flag ? expr
+
+A parser ezt AstNode::Opt node‑dá alakítja.
+
+Ez a NeedCalculator „opt:” logikájának FE‑szintaktikus megfelelője.
+
+------------------------------------------------------------------------
+
+🧰 Függvények (FunctionRegistry alapján)
+
+Matematikai:
+
+-   add(a, b)
+-   sub(a, b)
+-   mul(a, b)
+-   div(a, b)
+-   avg(a, b, c, ...)
+-   sum(a, b, c, ...)
+
+Relációs:
+
+-   gt(a, b)
+-   lt(a, b)
+-   ge(a, b)
+-   le(a, b)
+-   eq(a, b)
+
+Operátorok függvényként:
+
+-   "+"(a, b)
+-   "-"(a, b)
+-   "*"(a, b)
+-   "/"(a, b)
+-   ">"(a, b)
+-   "<"(a, b)
+-   ">="(a, b)
+-   "<="(a, b)
+-   "=="(a, b)
+
+Mennyiségi függvények (ha akarjuk használni):
+
+-   qty_fixed(qty, n)
+-   qty_perOrder(n)
+-   qty_perArea(w, h, area)
+
+De nem kötelező, mert a user írhatja így is:
+
+    _qty = qty * 3
+
+------------------------------------------------------------------------
+
+📜 Több soros script
+
+A FormulaEngine tud:
+
+    len = w - 10
+    qty = qty * 3
+    return len
+
+A parser Sequence/Statement node‑okat épít.
+
+------------------------------------------------------------------------
+
+🔁 Visszatérés
+
+    return x
+
+vagy:
+
+    return a=1, b=2
+
+------------------------------------------------------------------------
+
+🧱 Változóírás
+
+    x = 10
+    y = x + 5
+
+Assignment node.
+
+------------------------------------------------------------------------
+
+🧪 Skip érték (opt miatt)
+
+Az opt node visszaadhat Value::Skip‑et, amit az evalNode figyelmen kívül
+hagy.

@@ -370,20 +370,34 @@ void FormulaEnginePipelineTester::testNeedCalculatorSimpleRoletta()
     auto mode = TestDataBuilder::makeCalculation(ids.P1, "Manufacturing");
     NeedCalculationRegistry::instance().insert(mode);
 
+    // v1 DSL továbbra is támogatott: w-15, w-10
     auto d1 = TestDataBuilder::makeDetail(mode.id, ids.M1, "w-15");
     auto d2 = TestDataBuilder::makeDetail(mode.id, ids.M2, "w-10");
 
     NeedCalculationDetailRegistry::instance().insert(d1);
     NeedCalculationDetailRegistry::instance().insert(d2);
 
-    auto cuts = NeedCalculator::makeCutList({ ids.P1, 1200, 1500, 1, "" }, "Manufacturing");
+    OrderLine line;
+    line.productId = ids.P1;
+    line.width_mm = 1200;
+    line.height_mm = 1500;
+    line.qty = 1;
+    line.handlerSide = "";
+    line.externalId = "X";
+    line.ownerName = "";
+    line.colorName = "";
+
+    auto cuts = NeedCalculator::makeCutList(line, "Manufacturing");
 
     Q_ASSERT(cuts.size() == 2);
-    Q_ASSERT(cuts[0].length_mm == 1185);
-    Q_ASSERT(cuts[1].length_mm == 1190);
+
+    // A sorrend determinisztikus, mert QMap → QVector
+    Q_ASSERT(cuts[0].requiredLength == 1185); // 1200 - 15
+    Q_ASSERT(cuts[1].requiredLength == 1190); // 1200 - 10
 
     zInfo("✓ testNeedCalculatorSimpleRoletta OK");
 }
+
 
 void FormulaEnginePipelineTester::testNeedCalculatorInvalidFormulaAudit()
 {
@@ -434,17 +448,28 @@ void FormulaEnginePipelineTester::testNeedCalculatorChooseTrue()
     auto mode = TestDataBuilder::makeCalculation(ids.P1, "Manufacturing");
     NeedCalculationRegistry::instance().insert(mode);
 
+    // choose: feltétel igaz → M1 barcode
     auto d = TestDataBuilder::makeDetail(
         mode.id, ids.M1,
-        QString("choose: (w*h > 1000000) ? %1 : %2")
+        QString("choose: w>=1500 ? %1 : %2")
             .arg(ids.M1_barcode, ids.M2_barcode));
 
     NeedCalculationDetailRegistry::instance().insert(d);
 
-    auto cuts = NeedCalculator::makeCutList({ ids.P1, 2000, 2000, 1, "" }, "Manufacturing");
+    OrderLine line;
+    line.productId = ids.P1;
+    line.width_mm = 2000;
+    line.height_mm = 2000;
+    line.qty = 1;
+    line.handlerSide = "";
+    line.externalId = "X";
+    line.ownerName = "";
+    line.colorName = "";
+
+    auto cuts = NeedCalculator::makeCutList(line, "Manufacturing");
 
     Q_ASSERT(cuts.size() == 1);
-    Q_ASSERT(cuts[0].materialId == ids.M1);
+    Q_ASSERT(cuts[0].materialBarcode == ids.M1_barcode);
 
     zInfo("✓ testNeedCalculatorChooseTrue OK");
 }
@@ -467,17 +492,29 @@ void FormulaEnginePipelineTester::testNeedCalculatorChooseFalse()
     auto mode = TestDataBuilder::makeCalculation(ids.P1, "Manufacturing");
     NeedCalculationRegistry::instance().insert(mode);
 
+    // choose: feltétel hamis → M2 barcode
     auto d = TestDataBuilder::makeDetail(
         mode.id, ids.M1,
-        QString("choose: (w*h > 5000000) ? %1 : %2")
+        QString("choose: w>=1500 ? %1 : %2")
             .arg(ids.M1_barcode, ids.M2_barcode));
 
     NeedCalculationDetailRegistry::instance().insert(d);
 
-    auto cuts = NeedCalculator::makeCutList({ ids.P1, 1000, 1000, 1, "" }, "Manufacturing");
+    OrderLine line;
+    line.productId = ids.P1;
+    line.width_mm = 1000;
+    line.height_mm = 1000;
+    line.qty = 1;
+    line.handlerSide = "";
+    line.externalId = "X";
+    line.ownerName = "";
+    line.colorName = "";
+
+    auto cuts = NeedCalculator::makeCutList(line, "Manufacturing");
 
     Q_ASSERT(cuts.size() == 1);
-    Q_ASSERT(cuts[0].materialId == ids.M2);
+    Q_ASSERT(cuts[0].materialBarcode == ids.M2_barcode);
 
     zInfo("✓ testNeedCalculatorChooseFalse OK");
 }
+

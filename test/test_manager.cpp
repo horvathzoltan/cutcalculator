@@ -9,6 +9,7 @@
 #include "test/calculation/formula_engine_tester.h"
 #include "test/calculation/need_calculation_detail_registry_tester.h"
 
+#include "test/calculation/need_calculator_pipeline_tester.h"
 #include "test/eventlogger/event_logger_tester.h"
 #include "test/filenamehelper/filenamehelper_tests.h"
 #include "test/need/need_rule_registry_tester.h"
@@ -50,7 +51,7 @@ void TestManager::runBusinessLogicTests(const QString& profile) {
     else if (profile == "calcmode") { // --test needrule
         runModule<NeedCalculationRegistryTester>();
     }
-    else if (profile == "calcdetail") {
+    else if (profile == "need_calculation_detail") {
         runModule<NeedCalculationDetailRegistryTester>();
     }
     else if (profile == "overlay") {
@@ -70,6 +71,9 @@ void TestManager::runBusinessLogicTests(const QString& profile) {
     }
     else if (profile == "formula_engine_pipeline") {
         runModule<FormulaEnginePipelineTester>();
+    }
+    else if (profile == "need_calculation_pipeline") {
+        runModule<NeedCalculatorPipelineTester>();
     }
     /**/
     else {

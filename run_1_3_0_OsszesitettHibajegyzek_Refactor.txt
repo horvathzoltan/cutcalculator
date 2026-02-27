@@ -1,217 +1,205 @@
-Zoltán, akkor jöjjön a holnapra előkészített, lépésről‑lépésre
-végrehajtható SKIP‑NODE PATCH TERV, pontosan úgy strukturálva, hogy:
+Rendben, Zoltán — akkor visszatérünk a teljes NeedCalculator v2
+patch‑tervhez, és most, hogy a p8-at pontosítottuk (és helyesen
+értelmeztük: nem engine‑módosítás, hanem üzleti kézfogás), a tervet újra
+összerendezem p1–p12 formában, immár a p8 helyes tartalmával.
 
--   pontosan tudd, mit kell módosítani,
--   melyik fájlban,
--   milyen sorrendben,
--   és legyen egy files.txt, amit be tudsz tölteni,
--   plusz egy jegyzet, ami rögzíti a jelenlegi állapotot (context
-    snapshot).
-
-Ez most nem kód, hanem műveleti terv, amit holnap végrehajthatsz.
+Ez lesz a végleges, lépésenként végrehajtható, stabil patching terv.
 
 ------------------------------------------------------------------------
 
-✅ SKIP‑NODE PATCH – LÉPÉSRŐL LÉPÉSRE TERV
+🧱 NeedCalculator v2 – Lépésenként végrehajtható patch‑terv (p1–p12)
 
-A skip‑node modell lényege:
-
--   Az Opt node nem ad vissza értéket, ha a feltétel hamis.
--   A szülő operátorok (pl. +) kihagyják a skip‑et.
--   A DSL szemantikája ettől még tisztább lesz.
-
-A patch 5 pontból áll.
+A terv minden lépése után a rendszer működőképes marad.
+A lépések sorrendje kötött, mert egymásra épülnek.
 
 ------------------------------------------------------------------------
 
-1️⃣ LÉPÉS – Value típus bővítése (Skip hozzáadása)
+p1 — A jelenlegi NeedCalculator viselkedésének befagyasztása
 
-Fájl: expression/value.h
-
-Módosítás:
-
-1.  Add hozzá az új típust:
-
-    enum class Type { Number, String, Bool, Null, Skip };
-
-2.  Adj hozzá egy gyári függvényt:
-
-    static Value skipValue() {
-        Value v;
-        v.type = Type::Skip;
-        return v;
-    }
-
-3.  A toString()‑ben kezeld:
-
-    case Type::Skip: return "<skip>";
-
-4.  A toBool()‑ban:
-
-    case Type::Skip:
-        if (ok) *ok = false;
-        return false;
+-   A jelenlegi makeCutList() és makeKitList() működésének
+    dokumentálása.
+-   A régi logika: qty‑alapú darabszám, nincs explode, nincs
+    handlerSide, nincs materialBarcode.
+-   Ez lesz a baseline, amihez képest minden változtatás mérhető.
 
 ------------------------------------------------------------------------
 
-2️⃣ LÉPÉS – Opt node módosítása SKIP visszaadásra
+p2 — Új komponensfájlok létrehozása (még üres skeletonnal)
 
-Fájl: expression/formula_engine.cpp
+A három új fájl:
 
-Módosítás:
+-   calculation/service/piece.h
+-   calculation/service/cut_key.h
+-   calculation/service/cut_aggregator.h
 
-A jelenlegi Opt ág:
-
-    else
-        return Value();
-
-→ cseréld erre:
-
-    else
-        return Value::skipValue();
-
-Ez jelzi a szülőnek: ezt az értéket hagyd ki.
+Ezek még csak minimális struktúrákat tartalmaznak.
 
 ------------------------------------------------------------------------
 
-3️⃣ LÉPÉS – Operátorok módosítása, hogy kihagyják a SKIP‑et
+p3 — Piece struktúra definiálása (explode után)
 
-Fájl: expression/formula_engine.cpp
-Függvény: Value FormulaEngine::evalNode(AstNode* n, ...)
+A darablista alapegysége:
 
-Módosítás:
+-   materialId
+-   materialBarcode
+-   requiredLength
+-   handlerSide
+-   externalRef
+-   ownerName
+-   colorName
+-   fullWidth
+-   fullHeight
 
-A case AstNode::Type::Operator: ágban, mielőtt meghívod:
-
-    Value v = reg.call(n->value, evalChildren(n, traceOut));
-
-→ módosítsd úgy, hogy a skip‑eket kiszűrd:
-
-    QVector<Value> args = evalChildren(n, traceOut);
-
-    // skip-ek kiszűrése
-    QVector<Value> filtered;
-    for (const Value& a : args) {
-        if (a.type != Value::Type::Skip)
-            filtered.append(a);
-    }
-
-    // ha nincs operandus → null
-    if (filtered.isEmpty()) {
-        Value v = Value::nullValue();
-        addTrace(v);
-        return v;
-    }
-
-    // ha egy operandus → azt add vissza
-    if (filtered.size() == 1) {
-        Value v = filtered[0];
-        addTrace(v);
-        return v;
-    }
-
-    // különben → normál operátorhívás
-    Value v = reg.call(n->value, filtered);
-    addTrace(v);
-    return v;
-
-Ez a skip‑node modell szíve.
+Ez még nem kerül be a NeedCalculatorba.
 
 ------------------------------------------------------------------------
 
-4️⃣ LÉPÉS – Function hívásoknál is szűrd a SKIP‑et
+p4 — CutKey struktúra definiálása (gyártási azonossági kulcs)
 
-Fájl: expression/formula_engine.cpp
-Függvény: case AstNode::Type::Function:
+Kulcs mezői:
 
-Ugyanaz a logika, mint az operátoroknál:
+-   materialBarcode
+-   requiredLength
+-   handlerSide
 
--   skip → kihagyás
--   0 operandus → null
--   1 operandus → azt add vissza
--   több operandus → normál function call
+Operator < implementálása.
 
 ------------------------------------------------------------------------
 
-5️⃣ LÉPÉS – AST builder NEM módosul
+p5 — CutAggregatedItem struktúra definiálása
 
-Fájl: expression/ast_builder.cpp
+A Cutting CSV sor reprezentációja:
 
-A skip‑node modell nem igényel AST módosítást, mert:
-
--   az Opt node továbbra is 2 gyereket tartalmaz,
--   csak az evalNode viselkedése változik.
-
-------------------------------------------------------------------------
-
-📄 files.txt – a holnapi patchhez
-
-expression/value.h
-expression/formula_engine.cpp
-expression/ast_builder.cpp
-expression/ast.h
-expression/operator_info.cpp
-expression/operator_info.h
-
-(Az utolsó kettő csak ellenőrzésre kell, nem módosulnak.)
+-   materialBarcode
+-   requiredLength
+-   handlerSide
+-   quantity
+-   externalRefs (lista)
+-   ownerName
+-   fullWidth
+-   fullHeight
 
 ------------------------------------------------------------------------
 
-🧾 Jegyzet – Context Snapshot (hol tartunk most)
+p6 — CutAggregator osztály skeletonja
 
-Ez a snapshot segít holnap visszarázódni:
+Függvény:
 
-------------------------------------------------------------------------
+    static QVector<CutAggregatedItem> aggregate(const QVector<Piece>& pieces);
 
-DSL állapot – 2026.02.24.
-
-✔ Choose működik
-
--   runtime értékválasztó
--   cond → trueExpr / falseExpr
--   AST node: 3 gyerek
--   eval: tiszta, trace‑elt
-
-✔ Opt működik
-
--   runtime feltételes mellék‑kifejezés
--   cond → expr / null
--   AST node: 2 gyerek
--   eval: tiszta, trace‑elt
--   skip‑node modellre készülünk
-
-✔ Parser stabil
-
--   choose/opt NEM operátor
--   OPINFO tiszta
--   RPN helyes
--   prefix + működik
--   zárójelek működnek
--   nested choose/opt működik
-
-✔ AST builder stabil
-
--   choose → 3 operandus
--   opt → 2 operandus
--   minden más operátor → 2 operandus
--   function → variadic
-
-✔ Evaluator stabil
-
--   minden node típus működik
--   trace működik
--   skip‑node modellhez csak operátor/function ág módosul
+Implementáció nélkül.
 
 ------------------------------------------------------------------------
 
-🎯 Holnapra készen állsz
+p7 — NeedCalculator v2 pipeline előkészítése (privát függvények deklarációja)
 
-A skip‑node patch:
+Új privát függvények:
 
--   tisztább DSL szemantikát ad,
--   nem keveri a „0” és „nincs érték” fogalmát,
--   egyszerűbbé teszi a szülő operátorok logikáját,
--   és még bővíthetőbbé teszi a nyelvet.
+-   eval_formula()
+-   explode_pieces()
+-   group_by_cut_key()
 
-Ha szeretnéd, holnap végigmegyünk együtt a patchen, és megnézzük a
-tesztek kimenetét is.
+A régi makeCutList() még változatlan.
+
+------------------------------------------------------------------------
+
+p8 — Formula futtatás új modellje (üzleti kézfogás, engine módosítás nélkül)
+
+Ez a lépés már helyesen definiálva van:
+
+-   NeedCalculator feltölti a VariableRepository‑t (w, h, qty, stb.).
+-   Meghívja a FormulaEngine::eval() függvényt.
+-   Üzleti ellenőrzések:
+    -   ha !r.ok → üzleti hiba
+    -   ha _result hiányzik → üzleti hiba
+    -   ha _result típusa nem Number/String → üzleti hiba
+    -   ha Number ≤ 0 → üzleti hiba
+    -   ha String, de nincs ilyen anyag → üzleti hiba
+-   A FormulaEngine érintetlen marad.
+-   A NeedCalculator biztosítja a „kézfogást”.
+
+Ez a lépés most már teljesen tiszta és lezárt.
+
+------------------------------------------------------------------------
+
+p9 — explode_pieces implementálása
+
+A RawCut → Piece átalakítás:
+
+-   qty darabszám szétszedése
+-   externalRef generálása (orderLineId.i)
+-   handlerSide hozzárendelése
+-   colorName hozzárendelése
+-   ownerName hozzárendelése
+-   fullWidth/fullHeight hozzárendelése
+-   materialBarcode lekérése MaterialRegistry‑ből
+
+Ez a függvény már működőképes lesz, de még nem hívja a NeedCalculator.
+
+------------------------------------------------------------------------
+
+p10 — group_by_cut_key implementálása
+
+A darablista összevonása a kulcs alapján:
+
+-   QMap<CutKey, CutAggregatedItem>
+-   quantity növelése
+-   externalRef hozzáfűzése
+
+Ez a függvény is működőképes lesz, de még nem hívja a NeedCalculator.
+
+------------------------------------------------------------------------
+
+p11 — NeedCalculator::makeCutList átállítása az új pipeline‑ra
+
+A régi logika:
+
+-   egy detail → egy CutItem
+-   pieces = qty
+
+Az új logika:
+
+1.  formula futtatás → RawCut
+2.  explode → Piece lista
+3.  groupBy → CutAggregatedItem lista
+4.  visszaadás
+
+Ez a lépés hozza létre a NeedCalculator v2‑t.
+
+------------------------------------------------------------------------
+
+p12 — Kitting logika frissítése (opcionális, de ajánlott)
+
+A kitting nem darablista‑alapú, de:
+
+-   numeric → pieces
+-   nincs explode
+-   nincs groupBy
+-   metaadatok (handlerSide, color, externalRef) opcionálisan
+    hozzáadhatók
+
+Ez a lépés a kittinget is konzisztenssé teszi.
+
+------------------------------------------------------------------------
+
+🔚 A teljes patch‑terv eredménye
+
+A NeedCalculator v2:
+
+-   darablista‑alapú,
+-   gyártásilag helyes,
+-   cutting program kompatibilis,
+-   kitting kompatibilis,
+-   auditálható,
+-   determinisztikus,
+-   és teljesen illeszkedik a meglévő architektúrába.
+
+A p8 lépés helyesen beépült a tervbe.
+
+------------------------------------------------------------------------
+
+Ha szeretnéd, most elkészítem a snippet‑listát, vagyis:
+
+-   melyik meglévő fájl melyik részét kell módosítani p11‑hez,
+-   milyen include‑ok kellenek,
+-   hol kerül be az explode → groupBy logika.
