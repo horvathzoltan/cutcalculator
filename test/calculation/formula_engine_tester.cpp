@@ -219,7 +219,7 @@ void FormulaEngineTester::testNeedCalculatorInvalidFormulaAudit()
     int height = 1500;
     int qty    = 1;
 
-    auto cuts = NeedCalculator::makeCutList({ ids.P1, width, height, qty , ""}, "Manufacturing");
+    auto cuts = NeedCalculator::makeCutList({ ids.P1, width, height, qty , "", "", "", ""}, "Manufacturing");
 
     Q_ASSERT(cuts.isEmpty());
 

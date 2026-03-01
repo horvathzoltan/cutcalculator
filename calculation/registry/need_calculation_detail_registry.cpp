@@ -2,68 +2,14 @@
 #include "common/registry/manager/registry_manager.h"
 #include "calculation/repository/need_calculation_detail_repository.h"
 #include "calcmodes/registry/need_calculation_registry.h"
+#include "dsl/formula_analysis.h"
+#include "dsl/formula_contract.h"
 #include "materials/registry/material_registry.h"
 #include "products/registry/product_registry.h"
 #include "calcmodes/registry/need_calculation_registry.h"
 #include "materials/registry/material_registry.h"
 #include "products/registry/product_registry.h"
 
-
-// --- Segédek ---
-
-bool NeedCalculationDetailRegistry::isFormulaValid(const QString& f) {
-    const auto trimmed = f.trimmed();
-
-    if (trimmed.isEmpty())
-        return true;
-    if (trimmed == "unknown")
-        return false;
-
-    // --- ÚJ DSL: choose ---
-    if (trimmed.startsWith("choose:")) {
-        return validateChoose(trimmed);
-    }
-
-    // --- ÚJ DSL: opt ---
-    if (trimmed.contains("opt:")) {
-        return validateOpt(trimmed);
-    }
-
-    // v2 DSL
-    if (trimmed.startsWith("len:w-") || trimmed.startsWith("len:h-")) {
-        bool ok = false;
-        trimmed.mid(6).toInt(&ok);
-        return ok;
-    }
-
-    if (trimmed.startsWith("qty:fixed:") ||
-        trimmed.startsWith("qty:perOrder:") ||
-        trimmed.startsWith("qty:perArea:")) {
-        bool ok = false;
-        const int idx = trimmed.indexOf(':', 4) + 1;
-        trimmed.mid(idx).toInt(&ok);
-        return ok;
-    }
-
-    // v1 DSL (FormulaEngine kompatibilitás)
-    if (trimmed.startsWith("w-") || trimmed.startsWith("h-")) {
-        bool ok = false;
-        trimmed.mid(2).toInt(&ok);
-        return ok;
-    }
-
-    if (trimmed.startsWith("fixed:")) {
-        bool ok = false;
-        trimmed.mid(6).toInt(&ok);
-        return ok;
-    }
-
-    if (trimmed == "w*h") {
-        return true;
-    }
-
-    return false;
-}
 
 // --- ÚJ: opt: validáció ---
 bool NeedCalculationDetailRegistry::validateOpt(const QString& f)
@@ -188,27 +134,37 @@ bool NeedCalculationDetailRegistry::remove(const QUuid &id) {
 // v2: domain validation uses updated formula rules (isFormulaValid)
 bool NeedCalculationDetailRegistry::validateDomain(const NeedCalculationDetail& d) const
 {
-    bool ifv = isFormulaValid(d.formula);
-    if(!ifv) return false;
-    if(d.kind != NeedCalculationDetail::DetailKind::Cutting &&
-        d.kind != NeedCalculationDetail::DetailKind::Kitting) return false;
+    // Formula üres → valid
+    if (d.formula.trimmed().isEmpty())
+        return true;
 
-    if(d.materialId.isNull()) return false;
-    if(d.needCalculationId.isNull()) return false;
+    // Formula nem lehet "unknown"
+    if (d.formula.trimmed() == "unknown")
+        return false;
 
-    const NeedCalculation *nc =
+    // Kind ellenőrzés
+    if (d.kind != NeedCalculationDetail::DetailKind::Cutting &&
+        d.kind != NeedCalculationDetail::DetailKind::Kitting)
+        return false;
+
+    // Material létezzen
+    if (!materialExists(d.materialId))
+        return false;
+
+    // Calculation létezzen
+    const NeedCalculation* nc =
         NeedCalculationRegistry::instance().findById(d.needCalculationId);
+    if (!nc)
+        return false;
 
-    if(!nc) return false;
-
-    auto m = MaterialRegistry::instance().findById(d.materialId);
-    if(!m) return false;
-
+    // Product létezzen
     auto p = ProductRegistry::instance().findById(nc->productId);
-    if(!p) return false;
+    if (!p)
+        return false;
 
     return true;
 }
+
 
 bool NeedCalculationDetailRegistry::validateDuplicate(const NeedCalculationDetail& d) const
 {

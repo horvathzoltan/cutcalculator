@@ -1,6 +1,8 @@
 #include "matrix_validator.h"
 #include "calcmodes/registry/need_calculation_registry.h"
 #include "calculation/registry/need_calculation_detail_registry.h"
+#include "dsl/formula_analysis.h"
+#include "dsl/formula_contract.h"
 #include "needs/registry/need_rule_registry.h"
 #include "materials/registry/material_registry.h"
 
@@ -17,11 +19,23 @@ bool MatrixValidator::isCalculationMatrixComplete(const QUuid& calcId)
     for (const auto& r : rules) {
         bool ok = false;
         for (const auto& d : details) {
-            if (d.materialId == r.rightId &&
-                NeedCalculationDetailRegistry::isFormulaValid(d.formula)) {
-                ok = true;
-                break;
+            if (d.materialId == r.rightId) {
+
+                // 1) Szerződés kiválasztása
+                FormulaContract contract =
+                    (d.kind == NeedCalculationDetail::DetailKind::Cutting)
+                        ? cuttingContract()
+                        : kittingContract();
+
+                // 2) Engine‑alapú validáció
+                FormulaAnalysis a = analyzeFormula(d.formula, contract);
+
+                if (a.ok) {
+                    ok = true;
+                    break;
+                }
             }
+
         }
         if (!ok) return false;
     }

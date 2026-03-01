@@ -1,33 +1,70 @@
-🧩 A FormulaEngine teljes szintaxisa (a kódból kiolvasva)
+🧩 FormulaEngine teljes szintaxisa (aktuális, kódból kiolvasva)
 
 📌 Literálok
 
 -   Számok: 10, 3.14, .5
+    A Tokenizer minden decimális számot TokenType::Number‑ként vesz.
 -   Stringek: "M1", "hello"
--   Bool: nincs külön literal, de összehasonlításból jön (w > 10 → bool)
+    A " közé zárt szöveg TokenType::StringLiteral.
+    Emellett: ha egy azonosító nagybetűvel kezdődik (pl. MOTOR_A), a
+    tokenizer ezt is StringLiteral‑nek veszi: >
+    if (!ident.isEmpty() && ident[0].isUpper()) { tokens.append({TokenType::StringLiteral, ident}); }
+-   Bool literal nincs, de:
+    -   relációs operátorok (>, <, >=, <=, ==) Value::Bool‑t adnak
+        vissza,
+    -   Value::toBool() és isTruthy() határozza meg a logikai értéket.
+
+------------------------------------------------------------------------
 
 📌 Változók
 
-Bármilyen azonosító:
+-   Bármilyen azonosító, ami nem:
+    -   choose, opt, return,
+    -   nem függvény (nem követi (),
+    -   nem nagybetűvel kezdődő „string‑azonosító”.
+-   Példák: w, h, qty, flag, base_margin, x1.
+-   A NeedCalculator tölti fel a „külső” változókat (pl. w, h, qty,
+    handler, owner, color, externalId, product).
+-   A VariableRepository kezeli őket:
+    -   set(key, Value),
+    -   get(key) – ha nincs, Value::Null, amit a FormulaEngine így
+        kezel: >
+        if (v.type == Value::Type::Null) throw QString("Undefined variable: %1").arg(n->value);
 
--   w, h, qty, flag, base_margin, X1
--   A NeedCalculator ezeket tölti fel a line alapján.
-
-A VariableRepository kezeli őket.
+Tehát minden nem definiált változó használata runtime hibát dob.
 
 ------------------------------------------------------------------------
 
 🧮 Operátorok
 
-A tokenizer + operator_info alapján:
+A tokenizer + operator_info + ast_builder alapján:
 
--   +, -, *, /
--   >, <, >=, <=, ==
--   = (assignment)
--   prefix +x, -x
+-   Aritmetikai:
+    -   +, -, *, /
+-   Relációs:
+    -   >, <, >=, <=, ==
+-   Értékadás:
+    -   = (assignment)
+-   Prefix/unáris:
+    -   +x, -x → PrefixPlus, PrefixMinus
+-   Ternary:
+    -   cond ? expr1 : expr2
 
-Minden operátor függvényként is regisztrálva van, tehát AST‑ben
-egységesen működik.
+Az operátorok a FunctionRegistry‑ben függvényként is regisztrálva
+vannak, pl.:
+
+    REGISTER_FN("+",  ...);
+    REGISTER_FN("-",  ...);
+    REGISTER_FN("*",  ...);
+    REGISTER_FN("/",  ...);
+    REGISTER_FN(">",  ...);
+    REGISTER_FN("<",  ...);
+    REGISTER_FN(">=", ...);
+    REGISTER_FN("<=", ...);
+    REGISTER_FN("==", ...);
+
+Az AST‑ben az operátorok AstNode::Type::Operator node‑ként jelennek meg,
+és a FunctionRegistry::call(n->value, args) hívással futnak.
 
 ------------------------------------------------------------------------
 
@@ -37,22 +74,92 @@ A parser teljes C‑szerű ternary‑t támogat:
 
     cond ? expr1 : expr2
 
-Ez AST‑ben AstNode::Choose.
+-   A ? és : tokenekből a parser TokenType::Choose operátort generál
+    RPN‑ben.
+-   Az AstBuilder ezt AstNode::Type::Choose node‑dá alakítja, 3
+    gyerekkel:
+    -   cond, trueExpr, falseExpr.
 
-Ez pont ugyanaz, mint a NeedCalculator „choose:” logikája — csak
-FE‑szintaxissal.
+A FormulaEngine::evalNode így kezeli:
+
+    case AstNode::Type::Choose: {
+        Value cond = evalNode(n->children[0], traceOut);
+        if (cond.toBool()) return evalNode(n->children[1], traceOut);
+        else               return evalNode(n->children[2], traceOut);
+    }
+
+Tehát ez egy általános ternary, nem csak stringre – bármilyen Value
+lehet az ágakban.
 
 ------------------------------------------------------------------------
 
 🎛 Opt operátor
 
-A tokenizer felismeri:
+A tokenizer felismeri az opt: prefixet, és utána a flag‑et változóként:
 
     opt: flag ? expr
 
-A parser ezt AstNode::Opt node‑dá alakítja.
+-   opt + : → TokenType::Opt
+-   utána az azonosító → TokenType::Variable (flag)
+-   a ? és az utána lévő expr a ternary logikán keresztül kerül
+    feldolgozásra.
 
-Ez a NeedCalculator „opt:” logikájának FE‑szintaktikus megfelelője.
+A parser speciális opt‑módot használ:
+
+-   optMode = true amikor Opt jön,
+-   flag ? expr után a :‑nál:
+    -   a ? fölötti operátorokat kiírja,
+    -   leszed egy ?‑t,
+    -   és postfix Opt tokent tesz az RPN‑re.
+
+Az AstBuilder ezt így építi:
+
+    AstNode* flag  = stack.pop();
+    AstNode* value = stack.pop();
+    AstNode* node  = pool.create(AstNode::Type::Opt, "opt");
+    node->children.append(flag);
+    node->children.append(value);
+
+A FormulaEngine::evalNode:
+
+    case AstNode::Type::Opt: {
+        Value cond = evalNode(n->children[0], traceOut);
+        if (cond.toBool()) return evalNode(n->children[1], traceOut);
+        else               return Value::skipValue();
+    }
+
+Tehát az opt vagy értéket ad, vagy Skip‑et.
+
+------------------------------------------------------------------------
+
+🧪 Skip érték (opt miatt)
+
+A Value::Type::Skip egy speciális érték, amit az opt hamis ágban ad
+vissza.
+
+Az operátorok és függvények így kezelik:
+
+-   AstNode::Type::Operator és Function esetén:
+    -   először kiértékelik a gyerekeket,
+
+    -   majd kiszedik a Skip‑eket:
+
+            QVector<Value> filtered;
+            for (const Value& a : args)
+                if (a.type != Value::Type::Skip)
+                    filtered.append(a);
+-   Ha nincs maradék argumentum:
+    -   operátor esetén: null értéket ad vissza,
+    -   függvény esetén: FunctionRegistry::call() hívás előtt már
+        kiszűrtük, de a registry még mindig ellenőrzi, hogy az args nem
+        üres – ha üres, hibát dob: >
+        if (args.isEmpty()) throw QString("Function %1 called with no arguments").arg(name);
+
+Ezért a Skip:
+
+-   operátoroknál: „kihagyja” az adott ágat, de ha minden Skip, akkor
+    null,
+-   függvényeknél: ha minden Skip, akkor hiba (nincs argumentum).
 
 ------------------------------------------------------------------------
 
@@ -63,9 +170,7 @@ Matematikai:
 -   add(a, b)
 -   sub(a, b)
 -   mul(a, b)
--   div(a, b)
--   avg(a, b, c, ...)
--   sum(a, b, c, ...)
+-   div(a, b) – ha a[1].number == 0.0 → "Division by zero"
 
 Relációs:
 
@@ -87,50 +192,114 @@ Operátorok függvényként:
 -   "<="(a, b)
 -   "=="(a, b)
 
-Mennyiségi függvények (ha akarjuk használni):
+Mennyiségi függvények:
 
--   qty_fixed(qty, n)
--   qty_perOrder(n)
--   qty_perArea(w, h, area)
+-   a qty_fixed, qty_perOrder, qty_perArea regisztrációk ki vannak
+    kommentelve, tehát jelenleg nem részei a szintaxisnak (nem
+    hívhatók).
 
-De nem kötelező, mert a user írhatja így is:
+A függvényhívás szintaxisa:
 
-    _qty = qty * 3
+    name(arg1, arg2, ...)
+
+A tokenizer Function tokenné teszi, ha az azonosítót ( követi, a parser
+számolja az argumentumokat, az AstBuilder pedig AstNode::Function
+node‑ot épít.
 
 ------------------------------------------------------------------------
 
 📜 Több soros script
 
-A FormulaEngine tud:
+A FormulaEngine tud több soros scriptet:
 
     len = w - 10
     qty = qty * 3
     return len
 
-A parser Sequence/Statement node‑okat épít.
+-   A Tokenizer \n‑re Newline tokent ad.
+-   A parser Newline‑nál:
+    -   lezárja az aktuális kifejezést,
+    -   StatementEnd tokent tesz az RPN‑re.
+-   Az AstBuilder:
+    -   StatementEnd‑re AstNode::Statement node‑ot épít,
+    -   a végén, ha több statement van, AstNode::Sequence node‑ba fűzi
+        őket.
+
+A FormulaEngine::evalMultiLine:
+
+-   minden nem üres sort külön parse‑ol,
+-   Sequence gyökér alatt futtatja őket,
+-   a végső érték az utolsó statement eredménye.
 
 ------------------------------------------------------------------------
 
 🔁 Visszatérés
 
-    return x
+A return kulcsszó:
 
-vagy:
+-   a tokenizer TokenType::Return‑ként kezeli,
+-   az AstBuilder Return tokennél:
+    -   összegyűjti a stack tetejéről az egymás után álló Assignment
+        node‑okat,
+    -   AstNode::Return node‑ot épít, gyerekekkel.
 
-    return a=1, b=2
+A FormulaEngine::evalNode:
+
+    case AstNode::Type::Return: {
+        Value last = Value::nullValue();
+        for (child : n->children)
+            last = evalNode(child, traceOut);
+        addTrace(last);
+        return last;
+    }
+
+Tehát:
+
+-   return x → egyetlen gyerek, x értéke a visszatérés,
+-   return a=1, b=2 → több assignment gyerek, a legutolsó értéke lesz a
+    visszatérési érték, de közben a változók beállnak.
 
 ------------------------------------------------------------------------
 
 🧱 Változóírás
 
+Egyszerű assignment:
+
     x = 10
     y = x + 5
 
-Assignment node.
+-   = → TokenType::Assign, infix, jobbról asszociatív.
+
+-   Az AstBuilder:
+
+        AstNode* expr = stack.pop();
+        AstNode* var  = stack.pop();
+        AstNode* node = pool.create(AstNode::Type::Assignment, var->value);
+        node->children.append(expr);
+
+-   A FormulaEngine::evalNode:
+
+        case AstNode::Type::Assignment: {
+            Value v = evalNode(n->children[0], traceOut);
+            vars.set(n->value, v);
+            return Value::nullValue();
+        }
+
+Tehát az assignment mindig null‑t ad vissza, de mellékhatásként
+beállítja a változót.
 
 ------------------------------------------------------------------------
 
-🧪 Skip érték (opt miatt)
+🧪 Összefoglaló a Skip‑ről
 
-Az opt node visszaadhat Value::Skip‑et, amit az evalNode figyelmen kívül
-hagy.
+-   Opt hamis ágban: Value::skipValue().
+-   Operátorok:
+    -   Skip‑eket kiszűrik,
+    -   ha 0 arg marad → null,
+    -   ha 1 arg marad → azt adják vissza,
+    -   ha 2+ → FunctionRegistry::call(op, args).
+-   Függvények:
+    -   Skip‑eket kiszűrik,
+    -   ha 0 arg marad → Function NAME called with no arguments hiba.
+
+------------------------------------------------------------------------

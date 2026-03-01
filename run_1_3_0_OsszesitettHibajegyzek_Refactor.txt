@@ -1,205 +1,259 @@
-Rendben, Zoltán — akkor visszatérünk a teljes NeedCalculator v2
-patch‑tervhez, és most, hogy a p8-at pontosítottuk (és helyesen
-értelmeztük: nem engine‑módosítás, hanem üzleti kézfogás), a tervet újra
-összerendezem p1–p12 formában, immár a p8 helyes tartalmával.
+Rendben, akkor A) – vagyis a két külön függvényes megoldás lesz az alap.
+Ez a döntés nagyon jó, mert ettől kezdve a Calculation modul két külön
+szerződésű, két külön pipeline‑t kezel, és a FormulaEngine csak egy
+általános számoló motor marad.
 
-Ez lesz a végleges, lépésenként végrehajtható, stabil patching terv.
+Az alábbiakban összerakom a végleges, tiszta, p1…pN pontokba rendezett
+architekturális tervet, amely:
 
-------------------------------------------------------------------------
-
-🧱 NeedCalculator v2 – Lépésenként végrehajtható patch‑terv (p1–p12)
-
-A terv minden lépése után a rendszer működőképes marad.
-A lépések sorrendje kötött, mert egymásra épülnek.
-
-------------------------------------------------------------------------
-
-p1 — A jelenlegi NeedCalculator viselkedésének befagyasztása
-
--   A jelenlegi makeCutList() és makeKitList() működésének
-    dokumentálása.
--   A régi logika: qty‑alapú darabszám, nincs explode, nincs
-    handlerSide, nincs materialBarcode.
--   Ez lesz a baseline, amihez képest minden változtatás mérhető.
+-   csak a jelenlegi, valós FormulaEngine‑re épül,
+-   nem tartalmaz semmilyen régi DSL‑t,
+-   figyelembe veszi a RawCut / RawKit szétválasztást,
+-   engine‑alapú validációt használ,
+-   szerződésalapú output‑ellenőrzést ad,
+-   és egységes hibakezelést vezet be.
 
 ------------------------------------------------------------------------
 
-p2 — Új komponensfájlok létrehozása (még üres skeletonnal)
+📐 Új Calculation + FormulaEngine architektúra – p1…pN terv
 
-A három új fájl:
+p1 — A FormulaEngine DSL végleges, valós szintaxisának rögzítése
 
--   calculation/service/piece.h
--   calculation/service/cut_key.h
--   calculation/service/cut_aggregator.h
+A DSL kizárólag azt tudja, amit a kód implementál:
 
-Ezek még csak minimális struktúrákat tartalmaznak.
+-   literálok (szám, string)
+-   változók
+-   assignment
+-   aritmetikai operátorok
+-   relációs operátorok
+-   ternary ? :
+-   opt node (opt: flag ? expr)
+-   több soros script (Sequence)
+-   return node (Assignment‑list visszaadás)
+-   skip‑kezelés (opt miatt)
+-   függvényhívások (FunctionRegistry)
 
-------------------------------------------------------------------------
+Nincs többé: - len:, qty:, choose: prefix DSL
+- domain‑függvények (qty_fixed, qty_perArea, stb.)
+- implicit qty‑szorzás
+- implicit material‑választás
 
-p3 — Piece struktúra definiálása (explode után)
-
-A darablista alapegysége:
-
--   materialId
--   materialBarcode
--   requiredLength
--   handlerSide
--   externalRef
--   ownerName
--   colorName
--   fullWidth
--   fullHeight
-
-Ez még nem kerül be a NeedCalculatorba.
+A DSL dokumentációját frissíteni kell (külön fájlban).
 
 ------------------------------------------------------------------------
 
-p4 — CutKey struktúra definiálása (gyártási azonossági kulcs)
+p2 — A NeedCalculator két külön eval‑függvényre válik szét
 
-Kulcs mezői:
+Ez a te választásod: A)
 
--   materialBarcode
--   requiredLength
--   handlerSide
+-   evalFormulaCut(const OrderLine&, const NeedCalculationDetail&) -> RawCut
+-   evalFormulaKit(const OrderLine&, const NeedCalculationDetail&) -> RawKit
 
-Operator < implementálása.
+Mindkettő:
 
-------------------------------------------------------------------------
+-   feltölti a FormulaEngine input változóit,
+-   futtatja a FormulaEngine‑et,
+-   kiolvassa a szerződés szerinti output változókat,
+-   hibát dob, ha bármely kötelező output hiányzik.
 
-p5 — CutAggregatedItem struktúra definiálása
-
-A Cutting CSV sor reprezentációja:
-
--   materialBarcode
--   requiredLength
--   handlerSide
--   quantity
--   externalRefs (lista)
--   ownerName
--   fullWidth
--   fullHeight
+Ez domain‑tiszta, bővíthető, és egyértelmű.
 
 ------------------------------------------------------------------------
 
-p6 — CutAggregator osztály skeletonja
+p3 — Két külön output modell: RawCut és RawKit
 
-Függvény:
+A jelenlegi RawCut marad, és mellé jön:
 
-    static QVector<CutAggregatedItem> aggregate(const QVector<Piece>& pieces);
+    struct RawKit {
+        QUuid materialId;
+        int qty;
+    };
 
-Implementáció nélkül.
+A RawCut:
 
-------------------------------------------------------------------------
+    struct RawCut {
+        QUuid materialId;
+        int requiredLength;
+        int qty;
+    };
 
-p7 — NeedCalculator v2 pipeline előkészítése (privát függvények deklarációja)
+A pipeline:
 
-Új privát függvények:
-
--   eval_formula()
--   explode_pieces()
--   group_by_cut_key()
-
-A régi makeCutList() még változatlan.
-
-------------------------------------------------------------------------
-
-p8 — Formula futtatás új modellje (üzleti kézfogás, engine módosítás nélkül)
-
-Ez a lépés már helyesen definiálva van:
-
--   NeedCalculator feltölti a VariableRepository‑t (w, h, qty, stb.).
--   Meghívja a FormulaEngine::eval() függvényt.
--   Üzleti ellenőrzések:
-    -   ha !r.ok → üzleti hiba
-    -   ha _result hiányzik → üzleti hiba
-    -   ha _result típusa nem Number/String → üzleti hiba
-    -   ha Number ≤ 0 → üzleti hiba
-    -   ha String, de nincs ilyen anyag → üzleti hiba
--   A FormulaEngine érintetlen marad.
--   A NeedCalculator biztosítja a „kézfogást”.
-
-Ez a lépés most már teljesen tiszta és lezárt.
+-   Cutting: RawCut → Piece → Aggregation
+-   Kitting: RawKit → KitItem
 
 ------------------------------------------------------------------------
 
-p9 — explode_pieces implementálása
+p4 — FormulaContract bevezetése (Cut vs Kit szerződés)
 
-A RawCut → Piece átalakítás:
+A validáció és a runtime is ezt használja.
 
--   qty darabszám szétszedése
--   externalRef generálása (orderLineId.i)
--   handlerSide hozzárendelése
--   colorName hozzárendelése
--   ownerName hozzárendelése
--   fullWidth/fullHeight hozzárendelése
--   materialBarcode lekérése MaterialRegistry‑ből
+Cutting contract:
 
-Ez a függvény már működőképes lesz, de még nem hívja a NeedCalculator.
+-   allowedInputs = { w, h, qty, handler, owner, color, externalId,
+    product }
+-   requiredOutputs = { requiredLength, qty }
+-   optionalOutputs = { material }
 
-------------------------------------------------------------------------
+Kitting contract:
 
-p10 — group_by_cut_key implementálása
+-   allowedInputs = ugyanaz
+-   requiredOutputs = { qty }
+-   optionalOutputs = { material }
 
-A darablista összevonása a kulcs alapján:
-
--   QMap<CutKey, CutAggregatedItem>
--   quantity növelése
--   externalRef hozzáfűzése
-
-Ez a függvény is működőképes lesz, de még nem hívja a NeedCalculator.
+Ez a szerződés lesz a rendszer „igazsága”.
 
 ------------------------------------------------------------------------
 
-p11 — NeedCalculator::makeCutList átállítása az új pipeline‑ra
+p5 — Engine‑alapú validáció bevezetése
 
-A régi logika:
+A NeedCalculationDetailRegistry jelenlegi validációja elavult (len:,
+qty:, stb.).
 
--   egy detail → egy CutItem
--   pieces = qty
+Új validáció:
 
-Az új logika:
+    bool isFormulaValid(const QString& f, DetailKind kind) {
+        FormulaContract c = (kind == Cutting)
+            ? cuttingContract()
+            : kittingContract();
 
-1.  formula futtatás → RawCut
-2.  explode → Piece lista
-3.  groupBy → CutAggregatedItem lista
-4.  visszaadás
+        return FormulaEngine::analyze(f, c).ok;
+    }
 
-Ez a lépés hozza létre a NeedCalculator v2‑t.
+A FormulaEngine::analyze():
 
-------------------------------------------------------------------------
+1.  dummy input változók feltöltése
+2.  FormulaEngine::eval() futtatása
+3.  hibák ellenőrzése
+4.  readVars ⊆ allowedInputs
+5.  requiredOutputs ⊆ writtenVars
 
-p12 — Kitting logika frissítése (opcionális, de ajánlott)
-
-A kitting nem darablista‑alapú, de:
-
--   numeric → pieces
--   nincs explode
--   nincs groupBy
--   metaadatok (handlerSide, color, externalRef) opcionálisan
-    hozzáadhatók
-
-Ez a lépés a kittinget is konzisztenssé teszi.
+Ez 100% konzisztens lesz a runtime‑mal.
 
 ------------------------------------------------------------------------
 
-🔚 A teljes patch‑terv eredménye
+p6 — A régi DSL teljes eltávolítása
 
-A NeedCalculator v2:
+A következő prefixek és minták teljesen megszűnnek:
 
--   darablista‑alapú,
--   gyártásilag helyes,
--   cutting program kompatibilis,
--   kitting kompatibilis,
--   auditálható,
--   determinisztikus,
--   és teljesen illeszkedik a meglévő architektúrába.
+-   len:w-20
+-   qty:fixed:3
+-   qty:perArea:...
+-   choose:
+-   opt: régi formája (opt:flag:+expr)
 
-A p8 lépés helyesen beépült a tervbe.
+A parserben marad az opt: token, mert az AST‑ben működik, de a régi
+dokumentációt törölni kell.
+
+A NeedCalculationDetailRegistry‑ből minden régi DSL‑validáció törlendő.
 
 ------------------------------------------------------------------------
 
-Ha szeretnéd, most elkészítem a snippet‑listát, vagyis:
+p7 — Egységes hibakezelés
 
--   melyik meglévő fájl melyik részét kell módosítani p11‑hez,
--   milyen include‑ok kellenek,
--   hol kerül be az explode → groupBy logika.
+Három szint:
+
+1) FormulaEngine szint
+
+Minden hiba automatikusan logolódik:
+
+    catch (const QString& err) {
+        zEventERR("FormulaEngine error: " + err);
+        return EvalResult::failure(code, err);
+    }
+
+2) evalFormulaCut / evalFormulaKit szint
+
+Detail ID‑vel együtt logol:
+
+    if (!r.ok) {
+        zEventERR(QString("Formula error in detail %1: %2")
+                  .arg(detail.id.toString(), r.error));
+        throw r.error;
+    }
+
+3) Pipeline szint
+
+A hibás detailt WARN‑nal jelzi, és továbblép:
+
+    catch (const QString& err) {
+        zEventWARN("Cutting formula error: " + err);
+        continue;
+    }
+
+Ez átlátható, diagnosztizálható rendszert ad.
+
+------------------------------------------------------------------------
+
+p8 — VariableRepository globális állapotának kiváltása (terv szinten)
+
+A jelenlegi engine globális változótárat használ.
+
+Ez működik, de:
+
+-   validáció és runtime ugyanazt a globális állapotot piszkálja,
+-   párhuzamos futásnál törik,
+-   debug snapshot is globális.
+
+Terv:
+
+-   VariableRepository → példányosítható VariableContext
+-   FormulaEngine::eval() → kap egy contextet
+-   eval() visszaadja a contextet is
+
+Ez később bevezethető, nem sürgős.
+
+------------------------------------------------------------------------
+
+p9 — A NeedCalculator pipeline tisztítása
+
+Cutting:
+
+    RawCut raw = evalFormulaCut(line, detail);
+    auto pieces = explodePieces(line, raw);
+    return CutAggregator::aggregate(pieces);
+
+Kitting:
+
+    RawKit raw = evalFormulaKit(line, detail);
+    return assembleKitItem(line, raw);
+
+Nincs több implicit logika, nincs több rejtett DSL.
+
+------------------------------------------------------------------------
+
+p10 — A DSL dokumentáció újraírása
+
+A régi /docs/formula_engine_dsl_v3.md helyett:
+
+-   /docs/formula_engine_dsl_current.md
+-   kizárólag a kódból kiolvasott szintaxis
+-   assignment‑alapú
+-   ternary
+-   opt
+-   skip
+-   több soros script
+-   függvényhívások
+-   változókezelés
+-   hibák
+-   RawCut/RawKit szerződés
+
+Ez lesz a hivatalos, jövőálló DSL.
+
+------------------------------------------------------------------------
+
+✔ A terv kész
+
+Ez a p1…pN terv a jelenlegi valóságra épül,
+minden régi DSL‑t kidob,
+két külön eval‑függvényt vezet be,
+engine‑alapú validációt használ,
+és szerződésalapú, tiszta architektúrát ad.
+
+------------------------------------------------------------------------
+
+Ha szeretnéd, a következő lépésben megírom:
+
+-   a FormulaContract header + cpp vázát,
+-   a FormulaEngine::analyze() implementációját,
+-   az evalFormulaCut() és evalFormulaKit() kódvázát.

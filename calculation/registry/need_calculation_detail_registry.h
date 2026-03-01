@@ -83,11 +83,6 @@ public:
 
     void onLoadLog() ; // <- ÚJ
     void persist() const ;
-
-    // Segédek
-
-    // v2: formula rules → empty=valid, "unknown"=invalid, prefix-based syntax
-    static bool isFormulaValid(const QString& f);
 private:
     NeedCalculationDetailRegistry()
         : RegistryEngineBase("NeedCalculationDetailRegistry", "NeedCalculationDetail")

@@ -9,6 +9,10 @@
 #include <calculation/registry/need_calculation_detail_registry.h>
 #include <QStyledItemDelegate>
 
+#include "dsl/formula_analysis.h"
+#include "dsl/formula_contract.h"
+#include "calculation/model/need_calculation_detail.h"
+
 class FormulaSyntaxDelegate : public QStyledItemDelegate {
 public:
     using QStyledItemDelegate::QStyledItemDelegate;
@@ -53,8 +57,23 @@ CalculationModeDetailView::CalculationModeDetailView(QWidget* parent)
         int row = item->row();
         QString formula = item->text();
 
-        bool formulaValid = NeedCalculationDetailRegistry::isFormulaValid(formula);
         bool empty = formula.trimmed().isEmpty();
+
+        bool isCutting = true;
+        if (auto* typeItem = _table->item(row, 2)) {
+            QString icon = typeItem->text();
+            isCutting = (icon == "⚙️");
+        }
+
+        bool formulaValid = [&]() {
+            if (empty)
+                return true;
+
+            FormulaContract contract = isCutting ? cuttingContract() : kittingContract();
+            FormulaAnalysis a = analyzeFormula(formula, contract);
+            return a.ok;
+        }();
+
 
         QColor bg;
         QString icon;

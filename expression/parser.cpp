@@ -4,13 +4,32 @@
 #include "tokenizer.h"
 #include <QStack>
 
-Parser::ParseResult Parser::parse(const QString& input)
+Result<Parser::ParseResult> Parser::parse(const QString& input)
 {
-    ParseResult pr;
-    pr.tokens = Tokenizer::tokenize(input);
-    pr.rpn    = toRpn(pr.tokens);
-    return pr;
+    Parser::ParseResult pr;
+
+    // 1) Tokenizálás
+    auto tokens = Tokenizer::tokenize(input);
+    if (!tokens.ok) {
+        return Result<ParseResult>::failure(
+            QString("Tokenizálási hiba: %1").arg(tokens.error)
+            );
+    }
+    pr.tokens = tokens.value;
+
+    // 2) RPN konverzió
+    auto rpn = toRpn(pr.tokens);
+    if (!rpn.ok) {
+        return Result<ParseResult>::failure(
+            QString("RPN hiba: %1").arg(rpn.error)
+            );
+    }
+    pr.rpn = rpn.value;
+
+    // 3) Siker
+    return Result<ParseResult>::success(pr);
 }
+
 
 QVector<Token> Parser::toRpn(const QVector<Token>& tokens)
 {

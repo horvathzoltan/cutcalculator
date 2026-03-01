@@ -1,6 +1,6 @@
 
 #include "common/logger/logger.h"
-#include "expression/node_pool.h"
+//#include "expression/node_pool.h"
 #include "test/common/test_data_builder.h"
 
 #include "expression/formula_engine.h"
@@ -13,7 +13,7 @@
 #include "products/registry/product_registry.h"
 #include "materials/registry/material_registry.h"
 #include "formula_engine_pipeline_tester.h"
-#include "expression/ast_printer.h"
+//#include "expression/ast_printer.h"
 
 // ---------------------------------------------------------------------
 // RUN
@@ -423,7 +423,7 @@ void FormulaEnginePipelineTester::testNeedCalculatorInvalidFormulaAudit()
     d.formula = "w-"; // hibás
     Q_ASSERT(!NeedCalculationDetailRegistry::instance().insert(d));
 
-    auto cuts = NeedCalculator::makeCutList({ ids.P1, 1200, 1500, 1, "" }, "Manufacturing");
+    auto cuts = NeedCalculator::makeCutList({ ids.P1, 1200, 1500, 1, "", "", "", "" }, "Manufacturing");
 
     Q_ASSERT(cuts.isEmpty());
 

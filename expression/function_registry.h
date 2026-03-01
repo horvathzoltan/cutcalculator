@@ -29,6 +29,10 @@ public:
         return it.value()(args);
     }
 
+    bool hasFn(const QString& name) const {
+        return fns.contains(name);
+    }
+
 
 private:
     QMap<QString, NativeFn> fns;
@@ -58,9 +62,9 @@ REGISTER_FN(ge,  [](auto a){ return Value::boolValue(a[0].number >= a[1].number)
 REGISTER_FN(le,  [](auto a){ return Value::boolValue(a[0].number <= a[1].number); });
 REGISTER_FN(eq,  [](auto a){ return Value::boolValue(a[0].number == a[1].number); });
 
-REGISTER_FN(qty_fixed,    [](auto a){ return Value::numberValue(a[0].number * a[1].number); });
-REGISTER_FN(qty_perOrder, [](auto a){ return Value::numberValue(a[0].number); });
-REGISTER_FN(qty_perArea,  [](auto a){ return Value::numberValue((a[0].number * a[1].number) / a[2].number); });
+// REGISTER_FN(qty_fixed,    [](auto a){ return Value::numberValue(a[0].number * a[1].number); });
+// REGISTER_FN(qty_perOrder, [](auto a){ return Value::numberValue(a[0].number); });
+// REGISTER_FN(qty_perArea,  [](auto a){ return Value::numberValue((a[0].number * a[1].number) / a[2].number); });
 
 
 // --- Operator overloads (nem használunk makrót, mert a név nem lehet identifier) ---

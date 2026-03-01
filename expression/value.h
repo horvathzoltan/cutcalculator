@@ -83,6 +83,7 @@ struct Value {
         case Type::String: return "String";
         case Type::Bool:   return "Bool";
         case Type::Null:   return "Null";
+        case Type::Skip:   return "Skip";
         }
         return "Unknown";
     }

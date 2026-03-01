@@ -22,6 +22,8 @@ SOURCES += \
     calculation/dialogs/material_picker_dialog2.cpp \
     calculation/presenter/calculation_mode_detail_presenter.cpp \
     calculation/service/cut_aggregator.cpp \
+    dsl/formula_analysis.cpp \
+    dsl/formula_contract.cpp \
     expression/ast_builder.cpp \
     expression/eval_result.cpp \
     expression/formula_engine.cpp \
@@ -126,6 +128,9 @@ HEADERS += \
     calculation/service/cut_aggregator.h \
     calculation/service/cut_key.h \
     calculation/service/piece.h \
+    common/utils/result.h \
+    dsl/formula_analysis.h \
+    dsl/formula_contract.h \
     expression/ast.h \
     expression/ast_builder.h \
     expression/ast_printer.h \

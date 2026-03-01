@@ -70,7 +70,8 @@ int main(int argc, char *argv[])
     // 🔵 1) Registryk explicit inicializálása
     RegistryCatalog::initializeAll();//initializeAllRegistries();
 
-    auto& R = FunctionRegistry::instance();
+    // auto& R = FunctionRegistry::instance();
+    FunctionRegistry::instance(); // ha a side-effect kell
 
     // --test eventlogger
     if (SettingsManager::instance().isTestMode()) {

@@ -1,8 +1,8 @@
 #pragma once
 #include "ast.h"
-#include "common/logger/logger.h"
-#include "expression/eval_result.h"
-#include "value.h"
+// #include "common/logger/logger.h"
+// #include "expression/eval_result.h"
+// #include "value.h"
 //#include <QDebug>
 
 inline QString astTypeName(AstNode::Type t)
@@ -154,6 +154,9 @@ inline QString tokenTypeName(TokenType t)
     // --- Operátorok ---
     case TokenType::Plus:           return "Plus";
     case TokenType::Minus:          return "Minus";
+    case TokenType::PrefixPlus:     return "PrefixPlus";
+    case TokenType::PrefixMinus:    return "PrefixMinus";
+
     case TokenType::Star:           return "Star";
     case TokenType::Slash:          return "Slash";
 

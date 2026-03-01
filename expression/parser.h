@@ -2,6 +2,7 @@
 
 #include <QVector>
 #include "token.h"
+#include "common/utils/result.h"
 
 class Parser {
 public:
@@ -13,7 +14,7 @@ public:
 
 
     // convenience: string -> tokens -> RPN
-    static ParseResult parse(const QString& input);
+    static Result<ParseResult> parse(const QString& input);
 
     // ha már van tokenized input
     static QVector<Token> toRpn(const QVector<Token>& tokens);

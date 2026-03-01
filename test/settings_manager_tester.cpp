@@ -138,7 +138,8 @@ bool SettingsManagerTester::run()
 
     // 🔧 1) FileNameHelper inicializálása (ugyanaz, mint a main-ben)
     auto e1 = FileNameHelper::instance().binaryPath(); //QCoreApplication::applicationFilePath();
-    bool isInited = FileNameHelper::instance().isInitialized();
+    // bool isInited = FileNameHelper::instance().isInitialized();
+    FileNameHelper::instance().isInitialized(); // ha csak a hívás kell
     FileNameHelper::setBinaryPath(e1.toUtf8().constData());
 
     // 🔧 2) SettingsManager fallback + testmode helyes működéséhez

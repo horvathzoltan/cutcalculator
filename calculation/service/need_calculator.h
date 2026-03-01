@@ -8,6 +8,8 @@
 #include "calculation/service/piece.h"
 #include "calculation/service/cut_aggregator.h"
 
+#include "common/utils/result.h"
+
 // v2 OrderLine – p3-ban töltjük ki
 struct OrderLine {
     QUuid productId;
@@ -23,7 +25,7 @@ struct OrderLine {
 };
 
 
-// v2 KitItem – p4-ben töltjük ki
+// v2 KitItem
 struct KitItem {
     QUuid materialId;
     int quantity;
@@ -36,13 +38,17 @@ struct KitItem {
 };
 
 
-// v2 RawCut – p5-ben töltjük ki
+// v2 RawCut
 struct RawCut {
-    QUuid materialId;     // anyag azonosító
-    int requiredLength;   // mm-ben
-    int qty;              // darabszám
+    QUuid materialId;
+    int requiredLength;
+    int qty;
 };
 
+struct RawKit {
+    QUuid materialId;
+    int qty;
+};
 
 class NeedCalculator {
 public:
@@ -55,14 +61,21 @@ public:
                                         const QString& modeName);
 
 private:
-    // DSL értelmezés (p6)
-    static RawCut evalFormula(const OrderLine& line,
-                          const NeedCalculationDetail& detail);
+private:
+    // Cutting DSL értelmezés
+    static Result<RawCut> evalFormulaCut(const OrderLine& line,
+                                 const NeedCalculationDetail& detail);
+
+    // Kitting DSL értelmezés
+    static Result<RawKit> evalFormulaKit(const OrderLine& line,
+                                 const NeedCalculationDetail& detail);
+
+    // Közös: DSL változók feltöltése
+    static void fillVariables(const OrderLine& line);
+
 
     // RawCut → Piece lista (p9)
     static QVector<Piece> explodePieces(const OrderLine& line,
                                         const RawCut& raw);
 
-    // Piece lista → aggregált vágási lista (p10)
-    //static QVector<CutAggregatedItem> groupByCutKey(const QVector<Piece>& pieces);
 };

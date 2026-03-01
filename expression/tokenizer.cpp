@@ -1,6 +1,6 @@
 #include "tokenizer.h"
 
-QVector<Token> Tokenizer::tokenize(const QString& input)
+Result<QVector<Token>> Tokenizer::tokenize(const QString& input)
 {
     QVector<Token> tokens;
     int i = 0;
@@ -35,9 +35,14 @@ QVector<Token> Tokenizer::tokenize(const QString& input)
             while (i < n && peek() != '"') {
                 advance();
             }
+
+            if (i >= n) {
+                return Result<QVector<Token>>::failure("Lezáratlan string literal");
+            }
+
             QString text = input.mid(start, i - start);
-            if (peek() == '"')
-                advance(); // closing quote
+            //if (peek() == '"')
+            advance(); // closing quote
             tokens.append({TokenType::StringLiteral, text});
             continue;
         }
@@ -179,12 +184,15 @@ QVector<Token> Tokenizer::tokenize(const QString& input)
             break;
 
         default:
-            tokens.append({TokenType::Unknown, QString(c)});
-            advance();
-            break;
+            return Result<QVector<Token>>::failure(
+                QString("Ismeretlen karakter: '%1'").arg(c)
+                );
+            // tokens.append({TokenType::Unknown, QString(c)});
+            // advance();
+            // break;
         }
     }
 
     tokens.append({TokenType::End, {}});
-    return tokens;
+    return Result<QVector<Token>>::success(tokens);
 }

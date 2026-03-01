@@ -47,13 +47,13 @@ void CalculationModesManager::connectSignals() {
 
 
                 // 🧪 Duplikációs ellenőrzés: productId + name egyedisége
-                auto duplicateCheck = [&](const QString& name) {
-                    return NeedCalculationRegistry::instance().existsBy(
-                        [&](const NeedCalculation& x) {
-                            return x.productId == productId && x.name == name;
-                        }
-                        );
-                };
+                // auto duplicateCheck = [&](const QString& name) {
+                //     return NeedCalculationRegistry::instance().existsBy(
+                //         [&](const NeedCalculation& x) {
+                //             return x.productId == productId && x.name == name;
+                //         }
+                //         );
+                // };
 
                 // 🎨 Dialógus megnyitása
                 // ModeNameDialog dlg(_view, "", duplicateCheck);

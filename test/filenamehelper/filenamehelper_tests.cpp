@@ -306,7 +306,10 @@ void FileNameHelperTester::testSettingsIni()
     // 3) READ → ha létezik a bináris melletti settings.ini → azt adja
     //
     QFile tmp(writePath);
-    tmp.open(QIODevice::WriteOnly);
+    if (!tmp.open(QIODevice::WriteOnly)) {
+        zInfo("Nem sikerült megnyitni a temporary fájlt írásra.");
+    }
+
     tmp.close();
 
     QString readPrimary = f.pathFor(FileKind::SettingsIni,

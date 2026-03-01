@@ -2,6 +2,9 @@
 #include "calculation/registry/need_calculation_detail_registry.h"
 #include "common/registry/manager/registry_manager.h"
 
+#include "dsl/formula_analysis.h"
+#include "dsl/formula_contract.h"
+
 CalculationModeDetailManager::CalculationModeDetailManager(CalculationModeDetailView* view, QObject* parent)
     : QObject(parent), _view(view)
 {
@@ -85,7 +88,13 @@ CalculationModeDetailManager::makeRows(const QVector<NeedCalculationDetail>& det
         auto [name, barcode] = materialLabel(d.materialId);
         const bool materialOk = !name.isEmpty() && name != "(unknown)";
         const bool isCut = (d.kind == NeedCalculationDetail::DetailKind::Cutting);
-        const bool formulaValid = NeedCalculationDetailRegistry::isFormulaValid(d.formula);
+
+        FormulaContract c = (d.kind == NeedCalculationDetail::DetailKind::Cutting)
+                                ? cuttingContract()
+                                : kittingContract();
+
+        const bool formulaValid = analyzeFormula(d.formula, c).ok;
+
 
         rows.push_back({
             d.id,
@@ -101,6 +110,7 @@ CalculationModeDetailManager::makeRows(const QVector<NeedCalculationDetail>& det
     }
     return rows;
 }
+
 
 void CalculationModeDetailManager::resetView(){
     _view->reset();
