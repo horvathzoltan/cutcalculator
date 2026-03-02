@@ -1,14 +1,19 @@
 #include "ast_builder.h"
+#include "common/utils/result.h"
 #include <QStack>
 
-AstNode* AstBuilder::fromRpn(const QVector<Token>& rpn, NodePool& pool)
+Result<AstNode*> AstBuilder::fromRpn(const QVector<Token>& rpn, NodePool& pool)
 {
     QStack<AstNode*> stack;
     QVector<AstNode*> statements;
 
+    auto fail = [&](const QString& msg) {
+        return Result<AstNode*>::failure(msg);
+    };
+
     for (const Token& t : rpn) {
 
-        // Literálok
+        // --- Literálok ---
         if (t.type == TokenType::Number) {
             stack.push(pool.create(AstNode::Type::Number, t.text));
             continue;
@@ -19,69 +24,62 @@ AstNode* AstBuilder::fromRpn(const QVector<Token>& rpn, NodePool& pool)
             continue;
         }
 
-
         if (t.type == TokenType::Variable) {
             stack.push(pool.create(AstNode::Type::Variable, t.text));
             continue;
         }
 
+        // --- Choose ---
         if (t.type == TokenType::Choose) {
             if (stack.size() < 3)
-                return nullptr;
+                return fail("Hibás ternary (choose) szerkezet");
 
             AstNode* falseExpr = stack.pop();
             AstNode* trueExpr  = stack.pop();
             AstNode* cond      = stack.pop();
 
             AstNode* node = pool.create(AstNode::Type::Choose, "choose");
-            node->children.append(cond);
-            node->children.append(trueExpr);
-            node->children.append(falseExpr);
+            node->children = { cond, trueExpr, falseExpr };
 
             stack.push(node);
             continue;
         }
 
+        // --- Opt ---
         if (t.type == TokenType::Opt) {
             if (stack.size() < 2)
-                return nullptr;
+                return fail("Hibás opt szerkezet (flag ? expr)");
 
             AstNode* value = stack.pop();
             AstNode* flag  = stack.pop();
 
             AstNode* node = pool.create(AstNode::Type::Opt, "opt");
-            node->children.append(flag);
-            node->children.append(value);
+            node->children = { flag, value };
 
             stack.push(node);
             continue;
         }
 
-        // Függvény
-        // --- Függvények ---
+        // --- Függvény ---
         if (t.type == TokenType::Function) {
             int argc = t.argc;
 
-            if (stack.size() < argc) {
-                qWarning() << "AstBuilder: function" << t.text
-                           << "requires" << argc << "arguments, but stack has"
-                           << stack.size();
-                return nullptr;
-            }
+            if (stack.size() < argc)
+                return fail(QString("A(z) %1 függvény %2 argumentumot vár, de csak %3 van")
+                                .arg(t.text).arg(argc).arg(stack.size()));
 
             AstNode* fn = pool.create(AstNode::Type::Function, t.text);
 
             QVector<AstNode*> args;
             for (int i = 0; i < argc; ++i)
-                args.prepend(stack.pop());   // helyes sorrend
+                args.prepend(stack.pop());
 
             fn->children = args;
             stack.push(fn);
             continue;
         }
 
-
-        // Operátorok
+        // --- Operátorok ---
         if (t.type == TokenType::Plus ||
             t.type == TokenType::Minus ||
             t.type == TokenType::Star ||
@@ -93,49 +91,49 @@ AstNode* AstBuilder::fromRpn(const QVector<Token>& rpn, NodePool& pool)
             t.type == TokenType::Equal)
         {
             if (stack.size() < 2)
-                return nullptr;
+                return fail(QString("Operátor '%1' túl kevés operandussal").arg(t.text));
 
             AstNode* right = stack.pop();
             AstNode* left  = stack.pop();
 
             AstNode* op = pool.create(AstNode::Type::Operator, t.text);
-            op->children.append(left);
-            op->children.append(right);
+            op->children = { left, right };
 
             stack.push(op);
             continue;
         }
 
-        // Assignment: name = expr
+        // --- Assignment ---
         if (t.type == TokenType::Assign) {
             if (stack.size() < 2)
-                return nullptr;
+                return fail("Hibás assignment: túl kevés operandus");
 
             AstNode* expr = stack.pop();
             AstNode* var  = stack.pop();
+
             AstNode* node = pool.create(AstNode::Type::Assignment, var->value);
             node->children.append(expr);
             stack.push(node);
             continue;
         }
 
-
-        // Return: return a=1, b=2, ...
+        // --- Return ---
         if (t.type == TokenType::Return) {
             QVector<AstNode*> assignments;
-            while (!stack.isEmpty() && stack.top()->type == AstNode::Type::Assignment) {
+
+            while (!stack.isEmpty() && stack.top()->type == AstNode::Type::Assignment)
                 assignments.prepend(stack.pop());
-            }
+
             AstNode* node = pool.create(AstNode::Type::Return, "return");
             node->children = assignments;
             stack.push(node);
             continue;
         }
 
-
+        // --- Statement vége ---
         if (t.type == TokenType::StatementEnd) {
             if (stack.isEmpty())
-                return nullptr;
+                return fail("Üres statement");
 
             AstNode* expr = stack.pop();
             AstNode* stmt = pool.create(AstNode::Type::Statement, "");
@@ -144,11 +142,12 @@ AstNode* AstBuilder::fromRpn(const QVector<Token>& rpn, NodePool& pool)
             continue;
         }
 
-        // End vagy Unknown → ignoráljuk
+        // End / Unknown → ignoráljuk
     }
 
+    // --- Végső ellenőrzések ---
     if (stack.isEmpty())
-        return nullptr;
+        return fail("Üres AST");
 
     if (!statements.isEmpty()) {
         AstNode* expr = stack.pop();
@@ -157,13 +156,12 @@ AstNode* AstBuilder::fromRpn(const QVector<Token>& rpn, NodePool& pool)
         statements.append(stmt);
 
         if (statements.size() == 1)
-            return statements[0];
+            return Result<AstNode*>::success(statements[0]);
 
         AstNode* seq = pool.create(AstNode::Type::Sequence, "");
         seq->children = statements;
-        return seq;
+        return Result<AstNode*>::success(seq);
     }
 
-    return stack.pop();
-
+    return Result<AstNode*>::success(stack.pop());
 }

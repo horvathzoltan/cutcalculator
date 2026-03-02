@@ -64,14 +64,14 @@ FormulaAnalysis analyzeFormula(const QString& formula,
     // 2) AST build teszt
     //
     NodePool pool;
-    AstNode* root = nullptr;
 
-    try {
-        root = AstBuilder::fromRpn(pr.rpn, pool);
-    } catch (const QString& err) {
-        out.errors << "AST build hiba: " + err;
+    auto ast = AstBuilder::fromRpn(pr.value.rpn, pool);
+    if (!ast.ok) {
+        out.errors << "AST build hiba: " + ast.error;
         return out;
     }
+
+    AstNode* root = ast.value;
 
     if (!root) {
         out.errors << "AST build sikertelen";

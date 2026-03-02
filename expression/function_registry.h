@@ -2,6 +2,7 @@
 #include <QMap>
 #include <QString>
 #include <functional>
+#include "common/utils/result.h"
 #include "value.h"
 
 using NativeFn = std::function<Value(const QVector<Value>&)>;
@@ -17,22 +18,26 @@ public:
         fns[name] = fn;
     }
 
-    Value call(const QString& name, const QVector<Value>& args) const {
+    Result<Value> call(const QString& name, const QVector<Value>& args) const {
         auto it = fns.find(name);
         if (it == fns.end())
-            throw QString("Undefined function: %1").arg(name);
+            return Result<Value>::failure("Undefined function: " + name);
 
-        if (args.isEmpty()) {
-            throw QString("Function %1 called with no arguments").arg(name);
-        }
+        if (args.isEmpty())
+            return Result<Value>::failure("Function " + name + " called with no arguments");
 
-        return it.value()(args);
+        Value v = it.value()(args);
+
+        if (v.type == Value::Type::Error)
+            return Result<Value>::failure(v.text);
+
+        return Result<Value>::success(v);
     }
+
 
     bool hasFn(const QString& name) const {
         return fns.contains(name);
     }
-
 
 private:
     QMap<QString, NativeFn> fns;
@@ -52,9 +57,10 @@ REGISTER_FN(sub, [](auto a){ return Value::numberValue(a[0].number - a[1].number
 REGISTER_FN(mul, [](auto a){ return Value::numberValue(a[0].number * a[1].number); });
 REGISTER_FN(div, [](auto a){
     if (a[1].number == 0.0)
-        throw QString("Division by zero");
+        return Value::errorValue("Division by zero");
     return Value::numberValue(a[0].number / a[1].number);
 });
+
 
 REGISTER_FN(gt,  [](auto a){ return Value::boolValue(a[0].number >  a[1].number); });
 REGISTER_FN(lt,  [](auto a){ return Value::boolValue(a[0].number <  a[1].number); });
@@ -97,11 +103,12 @@ static bool _reg_op_div = [](){
     FunctionRegistry::instance().registerFn("/",
                                             [](const QVector<Value>& a){
                                                 if (a[1].number == 0.0)
-                                                    throw QString("Division by zero");
+                                                    return Value::errorValue("Division by zero");
                                                 return Value::numberValue(a[0].number / a[1].number);
                                             });
     return true;
 }();
+
 
 // --- Relációs operátorok ---
 

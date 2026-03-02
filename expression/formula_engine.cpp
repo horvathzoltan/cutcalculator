@@ -55,37 +55,37 @@ EvalResult FormulaEngine::evalSingleLine(const QString& code)
 {
     NodePool pool;
 
-    // Itt hívjuk a debugolt wrappert:
+    // 1) Parse
+    auto pr = Parser::parse(code);
+    if (!pr.ok)
+        return EvalResult::failure(code, "Szintaktikai hiba: " + pr.error);
 
-    Parser::ParseResult pr = Parser::parse(code);
+    // 2) AST build
+    auto astRes = AstBuilder::fromRpn(pr.value.rpn, pool);
+    if (!astRes.ok)
+        return EvalResult::failure(code, "AST build hiba: " + astRes.error);
 
-    // Ha akarod, a tokeneket is visszakaphatod külön, de most az RPN a lényeg.
-    AstNode* ast = AstBuilder::fromRpn(pr.rpn, pool);
+    AstNode* ast = astRes.value;
 
-    if (!ast)
-        return EvalResult::failure(code, "AST build failed");
     EvalResult r = EvalResult::success();
 
-    try {
-        Value result = evalNode(ast, &r);
-        VariableRepository::instance().set("_result", result);
+    // 3) Eval (ez még dobhat)
+    Result<Value> result = evalNode(ast, &r);
+    if (!result.ok)
+        return EvalResult::failure(code, result.error);
 
-        dumpTokensAndRpn(pr.tokens, pr.rpn, r.tokensDump, r.rpnDump);
+    VariableRepository::instance().set("_result", result.value);
 
-        QSet<QString> readVars, writtenVars;
-        collectVariables(ast, readVars, writtenVars);
-        r.readVars = readVars;
-        r.writtenVars = writtenVars;
-        r.astDump = dumpAst(ast);
-        r.variableSnapshot = VariableRepository::instance().dump();
+    dumpTokensAndRpn(pr.value.tokens, pr.value.rpn, r.tokensDump, r.rpnDump);
 
-        return r;
+    QSet<QString> readVars, writtenVars;
+    collectVariables(ast, readVars, writtenVars);
+    r.readVars = readVars;
+    r.writtenVars = writtenVars;
+    r.astDump = dumpAst(ast);
+    r.variableSnapshot = VariableRepository::instance().dump();
 
-    } catch (const QString& err) {
-        return EvalResult::failure(code, err);
-    } catch (...) {
-        return EvalResult::failure(code, "Unknown error");
-    }
+    return r;
 }
 
 
@@ -105,45 +105,44 @@ EvalResult FormulaEngine::evalMultiLine(const QStringList& lines)
         if (trimmed.isEmpty())
             continue;
 
-        // auto tokens = Tokenizer::tokenize(trimmed);
-        // auto rpn    = Parser::toRpn(tokens);
-        // AstNode* ast = AstBuilder::fromRpn(rpn, pool);
+        // 1) Parse
+        auto pr = Parser::parse(trimmed);
+        if (!pr.ok)
+            return EvalResult::failure(code, "Szintaktikai hiba: " + pr.error);
 
-        Parser::ParseResult pr = Parser::parse(trimmed);
-        AstNode* ast = AstBuilder::fromRpn(pr.rpn, pool);
-        dumpTokensAndRpn(pr.tokens, pr.rpn, allTokenDump, allRpnDump);
+        // 2) AST build
+        auto astRes = AstBuilder::fromRpn(pr.value.rpn, pool);
+        if (!astRes.ok)
+            return EvalResult::failure(code, "AST build hiba: " + astRes.error);
 
-        if (!ast)
-            return EvalResult::failure(code, "AST build failed in multi-line script");
+        AstNode* ast = astRes.value;
+
+        dumpTokensAndRpn(pr.value.tokens, pr.value.rpn, allTokenDump, allRpnDump);
 
         root->children.append(ast);
-
-        dumpTokensAndRpn(pr.tokens, pr.rpn, allTokenDump, allRpnDump);
     }
 
     EvalResult r = EvalResult::success();
 
-    try {
-        Value result = evalNode(root, &r);
-        VariableRepository::instance().set("_result", result);
+    // 3) Eval
+    Result<Value> result = evalNode(root, &r);
+    if (!result.ok)
+        return EvalResult::failure(code, result.error);
 
-        r.tokensDump = allTokenDump;
-        r.rpnDump    = allRpnDump;
+    VariableRepository::instance().set("_result", result.value);
 
-        QSet<QString> readVars, writtenVars;
-        collectVariables(root, readVars, writtenVars);
-        r.readVars = readVars;
-        r.writtenVars = writtenVars;
-        r.astDump = dumpAst(root); // 🔥 EZ HIÁNYZOTT
-        r.variableSnapshot = VariableRepository::instance().dump();
+    r.tokensDump = allTokenDump;
+    r.rpnDump    = allRpnDump;
 
-        return r;
+    QSet<QString> readVars, writtenVars;
+    collectVariables(root, readVars, writtenVars);
+    r.readVars = readVars;
+    r.writtenVars = writtenVars;
+    r.astDump = dumpAst(root);
+    r.variableSnapshot = VariableRepository::instance().dump();
 
-    } catch (const QString& err) {
-        return EvalResult::failure(code, err);
-    } catch (...) {
-        return EvalResult::failure(code, "Unknown error");
-    }
+    return r;
+
 }
 
 
@@ -152,16 +151,22 @@ EvalResult FormulaEngine::evalMultiLine(const QStringList& lines)
 /**/
 
 
-QVector<Value> FormulaEngine::evalChildren(AstNode* n, EvalResult* traceOut)
+Result<QVector<Value>> FormulaEngine::evalChildren(AstNode* n, EvalResult* traceOut)
 {
     QVector<Value> out;
-    for (int i = 0; i < n->children.size(); ++i)
-        out.append(evalNode(n->children[i], traceOut));
-    return out;
+
+    for (AstNode* child : n->children) {
+        Result<Value> r = evalNode(child, traceOut);
+        if (!r.ok)
+            return Result<QVector<Value>>::failure(r.error);
+        out.append(r.value);
+    }
+
+    return Result<QVector<Value>>::success(out);
 }
 
 
-Value FormulaEngine::evalNode(AstNode* n, EvalResult* traceOut)
+Result<Value> FormulaEngine::evalNode(AstNode* n, EvalResult* traceOut)
 {
     auto& vars = VariableRepository::instance();
     auto& reg  = FunctionRegistry::instance();
@@ -175,135 +180,172 @@ Value FormulaEngine::evalNode(AstNode* n, EvalResult* traceOut)
         traceOut->trace.append(e);
     };
 
+    // Helper: evaluate a child safely
+    auto evalChild = [&](AstNode* c) -> Result<Value> {
+        return evalNode(c, traceOut);
+    };
+
+    // Helper: evaluate all children safely
+    auto evalChildrenSafe = [&](AstNode* node) -> Result<QVector<Value>> {
+        QVector<Value> out;
+        for (AstNode* c : node->children) {
+            auto r = evalNode(c, traceOut);
+            if (!r.ok) return Result<QVector<Value>>::failure(r.error);
+            out.append(r.value);
+        }
+        return Result<QVector<Value>>::success(out);
+    };
+
     switch (n->type) {
 
     case AstNode::Type::Number: {
         Value v = Value::numberValue(n->value.toDouble());
         addTrace(v);
-        return v;
+        return Result<Value>::success(v);
     }
 
     case AstNode::Type::StringLiteral: {
         Value v = Value::stringValue(n->value);
         addTrace(v);
-        return v;
+        return Result<Value>::success(v);
     }
 
     case AstNode::Type::Variable: {
         Value v = vars.get(n->value);
         if (v.type == Value::Type::Null)
-            throw QString("Undefined variable: %1").arg(n->value);
+            return Result<Value>::failure("Undefined variable: " + n->value);
         addTrace(v);
-        return v;
+        return Result<Value>::success(v);
     }
 
     case AstNode::Type::Operator: {
-        QVector<Value> args = evalChildren(n, traceOut);
+        auto argsRes = evalChildrenSafe(n);
+        if (!argsRes.ok) return Result<Value>::failure(argsRes.error);
 
         QVector<Value> filtered;
-        for (const Value& a : args)
+        for (const Value& a : argsRes.value)
             if (a.type != Value::Type::Skip)
                 filtered.append(a);
 
         if (filtered.isEmpty()) {
             Value v = Value::nullValue();
             addTrace(v);
-            return v;
+            return Result<Value>::success(v);
         }
 
         if (filtered.size() == 1) {
             Value v = filtered[0];
+            if (v.type == Value::Type::Error)
+                return Result<Value>::failure(v.text);
             addTrace(v);
-            return v;
+            return Result<Value>::success(v);
         }
 
-        Value v = reg.call(n->value, filtered);
-        addTrace(v);
-        return v;
+        Result<Value> callRes = reg.call(n->value, filtered);
+        if (!callRes.ok) return Result<Value>::failure(callRes.error);
 
+        addTrace(callRes.value);
+        return Result<Value>::success(callRes.value);
     }
 
     case AstNode::Type::Function: {
-        QVector<Value> args = evalChildren(n, traceOut);
+        auto argsRes = evalChildrenSafe(n);
+        if (!argsRes.ok) return Result<Value>::failure(argsRes.error);
 
         QVector<Value> filtered;
-        for (const Value& a : args)
+        for (const Value& a : argsRes.value)
             if (a.type != Value::Type::Skip)
                 filtered.append(a);
 
-        Value v = reg.call(n->value, filtered);
-        addTrace(v);
-        return v;
+        Result<Value> callRes = reg.call(n->value, filtered);
+        if (!callRes.ok) return Result<Value>::failure(callRes.error);
+
+        addTrace(callRes.value);
+        return Result<Value>::success(callRes.value);
     }
 
     case AstNode::Type::Assignment: {
-        Value v = evalNode(n->children[0], traceOut);
-        vars.set(n->value, v);
+        auto r = evalNode(n->children[0], traceOut);
+        if (!r.ok) return r;
+
+        vars.set(n->value, r.value);
         Value ret = Value::nullValue();
         addTrace(ret);
-        return ret;
+        return Result<Value>::success(ret);
     }
 
     case AstNode::Type::Return: {
         Value last = Value::nullValue();
-        for (int i = 0; i < n->children.size(); ++i) {
-            last = evalNode(n->children[i], traceOut);
+        for (AstNode* c : n->children) {
+            auto r = evalNode(c, traceOut);
+            if (!r.ok) return r;
+            last = r.value;
         }
         addTrace(last);
-        return last;
+        return Result<Value>::success(last);
     }
 
-    // cond ? trueExpr : falseExpr
     case AstNode::Type::Choose: {
-        if (n->children.size() != 3) return Value();
+        if (n->children.size() != 3)
+            return Result<Value>::failure("Invalid choose node");
 
-        Value cond = evalNode(n->children[0], traceOut);
-        addTrace(cond);
-        if (cond.toBool()){
-            auto v = evalNode(n->children[1], traceOut);
-            addTrace(v);
-            return v;
-        }
-        else{
-            auto v = evalNode(n->children[2], traceOut);
-            addTrace(v);
-            return v;
-        }
+        auto condRes = evalNode(n->children[0], traceOut);
+        if (!condRes.ok) return condRes;
+        addTrace(condRes.value);
+
+        int idx = condRes.value.toBool() ? 1 : 2;
+        auto r = evalNode(n->children[idx], traceOut);
+        if (!r.ok) return r;
+
+        if (r.value.type == Value::Type::Error)
+            return Result<Value>::failure(r.value.text);
+
+        addTrace(r.value);
+        return Result<Value>::success(r.value);
+
     }
 
     case AstNode::Type::Opt: {
-        if (n->children.size() != 2) return Value();
+        if (n->children.size() != 2)
+            return Result<Value>::failure("Invalid opt node");
 
-        Value cond = evalNode(n->children[0], traceOut);
-        addTrace(cond);
-        if (cond.toBool()){
-            auto v = evalNode(n->children[1], traceOut);
-            addTrace(v);
-            return v;
+        auto condRes = evalNode(n->children[0], traceOut);
+        if (!condRes.ok) return condRes;
+        addTrace(condRes.value);
+
+        if (condRes.value.toBool()) {
+            auto r = evalNode(n->children[1], traceOut);
+            if (!r.ok) return r;
+
+            if (r.value.type == Value::Type::Error)
+                return Result<Value>::failure(r.value.text);
+
+            addTrace(r.value);
+            return Result<Value>::success(r.value);
+
         }
-        else
-            return Value::skipValue();
+
+        return Result<Value>::success(Value::skipValue());
     }
 
-
     case AstNode::Type::Statement: {
-        Value v = evalNode(n->children[0], traceOut);
-        addTrace(v);
-        return v;
+        auto r = evalNode(n->children[0], traceOut);
+        if (!r.ok) return r;
+        addTrace(r.value);
+        return r;
     }
 
     case AstNode::Type::Sequence: {
         Value last = Value::nullValue();
-        for (int i = 0; i < n->children.size(); ++i)
-            last = evalNode(n->children[i], traceOut);
+        for (AstNode* c : n->children) {
+            auto r = evalNode(c, traceOut);
+            if (!r.ok) return r;
+            last = r.value;
+        }
         addTrace(last);
-        return last;
+        return Result<Value>::success(last);
+    }
     }
 
-    }
-
-    Value v = Value::nullValue();
-    addTrace(v);
-    return v;
+    return Result<Value>::failure("Unknown AST node type");
 }
-

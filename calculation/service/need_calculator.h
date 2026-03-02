@@ -42,7 +42,7 @@ struct KitItem {
 struct RawCut {
     QUuid materialId;
     int requiredLength;
-    int qty;
+    //int qty;
 };
 
 struct RawKit {
@@ -75,7 +75,7 @@ private:
 
 
     // RawCut → Piece lista (p9)
-    static QVector<Piece> explodePieces(const OrderLine& line,
+    static Result<QVector<Piece>> explodePieces(const OrderLine& line,
                                         const RawCut& raw);
 
 };

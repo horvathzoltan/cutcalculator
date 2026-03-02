@@ -38,7 +38,10 @@ void NeedCalculatorPipelineTester::testLenDsl()
     auto mode = TestDataBuilder::makeCalculation(ids.P1, "M");
     NeedCalculationRegistry::instance().insert(mode);
 
-    auto d = TestDataBuilder::makeDetail(mode.id, ids.M1, "len:w-20");
+    // ÚJ DSL:
+    // requiredLength = w - 20
+    auto d = TestDataBuilder::makeDetail(mode.id, ids.M1,
+                                         "requiredLength = w - 20");
     NeedCalculationDetailRegistry::instance().insert(d);
 
     OrderLine line{ ids.P1, 1200, 800, 2, "L", "X", "Owner", "Color" };
@@ -66,8 +69,10 @@ void NeedCalculatorPipelineTester::testAggregation()
     auto mode = TestDataBuilder::makeCalculation(ids.P1, "M");
     NeedCalculationRegistry::instance().insert(mode);
 
-    auto d1 = TestDataBuilder::makeDetail(mode.id, ids.M1, "len:w-20");
-    auto d2 = TestDataBuilder::makeDetail(mode.id, ids.M1, "len:w-20");
+    auto d1 = TestDataBuilder::makeDetail(mode.id, ids.M1,
+                                          "requiredLength = w - 20");
+    auto d2 = TestDataBuilder::makeDetail(mode.id, ids.M1,
+                                          "requiredLength = w - 20");
     NeedCalculationDetailRegistry::instance().insert(d1);
     NeedCalculationDetailRegistry::instance().insert(d2);
 
@@ -81,7 +86,6 @@ void NeedCalculatorPipelineTester::testAggregation()
     zInfo("✓ testAggregation OK");
 }
 
-
 void NeedCalculatorPipelineTester::testQtyDsl()
 {
     zInfo("→ testQtyDsl");
@@ -94,13 +98,16 @@ void NeedCalculatorPipelineTester::testQtyDsl()
 
     auto ids = TestDataBuilder::prepareStandard();
 
-    // 🔥 EZ HIÁNYZOTT → kötelező!
     NeedRuleRegistry::instance().insert(ids.P1, ids.M1);
 
     auto mode = TestDataBuilder::makeCalculation(ids.P1, "M");
     NeedCalculationRegistry::instance().insert(mode);
 
-    auto d = TestDataBuilder::makeDetail(mode.id, ids.M1, "len:w-10 + qty:fixed:3");
+    // ÚJ DSL:
+    // requiredLength = w - 10
+    // qty = 3
+    auto d = TestDataBuilder::makeDetail(mode.id, ids.M1,
+                                         "requiredLength = w - 10, qty = 3");
     NeedCalculationDetailRegistry::instance().insert(d);
 
     OrderLine line{ ids.P1, 1200, 800, 2, "L", "X", "Owner", "Color" };
@@ -113,7 +120,6 @@ void NeedCalculatorPipelineTester::testQtyDsl()
 
     zInfo("✓ testQtyDsl OK");
 }
-
 
 void NeedCalculatorPipelineTester::testOptDsl()
 {
@@ -129,8 +135,10 @@ void NeedCalculatorPipelineTester::testOptDsl()
     auto mode = TestDataBuilder::makeCalculation(ids.P1, "M");
     NeedCalculationRegistry::instance().insert(mode);
 
-    // len:w-20 + opt:flag:+40
-    auto d = TestDataBuilder::makeDetail(mode.id, ids.M1, "len:w-20 + opt:flag:+40");
+    // ÚJ DSL:
+    // requiredLength = (w - 20) + (flag ? 40 : 0)
+    auto d = TestDataBuilder::makeDetail(mode.id, ids.M1,
+                                         "requiredLength = (w - 20) + (flag ? 40 : 0)");
     NeedCalculationDetailRegistry::instance().insert(d);
 
     OrderLine line{ ids.P1, 1200, 800, 1, "L", "X", "Owner", "Color" };
@@ -138,7 +146,7 @@ void NeedCalculatorPipelineTester::testOptDsl()
     auto cuts = NeedCalculator::makeCutList(line, "M");
 
     Q_ASSERT(cuts.size() == 1);
-    Q_ASSERT(cuts[0].requiredLength == (1200 - 20 + 40)); // 1220
+    Q_ASSERT(cuts[0].requiredLength == 1220);
 
     zInfo("✓ testOptDsl OK");
 }
@@ -157,10 +165,11 @@ void NeedCalculatorPipelineTester::testChooseDsl()
     auto mode = TestDataBuilder::makeCalculation(ids.P1, "M");
     NeedCalculationRegistry::instance().insert(mode);
 
-    // choose: w>=1500 ? M1 : M2
+    // ÚJ DSL:
+    // material = (w >= 1500 ? "M1" : "M2")
     auto d = TestDataBuilder::makeDetail(
         mode.id, ids.M1,
-        QString("choose: w>=1500 ? %1 : %2")
+        QString("material = (w >= 1500 ? \"%1\" : \"%2\")")
             .arg(ids.M1_barcode, ids.M2_barcode));
 
     NeedCalculationDetailRegistry::instance().insert(d);
@@ -189,7 +198,11 @@ void NeedCalculatorPipelineTester::testExplodePieces()
     auto mode = TestDataBuilder::makeCalculation(ids.P1, "M");
     NeedCalculationRegistry::instance().insert(mode);
 
-    auto d = TestDataBuilder::makeDetail(mode.id, ids.M1, "len:w-10 + qty:fixed:3");
+    // ÚJ DSL:
+    // requiredLength = w - 10
+    // qty = 3
+    auto d = TestDataBuilder::makeDetail(mode.id, ids.M1,
+                                         "requiredLength = w - 10, qty = 3");
     NeedCalculationDetailRegistry::instance().insert(d);
 
     OrderLine line{ ids.P1, 1200, 800, 1, "L", "X", "Owner", "Color" };
@@ -199,7 +212,6 @@ void NeedCalculatorPipelineTester::testExplodePieces()
     Q_ASSERT(cuts.size() == 1);
     Q_ASSERT(cuts[0].quantity == 3);
 
-    // externalRef-ek ellenőrzése
     Q_ASSERT(cuts[0].externalRefs.size() == 3);
     Q_ASSERT(cuts[0].externalRefs[0] == "X.1");
     Q_ASSERT(cuts[0].externalRefs[1] == "X.2");
@@ -222,12 +234,13 @@ void NeedCalculatorPipelineTester::testKitting()
     auto mode = TestDataBuilder::makeCalculation(ids.P1, "M");
     NeedCalculationRegistry::instance().insert(mode);
 
-    // Kitting sor
+    // ÚJ DSL:
+    // qty = qty * 2
     NeedCalculationDetail d;
     d.id = QUuid::createUuid();
     d.needCalculationId = mode.id;
     d.materialId = ids.M1;
-    d.formula = "qty:perOrder:2";
+    d.formula = "qty = qty * 2";
     d.kind = NeedCalculationDetail::DetailKind::Kitting;
 
     NeedCalculationDetailRegistry::instance().insert(d);
@@ -238,10 +251,11 @@ void NeedCalculatorPipelineTester::testKitting()
 
     Q_ASSERT(kits.size() == 1);
     Q_ASSERT(kits[0].materialId == ids.M1);
-    Q_ASSERT(kits[0].quantity == 6); // 3 * 2
+    Q_ASSERT(kits[0].quantity == 6);
     Q_ASSERT(kits[0].fullWidth == 1200);
     Q_ASSERT(kits[0].fullHeight == 800);
 
     zInfo("✓ testKitting OK");
 }
+
 

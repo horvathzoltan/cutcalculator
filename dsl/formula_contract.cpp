@@ -12,16 +12,17 @@ FormulaContract cuttingContract()
     };
 
     c.requiredOutputs = {
-        "requiredLength",
-        "qty"
+        "requiredLength"
     };
 
     c.optionalOutputs = {
-        "material"
+        "material",
+        "qty"   // Cutting esetén opcionális
     };
 
     return c;
 }
+
 
 // Kitting szerződés
 FormulaContract kittingContract()

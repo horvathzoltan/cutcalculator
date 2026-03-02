@@ -46,8 +46,15 @@ NeedCalculator::makeCutList(const OrderLine& line, const QString& modeName)
 
         RawCut raw = r.value;
 
-        QVector<Piece> pieces = explodePieces(line, raw);
-        allPieces += pieces;
+        auto piecesRes = explodePieces(line, raw);
+        if (!piecesRes.ok) {
+            zInfo(QString("⚠️ explodePieces error in detail %1: %2")
+                      .arg(d.id.toString(), piecesRes.error));
+            continue;
+        }
+
+        allPieces += piecesRes.value;
+
     }
 
     // p11 – CutAggregator integráció
@@ -153,12 +160,12 @@ Result<RawCut> NeedCalculator::evalFormulaCut(const OrderLine& line,
     }
 
     // 5) qty
-    {
-        Value v = vars.get("qty");
-        if (v.type == Value::Type::Null)
-            return Result<RawCut>::failure("qty not set");
-        raw.qty = (int)v.toDouble();
-    }
+    // {
+    //     Value v = vars.get("qty");
+    //     if (v.type == Value::Type::Null)
+    //         return Result<RawCut>::failure("qty not set");
+    //     raw.qty = (int)v.toDouble();
+    // }
 
     // 6) material
     {
@@ -238,48 +245,41 @@ Result<RawKit> NeedCalculator::evalFormulaKit(const OrderLine& line,
      return Result<RawKit>::success(raw);
 }
 
-
-
-
 // p9 – implementáljuk később
-QVector<Piece>
+Result<QVector<Piece>>
 NeedCalculator::explodePieces(const OrderLine& line, const RawCut& raw)
 {
     QVector<Piece> out;
-    out.reserve(raw.qty);
 
-    // 1) Material lookup
+    // Cutting esetén a darabszám = rendelési sor darabszáma
+    int count = line.qty;
+    out.reserve(count);
+
     auto material = MaterialRegistry::instance().findById(raw.materialId);
     if (!material) {
-        throw QString("Invalid materialId in RawCut.");
+        return Result<QVector<Piece>>::failure("Invalid materialId in RawCut.");
     }
 
     QString barcode = material->barcode;
 
-    // 2) Darabok generálása
-    for (int i = 1; i <= raw.qty; ++i) {
+    for (int i = 1; i <= count; ++i) {
         Piece p;
-
         p.materialId      = raw.materialId;
         p.materialBarcode = barcode;
         p.requiredLength  = raw.requiredLength;
         p.handlerSide     = line.handlerSide;
-
-        // 3) Egyedi externalRef
-        // pl. "2650.1", "2650.2", ...
-        p.externalRef = QString("%1.%2").arg(line.externalId).arg(i);
-
-        // 4) Metaadatok
-        p.ownerName  = line.ownerName;
-        p.colorName  = line.colorName;
-        p.fullWidth  = line.width_mm;
-        p.fullHeight = line.height_mm;
+        p.externalRef     = QString("%1.%2").arg(line.externalId).arg(i);
+        p.ownerName       = line.ownerName;
+        p.colorName       = line.colorName;
+        p.fullWidth       = line.width_mm;
+        p.fullHeight      = line.height_mm;
 
         out.append(p);
     }
 
-    return out;
+    return Result<QVector<Piece>>::success(out);
 }
+
 
 void NeedCalculator::fillVariables(const OrderLine& line)
 {

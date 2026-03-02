@@ -2,7 +2,7 @@
 #include <QString>
 
 struct Value {
-    enum class Type { Number, String, Bool, Null, Skip };
+    enum class Type { Number, String, Bool, Null, Skip, Error };
 
     Type type = Type::Null;
 
@@ -33,6 +33,7 @@ struct Value {
         Value v; v.type = Type::Skip; return v;
     }
 
+
     bool isTruthy() const {
         if (type == Type::Bool)   return boolean;
         if (type == Type::Number) return number != 0.0;
@@ -41,6 +42,11 @@ struct Value {
     }
 
     double toDouble(bool* ok = nullptr) const {
+        if (type == Type::Error) {
+            if (ok) *ok = false;
+            return qQNaN();
+        }
+
         switch (type) {
         case Type::Number:
             if (ok) *ok = true;
@@ -71,6 +77,7 @@ struct Value {
         case Type::String: return "\"" + text + "\"";
         case Type::Null:   return "null";
         case Type::Skip:   return "<skip>";
+        case Type::Error:  return "<error: " + text + ">";
         }
         return "";
     }
@@ -84,11 +91,17 @@ struct Value {
         case Type::Bool:   return "Bool";
         case Type::Null:   return "Null";
         case Type::Skip:   return "Skip";
+        case Type::Error:  return "Error";
         }
         return "Unknown";
     }
 
     bool toBool(bool* ok = nullptr) const {
+        if (type == Type::Error) {
+            if (ok) *ok = false;
+            return false;
+        }
+
         switch (type) {
         case Type::Bool:
             if (ok) *ok = true;
@@ -113,5 +126,14 @@ struct Value {
 
         }
     }
+
+
+    static Value errorValue(const QString& msg) {
+        Value v;
+        v.type = Type::Error;
+        v.text = msg;
+        return v;
+    }
+
 
 };

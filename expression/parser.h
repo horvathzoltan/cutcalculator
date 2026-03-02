@@ -17,5 +17,5 @@ public:
     static Result<ParseResult> parse(const QString& input);
 
     // ha már van tokenized input
-    static QVector<Token> toRpn(const QVector<Token>& tokens);
+    static Result<QVector<Token>> toRpn(const QVector<Token>& tokens);
 };

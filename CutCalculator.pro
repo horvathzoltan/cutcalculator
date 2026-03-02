@@ -162,7 +162,6 @@ HEADERS += \
     common/registry/mixins/bulk_load_mixin.h \
     common/registry/mixins/collector_mixin.h \
     common/registry/mixins/connection_workflow_mixin.h \
-    common/registry/mixins/crud_mixin.h \
     common/registry/mixins/crud_workflow_mixin.h \
     common/registry/mixins/id_lookup_mixin.h \
     common/registry/mixins/mixin_contract_checks.h \

@@ -31,20 +31,22 @@ Result<Parser::ParseResult> Parser::parse(const QString& input)
 }
 
 
-QVector<Token> Parser::toRpn(const QVector<Token>& tokens)
+Result<QVector<Token>> Parser::toRpn(const QVector<Token>& tokens)
 {
     QVector<Token> output;
     QStack<Token>  opStack;
     QStack<int>    argCountStack;
-
-    // Ternary állapot: csak a klasszikus cond ? A : B → choose
-    QStack<bool> questionHasColon;
+    QStack<bool>   questionHasColon;
 
     bool expectOperand = true;
-    bool optMode       = false;   // épp egy opt: flag ? expr belsejében vagyunk
+    bool optMode       = false;
 
     int i = 0;
     const int n = tokens.size();
+
+    auto fail = [&](const QString& msg) {
+        return Result<QVector<Token>>::failure(msg);
+    };
 
     auto emitChoose = [&]() {
         Token chooseTok;
@@ -102,17 +104,18 @@ QVector<Token> Parser::toRpn(const QVector<Token>& tokens)
             Token top = opStack.pop();
             if (top.type == TokenType::Question)
                 emitChoose();
+            else if (top.type == TokenType::LParen)
+                return fail("Hiányzó ')'");
             else
                 output.append(top);
         }
+        return Result<QVector<Token>>::success(output);
     };
 
-    // OPT lezárása: flag ? expr → flag expr opt
     auto closeOptIfPending = [&]() {
         if (!optMode)
             return;
 
-        // keressük a legutóbbi '?'-t
         int idx = opStack.size() - 1;
         while (idx >= 0 && opStack[idx].type != TokenType::Question)
             --idx;
@@ -120,17 +123,12 @@ QVector<Token> Parser::toRpn(const QVector<Token>& tokens)
         if (idx < 0)
             return;
 
-        // a '?' fölötti operátorokat kiírjuk
         while (opStack.size() - 1 > idx)
             output.append(opStack.pop());
 
-        // levesszük a '?'-t
         if (!opStack.isEmpty() && opStack.top().type == TokenType::Question)
             opStack.pop();
 
-        // Itt az output stack tetején:
-        //   ... flag expr
-        // és most tesszük rá az opt‑ot postfixként
         Token optTok;
         optTok.type = TokenType::Opt;
         optTok.text = "opt";
@@ -142,22 +140,20 @@ QVector<Token> Parser::toRpn(const QVector<Token>& tokens)
     while (i < n) {
         Token t = tokens[i++];
 
-        // END
         if (t.type == TokenType::End) {
             closeOptIfPending();
             break;
         }
 
-        // NEWLINE
         if (t.type == TokenType::Newline) {
             closeOptIfPending();
-            flushAll();
+            auto r = flushAll();
+            if (!r.ok) return r;
             output.append({TokenType::StatementEnd, ";"});
             expectOperand = true;
             continue;
         }
 
-        // LITERÁLOK / VÁLTOZÓK / STRINGEK
         if (t.type == TokenType::Number ||
             t.type == TokenType::Variable ||
             t.type == TokenType::StringLiteral)
@@ -167,14 +163,11 @@ QVector<Token> Parser::toRpn(const QVector<Token>& tokens)
             continue;
         }
 
-        // OPT PREFIX: "opt:" – csak módot kapcsolunk
         if (t.type == TokenType::Opt) {
             optMode = true;
-            // maga az Opt token NEM kerül stackre, postfixként tesszük majd ki
             continue;
         }
 
-        // TERNARY '?'
         if (t.type == TokenType::Question) {
             opStack.push(t);
             questionHasColon.push(false);
@@ -182,21 +175,31 @@ QVector<Token> Parser::toRpn(const QVector<Token>& tokens)
             continue;
         }
 
-        // BAL ZÁRÓJEL
         if (t.type == TokenType::LParen) {
             opStack.push(t);
             expectOperand = true;
             continue;
         }
 
-        // JOBB ZÁRÓJEL
         if (t.type == TokenType::RParen) {
-            //closeOptIfPending();
-            flushUntil(TokenType::LParen);
-            if (!opStack.isEmpty() && opStack.top().type == TokenType::LParen)
-                opStack.pop();
 
-            // függvény lezárása
+            auto hasLParen = [&]() {
+                for (const Token& tk : opStack)
+                    if (tk.type == TokenType::LParen)
+                        return true;
+                return false;
+            };
+
+            if (!hasLParen())
+                return fail("Váratlan ')'");
+
+            flushUntil(TokenType::LParen);
+
+            if (opStack.isEmpty())
+                return fail("Váratlan ')'");
+
+            opStack.pop(); // LParen
+
             if (!opStack.isEmpty() && opStack.top().type == TokenType::Function) {
                 Token fn = opStack.pop();
                 int argc = 1;
@@ -211,7 +214,6 @@ QVector<Token> Parser::toRpn(const QVector<Token>& tokens)
             continue;
         }
 
-        // FÜGGVÉNY ARGUMENTUM VESSZŐ
         if (t.type == TokenType::Comma) {
             closeOptIfPending();
             flushUntil(TokenType::LParen);
@@ -222,20 +224,14 @@ QVector<Token> Parser::toRpn(const QVector<Token>& tokens)
             continue;
         }
 
-        // COLON – TERNARY VAGY OPT
         if (t.type == TokenType::Colon) {
 
-            // OPT‑mód: opt: flag ? expr
             if (optMode) {
-                // az expr végét jelzi – kiértékeljük a '?' utáni kifejezést
                 flushUntil(TokenType::Question);
 
-                // a '?'‑t levesszük, de NEM choose‑t generálunk,
-                // hanem majd closeOptIfPending() teszi rá az Opt‑ot
                 if (!opStack.isEmpty() && opStack.top().type == TokenType::Question)
                     opStack.pop();
 
-                // Itt az output tetején: ... flag expr
                 Token optTok;
                 optTok.type = TokenType::Opt;
                 optTok.text = "opt";
@@ -246,7 +242,16 @@ QVector<Token> Parser::toRpn(const QVector<Token>& tokens)
                 continue;
             }
 
-            // CHOOSE‑mód: klasszikus cond ? A : B
+            auto hasQuestion = [&]() {
+                for (const Token& tk : opStack)
+                    if (tk.type == TokenType::Question)
+                        return true;
+                return false;
+            };
+
+            if (!hasQuestion())
+                return fail("':' csak ternary operátor részeként használható");
+
             while (!opStack.isEmpty() && opStack.top().type != TokenType::Question)
                 output.append(opStack.pop());
 
@@ -261,37 +266,29 @@ QVector<Token> Parser::toRpn(const QVector<Token>& tokens)
             continue;
         }
 
-        // SPECIAL CASE: +Number mint pozitív literál, ha operandust várunk
         if (t.type == TokenType::Plus && expectOperand && i < n && tokens[i].type == TokenType::Number) {
-            output.append(tokens[i]);  // Number
+            output.append(tokens[i]);
             ++i;
             expectOperand = false;
             continue;
         }
 
-        // SPECIAL CASE: unary '+' zárójel előtt: +(w/10) → (w/10)
         if (t.type == TokenType::Plus && expectOperand && i < n && tokens[i].type == TokenType::LParen) {
-            // a '+' itt no‑op, egyszerűen eldobjuk
             continue;
         }
 
-        // OPERÁTOROK
         if (isOperator(t)) {
 
-            // PREFIX / INFIX felismerés a + és - operátorokra
             if (t.type == TokenType::Plus || t.type == TokenType::Minus) {
-
                 if (expectOperand) {
-                    // PREFIX
                     t.type = (t.type == TokenType::Plus)
-                                 ? TokenType::PrefixPlus
-                                 : TokenType::PrefixMinus;
+                    ? TokenType::PrefixPlus
+                    : TokenType::PrefixMinus;
 
                     opStack.push(t);
                     expectOperand = true;
                     continue;
                 }
-                // különben INFIX – esünk tovább az általános logikára
             }
 
             const OperatorInfo* info = getOpInfo(t);
@@ -303,31 +300,12 @@ QVector<Token> Parser::toRpn(const QVector<Token>& tokens)
             }
 
             if (info->fixity == Fixity::Prefix) {
-
-                if (t.type == TokenType::Choose)
-                    continue;
-
-                if (t.type == TokenType::Function) {
-                    opStack.push(t);
-                    argCountStack.push(0);
-                    expectOperand = true;
-                    continue;
-                }
-
-                if (t.type == TokenType::Return) {
-                    opStack.push(t);
-                    expectOperand = true;
-                    continue;
-                }
-
                 opStack.push(t);
                 expectOperand = true;
                 continue;
             }
 
-            // INFIX
             if (info->fixity == Fixity::Infix) {
-                //closeOptIfPending();
 
                 while (!opStack.isEmpty()) {
                     const Token& top = opStack.top();
@@ -357,10 +335,12 @@ QVector<Token> Parser::toRpn(const QVector<Token>& tokens)
             continue;
         }
 
-        // minden más ignorálva
+        return fail(QString("Váratlan token: %1").arg(t.text));
     }
 
     closeOptIfPending();
-    flushAll();
-    return output;
+    auto r = flushAll();
+    if (!r.ok) return r;
+
+    return Result<QVector<Token>>::success(output);
 }
