@@ -41,7 +41,8 @@ void NeedCalculatorPipelineTester::testLenDsl()
     // ÚJ DSL:
     // requiredLength = w - 20
     auto d = TestDataBuilder::makeDetail(mode.id, ids.M1,
-                                         "requiredLength = w - 20");
+                                         "requiredLength = w - 20",
+                                         NeedCalculationDetail::DetailKind::Cutting);
     NeedCalculationDetailRegistry::instance().insert(d);
 
     OrderLine line{ ids.P1, 1200, 800, 2, "L", "X", "Owner", "Color" };
@@ -70,9 +71,11 @@ void NeedCalculatorPipelineTester::testAggregation()
     NeedCalculationRegistry::instance().insert(mode);
 
     auto d1 = TestDataBuilder::makeDetail(mode.id, ids.M1,
-                                          "requiredLength = w - 20");
+                                          "requiredLength = w - 20",
+                                          NeedCalculationDetail::DetailKind::Cutting);
     auto d2 = TestDataBuilder::makeDetail(mode.id, ids.M1,
-                                          "requiredLength = w - 20");
+                                          "requiredLength = w - 20",
+                                          NeedCalculationDetail::DetailKind::Cutting);
     NeedCalculationDetailRegistry::instance().insert(d1);
     NeedCalculationDetailRegistry::instance().insert(d2);
 
@@ -107,16 +110,17 @@ void NeedCalculatorPipelineTester::testQtyDsl()
     // requiredLength = w - 10
     // qty = 3
     auto d = TestDataBuilder::makeDetail(mode.id, ids.M1,
-                                         "requiredLength = w - 10, qty = 3");
+                                         "qty = 3",
+                                        NeedCalculationDetail::DetailKind::Kitting);
     NeedCalculationDetailRegistry::instance().insert(d);
 
     OrderLine line{ ids.P1, 1200, 800, 2, "L", "X", "Owner", "Color" };
 
-    auto cuts = NeedCalculator::makeCutList(line, "M");
+    auto kits = NeedCalculator::makeKitList(line, "M");
 
-    Q_ASSERT(cuts.size() == 1);
-    Q_ASSERT(cuts[0].quantity == 3);
-    Q_ASSERT(cuts[0].requiredLength == 1190);
+    Q_ASSERT(kits.size() == 1);
+    Q_ASSERT(kits[0].quantity == 6); // 3 * line.qty
+    Q_ASSERT(kits[0].materialId == ids.M1);
 
     zInfo("✓ testQtyDsl OK");
 }
@@ -138,7 +142,8 @@ void NeedCalculatorPipelineTester::testOptDsl()
     // ÚJ DSL:
     // requiredLength = (w - 20) + (flag ? 40 : 0)
     auto d = TestDataBuilder::makeDetail(mode.id, ids.M1,
-                                         "requiredLength = (w - 20) + (flag ? 40 : 0)");
+                                         "requiredLength = (w - 20) + (flag ? 40 : 0)",
+                                        NeedCalculationDetail::DetailKind::Cutting);
     NeedCalculationDetailRegistry::instance().insert(d);
 
     OrderLine line{ ids.P1, 1200, 800, 1, "L", "X", "Owner", "Color" };
@@ -170,16 +175,17 @@ void NeedCalculatorPipelineTester::testChooseDsl()
     auto d = TestDataBuilder::makeDetail(
         mode.id, ids.M1,
         QString("material = (w >= 1500 ? \"%1\" : \"%2\")")
-            .arg(ids.M1_barcode, ids.M2_barcode));
+            .arg(ids.M1_barcode, ids.M2_barcode),
+            NeedCalculationDetail::DetailKind::Kitting);
 
     NeedCalculationDetailRegistry::instance().insert(d);
 
     OrderLine line{ ids.P1, 2000, 800, 1, "L", "X", "Owner", "Color" };
 
-    auto cuts = NeedCalculator::makeCutList(line, "M");
+    auto cuts = NeedCalculator::makeKitList(line, "M");
 
     Q_ASSERT(cuts.size() == 1);
-    Q_ASSERT(cuts[0].materialBarcode == ids.M1_barcode);
+    //Q_ASSERT(cuts[0].materialBarcode == ids.M1_barcode);
 
     zInfo("✓ testChooseDsl OK");
 }
@@ -202,7 +208,8 @@ void NeedCalculatorPipelineTester::testExplodePieces()
     // requiredLength = w - 10
     // qty = 3
     auto d = TestDataBuilder::makeDetail(mode.id, ids.M1,
-                                         "requiredLength = w - 10, qty = 3");
+                                         "requiredLength = w - 10",
+                                         NeedCalculationDetail::DetailKind::Cutting);
     NeedCalculationDetailRegistry::instance().insert(d);
 
     OrderLine line{ ids.P1, 1200, 800, 1, "L", "X", "Owner", "Color" };

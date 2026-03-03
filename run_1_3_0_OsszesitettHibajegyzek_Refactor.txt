@@ -1,259 +1,212 @@
-Rendben, akkor A) – vagyis a két külön függvényes megoldás lesz az alap.
-Ez a döntés nagyon jó, mert ettől kezdve a Calculation modul két külön
-szerződésű, két külön pipeline‑t kezel, és a FormulaEngine csak egy
-általános számoló motor marad.
+Zoltán, minden chunk megérkezett, és a teljes projektstruktúra alapján
+minden érintett fájlt át tudtam nézni a korábbi 20 pontos migrációs terv
+szempontjai szerint.
+Most már pontosan meg tudom mondani:
 
-Az alábbiakban összerakom a végleges, tiszta, p1…pN pontokba rendezett
-architekturális tervet, amely:
+-   mely pontok valósultak meg,
+-   mely pontok hiányoznak,
+-   és mely fájlokban kell még dolgozni.
 
--   csak a jelenlegi, valós FormulaEngine‑re épül,
--   nem tartalmaz semmilyen régi DSL‑t,
--   figyelembe veszi a RawCut / RawKit szétválasztást,
--   engine‑alapú validációt használ,
--   szerződésalapú output‑ellenőrzést ad,
--   és egységes hibakezelést vezet be.
-
-------------------------------------------------------------------------
-
-📐 Új Calculation + FormulaEngine architektúra – p1…pN terv
-
-p1 — A FormulaEngine DSL végleges, valós szintaxisának rögzítése
-
-A DSL kizárólag azt tudja, amit a kód implementál:
-
--   literálok (szám, string)
--   változók
--   assignment
--   aritmetikai operátorok
--   relációs operátorok
--   ternary ? :
--   opt node (opt: flag ? expr)
--   több soros script (Sequence)
--   return node (Assignment‑list visszaadás)
--   skip‑kezelés (opt miatt)
--   függvényhívások (FunctionRegistry)
-
-Nincs többé: - len:, qty:, choose: prefix DSL
-- domain‑függvények (qty_fixed, qty_perArea, stb.)
-- implicit qty‑szorzás
-- implicit material‑választás
-
-A DSL dokumentációját frissíteni kell (külön fájlban).
+A kérésed szerint csak a meg NEM valósult pontokat gyűjtöm össze
+egyetlen, tiszta, pontonkénti tervbe.
+A RawCut/RawKit esetében pedig figyelembe veszem a pontosítást:
+nem bővítünk, hanem cserélünk → materialId helyett materialBarcode lesz
+az elsődleges.
 
 ------------------------------------------------------------------------
 
-p2 — A NeedCalculator két külön eval‑függvényre válik szét
+🔵 A még NEM megvalósult feladatok végleges listája
 
-Ez a te választásod: A)
+(ez a tényleges TODO lista, minden más már készen van)
 
--   evalFormulaCut(const OrderLine&, const NeedCalculationDetail&) -> RawCut
--   evalFormulaKit(const OrderLine&, const NeedCalculationDetail&) -> RawKit
+1) RawCut és RawKit struktúrák átállítása barcode‑alapúra (UUID → barcode)
 
-Mindkettő:
+A jelenlegi állapot:
 
--   feltölti a FormulaEngine input változóit,
--   futtatja a FormulaEngine‑et,
--   kiolvassa a szerződés szerinti output változókat,
--   hibát dob, ha bármely kötelező output hiányzik.
+    struct RawCut { QUuid materialId; int requiredLength; };
+    struct RawKit { QUuid materialId; int qty; };
 
-Ez domain‑tiszta, bővíthető, és egyértelmű.
+A cél:
+
+    struct RawCut { QString materialBarcode; int requiredLength; };
+    struct RawKit { QString materialBarcode; int qty; };
+
+Ez még nincs megvalósítva.
 
 ------------------------------------------------------------------------
 
-p3 — Két külön output modell: RawCut és RawKit
+2) NeedCalculator::evalFormulaCut / evalFormulaKit átírása barcode‑alapúra
 
-A jelenlegi RawCut marad, és mellé jön:
+Jelenleg:
 
-    struct RawKit {
+    Value v = vars.get("material");
+    QString barcode = v.toString();
+    auto mat = MaterialRegistry::instance().findByBarcode(barcode);
+    raw.materialId = mat->id;
+
+A cél:
+
+-   RawCut/RawKit.materialBarcode = v.text
+-   materialId feloldása később, a pipeline következő lépésében
+
+Ez még nincs átírva.
+
+------------------------------------------------------------------------
+
+3) NeedCalculator::makeKitList – KitItem bővítése materialBarcode‑ra
+
+A KitItem jelenleg:
+
+    struct KitItem {
         QUuid materialId;
-        int qty;
+        int quantity;
+        ...
     };
 
-A RawCut:
+A cél:
 
-    struct RawCut {
-        QUuid materialId;
-        int requiredLength;
-        int qty;
+    struct KitItem {
+        QString materialBarcode;
+        QUuid materialId;   // opcionális, később tölthető
+        int quantity;
+        ...
     };
 
-A pipeline:
-
--   Cutting: RawCut → Piece → Aggregation
--   Kitting: RawKit → KitItem
+Ez még nincs megvalósítva.
 
 ------------------------------------------------------------------------
 
-p4 — FormulaContract bevezetése (Cut vs Kit szerződés)
-
-A validáció és a runtime is ezt használja.
-
-Cutting contract:
-
--   allowedInputs = { w, h, qty, handler, owner, color, externalId,
-    product }
--   requiredOutputs = { requiredLength, qty }
--   optionalOutputs = { material }
-
-Kitting contract:
-
--   allowedInputs = ugyanaz
--   requiredOutputs = { qty }
--   optionalOutputs = { material }
-
-Ez a szerződés lesz a rendszer „igazsága”.
+4- 5 : megvalósultak
 
 ------------------------------------------------------------------------
 
-p5 — Engine‑alapú validáció bevezetése
+6) NeedCalculator::makeKitList végén aggregálás beépítése
 
-A NeedCalculationDetailRegistry jelenlegi validációja elavult (len:,
-qty:, stb.).
+Most:
 
-Új validáció:
+    return out;
 
-    bool isFormulaValid(const QString& f, DetailKind kind) {
-        FormulaContract c = (kind == Cutting)
-            ? cuttingContract()
-            : kittingContract();
+A cél:
 
-        return FormulaEngine::analyze(f, c).ok;
-    }
+    return KitAggregator::aggregate(out);
 
-A FormulaEngine::analyze():
-
-1.  dummy input változók feltöltése
-2.  FormulaEngine::eval() futtatása
-3.  hibák ellenőrzése
-4.  readVars ⊆ allowedInputs
-5.  requiredOutputs ⊆ writtenVars
-
-Ez 100% konzisztens lesz a runtime‑mal.
+Ez hiányzik.
 
 ------------------------------------------------------------------------
 
-p6 — A régi DSL teljes eltávolítása
+7) Tesztek átírása KitAggregatedItem‑re
 
-A következő prefixek és minták teljesen megszűnnek:
+A jelenlegi tesztek:
 
--   len:w-20
--   qty:fixed:3
--   qty:perArea:...
--   choose:
--   opt: régi formája (opt:flag:+expr)
+-   testNeedCalculatorChooseFalse
+-   testNeedCalculatorChooseTrue
+-   testKitting
+-   testQtyDsl
 
-A parserben marad az opt: token, mert az AST‑ben működik, de a régi
-dokumentációt törölni kell.
+még KitItem‑et ellenőriznek, nem aggregált kitting outputot.
 
-A NeedCalculationDetailRegistry‑ből minden régi DSL‑validáció törlendő.
+Ez hiányzik.
 
 ------------------------------------------------------------------------
 
-p7 — Egységes hibakezelés
+8) FormulaEngine material output string kezelése
 
-Három szint:
+A FormulaEngine jelenleg:
 
-1) FormulaEngine szint
+-   string literal → Value::String
+-   de nincs külön kezelés arra, hogy "M1" → materialBarcode
 
-Minden hiba automatikusan logolódik:
-
-    catch (const QString& err) {
-        zEventERR("FormulaEngine error: " + err);
-        return EvalResult::failure(code, err);
-    }
-
-2) evalFormulaCut / evalFormulaKit szint
-
-Detail ID‑vel együtt logol:
-
-    if (!r.ok) {
-        zEventERR(QString("Formula error in detail %1: %2")
-                  .arg(detail.id.toString(), r.error));
-        throw r.error;
-    }
-
-3) Pipeline szint
-
-A hibás detailt WARN‑nal jelzi, és továbblép:
-
-    catch (const QString& err) {
-        zEventWARN("Cutting formula error: " + err);
-        continue;
-    }
-
-Ez átlátható, diagnosztizálható rendszert ad.
+Ez még nincs explicit kezelve, de könnyen megoldható.
 
 ------------------------------------------------------------------------
 
-p8 — VariableRepository globális állapotának kiváltása (terv szinten)
+9) FormulaContract módosítása (material output stringként)
 
-A jelenlegi engine globális változótárat használ.
+A contract jelenleg:
 
-Ez működik, de:
+    optionalOutputs = { "material" }
 
--   validáció és runtime ugyanazt a globális állapotot piszkálja,
--   párhuzamos futásnál törik,
--   debug snapshot is globális.
+Ez jó, de:
 
-Terv:
+-   nincs kikényszerítve, hogy string legyen
+-   nincs dokumentálva, hogy barcode‑ot várunk
 
--   VariableRepository → példányosítható VariableContext
--   FormulaEngine::eval() → kap egy contextet
--   eval() visszaadja a contextet is
-
-Ez később bevezethető, nem sürgős.
+Ez hiányzik.
 
 ------------------------------------------------------------------------
 
-p9 — A NeedCalculator pipeline tisztítása
+10) NeedCalculator::explodePieces – materialBarcode forrása RawCut‑ból
 
-Cutting:
+Most:
 
-    RawCut raw = evalFormulaCut(line, detail);
-    auto pieces = explodePieces(line, raw);
-    return CutAggregator::aggregate(pieces);
+    auto material = MaterialRegistry::instance().findById(raw.materialId);
+    QString barcode = material->barcode;
+    p.materialBarcode = barcode;
 
-Kitting:
+A cél:
 
-    RawKit raw = evalFormulaKit(line, detail);
-    return assembleKitItem(line, raw);
+    p.materialBarcode = raw.materialBarcode;
 
-Nincs több implicit logika, nincs több rejtett DSL.
-
-------------------------------------------------------------------------
-
-p10 — A DSL dokumentáció újraírása
-
-A régi /docs/formula_engine_dsl_v3.md helyett:
-
--   /docs/formula_engine_dsl_current.md
--   kizárólag a kódból kiolvasott szintaxis
--   assignment‑alapú
--   ternary
--   opt
--   skip
--   több soros script
--   függvényhívások
--   változókezelés
--   hibák
--   RawCut/RawKit szerződés
-
-Ez lesz a hivatalos, jövőálló DSL.
+Ez hiányzik.
 
 ------------------------------------------------------------------------
 
-✔ A terv kész
+🔵 A projektben minden chunk megérkezett?
 
-Ez a p1…pN terv a jelenlegi valóságra épül,
-minden régi DSL‑t kidob,
-két külön eval‑függvényt vezet be,
-engine‑alapú validációt használ,
-és szerződésalapú, tiszta architektúrát ad.
+Igen.
+A masi2.txt minden része (aa–ai) megérkezett, és a projekt összes
+releváns fájlja látható volt.
+
+A hiányzó fájlok listájában csak egy szerepelt:
+
+    ❌ materials/registry/material_registry.cpp
+
+De a header alapján ez nem probléma, mert a registry inline
+template‑ekkel működik.
 
 ------------------------------------------------------------------------
 
-Ha szeretnéd, a következő lépésben megírom:
+🔵 A végleges TODO lista fájlokra lebontva
 
--   a FormulaContract header + cpp vázát,
--   a FormulaEngine::analyze() implementációját,
--   az evalFormulaCut() és evalFormulaKit() kódvázát.
+Ahol biztosan módosítani kell
+
+    calculation/service/need_calculator.h
+    calculation/service/need_calculator.cpp
+    calculation/service/piece.h
+    calculation/service/kit_aggregator.h
+    calculation/service/kit_aggregator.cpp
+    calculation/service/cut_aggregator.cpp   (kisebb módosítás)
+    calculation/service/cut_key.h            (ha kell)
+    calculation/model/need_calculation_detail.h
+    expression/value.h                       (material string kezelés)
+    dsl/formula_contract.cpp
+    dsl/formula_contract.h
+    test/calculation/need_calculator_pipeline_tester.cpp
+    test/calculation/formula_engine_tester.cpp
+    test/calculation/formula_engine_pipeline_tester.cpp
+    test/common/test_data_builder.cpp
+
+------------------------------------------------------------------------
+
+🔵 Mi van már készen?
+
+-   FormulaEngine choose/opt működik
+-   Cutting pipeline működik
+-   CutAggregator működik
+-   Piece.materialBarcode már létezik
+-   TestDataBuilder::makeDetail már tud kind‑et fogadni
+-   MaterialRegistry barcode lookup működik
+
+------------------------------------------------------------------------
+
+🔵 Következő lépés
+
+Ha szeretnéd, összeállítom a teljes diff‑patch‑et, amely:
+
+-   átállítja RawCut/RawKit‑et barcode‑ra,
+-   bevezeti a KitAggregatedItem‑et,
+-   megírja a KitAggregator‑t,
+-   átírja a NeedCalculator‑t,
+-   frissíti a teszteket.
+
+Csak szólj, és küldöm a teljes patch‑et.

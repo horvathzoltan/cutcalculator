@@ -371,8 +371,8 @@ void FormulaEnginePipelineTester::testNeedCalculatorSimpleRoletta()
     NeedCalculationRegistry::instance().insert(mode);
 
     // v1 DSL továbbra is támogatott: w-15, w-10
-    auto d1 = TestDataBuilder::makeDetail(mode.id, ids.M1, "w-15");
-    auto d2 = TestDataBuilder::makeDetail(mode.id, ids.M2, "w-10");
+    auto d1 = TestDataBuilder::makeDetail(mode.id, ids.M1, "w-15", NeedCalculationDetail::DetailKind::Cutting);
+    auto d2 = TestDataBuilder::makeDetail(mode.id, ids.M2, "w-10", NeedCalculationDetail::DetailKind::Cutting);
 
     NeedCalculationDetailRegistry::instance().insert(d1);
     NeedCalculationDetailRegistry::instance().insert(d2);
@@ -452,7 +452,8 @@ void FormulaEnginePipelineTester::testNeedCalculatorChooseTrue()
     auto d = TestDataBuilder::makeDetail(
         mode.id, ids.M1,
         QString("choose: w>=1500 ? %1 : %2")
-            .arg(ids.M1_barcode, ids.M2_barcode));
+            .arg(ids.M1_barcode, ids.M2_barcode),
+    NeedCalculationDetail::DetailKind::Kitting);
 
     NeedCalculationDetailRegistry::instance().insert(d);
 
@@ -496,7 +497,8 @@ void FormulaEnginePipelineTester::testNeedCalculatorChooseFalse()
     auto d = TestDataBuilder::makeDetail(
         mode.id, ids.M1,
         QString("choose: w>=1500 ? %1 : %2")
-            .arg(ids.M1_barcode, ids.M2_barcode));
+            .arg(ids.M1_barcode, ids.M2_barcode),
+    NeedCalculationDetail::DetailKind::Cutting);
 
     NeedCalculationDetailRegistry::instance().insert(d);
 

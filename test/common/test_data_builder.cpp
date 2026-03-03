@@ -48,14 +48,15 @@ TestDataIds TestDataBuilder::prepareStandard()
 NeedCalculationDetail TestDataBuilder::makeDetail(
         QUuid calcId,
         QUuid materialId,
-        const QString& formula)
+        const QString& formula,
+        NeedCalculationDetail::DetailKind kind)
 {
     NeedCalculationDetail d;
     d.id = QUuid::createUuid();
     d.needCalculationId = calcId;
     d.materialId = materialId;
     d.formula = formula;
-    d.kind = NeedCalculationDetail::DetailKind::Cutting;
+    d.kind = kind;
     return d;
 }
 

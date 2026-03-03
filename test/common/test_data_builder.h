@@ -20,7 +20,8 @@ public:
     static NeedCalculationDetail makeDetail(
         QUuid calcId,
         QUuid materialId,
-        const QString &formula);
+        const QString &formula,
+        NeedCalculationDetail::DetailKind kind);
 
     static NeedCalculation makeCalculation(
         QUuid productId,

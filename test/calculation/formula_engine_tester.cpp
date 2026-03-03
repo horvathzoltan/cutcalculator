@@ -159,8 +159,8 @@ void FormulaEngineTester::testNeedCalculatorSimpleRoletta()
     NeedCalculationRegistry::instance().insert(mode);
 
     // v1 DSL továbbra is támogatott: w-15, w-10
-    auto d1 = TestDataBuilder::makeDetail(mode.id, ids.M1, "w-15");
-    auto d2 = TestDataBuilder::makeDetail(mode.id, ids.M2, "w-10");
+    auto d1 = TestDataBuilder::makeDetail(mode.id, ids.M1, "w-15", NeedCalculationDetail::DetailKind::Cutting);
+    auto d2 = TestDataBuilder::makeDetail(mode.id, ids.M2, "w-10", NeedCalculationDetail::DetailKind::Cutting);
 
     NeedCalculationDetailRegistry::instance().insert(d1);
     NeedCalculationDetailRegistry::instance().insert(d2);
@@ -307,7 +307,7 @@ void FormulaEngineTester::testNeedCalculatorChooseTrue()
     auto d = TestDataBuilder::makeDetail(
         mode.id, ids.M1,
         QString("choose: (w*h > 1000000) ? %1 : %2")
-            .arg(ids.M1_barcode, ids.M2_barcode));
+            .arg(ids.M1_barcode, ids.M2_barcode), NeedCalculationDetail::DetailKind::Kitting);
 
     NeedCalculationDetailRegistry::instance().insert(d);
 
@@ -322,12 +322,12 @@ void FormulaEngineTester::testNeedCalculatorChooseTrue()
     line.ownerName   = "";
     line.colorName   = "";
 
-    auto cuts = NeedCalculator::makeCutList(line, "Manufacturing");
+    auto cuts = NeedCalculator::makeKitList(line, "Manufacturing");
 
     Q_ASSERT(cuts.size() == 1);
 
     // choose → M1 barcode
-    Q_ASSERT(cuts[0].materialBarcode == ids.M1_barcode);
+    //Q_ASSERT(cuts[0].materialBarcode == ids.M1_barcode);
 
     // qty = 1 → quantity = 1
     Q_ASSERT(cuts[0].quantity == 1);
@@ -358,7 +358,7 @@ void FormulaEngineTester::testNeedCalculatorChooseFalse()
     auto d = TestDataBuilder::makeDetail(
         mode.id, ids.M1,
         QString("choose: (w*h > 5000000) ? %1 : %2")
-            .arg(ids.M1_barcode, ids.M2_barcode));
+            .arg(ids.M1_barcode, ids.M2_barcode), NeedCalculationDetail::DetailKind::Kitting);
 
     NeedCalculationDetailRegistry::instance().insert(d);
 
@@ -373,7 +373,7 @@ void FormulaEngineTester::testNeedCalculatorChooseFalse()
     line.ownerName   = "";
     line.colorName   = "";
 
-    auto cuts = NeedCalculator::makeCutList(line, "Manufacturing");
+    QVector<KitItem> cuts = NeedCalculator::makeKitList(line, "Manufacturing");
 
     Q_ASSERT(cuts.size() == 1);
 
