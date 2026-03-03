@@ -114,6 +114,15 @@ A változások a következők voltak:
 -   MatrixValidator integráció → 🟠 Haladó állapot
 -   NeedRuleRegistry workflow audit → 🟠 Haladó állapot
 
+***
+2026.03.03.
+
+CutCalculator                       🟠 Haladó állapot     Aggregálás részben kész
+NeedCalculationDetail formulák      🟢 Majdnem kész       DSL v3.1 stabil, kind-ek szétválasztva
+Formula parser minimál              🟢 Majdnem kész       Teljes RPN/AST pipeline működik
+Aggregálás implementálása           🟠 Haladó állapot     KitAggregator elkészült
+
+
 A táblázatot a szabályok szerint változatlan szerkezettel, csak a
 módosult sorokkal frissítve adom vissza:
 
@@ -173,18 +182,18 @@ módosult sorokkal frissítve adom vissza:
     ProductDefinition felvitele         🚧 Folyamatban     1 új termék felvitele a ProductTree-be
     NeedRule sorok felvitele            🚧 Folyamatban     3–5 új NeedRule egy termékhez
     NeedCalculation mód felvitele       🚧 Folyamatban     1 új számítási mód létrehozása
-    NeedCalculationDetail formulák      🟠 Haladó állapot  A DSL most már teljesen működik, a formulák értelmezése stabil.
+    NeedCalculationDetail formulák      🟢 Majdnem kész    A DSL most már teljesen működik, a formulák értelmezése stabil.
     Három torony adatmegjelenítés teszt 📐 Tervezés        Adatfelvitel utáni UI ellenőrzés
     CSV import/export teszt             🚧 Folyamatban     80% kész
     Registry overlay frissítés teszt    ✅ Kész            OverlayPresenter PASSED
     lookupRules implementálása          ✅ Kész            NeedRule lookup(productId)
     lookupCalculation implementálása    ✅ Kész            Calculation lookup(productId, modeName)
     lookupDetails implementálása        ✅ Kész            Detail lookup(calculationId)
-    Formula parser minimál              🟠 Haladó állapot  MA parser már nem minimál: teljes RPN‑pipeline, prefix choose/opt, assignment, sequence.
+    Formula parser minimál              🟢 Majdnem kész  A parser már nem minimál, hanem teljes értékű RPN + AST + multi‑line + choose/opt támogatással.
     evaluateFormula implementálása      🟠 Haladó állapot  A FormulaEngine most már teljes értékű, a NeedCalculator hívhatja.
     NeedCalculator::calculate           🟢 Majdnem kész     A FormulaEngine eredményei most már stabilan integrálhatók.
     Formula parser integráció           🟢 Majdnem kész     A parser + AST + evaluator most már egyben működik.
-    Aggregálás implementálása           📐 Tervezés        Azonos materialId összevonása
+    Aggregálás implementálása           🟠 Haladó állapot   Azonos materialId összevonása
     Roletta számítás teszt              📐 Tervezés        1200×1500 mm teszt
     Hibás formula audit teszt           📐 Tervezés        Audit pipeline hibás képletre
     OrderHeader modell                  📐 Tervezés        id, customerName, date, status
