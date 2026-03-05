@@ -10,7 +10,10 @@ struct FormulaContract {
 };
 
 // Cutting szerződés
+// material output: STRING típus (barcode)
 FormulaContract cuttingContract();
 
 // Kitting szerződés
+// material output: STRING típus (barcode)
 FormulaContract kittingContract();
+

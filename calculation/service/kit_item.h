@@ -1,16 +1,13 @@
 #pragma once
 
-#include <QUuid>
 #include <QString>
+#include <QUuid>
 
-struct Piece
-{
-    //QUuid materialId;
+struct KitItem {
+    QUuid materialId;
     QString materialBarcode;
-    int requiredLength;
-    QString handlerSide;
+    int quantity;
 
-    QString externalRef;
     QString ownerName;
     QString colorName;
 

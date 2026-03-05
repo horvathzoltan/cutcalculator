@@ -39,20 +39,12 @@ Result<QVector<Token>> Parser::toRpn(const QVector<Token>& tokens)
     QStack<bool>   questionHasColon;
 
     bool expectOperand = true;
-    bool optMode       = false;
 
     int i = 0;
     const int n = tokens.size();
 
     auto fail = [&](const QString& msg) {
         return Result<QVector<Token>>::failure(msg);
-    };
-
-    auto emitChoose = [&]() {
-        Token chooseTok;
-        chooseTok.type = TokenType::Choose;
-        chooseTok.text = "choose";
-        output.append(chooseTok);
     };
 
     auto flushUntil = [&](TokenType stop) {
@@ -78,7 +70,7 @@ Result<QVector<Token>> Parser::toRpn(const QVector<Token>& tokens)
         if (!opStack.isEmpty() && opStack.top().type == TokenType::Question) {
             opStack.pop();
             questionHasColon.pop();
-            emitChoose();
+            output.append({TokenType::TernaryOp, "?:", 2});
         }
     };
 
@@ -102,51 +94,30 @@ Result<QVector<Token>> Parser::toRpn(const QVector<Token>& tokens)
         closeAllTernaries();
         while (!opStack.isEmpty()) {
             Token top = opStack.pop();
-            if (top.type == TokenType::Question)
-                emitChoose();
+            if (top.type == TokenType::Question){
+                // optional
+                if (!questionHasColon.isEmpty())
+                    questionHasColon.pop();
+                output.append({TokenType::OptionalOp, "opt", 1});
+                continue;
+            }
             else if (top.type == TokenType::LParen)
                 return fail("Hiányzó ')'");
             else
                 output.append(top);
         }
+
         return Result<QVector<Token>>::success(output);
-    };
-
-    auto closeOptIfPending = [&]() {
-        if (!optMode)
-            return;
-
-        int idx = opStack.size() - 1;
-        while (idx >= 0 && opStack[idx].type != TokenType::Question)
-            --idx;
-
-        if (idx < 0)
-            return;
-
-        while (opStack.size() - 1 > idx)
-            output.append(opStack.pop());
-
-        if (!opStack.isEmpty() && opStack.top().type == TokenType::Question)
-            opStack.pop();
-
-        Token optTok;
-        optTok.type = TokenType::Opt;
-        optTok.text = "opt";
-        output.append(optTok);
-
-        optMode = false;
     };
 
     while (i < n) {
         Token t = tokens[i++];
 
         if (t.type == TokenType::End) {
-            closeOptIfPending();
             break;
         }
 
         if (t.type == TokenType::Newline) {
-            closeOptIfPending();
             auto r = flushAll();
             if (!r.ok) return r;
             output.append({TokenType::StatementEnd, ";"});
@@ -160,11 +131,6 @@ Result<QVector<Token>> Parser::toRpn(const QVector<Token>& tokens)
         {
             output.append(t);
             expectOperand = false;
-            continue;
-        }
-
-        if (t.type == TokenType::Opt) {
-            optMode = true;
             continue;
         }
 
@@ -215,7 +181,6 @@ Result<QVector<Token>> Parser::toRpn(const QVector<Token>& tokens)
         }
 
         if (t.type == TokenType::Comma) {
-            closeOptIfPending();
             flushUntil(TokenType::LParen);
             if (!argCountStack.isEmpty())
                 argCountStack.top()++;
@@ -225,23 +190,6 @@ Result<QVector<Token>> Parser::toRpn(const QVector<Token>& tokens)
         }
 
         if (t.type == TokenType::Colon) {
-
-            if (optMode) {
-                flushUntil(TokenType::Question);
-
-                if (!opStack.isEmpty() && opStack.top().type == TokenType::Question)
-                    opStack.pop();
-
-                Token optTok;
-                optTok.type = TokenType::Opt;
-                optTok.text = "opt";
-                output.append(optTok);
-
-                optMode = false;
-                expectOperand = false;
-                continue;
-            }
-
             auto hasQuestion = [&]() {
                 for (const Token& tk : opStack)
                     if (tk.type == TokenType::Question)
@@ -338,7 +286,6 @@ Result<QVector<Token>> Parser::toRpn(const QVector<Token>& tokens)
         return fail(QString("Váratlan token: %1").arg(t.text));
     }
 
-    closeOptIfPending();
     auto r = flushAll();
     if (!r.ok) return r;
 

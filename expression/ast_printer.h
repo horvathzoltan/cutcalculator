@@ -148,8 +148,8 @@ inline QString tokenTypeName(TokenType t)
     case TokenType::Identifier:     return "Identifier";
 
     // --- DSL kulcsszavak ---
-    case TokenType::Choose:         return "Choose";
-    case TokenType::Opt:            return "Opt";
+    case TokenType::TernaryOp:      return "TernaryOp";
+    case TokenType::OptionalOp:     return "OptionalOp";
 
     // --- Operátorok ---
     case TokenType::Plus:           return "Plus";

@@ -1,7 +1,5 @@
 #include "kit_aggregator.h"
 #include <QMap>
-#include <materials/registry/material_registry.h>
-
 
 QVector<KitAggregatedItem> KitAggregator::aggregate(const QVector<KitItem>& items)
 {
@@ -9,14 +7,12 @@ QVector<KitAggregatedItem> KitAggregator::aggregate(const QVector<KitItem>& item
 
     for (const KitItem& it : items) {
 
-        auto mat = MaterialRegistry::instance().findById(it.materialId);
-        QString barcode = mat ? mat->barcode : "";
+        QString barcode = it.materialBarcode;
 
         if (!map.contains(barcode)) {
 
             KitAggregatedItem agg;
-            agg.materialId = it.materialId;
-            agg.materialBarcode = barcode;
+            agg.materialBarcode = it.materialBarcode;
             agg.quantity = it.quantity;
 
             agg.ownerName  = it.ownerName;

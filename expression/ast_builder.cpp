@@ -30,9 +30,9 @@ Result<AstNode*> AstBuilder::fromRpn(const QVector<Token>& rpn, NodePool& pool)
         }
 
         // --- Choose ---
-        if (t.type == TokenType::Choose) {
+        if (t.type == TokenType::TernaryOp) {
             if (stack.size() < 3)
-                return fail("Hibás ternary (choose) szerkezet");
+                return fail("Hibás ternary szerkezet");
 
             AstNode* falseExpr = stack.pop();
             AstNode* trueExpr  = stack.pop();
@@ -45,10 +45,11 @@ Result<AstNode*> AstBuilder::fromRpn(const QVector<Token>& rpn, NodePool& pool)
             continue;
         }
 
+
         // --- Opt ---
-        if (t.type == TokenType::Opt) {
+        if (t.type == TokenType::OptionalOp) {
             if (stack.size() < 2)
-                return fail("Hibás opt szerkezet (flag ? expr)");
+                return fail("Hibás optional szerkezet (flag ? expr)");
 
             AstNode* value = stack.pop();
             AstNode* flag  = stack.pop();
@@ -59,6 +60,7 @@ Result<AstNode*> AstBuilder::fromRpn(const QVector<Token>& rpn, NodePool& pool)
             stack.push(node);
             continue;
         }
+
 
         // --- Függvény ---
         if (t.type == TokenType::Function) {

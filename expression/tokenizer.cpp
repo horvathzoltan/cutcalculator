@@ -86,34 +86,34 @@ Result<QVector<Token>> Tokenizer::tokenize(const QString& input)
             QString ident = input.mid(start, i - start);
 
             // DSL kulcsszavak
-            if (ident == "choose") {
-                // Ha utána kettőspont jön, nyeljük be azt is: "choose:"
-                if (peek() == ':') {
-                    advance(); // fogyasszuk el a ':'
-                    tokens.append({TokenType::Choose, "choose:"});
-                } else {
-                    tokens.append({TokenType::Choose, ident});
-                }
-                continue;
-            }
+            // if (ident == "choose") {
+            //     // Ha utána kettőspont jön, nyeljük be azt is: "choose:"
+            //     if (peek() == ':') {
+            //         advance(); // fogyasszuk el a ':'
+            //         tokens.append({TokenType::Choose, "choose:"});
+            //     } else {
+            //         tokens.append({TokenType::Choose, ident});
+            //     }
+            //     continue;
+            // }
 
-            if (ident == "opt") {
-                // Ha utána kettőspont jön, nyeljük be azt is: "opt:"
-                if (peek() == ':') {
-                    advance(); // fogyasszuk el a ':'
-                    tokens.append({TokenType::Opt, "opt:"});
-                } else {
-                    tokens.append({TokenType::Opt, ident});
-                }
-                continue;
-            }
+            // if (ident == "opt") {
+            //     // Ha utána kettőspont jön, nyeljük be azt is: "opt:"
+            //     if (peek() == ':') {
+            //         advance(); // fogyasszuk el a ':'
+            //         tokens.append({TokenType::Opt, "opt:"});
+            //     } else {
+            //         tokens.append({TokenType::Opt, ident});
+            //     }
+            //     continue;
+            // }
 
 
             // Ha az előző token Opt volt → a következő azonosító mindig flag (Variable)
-            if (!tokens.isEmpty() && tokens.last().type == TokenType::Opt) {
-                tokens.append({TokenType::Variable, ident});
-                continue;
-            }
+            // if (!tokens.isEmpty() && tokens.last().type == TokenType::Opt) {
+            //     tokens.append({TokenType::Variable, ident});
+            //     continue;
+            // }
 
             // Függvény: ha utána '(' jön
             if (peek() == '(') {

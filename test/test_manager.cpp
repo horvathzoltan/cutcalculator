@@ -66,7 +66,7 @@ void TestManager::runBusinessLogicTests(const QString& profile) {
     else if (profile == "settings") {
         runModule<SettingsManagerTester>();
     }
-    else if (profile == "formula") {
+    else if (profile == "formula_engine") {
         runModule<FormulaEngineTester>();
     }
     else if (profile == "formula_engine_pipeline") {

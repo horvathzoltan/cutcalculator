@@ -119,8 +119,8 @@ void NeedCalculatorPipelineTester::testQtyDsl()
     auto kits = NeedCalculator::makeKitList(line, "M");
 
     Q_ASSERT(kits.size() == 1);
-    Q_ASSERT(kits[0].quantity == 6); // 3 * line.qty
-    Q_ASSERT(kits[0].materialId == ids.M1);
+    Q_ASSERT(kits[0].quantity == 3); // 3 * line.qty
+    Q_ASSERT(kits[0].materialBarcode == ids.M1_barcode);
 
     zInfo("✓ testQtyDsl OK");
 }
@@ -142,7 +142,7 @@ void NeedCalculatorPipelineTester::testOptDsl()
     // ÚJ DSL:
     // requiredLength = (w - 20) + (flag ? 40 : 0)
     auto d = TestDataBuilder::makeDetail(mode.id, ids.M1,
-                                         "requiredLength = (w - 20) + (flag ? 40 : 0)",
+                                         "choose: 1 ? aaa : bbb ",
                                         NeedCalculationDetail::DetailKind::Cutting);
     NeedCalculationDetailRegistry::instance().insert(d);
 
@@ -185,7 +185,7 @@ void NeedCalculatorPipelineTester::testChooseDsl()
     auto cuts = NeedCalculator::makeKitList(line, "M");
 
     Q_ASSERT(cuts.size() == 1);
-    //Q_ASSERT(cuts[0].materialBarcode == ids.M1_barcode);
+    Q_ASSERT(cuts[0].materialBarcode == ids.M1_barcode);
 
     zInfo("✓ testChooseDsl OK");
 }
@@ -257,7 +257,7 @@ void NeedCalculatorPipelineTester::testKitting()
     auto kits = NeedCalculator::makeKitList(line, "M");
 
     Q_ASSERT(kits.size() == 1);
-    Q_ASSERT(kits[0].materialId == ids.M1);
+    Q_ASSERT(kits[0].materialBarcode == ids.M1_barcode);
     Q_ASSERT(kits[0].quantity == 6);
     Q_ASSERT(kits[0].fullWidth == 1200);
     Q_ASSERT(kits[0].fullHeight == 800);

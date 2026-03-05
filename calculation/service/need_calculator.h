@@ -7,6 +7,9 @@
 #include "calculation/model/need_calculation_detail.h"
 #include "calculation/service/piece.h"
 #include "calculation/service/cut_aggregator.h"
+#include "calculation/service/kit_aggregator.h"
+#include "raw_cut.h"
+#include "raw_kit.h"
 
 #include "common/utils/result.h"
 
@@ -24,32 +27,6 @@ struct OrderLine {
     QString colorName;     // szín megnevezése
 };
 
-
-// v2 KitItem
-struct KitItem {
-    QUuid materialId;
-    int quantity;
-
-    QString ownerName;
-    QString colorName;
-
-    int fullWidth;
-    int fullHeight;
-};
-
-
-// v2 RawCut
-struct RawCut {
-    QUuid materialId;
-    int requiredLength;
-    //int qty;
-};
-
-struct RawKit {
-    QUuid materialId;
-    int qty;
-};
-
 class NeedCalculator {
 public:
     // Cutting pipeline (v2)
@@ -57,7 +34,7 @@ public:
                                                   const QString& modeName);
 
     // Kitting pipeline (v2)
-    static QVector<KitItem> makeKitList(const OrderLine& line,
+    static QVector<KitAggregatedItem> makeKitList(const OrderLine& line,
                                         const QString& modeName);
 
 private:

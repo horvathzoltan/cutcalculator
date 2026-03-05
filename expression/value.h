@@ -74,7 +74,7 @@ struct Value {
         switch (type) {
         case Type::Number: return QString::number(number);
         case Type::Bool:   return boolean ? "true" : "false";
-        case Type::String: return "\"" + text + "\"";
+        case Type::String: return text;
         case Type::Null:   return "null";
         case Type::Skip:   return "<skip>";
         case Type::Error:  return "<error: " + text + ">";

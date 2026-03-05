@@ -1,13 +1,12 @@
 #pragma once
 
+#include "kit_item.h"
+
 #include <QString>
 #include <QStringList>
 #include <QVector>
 
-#include "need_calculator.h"
-
 struct KitAggregatedItem {
-    QUuid materialId;
     QString materialBarcode;
     int quantity;
 

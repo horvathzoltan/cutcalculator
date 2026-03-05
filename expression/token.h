@@ -12,8 +12,8 @@ enum class TokenType {
     Identifier,    // (jelenleg nem használt; későbbi opt-flag / speciális azonosítók számára fenntartva)
 
     // --- DSL kulcsszavak ---
-    Choose,        // choose
-    Opt,           // opt
+    TernaryOp,
+    OptionalOp,
 
     // --- Operátorok ---
     Plus,

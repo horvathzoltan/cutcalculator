@@ -1,8 +1,10 @@
 #include "formula_contract.h"
 
 // Cutting szerződés
+// material output STRING (barcode), nem numeric
 FormulaContract cuttingContract()
 {
+
     FormulaContract c;
 
     c.allowedInputs = {
@@ -25,8 +27,10 @@ FormulaContract cuttingContract()
 
 
 // Kitting szerződés
+// material output STRING (barcode), nem numeric
 FormulaContract kittingContract()
 {
+
     FormulaContract c;
 
     c.allowedInputs = {

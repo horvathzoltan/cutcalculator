@@ -89,10 +89,10 @@ void FormulaEngineTester::testFixedPieces()
     zInfo("→ testFixedPieces");
 
     setVars(1200, 1500, 1);
-    auto r = FormulaEngine::eval("qty_fixed(qty,2)");
+    auto r = FormulaEngine::eval("qty = 2");
     Q_ASSERT(r.ok);
 
-    auto v = VariableRepository::instance().get("_result");
+    auto v = VariableRepository::instance().get("qty");
     Q_ASSERT(v.number == 2);
 
     zInfo("✓ testFixedPieces OK");
@@ -159,8 +159,8 @@ void FormulaEngineTester::testNeedCalculatorSimpleRoletta()
     NeedCalculationRegistry::instance().insert(mode);
 
     // v1 DSL továbbra is támogatott: w-15, w-10
-    auto d1 = TestDataBuilder::makeDetail(mode.id, ids.M1, "w-15", NeedCalculationDetail::DetailKind::Cutting);
-    auto d2 = TestDataBuilder::makeDetail(mode.id, ids.M2, "w-10", NeedCalculationDetail::DetailKind::Cutting);
+    auto d1 = TestDataBuilder::makeDetail(mode.id, ids.M1, "requiredLength = w-15", NeedCalculationDetail::DetailKind::Cutting);
+    auto d2 = TestDataBuilder::makeDetail(mode.id, ids.M2, "requiredLength = w-10", NeedCalculationDetail::DetailKind::Cutting);
 
     NeedCalculationDetailRegistry::instance().insert(d1);
     NeedCalculationDetailRegistry::instance().insert(d2);
@@ -213,7 +213,9 @@ void FormulaEngineTester::testNeedCalculatorInvalidFormulaAudit()
     d.needCalculationId = mode.id;
     d.materialId = ids.M1;
     d.formula = "w-";
-    Q_ASSERT(!NeedCalculationDetailRegistry::instance().insert(d));
+
+    bool inserted = NeedCalculationDetailRegistry::instance().insert(d);
+    Q_ASSERT(inserted);
 
     int width  = 1200;
     int height = 1500;
@@ -235,10 +237,12 @@ void FormulaEngineTester::testChooseSimple()
     zInfo("→ testChooseSimple");
 
     setVars(2000, 2000, 1);
-    auto r = FormulaEngine::eval("choose: (w*h > 1000000) ? MOTOR_A : MOTOR_B");
+    auto r = FormulaEngine::eval("a1 = (w*h > 1000000) ? \"MOTOR_A\" : \"MOTOR_B\"");
+    r.debugDump();
+
     Q_ASSERT(r.ok);
 
-    auto v = VariableRepository::instance().get("_result");
+    auto v = VariableRepository::instance().get("a1");
     Q_ASSERT(v.type == Value::Type::String);
     Q_ASSERT(v.text == "MOTOR_A");
 
@@ -250,10 +254,12 @@ void FormulaEngineTester::testChooseFalseBranch()
     zInfo("→ testChooseFalseBranch");
 
     setVars(1000, 1000, 1);
-    auto r = FormulaEngine::eval("choose: (w*h > 5000000) ? MOTOR_A : MOTOR_B");
+    auto r = FormulaEngine::eval("a1 = (w*h > 5000000) ? \"MOTOR_A\" : \"MOTOR_B\"");
+    r.debugDump();
+
     Q_ASSERT(r.ok);
 
-    auto v = VariableRepository::instance().get("_result");
+    auto v = VariableRepository::instance().get("a1");
     Q_ASSERT(v.type == Value::Type::String);
     Q_ASSERT(v.text == "MOTOR_B");
 
@@ -272,7 +278,9 @@ void FormulaEngineTester::testOptSimple()
     auto& vars = VariableRepository::instance();
     vars.set("paint", Value::boolValue(false));
 
-    auto r = FormulaEngine::eval("h-10 + opt:paint:+40");
+    auto r = FormulaEngine::eval("h-10 + paint ? 40");
+    r.debugDump();
+
     Q_ASSERT(r.ok);
 
     auto v = vars.get("_result");
@@ -306,7 +314,7 @@ void FormulaEngineTester::testNeedCalculatorChooseTrue()
     // choose: feltétel igaz → M1 barcode
     auto d = TestDataBuilder::makeDetail(
         mode.id, ids.M1,
-        QString("choose: (w*h > 1000000) ? %1 : %2")
+        QString("(w*h > 1000000) ? %1 : %2")
             .arg(ids.M1_barcode, ids.M2_barcode), NeedCalculationDetail::DetailKind::Kitting);
 
     NeedCalculationDetailRegistry::instance().insert(d);
@@ -327,7 +335,7 @@ void FormulaEngineTester::testNeedCalculatorChooseTrue()
     Q_ASSERT(cuts.size() == 1);
 
     // choose → M1 barcode
-    //Q_ASSERT(cuts[0].materialBarcode == ids.M1_barcode);
+    Q_ASSERT(cuts[0].materialBarcode == ids.M1_barcode);
 
     // qty = 1 → quantity = 1
     Q_ASSERT(cuts[0].quantity == 1);
@@ -357,7 +365,7 @@ void FormulaEngineTester::testNeedCalculatorChooseFalse()
     // choose: feltétel hamis → M2 barcode
     auto d = TestDataBuilder::makeDetail(
         mode.id, ids.M1,
-        QString("choose: (w*h > 5000000) ? %1 : %2")
+        QString("(w*h > 5000000) ? %1 : %2")
             .arg(ids.M1_barcode, ids.M2_barcode), NeedCalculationDetail::DetailKind::Kitting);
 
     NeedCalculationDetailRegistry::instance().insert(d);
@@ -373,7 +381,7 @@ void FormulaEngineTester::testNeedCalculatorChooseFalse()
     line.ownerName   = "";
     line.colorName   = "";
 
-    QVector<KitItem> cuts = NeedCalculator::makeKitList(line, "Manufacturing");
+    QVector<KitAggregatedItem> cuts = NeedCalculator::makeKitList(line, "Manufacturing");
 
     Q_ASSERT(cuts.size() == 1);
 

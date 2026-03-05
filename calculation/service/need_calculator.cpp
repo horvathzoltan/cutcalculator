@@ -5,6 +5,7 @@
 #include "materials/registry/material_registry.h"
 #include "common/logger/event_logger.h"
 #include "cut_key.h"
+#include "kit_aggregator.h"
 
 #include <expression/eval_result.h>
 #include <expression/formula_engine.h>
@@ -17,7 +18,7 @@
 QVector<CutAggregatedItem>
 NeedCalculator::makeCutList(const OrderLine& line, const QString& modeName)
 {
-    QVector<CutAggregatedItem> out;
+ //   QVector<CutAggregatedItem> out;
 
     const NeedCalculation* calc =
         NeedCalculationRegistry::instance().findByProductAndName(line.productId, modeName);
@@ -25,7 +26,8 @@ NeedCalculator::makeCutList(const OrderLine& line, const QString& modeName)
     if (!calc) {
         zInfo(QString("No NeedCalculation for product %1, mode=%2")
                        .arg(line.productId.toString(), modeName));
-        return out;
+       // return out;
+        return {};
     }
 
     const auto details =
@@ -64,10 +66,10 @@ NeedCalculator::makeCutList(const OrderLine& line, const QString& modeName)
 
 
 // p8 – implementáljuk később
-QVector<KitItem>
+QVector<KitAggregatedItem>
 NeedCalculator::makeKitList(const OrderLine& line, const QString& modeName)
 {
-    QVector<KitItem> out;
+    //QVector<KitItem> out;
 
     // 1) NeedCalculation betöltése
     const NeedCalculation* calc =
@@ -76,13 +78,14 @@ NeedCalculator::makeKitList(const OrderLine& line, const QString& modeName)
     if (!calc) {
         zInfo(QString("No NeedCalculation for product %1, mode=%2")
                        .arg(line.productId.toString(), modeName));
-        return out;
+        return {};
     }
 
     // 2) Detail sorok betöltése
     const auto details =
         NeedCalculationDetailRegistry::instance().findByCalculation(calc->id);
 
+    QVector<KitItem> out;
     // 3) Minden detail sor feldolgozása
     for (const auto& d : details) {
 
@@ -103,7 +106,8 @@ NeedCalculator::makeKitList(const OrderLine& line, const QString& modeName)
 
         // 3.2) KitItem összeállítása
         KitItem item;
-        item.materialId = raw.materialId;
+        item.materialId = d.materialId;
+        item.materialBarcode = raw.materialBarcode;
         item.quantity   = raw.qty;
 
         item.ownerName  = line.ownerName;
@@ -115,7 +119,7 @@ NeedCalculator::makeKitList(const OrderLine& line, const QString& modeName)
 
     }
 
-    return out;
+    return KitAggregator::aggregate(out);
 }
 
 
@@ -168,20 +172,18 @@ Result<RawCut> NeedCalculator::evalFormulaCut(const OrderLine& line,
     // }
 
     // 6) material
-    {
-        Value v = vars.get("material");
-        if (v.type == Value::Type::Null) {
-            raw.materialId = detail.materialId;
-        } else {
-            QString barcode = v.toString();
-            auto mat = MaterialRegistry::instance().findByBarcode(barcode);
-            if (!mat)
-                return Result<RawCut>::failure(
-                    QString("Invalid material barcode '%1'").arg(barcode)
-                    );
-            raw.materialId = mat->id;
-        }
+    Value v = vars.get("material");
+    if (v.type == Value::Type::Null) {
+        auto mat = MaterialRegistry::instance().findById(detail.materialId);
+        if (!mat)
+            return Result<RawCut>::failure("Fallback materialId invalid");
+        raw.materialBarcode = mat->barcode;
+    } else {
+        if (v.type != Value::Type::String)
+            return Result<RawCut>::failure("material output must be string");
+        raw.materialBarcode = v.text;
     }
+
 
     return Result<RawCut>::success(raw);
 }
@@ -227,19 +229,16 @@ Result<RawKit> NeedCalculator::evalFormulaKit(const OrderLine& line,
     }
 
     // 5) material
-    {
-        Value v = vars.get("material");
-        if (v.type == Value::Type::Null) {
-            raw.materialId = detail.materialId;
-        } else {
-            QString barcode = v.toString();
-            auto mat = MaterialRegistry::instance().findByBarcode(barcode);
-            if (!mat)
-                return Result<RawKit>::failure(
-                    QString("Invalid material barcode '%1'").arg(barcode)
-                    );
-            raw.materialId = mat->id;
-        }
+    Value v = vars.get("material");
+    if (v.type == Value::Type::Null) {
+        auto mat = MaterialRegistry::instance().findById(detail.materialId);
+        if (!mat)
+            return Result<RawKit>::failure("Fallback materialId invalid");
+        raw.materialBarcode = mat->barcode;
+    } else {
+        if (v.type != Value::Type::String)
+            return Result<RawKit>::failure("material output must be string");
+        raw.materialBarcode = v.text;
     }
 
      return Result<RawKit>::success(raw);
@@ -255,16 +254,12 @@ NeedCalculator::explodePieces(const OrderLine& line, const RawCut& raw)
     int count = line.qty;
     out.reserve(count);
 
-    auto material = MaterialRegistry::instance().findById(raw.materialId);
-    if (!material) {
-        return Result<QVector<Piece>>::failure("Invalid materialId in RawCut.");
-    }
-
-    QString barcode = material->barcode;
+    QString barcode = raw.materialBarcode;
 
     for (int i = 1; i <= count; ++i) {
         Piece p;
-        p.materialId      = raw.materialId;
+        //p.materialId      = raw.materialId;
+        //p.materialBarcode = raw.materialBarcode;
         p.materialBarcode = barcode;
         p.requiredLength  = raw.requiredLength;
         p.handlerSide     = line.handlerSide;

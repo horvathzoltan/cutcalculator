@@ -129,7 +129,10 @@ HEADERS += \
     calculation/service/cut_aggregator.h \
     calculation/service/cut_key.h \
     calculation/service/kit_aggregator.h \
+    calculation/service/kit_item.h \
     calculation/service/piece.h \
+    calculation/service/raw_cut.h \
+    calculation/service/raw_kit.h \
     common/utils/result.h \
     dsl/formula_analysis.h \
     dsl/formula_contract.h \
