@@ -35,6 +35,7 @@ bool FormulaEngineTester::run()
     testChooseSimple();
     testChooseFalseBranch();
     testOptSimple();
+    testOptSimpleTrue();
 
     testNeedCalculatorChooseTrue();
     testNeedCalculatorChooseFalse();
@@ -278,7 +279,7 @@ void FormulaEngineTester::testOptSimple()
     auto& vars = VariableRepository::instance();
     vars.set("paint", Value::boolValue(false));
 
-    auto r = FormulaEngine::eval("h-10 + paint ? 40");
+    auto r = FormulaEngine::eval("h-10 + paint ?? 40");
     r.debugDump();
 
     Q_ASSERT(r.ok);
@@ -288,6 +289,20 @@ void FormulaEngineTester::testOptSimple()
 
     zInfo("✓ testOptSimple OK");
 }
+
+void FormulaEngineTester::testOptSimpleTrue()
+{
+    setVars(1200, 1500, 1);
+    auto& vars = VariableRepository::instance();
+    vars.set("paint", Value::boolValue(true));
+
+    auto r = FormulaEngine::eval("h-10 + paint ?? 40");
+    Q_ASSERT(r.ok);
+
+    auto v = vars.get("_result");
+    Q_ASSERT(v.number == 1490 + 40);
+}
+
 
 // ---------------------------------------------------------------------
 // 5) NeedCalculator + choose
@@ -311,14 +326,6 @@ void FormulaEngineTester::testNeedCalculatorChooseTrue()
     auto mode = TestDataBuilder::makeCalculation(ids.P1, "Manufacturing");
     NeedCalculationRegistry::instance().insert(mode);
 
-    // choose: feltétel igaz → M1 barcode
-    auto d = TestDataBuilder::makeDetail(
-        mode.id, ids.M1,
-        QString("(w*h > 1000000) ? %1 : %2")
-            .arg(ids.M1_barcode, ids.M2_barcode), NeedCalculationDetail::DetailKind::Kitting);
-
-    NeedCalculationDetailRegistry::instance().insert(d);
-
     // v2 OrderLine
     OrderLine line;
     line.productId   = ids.P1;
@@ -330,7 +337,18 @@ void FormulaEngineTester::testNeedCalculatorChooseTrue()
     line.ownerName   = "";
     line.colorName   = "";
 
-    auto cuts = NeedCalculator::makeKitList(line, "Manufacturing");
+    // choose: feltétel igaz → M1 barcode
+
+    QString cmd = QString("qty = %1\n material = (w*h > 1000000) ? %2 : %3")
+                      .arg(line.qty)
+                      .arg(ids.M1_barcode, ids.M2_barcode);
+
+    auto d = TestDataBuilder::makeDetail(
+        mode.id, ids.M1, cmd, NeedCalculationDetail::DetailKind::Kitting);
+
+    NeedCalculationDetailRegistry::instance().insert(d);
+
+    auto cuts = NeedCalculator::makeKitList(line, "Manufacturing", true);
 
     Q_ASSERT(cuts.size() == 1);
 
@@ -362,14 +380,6 @@ void FormulaEngineTester::testNeedCalculatorChooseFalse()
     auto mode = TestDataBuilder::makeCalculation(ids.P1, "Manufacturing");
     NeedCalculationRegistry::instance().insert(mode);
 
-    // choose: feltétel hamis → M2 barcode
-    auto d = TestDataBuilder::makeDetail(
-        mode.id, ids.M1,
-        QString("(w*h > 5000000) ? %1 : %2")
-            .arg(ids.M1_barcode, ids.M2_barcode), NeedCalculationDetail::DetailKind::Kitting);
-
-    NeedCalculationDetailRegistry::instance().insert(d);
-
     // v2 OrderLine
     OrderLine line;
     line.productId   = ids.P1;
@@ -381,7 +391,18 @@ void FormulaEngineTester::testNeedCalculatorChooseFalse()
     line.ownerName   = "";
     line.colorName   = "";
 
-    QVector<KitAggregatedItem> cuts = NeedCalculator::makeKitList(line, "Manufacturing");
+    // choose: feltétel hamis → M2 barcode
+
+    QString cmd = QString("qty = %1\n material = (w*h > 1000000) ? %2 : %3")
+                      .arg(line.qty)
+                      .arg(ids.M1_barcode, ids.M2_barcode);
+
+    auto d = TestDataBuilder::makeDetail(
+        mode.id, ids.M1,cmd, NeedCalculationDetail::DetailKind::Kitting);
+
+    NeedCalculationDetailRegistry::instance().insert(d);
+
+    QVector<KitAggregatedItem> cuts = NeedCalculator::makeKitList(line, "Manufacturing", true);
 
     Q_ASSERT(cuts.size() == 1);
 

@@ -1,0 +1,98 @@
+⭐ OPTIMALIZÁLT PATCH‑PROMPT (RÖVID, PRECÍZ, KONTEKSTUSBARÁT)
+
+0) PATCH SESSION – KONTEKSTUSVÉDELEM
+
+-   A felhasználó megadja: melyik patch‑lépés + snippet.
+-   ÉN döntöm el, mely fájlok érintettek.
+-   Ha egy szükséges fájl nincs beküldve → ezt írom:
+    „A szükséges fájl hiányzik: . Kérlek küldd be.”
+-   Ha a fájl be van küldve, nem kérem újra.
+-   Soha nem találgatok: ha a snippet nem található → jelzem.
+-   A diff csak a beküldött fájlokra épül.
+
+------------------------------------------------------------------------
+
+1) HELYMEGHATÁROZÁS
+
+Minden snippet előtt megadom:
+
+-   fájlnév
+-   függvénynév vagy blokk
+-   szöveges támpont (pl. „return előtt”, „ciklus elején”)
+
+------------------------------------------------------------------------
+
+2) SNIPPET FORMÁTUM (STRICT DIFF)
+
+Két blokk:
+
+    RÉGI:
+    ```cpp
+    <csak a módosított sorok>
+
+    ÚJ:
+    ```cpp
+    <csak a módosított sorok>
+
+-   nincs környezeti kód
+-   nincs extra whitespace
+-   nincs magyarázat
+-   csak a diff
+
+------------------------------------------------------------------------
+
+3) KOMMENTKEZELÉS
+
+-   Ha volt komment → frissítem.
+-   Ha elavult → módosítom.
+-   Ha logika része → megtartom.
+-   Új logika → rövid komment, ha a fájl stílusa nem is használ kommentet, de kell.
+
+------------------------------------------------------------------------
+
+4) ÚJ BLOKK / ÚJ FÁJL
+
+Ha teljesen új kód jön:
+
+-   nincs RÉGI blokk
+-   egyetlen ```cpp blokk
+-   előtte megadom:
+    -   fájlnév
+    -   beszúrás helye
+    -   Qt Creator sablon javaslat (ha kell)
+
+------------------------------------------------------------------------
+
+5) TELJES TÖRLÉS
+
+Ha egy blokkot törlünk:
+
+„A megadott blokkot teljes egészében el kell távolítani.”
+
+------------------------------------------------------------------------
+
+6) ATOMIKUS PATCH-EK
+
+-   Egy snippet = egy logikai változtatás
+-   Több változtatás → külön snippet #1, #2, #3…
+
+------------------------------------------------------------------------
+
+7) STRICT MODE (RUGALMAS)
+
+-   nincs improvizáció
+-   nincs feltételezés
+-   nincs felesleges kód
+-   nem kell teljes files.txt
+-   a rendszer automatikusan bekéri, ami hiányzik
+
+------------------------------------------------------------------------
+
+8) IMPLEMENTÁCIÓS TERV KAPCSOLAT
+
+Minden snippet előtt megadom:
+
+-   melyik patch‑lépéshez tartozik
+-   a cél 1 mondatban
+
+------------------------------------------------------------------------

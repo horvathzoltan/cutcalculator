@@ -3,8 +3,8 @@
 #include "calcmodes/registry/need_calculation_registry.h"
 #include "calculation/registry/need_calculation_detail_registry.h"
 #include "materials/registry/material_registry.h"
-#include "common/logger/event_logger.h"
-#include "cut_key.h"
+//#include "common/logger/event_logger.h"
+//#include "cut_key.h"
 #include "kit_aggregator.h"
 
 #include <expression/eval_result.h>
@@ -16,7 +16,7 @@
 
 // p7 – implementáljuk később
 QVector<CutAggregatedItem>
-NeedCalculator::makeCutList(const OrderLine& line, const QString& modeName)
+NeedCalculator::makeCutList(const OrderLine& line, const QString& modeName, bool debug)
 {
  //   QVector<CutAggregatedItem> out;
 
@@ -39,7 +39,7 @@ NeedCalculator::makeCutList(const OrderLine& line, const QString& modeName)
         if (d.kind != NeedCalculationDetail::DetailKind::Cutting)
             continue;
 
-        auto r = evalFormulaCut(line, d);
+        auto r = evalFormulaCut(line, d, debug);
         if (!r.ok) {
             zInfo(QString("⚠️ Cutting formula error in detail %1: %2")
                       .arg(d.id.toString(), r.error));
@@ -67,7 +67,7 @@ NeedCalculator::makeCutList(const OrderLine& line, const QString& modeName)
 
 // p8 – implementáljuk később
 QVector<KitAggregatedItem>
-NeedCalculator::makeKitList(const OrderLine& line, const QString& modeName)
+NeedCalculator::makeKitList(const OrderLine& line, const QString& modeName, bool debug)
 {
     //QVector<KitItem> out;
 
@@ -94,7 +94,7 @@ NeedCalculator::makeKitList(const OrderLine& line, const QString& modeName)
             continue;
 
         // 3.1) DSL értelmezése → RawKit
-        auto r = evalFormulaKit(line, d);
+        auto r = evalFormulaKit(line, d, debug);
 
         if (!r.ok) {
             zInfo(QString("⚠️ Kitting formula error in detail %1: %2")
@@ -126,7 +126,8 @@ NeedCalculator::makeKitList(const OrderLine& line, const QString& modeName)
 
 // Cutting DSL értelmezés
 Result<RawCut> NeedCalculator::evalFormulaCut(const OrderLine& line,
-                                      const NeedCalculationDetail& detail)
+                                              const NeedCalculationDetail& detail,
+                                              bool debug)
 {
     // 1) Contract validáció
     {
@@ -145,6 +146,10 @@ Result<RawCut> NeedCalculator::evalFormulaCut(const OrderLine& line,
 
     // 3) Engine futtatása
     EvalResult r = FormulaEngine::eval(detail.formula);
+
+    if(debug){
+        r.debugDump();
+    }
 
     if (!r.ok) {
         return Result<RawCut>::failure(
@@ -172,16 +177,20 @@ Result<RawCut> NeedCalculator::evalFormulaCut(const OrderLine& line,
     // }
 
     // 6) material
-    Value v = vars.get("material");
-    if (v.type == Value::Type::Null) {
-        auto mat = MaterialRegistry::instance().findById(detail.materialId);
-        if (!mat)
-            return Result<RawCut>::failure("Fallback materialId invalid");
-        raw.materialBarcode = mat->barcode;
-    } else {
-        if (v.type != Value::Type::String)
-            return Result<RawCut>::failure("material output must be string");
-        raw.materialBarcode = v.text;
+    // 6) material
+    {
+        Value v = vars.get("material");
+        if (v.type == Value::Type::Null) {
+            // fallback
+            auto mat = MaterialRegistry::instance().findById(detail.materialId);
+            if (!mat)
+                return Result<RawCut>::failure("Fallback materialId invalid");
+            raw.materialBarcode = mat->barcode;
+        } else {
+            if (v.type != Value::Type::String)
+                return Result<RawCut>::failure("material output must be string");
+            raw.materialBarcode = v.text;
+        }
     }
 
 
@@ -192,7 +201,8 @@ Result<RawCut> NeedCalculator::evalFormulaCut(const OrderLine& line,
 
 // Kitting DSL értelmezés
 Result<RawKit> NeedCalculator::evalFormulaKit(const OrderLine& line,
-                                      const NeedCalculationDetail& detail)
+                                              const NeedCalculationDetail& detail,
+                                              bool debug)
 {
     // 1) Contract validáció
     {
@@ -211,6 +221,9 @@ Result<RawKit> NeedCalculator::evalFormulaKit(const OrderLine& line,
 
     // 3) Engine futtatása
     EvalResult r = FormulaEngine::eval(detail.formula);
+    if(debug){
+        r.debugDump();
+    }
 
     if (!r.ok) {
         return Result<RawKit>::failure(
@@ -229,16 +242,19 @@ Result<RawKit> NeedCalculator::evalFormulaKit(const OrderLine& line,
     }
 
     // 5) material
-    Value v = vars.get("material");
-    if (v.type == Value::Type::Null) {
-        auto mat = MaterialRegistry::instance().findById(detail.materialId);
-        if (!mat)
-            return Result<RawKit>::failure("Fallback materialId invalid");
-        raw.materialBarcode = mat->barcode;
-    } else {
-        if (v.type != Value::Type::String)
-            return Result<RawKit>::failure("material output must be string");
-        raw.materialBarcode = v.text;
+    {
+        Value v = vars.get("material");
+        if (v.type == Value::Type::Null) {
+            // fallback
+            auto mat = MaterialRegistry::instance().findById(detail.materialId);
+            if (!mat)
+                return Result<RawKit>::failure("Fallback materialId invalid");
+            raw.materialBarcode = mat->barcode;
+        } else {
+            if (v.type != Value::Type::String)
+                return Result<RawKit>::failure("material output must be string");
+            raw.materialBarcode = v.text;
+        }
     }
 
      return Result<RawKit>::success(raw);

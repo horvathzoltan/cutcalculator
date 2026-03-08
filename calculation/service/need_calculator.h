@@ -31,21 +31,24 @@ class NeedCalculator {
 public:
     // Cutting pipeline (v2)
     static QVector<CutAggregatedItem> makeCutList(const OrderLine& line,
-                                                  const QString& modeName);
+                                                  const QString& modeName,
+                                                  bool debug = false);
 
     // Kitting pipeline (v2)
     static QVector<KitAggregatedItem> makeKitList(const OrderLine& line,
-                                        const QString& modeName);
+                                                  const QString& modeName,
+                                                  bool debug = false);
 
-private:
 private:
     // Cutting DSL értelmezés
     static Result<RawCut> evalFormulaCut(const OrderLine& line,
-                                 const NeedCalculationDetail& detail);
+                                         const NeedCalculationDetail& detail,
+                                         bool debug = false);
 
     // Kitting DSL értelmezés
     static Result<RawKit> evalFormulaKit(const OrderLine& line,
-                                 const NeedCalculationDetail& detail);
+                                         const NeedCalculationDetail& detai,
+                                         bool debug = false);
 
     // Közös: DSL változók feltöltése
     static void fillVariables(const OrderLine& line);

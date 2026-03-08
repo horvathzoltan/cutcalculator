@@ -18,4 +18,5 @@ public:
 
     // ha már van tokenized input
     static Result<QVector<Token>> toRpn(const QVector<Token>& tokens);
+    static void debugDump(const ParseResult &pr, const QString &code, const QString &error);
 };

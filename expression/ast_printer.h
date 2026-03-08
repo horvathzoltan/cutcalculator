@@ -1,5 +1,6 @@
 #pragma once
 #include "ast.h"
+#include "expression/token.h"
 // #include "common/logger/logger.h"
 // #include "expression/eval_result.h"
 // #include "value.h"
@@ -166,7 +167,9 @@ inline QString tokenTypeName(TokenType t)
     case TokenType::LessEqual:      return "LessEqual";
     case TokenType::Equal:          return "Equal";
 
-    case TokenType::Question:       return "Question";
+    case TokenType::TernaryQuestion:   return "TernaryQuestion";
+    case TokenType::OptionalQuestion:  return "OptionalQuestion";
+
     case TokenType::Colon:          return "Colon";
     case TokenType::Comma:          return "Comma";
     case TokenType::LParen:         return "LParen";

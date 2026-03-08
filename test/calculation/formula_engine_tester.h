@@ -10,6 +10,7 @@ public:
 
     bool run() override;
 
+    void testOptSimpleTrue();
 private:
     static void setVars(int w, int h, int qty);
     // Alap DSL minták

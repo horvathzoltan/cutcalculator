@@ -141,9 +141,11 @@ void NeedCalculatorPipelineTester::testOptDsl()
 
     // ÚJ DSL:
     // requiredLength = (w - 20) + (flag ? 40 : 0)
-    auto d = TestDataBuilder::makeDetail(mode.id, ids.M1,
-                                         "choose: 1 ? aaa : bbb ",
-                                        NeedCalculationDetail::DetailKind::Cutting);
+    auto d = TestDataBuilder::makeDetail(
+        mode.id, ids.M1,
+        "requiredLength = w - 20 + opt: 1 ? +40",
+        NeedCalculationDetail::DetailKind::Cutting);
+
     NeedCalculationDetailRegistry::instance().insert(d);
 
     OrderLine line{ ids.P1, 1200, 800, 1, "L", "X", "Owner", "Color" };

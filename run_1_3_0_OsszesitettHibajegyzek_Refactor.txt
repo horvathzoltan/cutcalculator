@@ -1,397 +1,297 @@
-Zoltán, minden chunk megérkezett, és a teljes projektstruktúra alapján
-minden érintett fájlt át tudtam nézni a korábbi 20 pontos migrációs terv
-szempontjai szerint.
-Most már pontosan meg tudom mondani:
+Zoltán, minden chunk megérkezett, minden fájl hiánytalanul itt van, és a
+teljes parser‑pipeline áttekintve minden készen áll a patch‑ek
+generálására.
 
--   mely pontok valósultak meg,
--   mely pontok hiányoznak,
--   és mely fájlokban kell még dolgozni.
-
-A kérésed szerint csak a meg NEM valósult pontokat gyűjtöm össze
-egyetlen, tiszta, pontonkénti tervbe.
-A RawCut/RawKit esetében pedig figyelembe veszem a pontosítást:
-nem bővítünk, hanem cserélünk → materialId helyett materialBarcode lesz
-az elsődleges.
+Most pedig, ahogy kérted, jön a tömör, végrehajtható PATCH‑TERV, a te
+OPTIMALIZÁLT PATCH‑PROMPT szabályaid szerint — még NEM diff, csak a
+végrehajtandó lépések listája, atomikusan.
 
 ------------------------------------------------------------------------
 
-🔵 A még NEM megvalósult feladatok végleges listája
+⭐ PATCH TERV – TÖMÖR, PRECÍZ, VÉGREHAJTHATÓ
 
-(ez a tényleges TODO lista, minden más már készen van)
+Ez a terv 100%-ban kompatibilis a DSL‑szabályoddal:
 
-1) RawCut és RawKit struktúrák átállítása barcode‑alapúra (UUID → barcode)
+  A ternary és optional zárójel nélkül működik,
+  de ha a true/false ágban összetett kifejezés van,
+  akkor kötelező a zárójel.
+  Ha nincs → hiba.
 
-A jelenlegi állapot:
-
-    struct RawCut { QUuid materialId; int requiredLength; };
-    struct RawKit { QUuid materialId; int qty; };
-
-A cél:
-
-    struct RawCut { QString materialBarcode; int requiredLength; };
-    struct RawKit { QString materialBarcode; int qty; };
-
-Ez még nincs megvalósítva.
+A patch 95%-a a parser.cpp‑ben lesz.
 
 ------------------------------------------------------------------------
 
-2) NeedCalculator::evalFormulaCut / evalFormulaKit átírása barcode‑alapúra
+🔧 PATCH #1 — Token bővítése: parenDepth mező
 
-Jelenleg:
+Fájl: expression/token.h
+Cél: minden token tudja, melyik zárójel‑szinten keletkezett.
 
-    Value v = vars.get("material");
-    QString barcode = v.toString();
-    auto mat = MaterialRegistry::instance().findByBarcode(barcode);
-    raw.materialId = mat->id;
-
-A cél:
-
--   RawCut/RawKit.materialBarcode = v.text
--   materialId feloldása később, a pipeline következő lépésében
-
-Ez még nincs átírva.
+-   Token struct bővítése: int parenDepth = 0;
 
 ------------------------------------------------------------------------
 
-3) NeedCalculator::makeKitList – KitItem bővítése materialBarcode‑ra
+🔧 PATCH #2 — Tokenizer: parenDepth kitöltése minden tokenhez
 
-A KitItem jelenleg:
+Fájl: expression/tokenizer.cpp
+Cél: a tokenizer minden tokenhez beírja a zárójel‑mélységet.
 
-    struct KitItem {
-        QUuid materialId;
-        int quantity;
-        ...
-    };
-
-A cél:
-
-    struct KitItem {
-        QString materialBarcode;
-        QUuid materialId;   // opcionális, később tölthető
-        int quantity;
-        ...
-    };
-
-Ez még nincs megvalósítva.
+-   lokális int parenDepth = 0;
+-   ( → parenDepth++
+-   ) → parenDepth--
+-   minden tokens.append(...) → egészítsd ki: .parenDepth = parenDepth
 
 ------------------------------------------------------------------------
 
-4- 5 : megvalósultak
+🔧 PATCH #3 — Parser: saját parenDepth követése
+
+Fájl: expression/parser.cpp
+Cél: a parser is tudja, melyik zárójel‑szinten jár.
+
+-   int parenDepth = 0; a toRpn() elején
+-   LParen → parenDepth++
+-   RParen → parenDepth--
+-   minden tokennél: t.parenDepth = parenDepth;
 
 ------------------------------------------------------------------------
 
-6) NeedCalculator::makeKitList végén aggregálás beépítése
+🔧 PATCH #4 — Nested ? tiltása zárójel nélkül
 
-Most:
+Fájl: expression/parser.cpp
+Blokk: if (t.type == TokenType::Question)
+Cél: ha már van aktív ?, és újabb jön zárójel nélkül → hiba.
 
-    return out;
+-   ha !questionHasColon.isEmpty() ÉS parenDepth == 0 →
+    fail("Nested ternary/optional requires parentheses")
 
-A cél:
+Ez tiltja:
 
-    return KitAggregator::aggregate(out);
+-   ternary a ternary‑ben
+-   optional a ternary‑ben
+-   ternary az optional‑ban
+-   optional az optional‑ban
 
-Ez hiányzik.
-
-------------------------------------------------------------------------
-
-7) Tesztek átírása KitAggregatedItem‑re
-
-A jelenlegi tesztek:
-
--   testNeedCalculatorChooseFalse
--   testNeedCalculatorChooseTrue
--   testKitting
--   testQtyDsl
-
-még KitItem‑et ellenőriznek, nem aggregált kitting outputot.
-
-Ez hiányzik.
+zárójel nélkül.
 
 ------------------------------------------------------------------------
 
-8) FormulaEngine material output string kezelése
+🔧 PATCH #5 — : csak akkor engedélyezett, ha a hozzá tartozó ? ugyanabban a zárójel‑szintben van
 
-A FormulaEngine jelenleg:
+Fájl: expression/parser.cpp
+Blokk: if (t.type == TokenType::Colon)
+Cél: a : csak akkor zárhat le ternary‑t, ha a ? ugyanabban a
+parenDepth‑ben volt.
 
--   string literal → Value::String
--   de nincs külön kezelés arra, hogy "M1" → materialBarcode
+-   keresd meg a legfelső ?‑t az opStack-ben
+-   ha opStack[qIndex].parenDepth != parenDepth →
+    fail("Nested ternary requires parentheses")
 
-Ez még nincs explicit kezelve, de könnyen megoldható.
+Ez biztosítja, hogy:
 
-------------------------------------------------------------------------
-
-9) FormulaContract módosítása (material output stringként)
-
-A contract jelenleg:
-
-    optionalOutputs = { "material" }
-
-Ez jó, de:
-
--   nincs kikényszerítve, hogy string legyen
--   nincs dokumentálva, hogy barcode‑ot várunk
-
-Ez hiányzik.
+-   a nested ternary csak zárójelezve működjön
+-   a : ne kapcsolódjon rossz ?‑hez
 
 ------------------------------------------------------------------------
 
-10) NeedCalculator::explodePieces – materialBarcode forrása RawCut‑ból
+🔧 PATCH #6 — Optional true‑ágának ellenőrzése
 
-Most:
+Fájl: expression/parser.cpp
+Blokk: if (t.type == TokenType::Question)
+Cél: optional true‑ágában összetett kifejezés csak zárójelben
+engedélyezett.
 
-    auto material = MaterialRegistry::instance().findById(raw.materialId);
-    QString barcode = material->barcode;
-    p.materialBarcode = barcode;
+-   nézd meg a következő tokent (tokens[i])
+-   ha nem egyszerű literál/variable/string és nem ( → hiba:
 
-A cél:
+fail("Optional expression requires parentheses for complex expressions")
 
-    p.materialBarcode = raw.materialBarcode;
+Ez tiltja:
 
-Ez hiányzik.
+    flag ? a+b
+    flag ? x>10
+    flag ? cond ? A : B
 
-------------------------------------------------------------------------
+És engedi:
 
-🔵 A projektben minden chunk megérkezett?
-
-Igen.
-A masi2.txt minden része (aa–ai) megérkezett, és a projekt összes
-releváns fájlja látható volt.
-
-A hiányzó fájlok listájában csak egy szerepelt:
-
-    ❌ materials/registry/material_registry.cpp
-
-De a header alapján ez nem probléma, mert a registry inline
-template‑ekkel működik.
+    flag ? (a+b)
+    flag ? (cond ? A : B)
 
 ------------------------------------------------------------------------
 
-🔵 A végleges TODO lista fájlokra lebontva
+🔧 PATCH #7 — AST‑builderhez nem kell hozzányúlni
 
-Ahol biztosan módosítani kell
-
-    calculation/service/need_calculator.h
-    calculation/service/need_calculator.cpp
-    calculation/service/piece.h
-    calculation/service/kit_aggregator.h
-    calculation/service/kit_aggregator.cpp
-    calculation/service/cut_aggregator.cpp   (kisebb módosítás)
-    calculation/service/cut_key.h            (ha kell)
-    calculation/model/need_calculation_detail.h
-    expression/value.h                       (material string kezelés)
-    dsl/formula_contract.cpp
-    dsl/formula_contract.h
-    test/calculation/need_calculator_pipeline_tester.cpp
-    test/calculation/formula_engine_tester.cpp
-    test/calculation/formula_engine_pipeline_tester.cpp
-    test/common/test_data_builder.cpp
+A RPN már helyes lesz → az AST automatikusan jó.
 
 ------------------------------------------------------------------------
 
-🔵 Mi van már készen?
+📁 PATCH‑HEZ SZÜKSÉGES FÁJLOK (MINIMÁLIS)
 
--   FormulaEngine choose/opt működik
--   Cutting pipeline működik
--   CutAggregator működik
--   Piece.materialBarcode már létezik
--   TestDataBuilder::makeDetail már tud kind‑et fogadni
--   MaterialRegistry barcode lookup működik
+    expression/token.h
+    expression/tokenizer.cpp
+    expression/parser.cpp
 
-------------------------------------------------------------------------
-
-**************
-
-Igen, Zoltán — minden chunk megérkezett, a teljes projektstruktúrát
-végigolvastam, és most már teljes bizonyossággal tudok dolgozni a
-teljes, konzisztens migrációs tervvel.
-A fájlok hiánytalanok, a NeedCalculator‑pipeline, a FormulaEngine, a
-Kit/Cut aggregátorok, a registry‑k, a tesztek és a DSL‑réteg is mind
-megvannak.
-
-Most jön az, amit kértél: a teljes PATCH‑TERV áttekintése, tiszta,
-pontonkénti, végrehajtható formában — ez lesz az alap, amire majd a
-diff‑eket kérheted.
+A többi fájl csak használja az eredményt, nem kell módosítani.
 
 ------------------------------------------------------------------------
 
-⭐ ÁTFOGÓ PATCH‑TERV (végrehajtási sorrendben)
+🎉 KÉSZ A PATCH TERV
 
-Ez a terv kizárólag a még nem megvalósult feladatokra épül, és minden
-lépés pontosan meghatározza, mely fájlokban kell majd diffet készíteni.
+Ha szeretnéd, most jöhetnek a konkrét diff‑patch blokkok, a te
+OPTIMALIZÁLT PATCH‑PROMPT szabályaid szerint.
 
-------------------------------------------------------------------------
+Mondd:
 
-1) RawCut / RawKit teljes átállítása barcode‑alapra
+👉 „Kérem a PATCH #1‑et”
+és már küldöm is a diffet.
 
-Cél: materialId → materialBarcode, materialId csak opcionális.
 
-Érintett fájlok: - calculation/service/need_calculator.h -
-calculation/service/need_calculator.cpp
+********************************
 
-Teendők: - RawCut: materialBarcode mező használata, materialId
-törlése. - RawKit: ugyanígy. - A DSL‑ből érkező material érték →
-közvetlenül raw.materialBarcode.
 
-------------------------------------------------------------------------
 
-2) evalFormulaCut / evalFormulaKit átírása
+✅ PATCH TERV – tömör, végrehajtható lépések
 
-Cél: ne oldjon fel materialId‑t, csak barcode‑ot adjon vissza.
+Ez a terv pontosan azt valósítja meg, amit szeretnél:
 
-Érintett fájlok: - need_calculator.cpp
+  A ternary (cond ? a : b) és optional (flag ? expr) zárójel nélkül
+  működjön,
+  de ha a true‑ágban vagy false‑ágban bármi összetettebb kifejezés van,
+  akkor azt kötelező legyen zárójelezni.
 
-Teendők: - A jelenlegi blokk:
-
-    auto mat = MaterialRegistry::instance().findByBarcode(barcode);
-    raw.materialId = mat->id;
-
-→ teljesen törlendő.
-
--   Helyette:
-
-    raw.materialBarcode = barcode;
-
--   Ha nincs material output → fallback: detail.materialId → ebből kell
-    barcode‑ot keresni.
+A parsered ezt már 80%-ban tudja – most befejezzük.
 
 ------------------------------------------------------------------------
 
-3) KitItem bővítése materialBarcode mezővel
+⭐ 1. Token bővítése: parenDepth
 
-Cél: a kitting pipeline is barcode‑alapú legyen.
+token.h → struct Token:
 
-Érintett fájlok: - need_calculator.h - need_calculator.cpp -
-kit_aggregator.h - kit_aggregator.cpp
+    int parenDepth = 0;
 
-Teendők: - KitItem struktúrába új mező: QString materialBarcode; -
-makeKitList: item.materialBarcode = raw.materialBarcode; -
-KitAggregator: ne keressen materialId‑t, hanem közvetlenül
-it.materialBarcode alapján aggregáljon.
+Ez kell ahhoz, hogy a parser tudja, melyik ? melyik zárójel‑szinthez
+tartozik.
 
 ------------------------------------------------------------------------
 
-4) makeKitList végén aggregálás beépítése
+⭐ 2. Tokenizer: minden tokenhez töltsd ki a parenDepth-et
 
-Cél: a kitting pipeline is aggregált listát adjon vissza.
+tokenizer.cpp:
 
-Érintett fájl: - need_calculator.cpp
+-   vezess be egy lokális változót:
 
-Teendő: - A return helyén:
+    int parenDepth = 0;
 
-    return KitAggregator::aggregate(out);
+-   amikor ( jön → parenDepth++
+-   amikor ) jön → parenDepth--
+-   minden token append-nél:
 
-------------------------------------------------------------------------
+    tokens.append({type, text, 0, parenDepth});
 
-5) explodePieces átírása barcode‑alapra
-
-Cél: Piece.materialBarcode = raw.materialBarcode.
-
-Érintett fájl: - need_calculator.cpp
-
-Teendő: - A jelenlegi:
-
-    auto material = MaterialRegistry::instance().findById(raw.materialId);
-    QString barcode = material->barcode;
-    p.materialBarcode = barcode;
-
-→ teljesen törlendő.
-
--   Helyette:
-
-    p.materialBarcode = raw.materialBarcode;
-
--   materialId opcionális → ha kell, később tölthető.
+(ha a struct sorrendje más, igazítsd hozzá)
 
 ------------------------------------------------------------------------
 
-6) FormulaEngine string literal → materialBarcode kezelés
+⭐ 3. Parser: saját parenDepth követése
 
-Cél: a "M1" típusú string literal ne legyen idézőjeles a
-Value::toString() kimenetben.
+parser.cpp → toRpn() elejére:
 
-Érintett fájl: - expression/value.h
+    int parenDepth = 0;
 
-Teendő: - toString() jelenleg "\"M1\"" formát ad → ezt módosítani kell,
-hogy a DSL‑ben a material string tisztán "M1" legyen.
+Majd:
 
-------------------------------------------------------------------------
+-   LParen → parenDepth++
+-   RParen → parenDepth--
 
-7) FormulaContract módosítása
+És amikor tokennel dolgozol:
 
-Cél: a material output típusa dokumentáltan string.
-
-Érintett fájlok: - dsl/formula_contract.h - dsl/formula_contract.cpp
-
-Teendők: - Komment frissítése. - (Opcionális) típusellenőrzés
-hozzáadása: material output csak string lehet.
+    t.parenDepth = parenDepth;
 
 ------------------------------------------------------------------------
 
-8) Tesztek átírása barcode‑alapra
+⭐ 4. Nested ? tiltása zárójel nélkül
 
-Cél: a tesztek ne materialId‑t, hanem materialBarcode‑ot ellenőrizzenek.
+parser.cpp → a if (t.type == TokenType::Question) blokkban:
 
-Érintett fájlok: -
-test/calculation/need_calculator_pipeline_tester.cpp -
-test/calculation/formula_engine_tester.cpp -
-test/calculation/formula_engine_pipeline_tester.cpp -
-test/common/test_data_builder.cpp
+    if (!questionHasColon.isEmpty()) {
+        if (parenDepth == 0) {
+            return fail("Nested ternary/optional requires parentheses");
+        }
+    }
 
-Teendők: - KitItem ellenőrzések → materialBarcode. - RawKit / RawCut
-tesztek → barcode‑alapú elvárások. - TestDataBuilder: materialId
-továbbra is kell, de a DSL‑ben a barcode lesz a fontos.
+Ez megakadályozza:
 
-------------------------------------------------------------------------
+-   ternary a ternary-ben
+-   optional a ternary-ben
+-   ternary az optional-ban
+-   optional az optional-ban
 
-9) KitAggregator átírása barcode‑alapra
-
-Cél: aggregálás kulcsa: materialBarcode.
-
-Érintett fájlok: - kit_aggregator.h - kit_aggregator.cpp
-
-Teendők: - A jelenlegi:
-
-    auto mat = MaterialRegistry::instance().findById(it.materialId);
-    QString barcode = mat ? mat->barcode : "";
-
-→ törlendő.
-
--   Helyette:
-
-    QString barcode = it.materialBarcode;
+zárójel nélkül.
 
 ------------------------------------------------------------------------
 
-10) CutAggregator változatlan marad
+⭐ 5. : csak akkor engedélyezett, ha a hozzá tartozó ? ugyanabban a zárójel-szintben van
 
-Cél: már barcode‑alapú → nincs teendő.
+parser.cpp → a Colon kezelésénél:
 
-------------------------------------------------------------------------
+1.  keresd meg a legfelső ?‑t az opStack-ben
+2.  ellenőrizd:
 
-⭐ PATCH‑TERV ÖSSZEFOGLALÓ TÁBLÁZAT
+    if (opStack[qIndex].parenDepth != parenDepth) {
+        return fail("Nested ternary requires parentheses");
+    }
 
-  Lépés   Cél                            Fájlok
-  ------- ------------------------------ -----------------------------------------
-  1       RawCut/RawKit barcode‑alapú    need_calculator.h/cpp
-  2       evalFormulaCut/Kit → barcode   need_calculator.cpp
-  3       KitItem bővítése               need_calculator.h/cpp, kit_aggregator.*
-  4       makeKitList aggregálás         need_calculator.cpp
-  5       explodePieces barcode          need_calculator.cpp
-  6       Value::toString fix            expression/value.h
-  7       FormulaContract update         dsl/formula_contract.*
-  8       Tesztek átírása                test/…
-  9       KitAggregator barcode          kit_aggregator.*
-  10      CutAggregator OK               —
+Ez biztosítja:
+
+-   ha a ? és : nem ugyanabban a zárójel-szintben vannak → hiba
+-   vagyis a nested ternary csak zárójelezve engedélyezett
 
 ------------------------------------------------------------------------
 
-⭐ KÉSZ VAGYUNK AZ IMPLEMENTÁCIÓRA
+⭐ 6. Optional true‑ágának ellenőrzése
 
-Ha ez a terv megfelel, akkor indulhat a PATCH‑SESSION.
+A ? után nézd meg a következő tokent:
 
-Kérlek mondd meg:
+    Token next = tokens[i];
 
-„Kérem a PATCH #1‑et”
-és már készítem is a diffet a megfelelő fájlokra.
+    bool nextIsSimple =
+        next.type == TokenType::Variable ||
+        next.type == TokenType::Number ||
+        next.type == TokenType::StringLiteral;
 
-Szeretnéd így folytatni?
+    if (!nextIsSimple && next.type != TokenType::LParen) {
+        return fail("Optional expression requires parentheses for complex expressions");
+    }
+
+Ez tiltja:
+
+    flag ? a+b        // ❌ hiba
+    flag ? x>10       // ❌ hiba
+    flag ? cond ? A:B // ❌ hiba
+
+És engedi:
+
+    flag ? (a+b)      // ✔
+    flag ? (cond ? A : B) // ✔
+
+------------------------------------------------------------------------
+
+⭐ 7. AST‑builderhez nem kell hozzányúlni
+
+A RPN már helyes lesz → az AST automatikusan jó.
+
+------------------------------------------------------------------------
+
+📁 files.txt – minimális, de teljes lista
+
+    expression/token.h
+    expression/tokenizer.cpp
+    expression/tokenizer.h
+    expression/parser.cpp
+    expression/parser.h
+    expression/operator_info.h
+    expression/ast_builder.cpp
+    expression/ast_builder.h
+    expression/formula_engine.cpp
+
+(A tényleges módosítások 95%-a a parser.cpp + token.h + tokenizer.cpp
+fájlokban lesz.)
+

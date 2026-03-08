@@ -31,7 +31,9 @@ enum class TokenType {
     LessEqual,
     Equal,
 
-    Question,      // ?
+    TernaryQuestion,   // ?
+    OptionalQuestion,  // ??
+    //Question,      // ?
     Colon,         // :
     Comma,         // ,
     LParen,        // (
@@ -49,8 +51,9 @@ enum class TokenType {
 };
 
 struct Token {
-    TokenType type;
-    QString   text;
-    int       argc = 0;   // ÚJ: függvény argumentumszáma
+    TokenType type;       // token típusa
+    QString   text;       // eredeti szöveg
+    int       argc = 0;   // függvény argumentumszáma
+    int       parenDepth = 0; // zárójel-mélység
 };
 

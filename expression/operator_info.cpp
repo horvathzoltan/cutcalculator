@@ -29,8 +29,13 @@ static QHash<TokenType, OperatorInfo> OPINFO = {
 
     { TokenType::Assign,     { 1, true,  Fixity::Infix, 2 } }, // jobbról asszociatív
 
+    // Optional infix operátor: flag ?? expr
+    { TokenType::OptionalQuestion, { 2, false, Fixity::Infix, 2 } },
+
     // Ternary operátor
-    { TokenType::Question,   { 0, true,  Fixity::Ternary, 3 } },
+    { TokenType::TernaryQuestion,   { 0, true,  Fixity::Ternary, 3 } },
+
+
 // A ':' nem operátor, csak a ternary része → külön kezeljük a parserben
 };
 

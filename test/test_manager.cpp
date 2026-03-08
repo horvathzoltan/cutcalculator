@@ -6,6 +6,7 @@
 #include "settings_manager_tester.h"
 #include "test/calcmode/need_calculation_registry_tester.h"
 #include "test/calculation/formula_engine_pipeline_tester.h"
+#include "test/calculation/formula_engine_syntax_tester_2.h"
 #include "test/calculation/formula_engine_tester.h"
 #include "test/calculation/need_calculation_detail_registry_tester.h"
 
@@ -16,6 +17,7 @@
 #include "test/overlay/material_requirements_overlay_tester.h"
 #include "test/overlay/matrix_validator_tester.h"
 #include "test/overlay/overlay_presenter_tester.h"
+#include <test/calculation/formula_engine_syntax_tester.h>
 
 TestManager& TestManager::instance() {
     static TestManager inst;
@@ -74,6 +76,12 @@ void TestManager::runBusinessLogicTests(const QString& profile) {
     }
     else if (profile == "need_calculation_pipeline") {
         runModule<NeedCalculatorPipelineTester>();
+    }
+    else if (profile == "formula_engine_syntax") {
+        runModule<FormulaEngineSyntaxTester>();
+    }
+    else if (profile == "formula_engine_syntax_2") {
+        runModule<FormulaEngineSyntaxTester_2>();
     }
     /**/
     else {

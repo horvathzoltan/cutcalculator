@@ -1,7 +1,7 @@
 #include "formula_engine.h"
 #include "expression/ast_printer.h"
 #include "expression/node_pool.h"
-#include "tokenizer.h"
+//#include "tokenizer.h"
 #include "parser.h"
 #include "ast_builder.h"
 #include "variable.h"
@@ -155,7 +155,8 @@ Result<QVector<Value>> FormulaEngine::evalChildren(AstNode* n, EvalResult* trace
 {
     QVector<Value> out;
 
-    for (AstNode* child : n->children) {
+    const QVector<AstNode*>& children = n->children;
+    for (AstNode* child : children) {
         Result<Value> r = evalNode(child, traceOut);
         if (!r.ok)
             return Result<QVector<Value>>::failure(r.error);
@@ -188,7 +189,8 @@ Result<Value> FormulaEngine::evalNode(AstNode* n, EvalResult* traceOut)
     // Helper: evaluate all children safely
     auto evalChildrenSafe = [&](AstNode* node) -> Result<QVector<Value>> {
         QVector<Value> out;
-        for (AstNode* c : node->children) {
+        const auto& children = node->children;
+        for (AstNode* c : children) {
             auto r = evalNode(c, traceOut);
             if (!r.ok) return Result<QVector<Value>>::failure(r.error);
             out.append(r.value);
@@ -223,9 +225,11 @@ Result<Value> FormulaEngine::evalNode(AstNode* n, EvalResult* traceOut)
         if (!argsRes.ok) return Result<Value>::failure(argsRes.error);
 
         QVector<Value> filtered;
-        for (const Value& a : argsRes.value)
+        const auto& values = argsRes.value;
+        for (const Value& a : values) {
             if (a.type != Value::Type::Skip)
                 filtered.append(a);
+        }
 
         if (filtered.isEmpty()) {
             Value v = Value::nullValue();
@@ -253,9 +257,11 @@ Result<Value> FormulaEngine::evalNode(AstNode* n, EvalResult* traceOut)
         if (!argsRes.ok) return Result<Value>::failure(argsRes.error);
 
         QVector<Value> filtered;
-        for (const Value& a : argsRes.value)
+        const auto& values = argsRes.value;
+        for (const Value& a : values){
             if (a.type != Value::Type::Skip)
                 filtered.append(a);
+        }
 
         Result<Value> callRes = reg.call(n->value, filtered);
         if (!callRes.ok) return Result<Value>::failure(callRes.error);

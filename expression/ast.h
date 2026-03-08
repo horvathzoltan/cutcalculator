@@ -2,7 +2,6 @@
 #include <QString>
 #include <QVariant>
 #include <QVector>
-#include "token.h"
 
 struct AstNode {
     enum class Type {

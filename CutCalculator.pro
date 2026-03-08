@@ -65,7 +65,9 @@ SOURCES += \
     products/presenter/product_tree_presenter.cpp \
     products/view/product_tree_panel.cpp \
     test/calcmode/need_calculation_registry_tester.cpp \
+    test/calculation/formula_engine_syntax_tester.cpp \
     test/calculation/formula_engine_pipeline_tester.cpp \
+    test/calculation/formula_engine_syntax_tester_2.cpp \
     test/calculation/formula_engine_tester.cpp \
     test/calculation/need_calculation_detail_registry_tester.cpp \
     test/calculation/need_calculator_pipeline_tester.cpp \
@@ -221,7 +223,9 @@ HEADERS += \
     products/presenter/product_tree_presenter.h \
     products/view/product_tree_panel.h \
     test/calcmode/need_calculation_registry_tester.h \
+    test/calculation/formula_engine_syntax_tester.h \
     test/calculation/formula_engine_pipeline_tester.h \
+    test/calculation/formula_engine_syntax_tester_2.h \
     test/calculation/formula_engine_tester.h \
     test/calculation/need_calculation_detail_registry_tester.h \
     test/calculation/need_calculator_pipeline_tester.h \
@@ -312,7 +316,6 @@ DISTFILES += \
     run_1_1_AllapotTabla.txt \
     run_1_2_BugList.txt \
     run_1_3_0_OsszesitettHibajegyzek_Refactor.txt \
-    run_1_3_1_BarcodeRegistry_Refactor.txt \
     run_1_3_2_FeladatLista.txt \
     run_1_4_DailySync.txt \
     run_2_1_AIDevelopmentHandbook.txt \
@@ -330,8 +333,9 @@ DISTFILES += \
     run_3_2_Prompt_FeatureSpec.txt \
     run_3_3_Prompt_CodeGeneration.txt \
     run_3_4_Prompt_Refactor.txt \
-    run_3_5_Prompt_SnippletPatching.txt \
-    run_3_6_Prompt_Hybrid.txt \
+    run_3_5_1_Prompt_Snipplet.txt \
+    run_3_5_2_Prompt_SnippletPatching.txt \
+    run_3_5_3_Prompt_Hybrid.txt \
     run_4_1_Rendszerterv.txt \
     run_4_2_RendszerKomponensLista.txt \
     run_4_AnyagszuksegletSzamitas.txt \

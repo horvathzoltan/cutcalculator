@@ -5,6 +5,7 @@ Result<QVector<Token>> Tokenizer::tokenize(const QString& input)
     QVector<Token> tokens;
     int i = 0;
     const int n = input.size();
+    int parenDepth = 0; // zárójel-mélység követése
 
     auto peek = [&](int offset = 0) -> QChar {
         return (i + offset < n) ? input[i + offset] : QChar{};
@@ -18,7 +19,7 @@ Result<QVector<Token>> Tokenizer::tokenize(const QString& input)
         QChar c = peek();
 
         if (c == '\n') {
-            tokens.append({TokenType::Newline, "\\n"});
+            tokens.append({TokenType::Newline, "\\n", 0, parenDepth});
             advance();
             continue;
         }
@@ -43,7 +44,7 @@ Result<QVector<Token>> Tokenizer::tokenize(const QString& input)
             QString text = input.mid(start, i - start);
             //if (peek() == '"')
             advance(); // closing quote
-            tokens.append({TokenType::StringLiteral, text});
+            tokens.append({TokenType::StringLiteral, text, 0, parenDepth});
             continue;
         }
 
@@ -63,7 +64,7 @@ Result<QVector<Token>> Tokenizer::tokenize(const QString& input)
                     break;
                 }
             }
-            tokens.append({TokenType::Number, input.mid(start, i - start)});
+            tokens.append({TokenType::Number, input.mid(start, i - start), 0, parenDepth});
             continue;
         }
 
@@ -73,7 +74,7 @@ Result<QVector<Token>> Tokenizer::tokenize(const QString& input)
             while (i < n && (peek().isLetterOrNumber() || peek() == '_')) {
                 advance();
             }
-            tokens.append({TokenType::Variable, input.mid(start, i - start)});
+            tokens.append({TokenType::Variable, input.mid(start, i - start), 0, parenDepth});
             continue;
         }
 
@@ -117,71 +118,79 @@ Result<QVector<Token>> Tokenizer::tokenize(const QString& input)
 
             // Függvény: ha utána '(' jön
             if (peek() == '(') {
-                tokens.append({TokenType::Function, ident});
+                tokens.append({TokenType::Function, ident, 0, parenDepth});
                 continue;
             }
 
             if (ident == "return") {
-                tokens.append({TokenType::Return, ident});
+                tokens.append({TokenType::Return, ident, 0, parenDepth});
                 continue;
             }
 
             if (!ident.isEmpty() && ident[0].isUpper()) {
-                tokens.append({TokenType::StringLiteral, ident});
+                tokens.append({TokenType::StringLiteral, ident, 0, parenDepth});
                 continue;
             }
 
             // Minden más → Variable
-            tokens.append({TokenType::Variable, ident});
+            tokens.append({TokenType::Variable, ident, 0, parenDepth});
             continue;
         }
 
 
         // --- Relációs operátorok ---
         if (c == '>' && peek(1) == '=') {
-            tokens.append({TokenType::GreaterEqual, ">="});
+            tokens.append({TokenType::GreaterEqual, ">=", 0, parenDepth});
             advance(); advance();
             continue;
         }
 
         if (c == '<' && peek(1) == '=') {
-            tokens.append({TokenType::LessEqual, "<="});
+            tokens.append({TokenType::LessEqual, "<=", 0, parenDepth});
             advance(); advance();
             continue;
         }
 
         if (c == '=' && peek(1) == '=') {
-            tokens.append({TokenType::Equal, "=="});
+            tokens.append({TokenType::Equal, "==", 0, parenDepth});
             advance(); advance();
             continue;
         }
 
         if (c == '>') {
-            tokens.append({TokenType::Greater, ">"});
+            tokens.append({TokenType::Greater, ">", 0, parenDepth});
             advance();
             continue;
         }
 
         if (c == '<') {
-            tokens.append({TokenType::Less, "<"});
+            tokens.append({TokenType::Less, "<", 0, parenDepth});
             advance();
             continue;
         }
 
         switch (c.unicode()) {
-        case '+': tokens.append({TokenType::Plus, QString(c)});    advance(); break;
-        case '-': tokens.append({TokenType::Minus, QString(c)});   advance(); break;
-        case '*': tokens.append({TokenType::Star, QString(c)});    advance(); break;
-        case '/': tokens.append({TokenType::Slash, QString(c)});   advance(); break;
-        case '(': tokens.append({TokenType::LParen, QString(c)});  advance(); break;
-        case ')': tokens.append({TokenType::RParen, QString(c)});  advance(); break;
-        case ',': tokens.append({TokenType::Comma, QString(c)});   advance(); break;
-        case ':': tokens.append({TokenType::Colon, QString(c)});   advance(); break;
-        case '?': tokens.append({TokenType::Question, QString(c)});advance(); break;
-        case '=':
-            tokens.append({TokenType::Assign, "="});
-            advance();
+        case '+': tokens.append({TokenType::Plus, QString(c), 0, parenDepth});    advance(); break;
+        case '-': tokens.append({TokenType::Minus, QString(c), 0, parenDepth});   advance(); break;
+        case '*': tokens.append({TokenType::Star, QString(c), 0, parenDepth});    advance(); break;
+        case '/': tokens.append({TokenType::Slash, QString(c), 0, parenDepth});   advance(); break;
+        case '(': tokens.append({TokenType::LParen, QString(c), 0, parenDepth}); parenDepth++; advance(); break;
+        case ')': parenDepth--; tokens.append({TokenType::RParen, QString(c), 0, parenDepth}); advance(); break;
+        case ',': tokens.append({TokenType::Comma, QString(c), 0, parenDepth});   advance(); break;
+        case ':': tokens.append({TokenType::Colon, QString(c), 0, parenDepth});   advance(); break;
+        case '?':
+            if (peek(1) == '?') {
+                // optional: "??"
+                advance(); // első '?'
+                advance(); // második '?'
+                tokens.append({TokenType::OptionalQuestion, "??", 0, parenDepth});
+            } else {
+                // ternary: "?"
+                advance();
+                tokens.append({TokenType::TernaryQuestion, "?", 0, parenDepth});
+            }
             break;
+        case '=': tokens.append({TokenType::Assign, "=", 0, parenDepth}); advance(); break;
 
         default:
             return Result<QVector<Token>>::failure(
@@ -193,6 +202,6 @@ Result<QVector<Token>> Tokenizer::tokenize(const QString& input)
         }
     }
 
-    tokens.append({TokenType::End, {}});
+    tokens.append({TokenType::End, {}, 0, parenDepth});
     return Result<QVector<Token>>::success(tokens);
 }
