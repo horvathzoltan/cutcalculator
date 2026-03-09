@@ -39,7 +39,7 @@ NeedCalculator::makeCutList(const OrderLine& line, const QString& modeName, bool
         if (d.kind != NeedCalculationDetail::DetailKind::Cutting)
             continue;
 
-        auto r = evalFormulaCut(line, d, debug);
+        Result<RawCut> r = evalFormulaCut(line, d, debug);
         if (!r.ok) {
             zInfo(QString("⚠️ Cutting formula error in detail %1: %2")
                       .arg(d.id.toString(), r.error));
