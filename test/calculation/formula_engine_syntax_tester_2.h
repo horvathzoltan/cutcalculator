@@ -1,8 +1,14 @@
 #pragma once
 
-class FormulaEngineSyntaxTester_2 {
+#include "test/common/test_module_base.h"
+
+class FormulaEngineSyntaxTester_2 : public TestModuleBase {
 public:
-    static bool run();
+    FormulaEngineSyntaxTester_2()
+        : TestModuleBase("FormulaEngineSyntaxTester_2")
+    {}
+
+    bool run() override;
 
 private:
     // Optional + ternary combos

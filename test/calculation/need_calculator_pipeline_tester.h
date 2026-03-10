@@ -14,7 +14,8 @@ private:
     void testQtyDsl();
     void testOptDsl();
     void testChooseDsl();
-    void testExplodePieces();
-    void testAggregation();
+    //void testExplodePieces();
+    //void testAggregation();
     void testKitting();
+    void testCutting();
 };

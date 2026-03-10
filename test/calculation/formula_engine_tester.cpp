@@ -159,9 +159,17 @@ void FormulaEngineTester::testNeedCalculatorSimpleRoletta()
     auto mode = TestDataBuilder::makeCalculation(ids.P1, "Manufacturing");
     NeedCalculationRegistry::instance().insert(mode);
 
-    // v1 DSL továbbra is támogatott: w-15, w-10
-    auto d1 = TestDataBuilder::makeDetail(mode.id, ids.M1, "requiredLength = w-15", NeedCalculationDetail::DetailKind::Cutting);
-    auto d2 = TestDataBuilder::makeDetail(mode.id, ids.M2, "requiredLength = w-10", NeedCalculationDetail::DetailKind::Cutting);
+    // v1 DSL továbbra is támogatott: requiredLength = w-15, w-10
+    auto d1 = TestDataBuilder::makeDetail(
+        mode.id, ids.M1,
+        "requiredLength = w - 15",
+        NeedCalculationDetail::DetailKind::Cutting
+        );
+    auto d2 = TestDataBuilder::makeDetail(
+        mode.id, ids.M2,
+        "requiredLength = w - 10",
+        NeedCalculationDetail::DetailKind::Cutting
+        );
 
     NeedCalculationDetailRegistry::instance().insert(d1);
     NeedCalculationDetailRegistry::instance().insert(d2);
@@ -171,25 +179,27 @@ void FormulaEngineTester::testNeedCalculatorSimpleRoletta()
     line.productId  = ids.P1;
     line.width_mm   = 1200;
     line.height_mm  = 1500;
-    line.qty        = 1;
     line.handlerSide = "";
     line.externalId  = "X";
     line.ownerName   = "";
     line.colorName   = "";
 
-    auto cuts = NeedCalculator::makeCutList(line, "Manufacturing");
+    // ÚJ API
+    ItemNeed need = NeedCalculator::calculate(line, "Manufacturing", true);
 
-    Q_ASSERT(cuts.size() == 2);
+    // 2 RawCut kell legyen
+    Q_ASSERT(need.cutItems.size() == 2);
 
-    // A sorrend determinisztikus (QMap → QVector)
-    Q_ASSERT(cuts[0].materialBarcode == ids.M1_barcode);
-    Q_ASSERT(cuts[1].materialBarcode == ids.M2_barcode);
+    // A sorrend determinisztikus
+    Q_ASSERT(need.cutItems[0].materialBarcode == ids.M1_barcode);
+    Q_ASSERT(need.cutItems[1].materialBarcode == ids.M2_barcode);
 
-    Q_ASSERT(cuts[0].requiredLength == 1185); // 1200 - 15
-    Q_ASSERT(cuts[1].requiredLength == 1190); // 1200 - 10
+    Q_ASSERT(need.cutItems[0].requiredLength == 1185); // 1200 - 15
+    Q_ASSERT(need.cutItems[1].requiredLength == 1190); // 1200 - 10
 
     zInfo("✓ testNeedCalculatorSimpleRoletta OK");
 }
+
 
 
 void FormulaEngineTester::testNeedCalculatorInvalidFormulaAudit()
@@ -209,25 +219,37 @@ void FormulaEngineTester::testNeedCalculatorInvalidFormulaAudit()
     auto mode = TestDataBuilder::makeCalculation(ids.P1, "Manufacturing");
     NeedCalculationRegistry::instance().insert(mode);
 
+    // Hibás formula → registry még elfogadja
     NeedCalculationDetail d;
     d.id = QUuid::createUuid();
     d.needCalculationId = mode.id;
     d.materialId = ids.M1;
-    d.formula = "w-";
+    d.formula = "w-";   // hibás
+    d.kind = NeedCalculationDetail::DetailKind::Cutting;
 
     bool inserted = NeedCalculationDetailRegistry::instance().insert(d);
     Q_ASSERT(inserted);
 
-    int width  = 1200;
-    int height = 1500;
-    int qty    = 1;
+    // v2 OrderLine
+    OrderLine line;
+    line.productId  = ids.P1;
+    line.width_mm   = 1200;
+    line.height_mm  = 1500;
+    line.handlerSide = "";
+    line.externalId  = "X";
+    line.ownerName   = "";
+    line.colorName   = "";
 
-    auto cuts = NeedCalculator::makeCutList({ ids.P1, width, height, qty , "", "", "", ""}, "Manufacturing");
+    // ÚJ API
+    ItemNeed need = NeedCalculator::calculate(line, "Manufacturing", true);
 
-    Q_ASSERT(cuts.isEmpty());
+    // Hibás formula → skip → üres eredmény
+    Q_ASSERT(need.cutItems.isEmpty());
+    Q_ASSERT(need.kitItems.isEmpty());
 
     zInfo("✓ testNeedCalculatorInvalidFormulaAudit OK");
 }
+
 
 // ---------------------------------------------------------------------
 // 3) choose: DSL
@@ -331,35 +353,36 @@ void FormulaEngineTester::testNeedCalculatorChooseTrue()
     line.productId   = ids.P1;
     line.width_mm    = 2000;
     line.height_mm   = 2000;
-    line.qty         = 1;
     line.handlerSide = "";
     line.externalId  = "X";
     line.ownerName   = "";
     line.colorName   = "";
 
     // choose: feltétel igaz → M1 barcode
-
-    QString cmd = QString("qty = %1\n material = (w*h > 1000000) ? %2 : %3")
-                      .arg(line.qty)
-                      .arg(ids.M1_barcode, ids.M2_barcode);
+    QString cmd = QString(
+                      "qty = 1\n"
+                      "material = (w*h > 1000000) ? \"%1\" : \"%2\""
+                      ).arg(ids.M1_barcode, ids.M2_barcode);
 
     auto d = TestDataBuilder::makeDetail(
         mode.id, ids.M1, cmd, NeedCalculationDetail::DetailKind::Kitting);
 
     NeedCalculationDetailRegistry::instance().insert(d);
 
-    auto cuts = NeedCalculator::makeKitList(line, "Manufacturing", true);
+    // ÚJ API
+    ItemNeed need = NeedCalculator::calculate(line, "Manufacturing", true);
 
-    Q_ASSERT(cuts.size() == 1);
+    Q_ASSERT(need.kitItems.size() == 1);
 
     // choose → M1 barcode
-    Q_ASSERT(cuts[0].materialBarcode == ids.M1_barcode);
+    Q_ASSERT(need.kitItems[0].materialBarcode == ids.M1_barcode);
 
-    // qty = 1 → quantity = 1
-    Q_ASSERT(cuts[0].quantity == 1);
+    // qty = 1 → egy példányra qty = 1
+    Q_ASSERT(need.kitItems[0].qty == 1);
 
     zInfo("✓ testNeedCalculatorChooseTrue OK");
 }
+
 
 
 void FormulaEngineTester::testNeedCalculatorChooseFalse()
@@ -383,35 +406,34 @@ void FormulaEngineTester::testNeedCalculatorChooseFalse()
     // v2 OrderLine
     OrderLine line;
     line.productId   = ids.P1;
-    line.width_mm    = 1000;
+    line.width_mm    = 1000;   // feltétel hamis
     line.height_mm   = 1000;
-    line.qty         = 1;
     line.handlerSide = "";
     line.externalId  = "X";
     line.ownerName   = "";
     line.colorName   = "";
 
     // choose: feltétel hamis → M2 barcode
-
-    QString cmd = QString("qty = %1\n material = (w*h > 1000000) ? %2 : %3")
-                      .arg(line.qty)
-                      .arg(ids.M1_barcode, ids.M2_barcode);
+    QString cmd = QString(
+                      "qty = 1\n"
+                      "material = (w*h > 1000000) ? \"%1\" : \"%2\""
+                      ).arg(ids.M1_barcode, ids.M2_barcode);
 
     auto d = TestDataBuilder::makeDetail(
-        mode.id, ids.M1,cmd, NeedCalculationDetail::DetailKind::Kitting);
+        mode.id, ids.M1, cmd, NeedCalculationDetail::DetailKind::Kitting);
 
     NeedCalculationDetailRegistry::instance().insert(d);
 
-    QVector<KitAggregatedItem> cuts = NeedCalculator::makeKitList(line, "Manufacturing", true);
+    // ÚJ API
+    ItemNeed need = NeedCalculator::calculate(line, "Manufacturing", true);
 
-    Q_ASSERT(cuts.size() == 1);
+    Q_ASSERT(need.kitItems.size() == 1);
 
     // choose → M2 barcode
-    Q_ASSERT(cuts[0].materialBarcode == ids.M2_barcode);
+    Q_ASSERT(need.kitItems[0].materialBarcode == ids.M2_barcode);
 
-    // qty = 1 → quantity = 1
-    Q_ASSERT(cuts[0].quantity == 1);
+    // qty = 1 → egy példányra qty = 1
+    Q_ASSERT(need.kitItems[0].qty == 1);
 
     zInfo("✓ testNeedCalculatorChooseFalse OK");
 }
-

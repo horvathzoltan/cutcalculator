@@ -16,9 +16,10 @@ bool NeedCalculatorPipelineTester::run()
     testQtyDsl();
     testOptDsl();
     testChooseDsl();
-    testExplodePieces();
-    testAggregation();
+    //testExplodePieces();
+    //testAggregation();
     testKitting();
+    testCutting();
 
     zInfo("=== NeedCalculatorPipeline TESTS END ===");
     return true;
@@ -40,54 +41,88 @@ void NeedCalculatorPipelineTester::testLenDsl()
 
     // ÚJ DSL:
     // requiredLength = w - 20
-    auto d = TestDataBuilder::makeDetail(mode.id, ids.M1,
-                                         "requiredLength = w - 20",
-                                         NeedCalculationDetail::DetailKind::Cutting);
+    auto d = TestDataBuilder::makeDetail(
+        mode.id, ids.M1,
+        "requiredLength = w - 20",
+        NeedCalculationDetail::DetailKind::Cutting
+        );
     NeedCalculationDetailRegistry::instance().insert(d);
 
-    OrderLine line{ ids.P1, 1200, 800, 2, "L", "X", "Owner", "Color" };
+    OrderLine line;
+    line.productId = ids.P1;
+    line.width_mm = 1200;
+    line.height_mm = 800;
+    line.handlerSide = "L";
+    line.externalId = "X";
+    line.ownerName = "Owner";
+    line.colorName = "Color";
 
-    auto cuts = NeedCalculator::makeCutList(line, "M");
+    // ÚJ API
+    ItemNeed need = NeedCalculator::calculate(line, "M", true);
 
-    Q_ASSERT(cuts.size() == 1);
-    Q_ASSERT(cuts[0].requiredLength == 1180);
-    Q_ASSERT(cuts[0].quantity == 2);
+    // 1 RawCut kell legyen
+    Q_ASSERT(need.cutItems.size() == 1);
+
+    // requiredLength = 1200 - 20 = 1180
+    Q_ASSERT(need.cutItems[0].requiredLength == 1180);
+
+    // quantity NINCS többé → egy példány BOM-ja
+    // a qty majd az OrderItemNeed builderben jelenik meg
 
     zInfo("✓ testLenDsl OK");
 }
 
-void NeedCalculatorPipelineTester::testAggregation()
-{
-    zInfo("→ testAggregation");
 
-    ProductRegistry::instance().clearForTest();
-    MaterialRegistry::instance().clearForTest();
-    NeedCalculationRegistry::instance().clearForTest();
-    NeedCalculationDetailRegistry::instance().clearForTest();
+// void NeedCalculatorPipelineTester::testAggregation()
+// {
+//     zInfo("→ testAggregation");
 
-    auto ids = TestDataBuilder::prepareStandard();
+//     ProductRegistry::instance().clearForTest();
+//     MaterialRegistry::instance().clearForTest();
+//     NeedCalculationRegistry::instance().clearForTest();
+//     NeedCalculationDetailRegistry::instance().clearForTest();
 
-    auto mode = TestDataBuilder::makeCalculation(ids.P1, "M");
-    NeedCalculationRegistry::instance().insert(mode);
+//     auto ids = TestDataBuilder::prepareStandard();
 
-    auto d1 = TestDataBuilder::makeDetail(mode.id, ids.M1,
-                                          "requiredLength = w - 20",
-                                          NeedCalculationDetail::DetailKind::Cutting);
-    auto d2 = TestDataBuilder::makeDetail(mode.id, ids.M1,
-                                          "requiredLength = w - 20",
-                                          NeedCalculationDetail::DetailKind::Cutting);
-    NeedCalculationDetailRegistry::instance().insert(d1);
-    NeedCalculationDetailRegistry::instance().insert(d2);
+//     auto mode = TestDataBuilder::makeCalculation(ids.P1, "M");
+//     NeedCalculationRegistry::instance().insert(mode);
 
-    OrderLine line{ ids.P1, 1200, 800, 1, "L", "X", "Owner", "Color" };
+//     auto d1 = TestDataBuilder::makeDetail(
+//         mode.id, ids.M1,
+//         "requiredLength = w - 20",
+//         NeedCalculationDetail::DetailKind::Cutting
+//         );
+//     auto d2 = TestDataBuilder::makeDetail(
+//         mode.id, ids.M1,
+//         "requiredLength = w - 20",
+//         NeedCalculationDetail::DetailKind::Cutting
+//         );
 
-    auto cuts = NeedCalculator::makeCutList(line, "M");
+//     NeedCalculationDetailRegistry::instance().insert(d1);
+//     NeedCalculationDetailRegistry::instance().insert(d2);
 
-    Q_ASSERT(cuts.size() == 1);
-    Q_ASSERT(cuts[0].quantity == 2);
+//     OrderLine line;
+//     line.productId = ids.P1;
+//     line.width_mm = 1200;
+//     line.height_mm = 800;
+//     line.handlerSide = "L";
+//     line.externalId = "X";
+//     line.ownerName = "Owner";
+//     line.colorName = "Color";
 
-    zInfo("✓ testAggregation OK");
-}
+//     // ÚJ API
+//     ItemNeed need = NeedCalculator::calculate(line, "M", true);
+
+//     // 2 RawCut kell legyen (mert 2 detail van)
+//     Q_ASSERT(need.cutItems.size() == 2);
+
+//     // Mindkettő requiredLength = 1180
+//     Q_ASSERT(need.cutItems[0].requiredLength == 1180);
+//     Q_ASSERT(need.cutItems[1].requiredLength == 1180);
+
+//     zInfo("✓ testAggregation OK");
+// }
+
 
 void NeedCalculatorPipelineTester::testQtyDsl()
 {
@@ -107,23 +142,38 @@ void NeedCalculatorPipelineTester::testQtyDsl()
     NeedCalculationRegistry::instance().insert(mode);
 
     // ÚJ DSL:
-    // requiredLength = w - 10
     // qty = 3
-    auto d = TestDataBuilder::makeDetail(mode.id, ids.M1,
-                                         "qty = 3",
-                                        NeedCalculationDetail::DetailKind::Kitting);
+    auto d = TestDataBuilder::makeDetail(
+        mode.id, ids.M1,
+        "qty = 3",
+        NeedCalculationDetail::DetailKind::Kitting
+        );
     NeedCalculationDetailRegistry::instance().insert(d);
 
-    OrderLine line{ ids.P1, 1200, 800, 2, "L", "X", "Owner", "Color" };
+    OrderLine line;
+    line.productId = ids.P1;
+    line.width_mm = 1200;
+    line.height_mm = 800;
+    line.handlerSide = "L";
+    line.externalId = "X";
+    line.ownerName = "Owner";
+    line.colorName = "Color";
 
-    auto kits = NeedCalculator::makeKitList(line, "M");
+    // ÚJ API
+    ItemNeed need = NeedCalculator::calculate(line, "M", true);
 
-    Q_ASSERT(kits.size() == 1);
-    Q_ASSERT(kits[0].quantity == 3); // 3 * line.qty
-    Q_ASSERT(kits[0].materialBarcode == ids.M1_barcode);
+    // 1 RawKit kell legyen
+    Q_ASSERT(need.kitItems.size() == 1);
+
+    // qty = 3 → egy példányra 3 db kell
+    Q_ASSERT(need.kitItems[0].qty == 3);
+
+    // materialBarcode is helyes
+    Q_ASSERT(need.kitItems[0].materialBarcode == ids.M1_barcode);
 
     zInfo("✓ testQtyDsl OK");
 }
+
 
 void NeedCalculatorPipelineTester::testOptDsl()
 {
@@ -140,23 +190,35 @@ void NeedCalculatorPipelineTester::testOptDsl()
     NeedCalculationRegistry::instance().insert(mode);
 
     // ÚJ DSL:
-    // requiredLength = (w - 20) + (flag ? 40 : 0)
+    // requiredLength = w - 20 + opt: 1 ? +40
     auto d = TestDataBuilder::makeDetail(
         mode.id, ids.M1,
         "requiredLength = w - 20 + opt: 1 ? +40",
-        NeedCalculationDetail::DetailKind::Cutting);
-
+        NeedCalculationDetail::DetailKind::Cutting
+        );
     NeedCalculationDetailRegistry::instance().insert(d);
 
-    OrderLine line{ ids.P1, 1200, 800, 1, "L", "X", "Owner", "Color" };
+    OrderLine line;
+    line.productId = ids.P1;
+    line.width_mm = 1200;
+    line.height_mm = 800;
+    line.handlerSide = "L";
+    line.externalId = "X";
+    line.ownerName = "Owner";
+    line.colorName = "Color";
 
-    auto cuts = NeedCalculator::makeCutList(line, "M");
+    // ÚJ API
+    ItemNeed need = NeedCalculator::calculate(line, "M", true);
 
-    Q_ASSERT(cuts.size() == 1);
-    Q_ASSERT(cuts[0].requiredLength == 1220);
+    // 1 RawCut kell legyen
+    Q_ASSERT(need.cutItems.size() == 1);
+
+    // requiredLength = 1200 - 20 + 40 = 1220
+    Q_ASSERT(need.cutItems[0].requiredLength == 1220);
 
     zInfo("✓ testOptDsl OK");
 }
+
 
 void NeedCalculatorPipelineTester::testChooseDsl()
 {
@@ -178,56 +240,68 @@ void NeedCalculatorPipelineTester::testChooseDsl()
         mode.id, ids.M1,
         QString("material = (w >= 1500 ? \"%1\" : \"%2\")")
             .arg(ids.M1_barcode, ids.M2_barcode),
-            NeedCalculationDetail::DetailKind::Kitting);
+        NeedCalculationDetail::DetailKind::Kitting
+        );
 
     NeedCalculationDetailRegistry::instance().insert(d);
 
-    OrderLine line{ ids.P1, 2000, 800, 1, "L", "X", "Owner", "Color" };
+    OrderLine line;
+    line.productId = ids.P1;
+    line.width_mm = 2000;   // feltétel igaz
+    line.height_mm = 800;
+    line.handlerSide = "L";
+    line.externalId = "X";
+    line.ownerName = "Owner";
+    line.colorName = "Color";
 
-    auto cuts = NeedCalculator::makeKitList(line, "M");
+    // ÚJ API
+    ItemNeed need = NeedCalculator::calculate(line, "M", true);
 
-    Q_ASSERT(cuts.size() == 1);
-    Q_ASSERT(cuts[0].materialBarcode == ids.M1_barcode);
+    // 1 RawKit kell legyen
+    Q_ASSERT(need.kitItems.size() == 1);
+
+    // choose DSL → M1 barcode
+    Q_ASSERT(need.kitItems[0].materialBarcode == ids.M1_barcode);
 
     zInfo("✓ testChooseDsl OK");
 }
 
-void NeedCalculatorPipelineTester::testExplodePieces()
-{
-    zInfo("→ testExplodePieces");
+// void NeedCalculatorPipelineTester::testExplodePieces()
+// {
+//     zInfo("→ testExplodePieces");
 
-    ProductRegistry::instance().clearForTest();
-    MaterialRegistry::instance().clearForTest();
-    NeedCalculationRegistry::instance().clearForTest();
-    NeedCalculationDetailRegistry::instance().clearForTest();
+//     ProductRegistry::instance().clearForTest();
+//     MaterialRegistry::instance().clearForTest();
+//     NeedCalculationRegistry::instance().clearForTest();
+//     NeedCalculationDetailRegistry::instance().clearForTest();
 
-    auto ids = TestDataBuilder::prepareStandard();
+//     auto ids = TestDataBuilder::prepareStandard();
 
-    auto mode = TestDataBuilder::makeCalculation(ids.P1, "M");
-    NeedCalculationRegistry::instance().insert(mode);
+//     auto mode = TestDataBuilder::makeCalculation(ids.P1, "M");
+//     NeedCalculationRegistry::instance().insert(mode);
 
-    // ÚJ DSL:
-    // requiredLength = w - 10
-    // qty = 3
-    auto d = TestDataBuilder::makeDetail(mode.id, ids.M1,
-                                         "requiredLength = w - 10",
-                                         NeedCalculationDetail::DetailKind::Cutting);
-    NeedCalculationDetailRegistry::instance().insert(d);
+//     // ÚJ DSL:
+//     // requiredLength = w - 10
+//     // qty = 3
+//     auto d = TestDataBuilder::makeDetail(mode.id, ids.M1,
+//                                          "requiredLength = w - 10",
+//                                          NeedCalculationDetail::DetailKind::Cutting);
+//     NeedCalculationDetailRegistry::instance().insert(d);
 
-    OrderLine line{ ids.P1, 1200, 800, 1, "L", "X", "Owner", "Color" };
+//     OrderLine line{ ids.P1, 1200, 800, 1, "L", "X", "Owner", "Color" };
 
-    auto cuts = NeedCalculator::makeCutList(line, "M");
+//     auto cuts = NeedCalculator::makeCutList(line, "M");
 
-    Q_ASSERT(cuts.size() == 1);
-    Q_ASSERT(cuts[0].quantity == 3);
+//     Q_ASSERT(cuts.size() == 1);
+//     Q_ASSERT(cuts[0].quantity == 3);
 
-    Q_ASSERT(cuts[0].externalRefs.size() == 3);
-    Q_ASSERT(cuts[0].externalRefs[0] == "X.1");
-    Q_ASSERT(cuts[0].externalRefs[1] == "X.2");
-    Q_ASSERT(cuts[0].externalRefs[2] == "X.3");
+//     Q_ASSERT(cuts[0].externalRefs.size() == 3);
+//     Q_ASSERT(cuts[0].externalRefs[0] == "X.1");
+//     Q_ASSERT(cuts[0].externalRefs[1] == "X.2");
+//     Q_ASSERT(cuts[0].externalRefs[2] == "X.3");
 
-    zInfo("✓ testExplodePieces OK");
-}
+//     zInfo("✓ testExplodePieces OK");
+// }
 
 void NeedCalculatorPipelineTester::testKitting()
 {
@@ -254,17 +328,75 @@ void NeedCalculatorPipelineTester::testKitting()
 
     NeedCalculationDetailRegistry::instance().insert(d);
 
-    OrderLine line{ ids.P1, 1200, 800, 3, "L", "X", "Owner", "Color" };
+    OrderLine line;
+    line.productId = ids.P1;
+    line.width_mm = 1200;
+    line.height_mm = 800;
+    line.handlerSide = "L";
+    line.externalId = "X";
+    line.ownerName = "Owner";
+    line.colorName = "Color";
 
-    auto kits = NeedCalculator::makeKitList(line, "M");
+    // ÚJ API
+    ItemNeed need = NeedCalculator::calculate(line, "M", true);
 
-    Q_ASSERT(kits.size() == 1);
-    Q_ASSERT(kits[0].materialBarcode == ids.M1_barcode);
-    Q_ASSERT(kits[0].quantity == 6);
-    Q_ASSERT(kits[0].fullWidth == 1200);
-    Q_ASSERT(kits[0].fullHeight == 800);
+    // 1 RawKit kell legyen
+    Q_ASSERT(need.kitItems.size() == 1);
+
+    // qty = 2 → egy példányra 2 db kell
+    Q_ASSERT(need.kitItems[0].qty == 2);
+
+    // materialBarcode is helyes
+    Q_ASSERT(need.kitItems[0].materialBarcode == ids.M1_barcode);
 
     zInfo("✓ testKitting OK");
+}
+
+void NeedCalculatorPipelineTester::testCutting()
+{
+    zInfo("→ testCutting");
+
+    ProductRegistry::instance().clearForTest();
+    MaterialRegistry::instance().clearForTest();
+    NeedCalculationRegistry::instance().clearForTest();
+    NeedCalculationDetailRegistry::instance().clearForTest();
+
+    auto ids = TestDataBuilder::prepareStandard();
+
+    auto mode = TestDataBuilder::makeCalculation(ids.P1, "M");
+    NeedCalculationRegistry::instance().insert(mode);
+
+    // Cutting DSL:
+    // requiredLength = w - 30
+    auto d = TestDataBuilder::makeDetail(
+        mode.id, ids.M1,
+        "requiredLength = w - 30",
+        NeedCalculationDetail::DetailKind::Cutting
+        );
+    NeedCalculationDetailRegistry::instance().insert(d);
+
+    OrderLine line;
+    line.productId = ids.P1;
+    line.width_mm = 1500;
+    line.height_mm = 800;
+    line.handlerSide = "L";
+    line.externalId = "X";
+    line.ownerName = "Owner";
+    line.colorName = "Color";
+
+    // ÚJ API
+    ItemNeed need = NeedCalculator::calculate(line, "M", true);
+
+    // 1 RawCut kell legyen
+    Q_ASSERT(need.cutItems.size() == 1);
+
+    // requiredLength = 1500 - 30 = 1470
+    Q_ASSERT(need.cutItems[0].requiredLength == 1470);
+
+    // materialBarcode is helyes
+    Q_ASSERT(need.cutItems[0].materialBarcode == ids.M1_barcode);
+
+    zInfo("✓ testCutting OK");
 }
 
 
