@@ -1,0 +1,322 @@
+⭐ FUNKCIONÁLIS SPECIFIKÁCIÓ
+
+Gyártási rendeléskezelő és anyagigény‑képző rendszer (v1.0)
+
+(NeedCalculator + Order + WorkOrder + ItemNeed jövőmodell)
+
+------------------------------------------------------------------------
+
+1. Rendszer célja
+
+A rendszer feladata:
+
+-   ügyfél megrendeléseinek kezelése (Order),
+-   megrendelésen belüli tételek kezelése (OrderLine),
+-   ezekből anyagigény számítása (NeedCalculator),
+-   több megrendelésből munkalap összeállítása (WorkOrder),
+-   a munkalaphoz tartozó összesített anyagigény előállítása
+    (WorkOrderNeed),
+-   a gyártás számára vágási és kitting listák generálása.
+
+A rendszernek támogatnia kell:
+
+-   több order → egy munkalap,
+-   több orderline → több ItemNeed,
+-   qty szorzást,
+-   aggregálást (azonos anyagok összevonása),
+-   auditálhatóságot,
+-   visszakereshetőséget.
+
+------------------------------------------------------------------------
+
+2. Fő entitások és szerepük
+
+A rendszer három rétegben működik:
+
+1.  Order szint – ügyfélmegrendelések és tételek
+2.  Need szint – anyagigény számítása és reprezentációja
+3.  WorkOrder szint – gyártási munkalapok és aggregált igények
+
+Mindhárom réteg külön felelősséget visz, és együtt alkotják a gyártási
+pipeline‑t.
+
+------------------------------------------------------------------------
+
+⭐ 2.1. ORDER SZINT
+
+(Megrendelések és tételek funkcionális specifikációja)
+
+Order – ügyfélmegrendelés
+
+Egy Order egy ügyfél által leadott megrendelést reprezentál.
+
+Attribútumok
+
+-   id : QUuid
+-   orderNumber : QString (pl. „2026‑0001”)
+-   customerName : QString
+-   orderDate : QDate
+-   lines : QVector<OrderLine>
+
+Viselkedés
+
+-   egy Order több OrderLine‑t tartalmaz,
+-   egy OrderLine egy terméket és annak paramétereit írja le.
+
+------------------------------------------------------------------------
+
+OrderLine – megrendelési tétel
+
+Egy OrderLine egy konkrét termék egy vagy több példányát írja le.
+
+Attribútumok
+
+-   id : QUuid
+-   productId : QUuid
+-   width_mm : int
+-   height_mm : int
+-   qty : int
+-   handlerSide : QString
+-   externalId : QString
+-   ownerName : QString
+-   colorName : QString
+
+Viselkedés
+
+-   egy OrderLine‑ból qty darab fizikai termék készül,
+-   a NeedCalculator egy darabra számol anyagigényt.
+
+------------------------------------------------------------------------
+
+⭐ 2.2. NEED SZINT
+
+(Anyagigény számítása és reprezentációja)
+
+NeedCalculation / NeedCalculationDetail
+
+Ezek már léteznek:
+
+-   termékhez tartozó számítási módok,
+-   minden módhoz több formula (Cutting / Kitting).
+
+------------------------------------------------------------------------
+
+ItemNeed – egy darab termék anyagigénye
+
+A NeedCalculator eredménye egy darabra.
+
+Attribútumok
+
+-   orderLineId : QUuid
+-   cuts : QVector<RawCut>
+-   kits : QVector<RawKit>
+
+Viselkedés
+
+-   nem aggregált,
+-   nem szorzott,
+-   egyetlen fizikai példány anyagigénye.
+
+------------------------------------------------------------------------
+
+OrderItemNeed – egy OrderLine összes példánya
+
+Attribútumok
+
+-   orderLineId : QUuid
+-   qty : int
+-   instances : QVector<ItemNeed>
+    (opcionális: példányonkénti externalRef generáláshoz)
+
+Viselkedés
+
+-   NeedCalculator::calculate(line) → ItemNeed (1 db)
+-   OrderItemNeedBuilder:
+    -   megszorozza qty‑vel,
+    -   példányonként externalRef‑et generálhat.
+
+------------------------------------------------------------------------
+
+OrderNeed – egy teljes Order anyagigénye
+
+Attribútumok
+
+-   orderId : QUuid
+-   orderItemNeeds : QVector<OrderItemNeed>
+
+Viselkedés
+
+-   egy Order összes tételének anyagigénye,
+-   még nem aggregált.
+
+------------------------------------------------------------------------
+
+⭐ 2.3. WORKORDER SZINT
+
+(Munkalapok és aggregált gyártási igények)
+
+WorkOrder – gyártási munkalap
+
+A gyártásba kiadott megrendelések csoportja.
+
+Attribútumok
+
+-   id : QUuid
+-   workOrderNumber : QString (pl. „2026‑0001”)
+-   date : QDate
+-   orderIds : QVector<QUuid>
+
+Viselkedés
+
+-   több Order tartozhat egy WorkOrder‑höz,
+-   a gyártás mindig WorkOrder szinten dolgozik.
+
+------------------------------------------------------------------------
+
+WorkOrderNeed – munkalap teljes anyagigénye
+
+Attribútumok
+
+-   workOrderId : QUuid
+-   orderNeeds : QVector<OrderNeed>
+-   aggregatedCuts : QVector<CutAggregatedItem>
+-   aggregatedKits : QVector<KitAggregatedItem>
+
+Viselkedés
+
+-   összegyűjti az összes OrderNeed‑et,
+-   aggregálja az anyagokat (azonos barcode + méret + tulajdonságok).
+
+------------------------------------------------------------------------
+
+3. Folyamatok (end‑to‑end)
+
+3.1. Order létrehozása
+
+1.  Felhasználó rögzíti az Order metaadatokat.
+2.  Hozzáad OrderLine tételeket.
+3.  Minden OrderLine tartalmazza a qty‑t.
+
+------------------------------------------------------------------------
+
+3.2. OrderNeed előállítása
+
+1.  OrderNeedBuilder::build(order, modeName)
+2.  Minden OrderLine‑ra:
+    -   ItemNeed perOne = NeedCalculator::calculate(line)
+    -   OrderItemNeed.qty = line.qty
+    -   OrderItemNeed.instances = perOne * qty
+3.  OrderNeed összeállítása.
+
+------------------------------------------------------------------------
+
+3.3. WorkOrder létrehozása
+
+1.  Felhasználó kiválaszt több Order‑t.
+2.  Rendszer generál egy workOrderNumber‑t:
+    -   YYYY‑XXXX formátumban.
+3.  WorkOrder mentése.
+
+------------------------------------------------------------------------
+
+3.4. WorkOrderNeed előállítása
+
+1.  WorkOrderNeedBuilder::build(workOrder)
+2.  Betölti az összes Order‑t.
+3.  Minden Order‑re meghívja az OrderNeedBuilder‑t.
+4.  Összefűzi az összes OrderNeed‑et.
+5.  Átadja az aggregátoroknak:
+    -   CutAggregator::aggregate
+    -   KitAggregator::aggregate
+6.  Eredmény: teljes gyártási lista.
+
+------------------------------------------------------------------------
+
+4. Számítási logika (NeedCalculator)
+
+A NeedCalculator:
+
+-   feltölti a DSL változókat (w, h, color, stb.),
+-   futtatja a FormulaEngine‑t,
+-   kiolvassa a requiredLength, material, qty változókat,
+-   visszaad egy ItemNeed‑et.
+
+A qty szorzás nem itt történik, hanem a builderben.
+
+------------------------------------------------------------------------
+
+⭐ 5. Munkalapszám generálás (ÚJ, véglegesített specifikáció)
+
+Formátum
+
+    YYYY-XXXX
+
+ahol:
+
+-   YYYY = év (pl. 2026)
+-   XXXX = év elejétől folyamatosan növekvő sorszám (0001–9999)
+
+Példák
+
+-   2026-0001
+-   2026-0002
+-   2026-1245
+
+Szabályok
+
+✔ 1. A sorszám minden évben újraindul
+✔ 2. Éven belül monoton növekvő
+✔ 3. Lexikografikusan rendezhető
+✔ 4. Könnyen kereshető
+✔ 5. Nem tartalmaz dátumot
+✔ 6. Gyártási gyakorlatban bevált modell
+
+------------------------------------------------------------------------
+
+6. Implementációs terv (egy az egyben kódolható)
+
+6.1. Új osztályok
+
+-   Order
+-   OrderLine
+-   OrderNeed
+-   OrderItemNeed
+-   OrderNeedBuilder
+-   WorkOrder
+-   WorkOrderNeed
+-   WorkOrderNeedBuilder
+-   WorkOrderNumberGenerator
+
+6.2. NeedCalculator változatlan marad
+
+(csak a qty‑t nem ő szorozza)
+
+6.3. Builder réteg
+
+OrderNeedBuilder
+
+    class OrderNeedBuilder {
+    public:
+        static OrderNeed build(const Order& order, const QString& modeName, bool debug = false);
+    };
+
+WorkOrderNeedBuilder
+
+    class WorkOrderNeedBuilder {
+    public:
+        static WorkOrderNeed build(const WorkOrder& wo, const QString& modeName, bool debug = false);
+    };
+
+------------------------------------------------------------------------
+
+7. Miért jó ez a modell?
+
+-   tiszta rétegek,
+-   a NeedCalculator egyszerű marad,
+-   a builder réteg felel a qty‑ért és aggregálásért,
+-   a WorkOrder domain végre megjelenik,
+-   a gyártási folyamat leképezhető,
+-   minden entitás egyértelműen definiált.
+
+------------------------------------------------------------------------
+
