@@ -74,7 +74,14 @@ EvalResult FormulaEngine::evalSingleLine(const QString& code)
     if (!result.ok)
         return EvalResult::failure(code, result.error);
 
-    VariableRepository::instance().set("_result", result.value);
+    // SKIP → NULL
+    Value out = result.value;
+
+    // A teljes formula eredménye nem lehet SKIP → NULL-lá alakítjuk
+    if (out.isSkip())
+        out = Value::nullValue();
+
+    VariableRepository::instance().set("_result", out);
 
     dumpTokensAndRpn(pr.value.tokens, pr.value.rpn, r.tokensDump, r.rpnDump);
 
@@ -172,182 +179,249 @@ Result<Value> FormulaEngine::evalNode(AstNode* n, EvalResult* traceOut)
     auto& vars = VariableRepository::instance();
     auto& reg  = FunctionRegistry::instance();
 
+    // Debug trace helper – mindig Value::toString()-et használ
     auto addTrace = [&](const Value& v) {
         if (!traceOut) return;
         TraceEntry e;
         e.nodeType  = astTypeName(n->type);
         e.nodeValue = n->value;
-        e.result    = v.toString();
+        e.result    = v.toString();   // <-- új, biztonságos debug string
         traceOut->trace.append(e);
     };
 
-    // Helper: evaluate a child safely
+    // Gyerek node kiértékelése
     auto evalChild = [&](AstNode* c) -> Result<Value> {
         return evalNode(c, traceOut);
     };
 
-    // Helper: evaluate all children safely
+    // Több gyerek biztonságos kiértékelése
     auto evalChildrenSafe = [&](AstNode* node) -> Result<QVector<Value>> {
         QVector<Value> out;
         const auto& children = node->children;
-        for (AstNode* c : children) {
+        for (AstNode* c : children)
+        {
             auto r = evalNode(c, traceOut);
-            if (!r.ok) return Result<QVector<Value>>::failure(r.error);
+            if (!r.ok)
+                return Result<QVector<Value>>::failure(r.error);
             out.append(r.value);
         }
         return Result<QVector<Value>>::success(out);
     };
 
-    switch (n->type) {
-
+    switch (n->type)
+    {
+    // ------------------------------
+    // NUMBER LITERÁL
+    // ------------------------------
     case AstNode::Type::Number: {
         Value v = Value::numberValue(n->value.toDouble());
         addTrace(v);
         return Result<Value>::success(v);
     }
 
+    // ------------------------------
+    // STRING LITERÁL
+    // ------------------------------
     case AstNode::Type::StringLiteral: {
         Value v = Value::stringValue(n->value);
         addTrace(v);
         return Result<Value>::success(v);
     }
 
+    // ------------------------------
+    // VÁLTOZÓ OLVASÁS
+    // ------------------------------
     case AstNode::Type::Variable: {
         Value v = vars.get(n->value);
-        if (v.type == Value::Type::Null)
+
+        // Null = nincs ilyen változó
+        if (v.type() == Value::Type::Null)
             return Result<Value>::failure("Undefined variable: " + n->value);
+
         addTrace(v);
         return Result<Value>::success(v);
     }
 
+    // ------------------------------
+    // OPERÁTOR (pl. + - * / > == stb.)
+    // ------------------------------
     case AstNode::Type::Operator: {
         auto argsRes = evalChildrenSafe(n);
-        if (!argsRes.ok) return Result<Value>::failure(argsRes.error);
+        if (!argsRes.ok)
+            return Result<Value>::failure(argsRes.error);
 
         QVector<Value> filtered;
-        const auto& values = argsRes.value;
-        for (const Value& a : values) {
-            if (a.type != Value::Type::Skip)
+
+        // SKIP-ek kiszűrése
+        const auto& values = argsRes.value;   // <-- nincs detach
+        for (const Value& a : values) {       // <-- biztonságos
+            if (a.type() != Value::Type::Skip)
                 filtered.append(a);
         }
 
+        // Ha minden SKIP → NULL
         if (filtered.isEmpty()) {
             Value v = Value::nullValue();
             addTrace(v);
             return Result<Value>::success(v);
         }
 
+        // Ha csak egy operandus → azt adjuk vissza
         if (filtered.size() == 1) {
-            Value v = filtered[0];
-            if (v.type == Value::Type::Error)
-                return Result<Value>::failure(v.text);
+            const Value& v = filtered[0];
+
+            if (v.type() == Value::Type::Error)
+                return Result<Value>::failure(v.toString());
+
             addTrace(v);
             return Result<Value>::success(v);
         }
 
-        Result<Value> callRes = reg.call(n->value, filtered);
-        if (!callRes.ok) return Result<Value>::failure(callRes.error);
+        // Operátor meghívása
+        auto callRes = reg.call(n->value, filtered);
+        if (!callRes.ok)
+            return Result<Value>::failure(callRes.error);
 
         addTrace(callRes.value);
         return Result<Value>::success(callRes.value);
     }
 
+    // ------------------------------
+    // FUNKCIÓHÍVÁS
+    // ------------------------------
     case AstNode::Type::Function: {
         auto argsRes = evalChildrenSafe(n);
-        if (!argsRes.ok) return Result<Value>::failure(argsRes.error);
+        if (!argsRes.ok)
+            return Result<Value>::failure(argsRes.error);
 
         QVector<Value> filtered;
-        const auto& values = argsRes.value;
-        for (const Value& a : values){
-            if (a.type != Value::Type::Skip)
+        const auto& values = argsRes.value;   // <-- nincs detach
+        for (const Value& a : values) {       // <-- biztonságos
+            if (a.type() != Value::Type::Skip)
                 filtered.append(a);
         }
 
-        Result<Value> callRes = reg.call(n->value, filtered);
-        if (!callRes.ok) return Result<Value>::failure(callRes.error);
+        auto callRes = reg.call(n->value, filtered);
+        if (!callRes.ok)
+            return Result<Value>::failure(callRes.error);
 
         addTrace(callRes.value);
         return Result<Value>::success(callRes.value);
     }
 
+    // ------------------------------
+    // ASSIGNMENT (x = expr)
+    // ------------------------------
     case AstNode::Type::Assignment: {
         auto r = evalNode(n->children[0], traceOut);
-        if (!r.ok) return r;
+        if (!r.ok)
+            return r;
 
         vars.set(n->value, r.value);
+
         Value ret = Value::nullValue();
         addTrace(ret);
         return Result<Value>::success(ret);
     }
 
+    // ------------------------------
+    // RETURN (utolsó érték visszaadása)
+    // ------------------------------
     case AstNode::Type::Return: {
         Value last = Value::nullValue();
-        for (AstNode* c : n->children) {
+        const auto& children = n->children;   // <-- NINCS detach
+        for (AstNode* c : children) {         // <-- biztonságos iteráció
             auto r = evalNode(c, traceOut);
-            if (!r.ok) return r;
+            if (!r.ok)
+                return r;
             last = r.value;
         }
+
         addTrace(last);
         return Result<Value>::success(last);
     }
 
+    // ------------------------------
+    // TERNARY CHOOSE (cond ? a : b)
+    // ------------------------------
     case AstNode::Type::Choose: {
         if (n->children.size() != 3)
             return Result<Value>::failure("Invalid choose node");
 
         auto condRes = evalNode(n->children[0], traceOut);
-        if (!condRes.ok) return condRes;
+        if (!condRes.ok)
+            return condRes;
+
         addTrace(condRes.value);
 
-        int idx = condRes.value.toBool() ? 1 : 2;
-        auto r = evalNode(n->children[idx], traceOut);
-        if (!r.ok) return r;
+        int idx = condRes.value.boolean() ? 1 : 2;
 
-        if (r.value.type == Value::Type::Error)
-            return Result<Value>::failure(r.value.text);
+        auto r = evalNode(n->children[idx], traceOut);
+        if (!r.ok)
+            return r;
+
+        if (r.value.type() == Value::Type::Error)
+            return Result<Value>::failure(r.value.toString());
 
         addTrace(r.value);
         return Result<Value>::success(r.value);
-
     }
 
+    // ------------------------------
+    // OPTIONAL (cond ?? expr)
+    // ------------------------------
     case AstNode::Type::Opt: {
         if (n->children.size() != 2)
             return Result<Value>::failure("Invalid opt node");
 
         auto condRes = evalNode(n->children[0], traceOut);
-        if (!condRes.ok) return condRes;
+        if (!condRes.ok)
+            return condRes;
+
         addTrace(condRes.value);
 
-        if (condRes.value.toBool()) {
+        if (condRes.value.boolean()) {
             auto r = evalNode(n->children[1], traceOut);
-            if (!r.ok) return r;
+            if (!r.ok)
+                return r;
 
-            if (r.value.type == Value::Type::Error)
-                return Result<Value>::failure(r.value.text);
+            if (r.value.type() == Value::Type::Error)
+                return Result<Value>::failure(r.value.toString());
 
             addTrace(r.value);
             return Result<Value>::success(r.value);
-
         }
 
-        return Result<Value>::success(Value::skipValue());
+        // false → SKIP
+        Value skip = Value::skipValue();
+        addTrace(skip);
+        return Result<Value>::success(skip);
     }
 
+    // ------------------------------
+    // STATEMENT (egy darab expression)
+    // ------------------------------
     case AstNode::Type::Statement: {
         auto r = evalNode(n->children[0], traceOut);
-        if (!r.ok) return r;
+        if (!r.ok)
+            return r;
         addTrace(r.value);
         return r;
     }
 
+    // ------------------------------
+    // SEQUENCE (több statement egymás után)
+    // ------------------------------
     case AstNode::Type::Sequence: {
         Value last = Value::nullValue();
-        for (AstNode* c : n->children) {
+        const auto& children = n->children;   // <-- nincs detach
+        for (AstNode* c : children) {         // <-- biztonságos iteráció
             auto r = evalNode(c, traceOut);
-            if (!r.ok) return r;
+            if (!r.ok)
+                return r;
             last = r.value;
         }
+
         addTrace(last);
         return Result<Value>::success(last);
     }

@@ -5,34 +5,35 @@
 
 static QHash<TokenType, OperatorInfo> OPINFO = {
 
-// Prefix operátorok
-    // { TokenType::Opt,        { 5, false, Fixity::Prefix, 2 } },
-    // { TokenType::Choose,     { 5, false, Fixity::Prefix, 3 } },
-    { TokenType::Return,     { 5, false, Fixity::Prefix, 1 } },
-    { TokenType::Function,   { 5, false, Fixity::Prefix, -1 } }, // -1 = variadic
+    // Prefix operátorok
+    { TokenType::Return,      { 6, false, Fixity::Prefix, 1 } },
+    { TokenType::Function,    { 6, false, Fixity::Prefix, -1 } }, // -1 = variadic
+    { TokenType::PrefixPlus,  { 6, false, Fixity::Prefix, 1 } },
+    { TokenType::PrefixMinus, { 6, false, Fixity::Prefix, 1 } },
 
-    // Infix bináris operátorok
-    { TokenType::Star,       { 4, false, Fixity::Infix, 2 } },
-    { TokenType::Slash,      { 4, false, Fixity::Infix, 2 } },
+    // Multiplikatív
+    { TokenType::Star,        { 5, false, Fixity::Infix, 2 } },
+    { TokenType::Slash,       { 5, false, Fixity::Infix, 2 } },
 
-    { TokenType::Plus,       { 3, false, Fixity::Infix, 2 } },
-    { TokenType::Minus,      { 3, false, Fixity::Infix, 2 } },
+    // Additív
+    { TokenType::Plus,       { 4, false, Fixity::Infix, 2 } },
+    { TokenType::Minus,      { 4, false, Fixity::Infix, 2 } },
 
-    { TokenType::PrefixPlus,  { 5, false, Fixity::Prefix, 1 } },
-    { TokenType::PrefixMinus, { 5, false, Fixity::Prefix, 1 } },
+    // Optional (??) – fontos: erősebb, mint +/-
+    // Optional infix operátor: flag ?? expr
+    { TokenType::OptionalQuestion, { 3, false, Fixity::Infix, 2 } },
 
+    //Relációk
     { TokenType::Greater,        { 2, false, Fixity::Infix, 2 } },
     { TokenType::Less,           { 2, false, Fixity::Infix, 2 } },
     { TokenType::GreaterEqual,   { 2, false, Fixity::Infix, 2 } },
     { TokenType::LessEqual,      { 2, false, Fixity::Infix, 2 } },
     { TokenType::Equal,          { 2, false, Fixity::Infix, 2 } },
 
+    //Assignment
     { TokenType::Assign,     { 1, true,  Fixity::Infix, 2 } }, // jobbról asszociatív
 
-    // Optional infix operátor: flag ?? expr
-    { TokenType::OptionalQuestion, { 2, false, Fixity::Infix, 2 } },
-
-    // Ternary operátor
+    // Ternary
     { TokenType::TernaryQuestion,   { 0, true,  Fixity::Ternary, 3 } },
 
 

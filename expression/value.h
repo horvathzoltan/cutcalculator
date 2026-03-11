@@ -3,26 +3,27 @@
 
 struct Value {
     enum class Type { Number, String, Bool, Null, Skip, Error };
-
-    Type type = Type::Null;
+private:
+    Type _type = Type::Null;
 
     union {
-        double number;
-        bool boolean;
+        double _number;
+        bool _boolean;
     };
 
-    QString text;
+    QString _text;
 
+public:
     static Value numberValue(double n) {
-        Value v; v.type = Type::Number; v.number = n; return v;
+        Value v; v._type = Type::Number; v._number = n; return v;
     }
 
     static Value stringValue(const QString& s) {
-        Value v; v.type = Type::String; v.text = s; return v;
+        Value v; v._type = Type::String; v._text = s; return v;
     }
 
     static Value boolValue(bool b) {
-        Value v; v.type = Type::Bool; v.boolean = b; return v;
+        Value v; v._type = Type::Bool; v._boolean = b; return v;
     }
 
     static Value nullValue() {
@@ -30,62 +31,52 @@ struct Value {
     }
 
     static Value skipValue() {
-        Value v; v.type = Type::Skip; return v;
+        Value v; v._type = Type::Skip; return v;
     }
 
-
-    bool isTruthy() const {
-        if (type == Type::Bool)   return boolean;
-        if (type == Type::Number) return number != 0.0;
-        if (type == Type::String) return !text.isEmpty();
-        return false;
+    double number() const {
+        switch (_type) {
+        case Type::Number: return _number;
+        case Type::Bool:   return _boolean ? 1.0 : 0.0;
+        case Type::Null:   return 0.0;
+        default: return qQNaN();
+        }
     }
 
-    double toDouble(bool* ok = nullptr) const {
-        if (type == Type::Error) {
-            if (ok) *ok = false;
-            return qQNaN();
-        }
-
-        switch (type) {
-        case Type::Number:
-            if (ok) *ok = true;
-            return number;
-
-        case Type::Bool:
-            if (ok) *ok = true;
-            return boolean ? 1.0 : 0.0;
-
-        case Type::String: {
-            bool localOk = false;
-            double d = text.toDouble(&localOk);
-            if (ok) *ok = localOk;
-            return d;
-        }
-
-        case Type::Null:
-        default:
-            if (ok) *ok = false;
-            return qQNaN();
+    QString string() const {
+        switch (_type) {
+        case Type::String: return _text;
+        case Type::Number: return QString::number(_number);
+        case Type::Bool: return _boolean ? "true" : "false";
+        default: return "";
         }
     }
 
     QString toString() const {
-        switch (type) {
-        case Type::Number: return QString::number(number);
-        case Type::Bool:   return boolean ? "true" : "false";
-        case Type::String: return text;
-        case Type::Null:   return "null";
-        case Type::Skip:   return "<skip>";
-        case Type::Error:  return "<error: " + text + ">";
+        switch (_type) {
+        case Type::String: return _text;
+        case Type::Number: return QString::number(_number);
+        case Type::Bool: return _boolean ? "true" : "false";
+        case Type::Null: return "NULL";
+        case Type::Skip: return "(SKIP)";
+        case Type::Error: return "(error: " + _text + ")";
+        default: return "(unknown)";
         }
-        return "";
+    }
+
+    bool boolean() const {
+        switch (_type) {
+        case Type::String: return stringToBool(_text);
+        case Type::Number: return _number != 0.0;
+        case Type::Bool: return _boolean;
+        default: return false;
+        }
     }
 
 
     QString typeName() const
     {
-        switch (type) {
+        switch (_type) {
         case Type::Number: return "Number";
         case Type::String: return "String";
         case Type::Bool:   return "Bool";
@@ -96,44 +87,41 @@ struct Value {
         return "Unknown";
     }
 
-    bool toBool(bool* ok = nullptr) const {
-        if (type == Type::Error) {
-            if (ok) *ok = false;
-            return false;
-        }
-
-        switch (type) {
-        case Type::Bool:
-            if (ok) *ok = true;
-            return boolean;
-
-        case Type::Number:
-            if (ok) *ok = true;
-            return number != 0.0;
-
-        case Type::String:
-            if (ok) *ok = true;
-            return !text.isEmpty();
-
-        case Type::Skip:
-            if (ok) *ok = false;
-            return false;
-
-        case Type::Null:
-        default:
-            if (ok) *ok = false;
-            return false;
-
-        }
-    }
-
+    Type type() const { return _type; }
 
     static Value errorValue(const QString& msg) {
         Value v;
-        v.type = Type::Error;
-        v.text = msg;
+        v._type = Type::Error;
+        v._text = msg;
         return v;
     }
 
+    bool isError() const { return _type == Type::Error; }
+    bool isSkip()  const { return _type == Type::Skip; }
+    bool isNull() const { return _type == Type::Null; }
 
+    QString errorMessage() const {
+        return _type == Type::Error ? _text : QString();
+    }
+
+private:
+    static bool stringToBool(const QString& txt){
+        QString s = txt.trimmed().toLower();
+
+        if(txt.isEmpty()) return false;
+        // explicit logikai értékek
+        if (s == "true" || s == "yes" || s == "ok")
+            return true;
+        if (s == "false" || s == "no")
+            return false;
+
+        // számként értelmezhető?
+        bool ok = false;
+        double d = s.toDouble(&ok);
+        if (ok)
+            return d != 0.0;
+
+        // minden más → false
+        return false;
+    }
 };

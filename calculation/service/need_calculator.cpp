@@ -217,9 +217,9 @@ Result<RawCut> NeedCalculator::evalFormulaCut(const OrderLine& line,
     // 4) requiredLength
     {
         Value v = vars.get("requiredLength");
-        if (v.type == Value::Type::Null)
+        if (v.type() == Value::Type::Null)
             return Result<RawCut>::failure("requiredLength not set");
-        raw.requiredLength = (int)v.toDouble();
+        raw.requiredLength = (int)v.number();
     }
 
     // 5) qty
@@ -234,16 +234,16 @@ Result<RawCut> NeedCalculator::evalFormulaCut(const OrderLine& line,
     // 6) material
     {
         Value v = vars.get("material");
-        if (v.type == Value::Type::Null) {
+        if (v.type() == Value::Type::Null) {
             // fallback
             auto mat = MaterialRegistry::instance().findById(detail.materialId);
             if (!mat)
                 return Result<RawCut>::failure("Fallback materialId invalid");
             raw.materialBarcode = mat->barcode;
         } else {
-            if (v.type != Value::Type::String)
+            if (v.type() != Value::Type::String)
                 return Result<RawCut>::failure("material output must be string");
-            raw.materialBarcode = v.text;
+            raw.materialBarcode = v.string();
         }
     }
 
@@ -290,24 +290,24 @@ Result<RawKit> NeedCalculator::evalFormulaKit(const OrderLine& line,
     // 4) qty
     {
         Value v = vars.get("qty");
-        if (v.type == Value::Type::Null)
+        if (v.type() == Value::Type::Null)
             return Result<RawKit>::failure("qty not set");
-        raw.qty = (int)v.toDouble();
+        raw.qty = (int)v.number();
     }
 
     // 5) material
     {
         Value v = vars.get("material");
-        if (v.type == Value::Type::Null) {
+        if (v.type() == Value::Type::Null) {
             // fallback
             auto mat = MaterialRegistry::instance().findById(detail.materialId);
             if (!mat)
                 return Result<RawKit>::failure("Fallback materialId invalid");
             raw.materialBarcode = mat->barcode;
         } else {
-            if (v.type != Value::Type::String)
+            if (v.type() != Value::Type::String)
                 return Result<RawKit>::failure("material output must be string");
-            raw.materialBarcode = v.text;
+            raw.materialBarcode = v.string();
         }
     }
 

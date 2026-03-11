@@ -85,7 +85,7 @@ void FormulaEnginePipelineTester::testLiteralInt()
     Q_ASSERT(r.ok);
 
     auto v = VariableRepository::instance().get("_result");
-    Q_ASSERT(v.number == 42);
+    Q_ASSERT(v.number() == 42);
 
     zInfo("✓ testLiteralInt OK");
 }
@@ -101,7 +101,7 @@ void FormulaEnginePipelineTester::testLiteralDouble()
     Q_ASSERT(r.ok);
 
     auto v = VariableRepository::instance().get("_result");
-    Q_ASSERT((int)v.number == 3);
+    Q_ASSERT((int)v.number() == 3);
 
     zInfo("✓ testLiteralDouble OK");
 }
@@ -117,7 +117,7 @@ void FormulaEnginePipelineTester::testSimpleExpression()
     Q_ASSERT(r.ok);
 
     auto v = VariableRepository::instance().get("_result");
-    Q_ASSERT(v.number == 1190);
+    Q_ASSERT(v.number() == 1190);
 
     zInfo("✓ testSimpleExpression OK");
 }
@@ -133,7 +133,7 @@ void FormulaEnginePipelineTester::testAssignment()
     Q_ASSERT(r.ok);
 
     auto x = VariableRepository::instance().get("x");
-    Q_ASSERT(x.number == 1185);
+    Q_ASSERT(x.number() == 1185);
 
     zInfo("✓ testAssignment OK");
 }
@@ -155,7 +155,7 @@ void FormulaEnginePipelineTester::testMultiLine()
     Q_ASSERT(r.ok);
 
     auto v = VariableRepository::instance().get("_result");
-    Q_ASSERT(v.number == 1190 * 2);
+    Q_ASSERT(v.number() == 1190 * 2);
 
     zInfo("✓ testMultiLine OK");
 }
@@ -243,8 +243,8 @@ void FormulaEnginePipelineTester::testNestedFunctionCall()
 
     Value result = VariableRepository::instance().get("_result");
 
-    Q_ASSERT(result.type == Value::Type::Number);
-    Q_ASSERT(result.number == 14.0);
+    Q_ASSERT(result.type() == Value::Type::Number);
+    Q_ASSERT(result.number() == 14.0);
 
     zInfo("✓ testNestedFunctionCall OK");
 }
@@ -266,7 +266,7 @@ void FormulaEnginePipelineTester::testChooseSimple()
     Q_ASSERT(r.ok);
 
     auto v = VariableRepository::instance().get("_result");
-    Q_ASSERT(v.text == "A");
+    Q_ASSERT(v.string() == "A");
 
     zInfo("✓ testChooseSimple OK");
 }
@@ -288,7 +288,7 @@ void FormulaEnginePipelineTester::testChooseNested()
     Q_ASSERT(r.ok);
 
     auto v = VariableRepository::instance().get("_result");
-    Q_ASSERT(v.text == "X");
+    Q_ASSERT(v.string() == "X");
 
     zInfo("✓ testChooseNested OK");
 }
@@ -304,7 +304,7 @@ void FormulaEnginePipelineTester::testChooseFalseBranch()
     Q_ASSERT(r.ok);
 
     auto v = VariableRepository::instance().get("_result");
-    Q_ASSERT(v.text == "B");
+    Q_ASSERT(v.string() == "B");
 
     zInfo("✓ testChooseFalseBranch OK");
 }
@@ -324,7 +324,7 @@ void FormulaEnginePipelineTester::testOptSimple()
     Q_ASSERT(r.ok);
 
     auto result = vars.get("_result");
-    Q_ASSERT(result.number == 1490);
+    Q_ASSERT(result.number() == 1490);
 
     zInfo("✓ testOptSimple OK");
 }
@@ -343,7 +343,7 @@ void FormulaEnginePipelineTester::testOptExpression()
     Q_ASSERT(r.ok);
 
     auto result = vars.get("_result");
-    Q_ASSERT(result.number == 1190 + 120);
+    Q_ASSERT(result.number() == 1190 + 120);
 
     zInfo("✓ testOptExpression OK");
 }

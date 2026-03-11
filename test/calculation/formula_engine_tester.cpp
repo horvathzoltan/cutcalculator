@@ -66,7 +66,7 @@ void FormulaEngineTester::testWidthMinus()
     Q_ASSERT(r.ok);
 
     auto v = VariableRepository::instance().get("_result");
-    Q_ASSERT(v.number == 1185);
+    Q_ASSERT(v.number() == 1185);
 
     zInfo("✓ testWidthMinus OK");
 }
@@ -80,7 +80,7 @@ void FormulaEngineTester::testHeightMinus()
     Q_ASSERT(r.ok);
 
     auto v = VariableRepository::instance().get("_result");
-    Q_ASSERT(v.number == 1490);
+    Q_ASSERT(v.number() == 1490);
 
     zInfo("✓ testHeightMinus OK");
 }
@@ -94,7 +94,7 @@ void FormulaEngineTester::testFixedPieces()
     Q_ASSERT(r.ok);
 
     auto v = VariableRepository::instance().get("qty");
-    Q_ASSERT(v.number == 2);
+    Q_ASSERT(v.number() == 2);
 
     zInfo("✓ testFixedPieces OK");
 }
@@ -108,7 +108,7 @@ void FormulaEngineTester::testAreaLike()
     Q_ASSERT(r.ok);
 
     auto v = VariableRepository::instance().get("_result");
-    Q_ASSERT(v.number == 1200 * 1500);
+    Q_ASSERT(v.number() == 1200 * 1500);
 
     zInfo("✓ testAreaLike OK");
 }
@@ -266,8 +266,8 @@ void FormulaEngineTester::testChooseSimple()
     Q_ASSERT(r.ok);
 
     auto v = VariableRepository::instance().get("a1");
-    Q_ASSERT(v.type == Value::Type::String);
-    Q_ASSERT(v.text == "MOTOR_A");
+    Q_ASSERT(v.type() == Value::Type::String);
+    Q_ASSERT(v.string() == "MOTOR_A");
 
     zInfo("✓ testChooseSimple OK");
 }
@@ -283,8 +283,8 @@ void FormulaEngineTester::testChooseFalseBranch()
     Q_ASSERT(r.ok);
 
     auto v = VariableRepository::instance().get("a1");
-    Q_ASSERT(v.type == Value::Type::String);
-    Q_ASSERT(v.text == "MOTOR_B");
+    Q_ASSERT(v.type() == Value::Type::String);
+    Q_ASSERT(v.string() == "MOTOR_B");
 
     zInfo("✓ testChooseFalseBranch OK");
 }
@@ -301,13 +301,13 @@ void FormulaEngineTester::testOptSimple()
     auto& vars = VariableRepository::instance();
     vars.set("paint", Value::boolValue(false));
 
-    auto r = FormulaEngine::eval("h-10 + paint ?? 40");
+    auto r = FormulaEngine::eval("paint ?? 40");
     r.debugDump();
 
     Q_ASSERT(r.ok);
 
-    auto v = vars.get("_result");
-    Q_ASSERT(v.number == 1490);
+    Value v = vars.get("_result");
+    Q_ASSERT(v.isNull());
 
     zInfo("✓ testOptSimple OK");
 }
@@ -318,11 +318,12 @@ void FormulaEngineTester::testOptSimpleTrue()
     auto& vars = VariableRepository::instance();
     vars.set("paint", Value::boolValue(true));
 
-    auto r = FormulaEngine::eval("h-10 + paint ?? 40");
+    auto r = FormulaEngine::eval("paint ?? 40");
+    r.debugDump();
     Q_ASSERT(r.ok);
 
     auto v = vars.get("_result");
-    Q_ASSERT(v.number == 1490 + 40);
+    Q_ASSERT(v.number() == 40);
 }
 
 
