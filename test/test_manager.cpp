@@ -11,6 +11,8 @@
 #include "test/calculation/need_calculation_detail_registry_tester.h"
 
 #include "test/calculation/need_calculator_pipeline_tester.h"
+#include "test/calculation/roletta_calculation_tester.h"
+#include "test/calculation/test_roletta_builder_tester.h"
 #include "test/eventlogger/event_logger_tester.h"
 #include "test/filenamehelper/filenamehelper_tests.h"
 #include "test/need/need_rule_registry_tester.h"
@@ -29,9 +31,7 @@ void TestManager::runBusinessLogicTests(const QString& profile) {
 
     zInfo() << "▶️ Running business logic tests with profile:" << profile;
 
-    // Példa: itt futtathatod a modulokhoz tartozó teszteket
-    // Ezeket később bővítheted modulonként
-
+    // --- Alap tesztek ---
     if (profile == "default") {
         _lastResults << "Default tests executed";
     }
@@ -41,6 +41,11 @@ void TestManager::runBusinessLogicTests(const QString& profile) {
     else if (profile == "filename") {
         runModule<FileNameHelperTester>();
     }
+    else if (profile == "settings") {
+        runModule<SettingsManagerTester>();
+    }
+
+    // --- Registry tesztek ---
     else if (profile == "material") {
         runModule<MaterialRegistryTester>();
     }
@@ -50,12 +55,41 @@ void TestManager::runBusinessLogicTests(const QString& profile) {
     else if (profile == "needrule") {
         runModule<NeedRuleRegistryTester>();
     }
-    else if (profile == "calcmode") { // --test needrule
+    else if (profile == "calcmode") {
         runModule<NeedCalculationRegistryTester>();
     }
     else if (profile == "need_calculation_detail") {
         runModule<NeedCalculationDetailRegistryTester>();
     }
+
+    // --- Formula engine tesztek ---
+    else if (profile == "formula_engine") {
+        runModule<FormulaEngineTester>();
+    }
+    else if (profile == "formula_engine_pipeline") {
+        runModule<FormulaEnginePipelineTester>();
+    }
+    else if (profile == "formula_engine_syntax") {
+        runModule<FormulaEngineSyntaxTester>();
+    }
+    else if (profile == "formula_engine_syntax_2") {
+        runModule<FormulaEngineSyntaxTester_2>();
+    }
+
+    // --- NeedCalculator pipeline ---
+    else if (profile == "need_calculation_pipeline") {
+        runModule<NeedCalculatorPipelineTester>();
+    }
+
+    // --- Roletta-specifikus tesztek ---
+    else if (profile == "roletta_builder") {
+        runModule<TestRolettaBuilderTester>();
+    }
+    else if (profile == "roletta_calc") {
+        runModule<RolettaCalculationTester>();
+    }
+
+    // --- Overlay / GUI logika ---
     else if (profile == "overlay") {
         runModule<OverlayPresenterTester>();
     }
@@ -65,31 +99,15 @@ void TestManager::runBusinessLogicTests(const QString& profile) {
     else if (profile == "matrixvalidator") {
         runModule<MatrixValidatorTester>();
     }
-    else if (profile == "settings") {
-        runModule<SettingsManagerTester>();
-    }
-    else if (profile == "formula_engine") {
-        runModule<FormulaEngineTester>();
-    }
-    else if (profile == "formula_engine_pipeline") {
-        runModule<FormulaEnginePipelineTester>();
-    }
-    else if (profile == "need_calculation_pipeline") {
-        runModule<NeedCalculatorPipelineTester>();
-    }
-    else if (profile == "formula_engine_syntax") {
-        runModule<FormulaEngineSyntaxTester>();
-    }
-    else if (profile == "formula_engine_syntax_2") {
-        runModule<FormulaEngineSyntaxTester_2>();
-    }
-    /**/
+
+    // --- Ismeretlen profil ---
     else {
         _lastResults << "Unknown profile:" + profile;
     }
 
     zInfo() << "✅ Test results:" << _lastResults;
 }
+
 
 QStringList TestManager::lastResults() const {
     return _lastResults;

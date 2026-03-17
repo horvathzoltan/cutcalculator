@@ -71,6 +71,10 @@ SOURCES += \
     test/calculation/formula_engine_tester.cpp \
     test/calculation/need_calculation_detail_registry_tester.cpp \
     test/calculation/need_calculator_pipeline_tester.cpp \
+    test/calculation/order_need_builder_tester.cpp \
+    test/calculation/roletta_calculation_tester.cpp \
+    test/calculation/test_roletta_builder.cpp \
+    test/calculation/test_roletta_builder_tester.cpp \
     test/common/test_data_builder.cpp \
     test/common/test_file_helper.cpp \
     test/eventlogger/event_logger_tester.cpp \
@@ -229,6 +233,10 @@ HEADERS += \
     test/calculation/formula_engine_tester.h \
     test/calculation/need_calculation_detail_registry_tester.h \
     test/calculation/need_calculator_pipeline_tester.h \
+    test/calculation/order_need_builder_tester.h \
+    test/calculation/roletta_calculation_tester.h \
+    test/calculation/test_roletta_builder.h \
+    test/calculation/test_roletta_builder_tester.h \
     test/common/test_data_builder.h \
     test/common/test_file_helper.h \
     test/common/test_module_base.h \

@@ -1,7 +1,10 @@
 // verbose_registry_initializer.cpp
+#include "calcmodes/model/need_calculation.h"
+#include "calculation/model/need_calculation_detail.h"
 #include "common/system/verbose_manager.h"
 
 // 🔍 Minden regisztrált osztály includeolva – így a fordító validálja a típusneveket
+#include "connections/connection_entity.h"
 #include "materials/registry/material_registry.h"
 #include "products/repository/product_repository.h"
 #include "products/registry/product_registry.h"
@@ -28,6 +31,13 @@ void registerAllVerbose() {
 
     vm.registerClass(QString::fromStdString(std::string(nameof::nameof_type<RegistryBase>())), true);
 
+
+    // Konkrét engine specializációk
+    vm.registerClass(QString::fromStdString(std::string(nameof::nameof_type<RegistryEngineBase<ProductMaster>>())), false);
+    vm.registerClass(QString::fromStdString(std::string(nameof::nameof_type<RegistryEngineBase<MaterialMaster>>())), false);
+    vm.registerClass(QString::fromStdString(std::string(nameof::nameof_type<RegistryEngineBase<NeedCalculation>>())), false);
+    vm.registerClass(QString::fromStdString(std::string(nameof::nameof_type<RegistryEngineBase<NeedCalculationDetail>>())), false);
+    vm.registerClass(QString::fromStdString(std::string(nameof::nameof_type<RegistryEngineBase<ConnectionEntity<ProductMaster, MaterialMaster>>>())), false);
 
     // 🔍 Audit összefoglaló
     vm.dumpRegistry();
