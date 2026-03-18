@@ -23,6 +23,8 @@ SOURCES += \
     calculation/presenter/calculation_mode_detail_presenter.cpp \
     calculation/service/cut_aggregator.cpp \
     calculation/service/kit_aggregator.cpp \
+    calculation/service/order_need_builder.cpp \
+    calculation/service/worksheet_builder.cpp \
     dsl/formula_analysis.cpp \
     dsl/formula_contract.cpp \
     expression/ast_builder.cpp \
@@ -136,9 +138,11 @@ HEADERS += \
     calculation/service/cut_key.h \
     calculation/service/kit_aggregator.h \
     calculation/service/kit_item.h \
+    calculation/service/order_need_builder.h \
     calculation/service/piece.h \
     calculation/service/raw_cut.h \
     calculation/service/raw_kit.h \
+    calculation/service/worksheet_builder.h \
     common/utils/result.h \
     dsl/formula_analysis.h \
     dsl/formula_contract.h \

@@ -11,6 +11,7 @@
 #include "test/calculation/need_calculation_detail_registry_tester.h"
 
 #include "test/calculation/need_calculator_pipeline_tester.h"
+#include "test/calculation/order_need_builder_tester.h"
 #include "test/calculation/roletta_calculation_tester.h"
 #include "test/calculation/test_roletta_builder_tester.h"
 #include "test/eventlogger/event_logger_tester.h"
@@ -79,6 +80,9 @@ void TestManager::runBusinessLogicTests(const QString& profile) {
     // --- NeedCalculator pipeline ---
     else if (profile == "need_calculation_pipeline") {
         runModule<NeedCalculatorPipelineTester>();
+    }
+    else if (profile == "order_need") {
+        runModule<OrderNeedBuilderTester>();
     }
 
     // --- Roletta-specifikus tesztek ---

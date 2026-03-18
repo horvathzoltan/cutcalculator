@@ -34,8 +34,10 @@ struct ItemNeed {
 
 struct OrderItemNeed {
     QUuid orderItemId;
+    OrderLine line;              // eredeti rendelési sor metaadatai
     QVector<ItemNeed> itemNeeds; // minden példány külön
 };
+
 
 struct OrderNeed {
     QUuid orderId;

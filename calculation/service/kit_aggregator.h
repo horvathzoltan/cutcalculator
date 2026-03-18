@@ -1,27 +1,27 @@
-// #pragma once
+#pragma once
 
-// #include "kit_item.h"
+#include "kit_item.h"
 
-// #include <QString>
-// #include <QStringList>
-// #include <QVector>
+#include <QString>
+#include <QStringList>
+#include <QVector>
 
-// struct KitAggregatedItem {
-//     QString materialBarcode;
-//     int quantity;
+struct KitAggregatedItem {
+    QString materialBarcode;
+    int quantity;
 
-//     QString ownerName;
-//     QString colorName;
+    QString ownerName;
+    QString colorName;
 
-//     int fullWidth;
-//     int fullHeight;
-// };
+    int fullWidth;
+    int fullHeight;
+};
 
-// class KitAggregator
-// {
-// public:
-//     static QVector<KitAggregatedItem> aggregate(const QVector<KitItem>& items);
-// };
+class KitAggregator
+{
+public:
+    static QVector<KitAggregatedItem> aggregate(const QVector<KitItem>& items);
+};
 
 
 

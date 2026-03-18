@@ -10,6 +10,7 @@
 -   Soha nem találgatok: ha a snippet nem található → jelzem.
 -   A diff csak a beküldött fájlokra épül.
 
+
 ------------------------------------------------------------------------
 
 1) HELYMEGHATÁROZÁS
@@ -86,6 +87,22 @@ Ha egy blokkot törlünk:
 -   nem kell teljes files.txt
 -   a rendszer automatikusan bekéri, ami hiányzik
 
+---
+A generált kód:
+ - C++20 + Qt 6.10
+ - Clazy-tiszta
+ - magyar kommentek, angol terminológiával
+ - snake_case fájlnevek
+ - blokkfejlécek:
+
+     /* ============================================================
+      * 🧩 <Blokk neve>
+      * ============================================================ */
+
+ - ne legyen Hunglish
+ - ne térj el a tervtől
+ - ne generálj extra fájlokat
+ - ne módosíts nem kért részeket
 ------------------------------------------------------------------------
 
 8) IMPLEMENTÁCIÓS TERV KAPCSOLAT

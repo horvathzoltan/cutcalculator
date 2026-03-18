@@ -1,32 +1,32 @@
-// #include "kit_aggregator.h"
-// #include <QMap>
+#include "kit_aggregator.h"
+#include <QMap>
 
-// QVector<KitAggregatedItem> KitAggregator::aggregate(const QVector<KitItem>& items)
-// {
-//     QMap<QString, KitAggregatedItem> map;
+QVector<KitAggregatedItem> KitAggregator::aggregate(const QVector<KitItem>& items)
+{
+    QMap<QString, KitAggregatedItem> map;
 
-//     for (const KitItem& it : items) {
+    for (const KitItem& it : items) {
 
-//         QString barcode = it.materialBarcode;
+        QString barcode = it.materialBarcode;
 
-//         if (!map.contains(barcode)) {
+        if (!map.contains(barcode)) {
 
-//             KitAggregatedItem agg;
-//             agg.materialBarcode = it.materialBarcode;
-//             agg.quantity = it.quantity;
+            KitAggregatedItem agg;
+            agg.materialBarcode = it.materialBarcode;
+            agg.quantity = it.quantity;
 
-//             agg.ownerName  = it.ownerName;
-//             agg.colorName  = it.colorName;
-//             agg.fullWidth  = it.fullWidth;
-//             agg.fullHeight = it.fullHeight;
+            agg.ownerName  = it.ownerName;
+            agg.colorName  = it.colorName;
+            agg.fullWidth  = it.fullWidth;
+            agg.fullHeight = it.fullHeight;
 
-//             map.insert(barcode, agg);
+            map.insert(barcode, agg);
 
-//         } else {
-//             auto& agg = map[barcode];
-//             agg.quantity += it.quantity;
-//         }
-//     }
+        } else {
+            auto& agg = map[barcode];
+            agg.quantity += it.quantity;
+        }
+    }
 
-//     return map.values().toVector();
-// };
+    return map.values().toVector();
+};

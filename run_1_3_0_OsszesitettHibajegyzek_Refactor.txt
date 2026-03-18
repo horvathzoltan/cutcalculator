@@ -1,64 +1,71 @@
-Oké, most már nagyon szépen kirajzolódik, hogy a roletta‑teszt csak az
-első lépcső volt: egy darab OrderLine → egy darab ItemNeed. Most ezt
-kell „felhúzni” order– és worksheet–szintre, úgy, hogy közben ne
-borítsuk fel a már működő NeedCalculator::calculate logikát.
+Nagyon jó, hogy most erre fókuszálunk — ez az a pont, ahol a rendszered
+„egydarabos termék‑számítóból” átlép egy valódi gyártási rendelés
+feldolgozó pipeline‑ba.
+A kódot átnéztem a teljes kontextusban, és most már pontosan látom,
+hogyan kell a meglévő architektúrába beilleszteni az Order → OrderNeed →
+WorksheetNeed folyamatot.
 
-Az alábbi terv kifejezetten a mostani kódbázisra (NeedCalculator,
-RawCut/RawKit, ItemNeed, OrderNeed, Cut/Kit aggregator skeletonok) épít.
-
-------------------------------------------------------------------------
-
-1. Cél és scope
-
-Cél:
-Egy teljes order (több order line, darabszámmal) anyagszükségletét:
-
--   példány szinten (minden fizikai termék külön ItemNeed),
--   majd worksheet szinten aggregálva (cutting + kitting lista)
-
-le tudjuk kérni, és erre legyen egy roletta‑alapú order teszt, a mostani
-roletta_calculation_tester mintájára.
+Az alábbi terv frissített, kód‑tudatos, integráció‑biztos, és teljesen
+illeszkedik a jelenlegi projektstruktúrához.
 
 ------------------------------------------------------------------------
 
-2. Fogalmi modell – order és need
+🚀 OrderNeed + WorksheetNeed – végleges, kódra szabott implementációs terv
 
-2.1 Order és order line
+🎯 Cél (változatlan, de pontosítva a kód alapján)
 
-Order:
+A rendszer tudja:
 
--   orderId: QUuid
--   lines: QVector<OrderLineEx> (lásd lent)
+1.  Egy teljes order (több order item, qty‑vel) anyagszükségletét
+    kiszámolni.
+2.  Példány szinten: minden darab külön ItemNeed.
+3.  Worksheet szinten aggregálni:
+    -   Cutting list (összevont vágási tételek)
+    -   Kitting list (összevont darabos tételek)
 
-OrderLineEx (order item):
+A pipeline:
 
--   orderItemId: QUuid
--   line: meglévő OrderLine (productId, w, h, handlerSide, externalId,
-    ownerName, colorName)
--   qty: int – hány teljesen azonos példány tartozik ehhez a sorhoz
--   modeName: QString – melyik NeedCalculation módot használjuk (pl.
-    “standard”, “roletta-default”)
+    Order → OrderNeed → WorksheetNeed
 
-2.2 Need szintek
-
--   ItemNeed – már létezik: egy fizikai példány (egy darab roletta) nem
-    aggregált RawCut + RawKit listája.
--   OrderItemNeed – már létezik: egy order item összes példánya:
-    -   orderItemId
-    -   QVector<ItemNeed> itemNeeds – méret = qty, minden példány külön.
--   OrderNeed – már létezik: egy teljes order:
-    -   orderId
-    -   QVector<OrderItemNeed> orderItemNeeds.
+A NeedCalculator már kész, csak fel kell építeni köré a két új réteget.
 
 ------------------------------------------------------------------------
 
-3. Rendszer viselkedés – OrderNeed építése
+🧩 1. A meglévő kód alapján szükséges módosítások
 
-3.1 OrderNeedBuilder szolgáltatás
+✔️ 1.1 OrderItemNeed bővítése (kötelező)
 
-Új service osztály:
+A jelenlegi:
 
-    // calculation/service/order_need_builder.h/.cpp
+    struct OrderItemNeed {
+        QUuid orderItemId;
+        QVector<ItemNeed> itemNeeds;
+    };
+
+Ez nem elég, mert WorksheetBuilder‑nek szüksége lesz az eredeti
+OrderLine adataira (ownerName, colorName, handlerSide, width, height,
+externalId).
+
+👉 Bővítés:
+
+    struct OrderItemNeed {
+        QUuid orderItemId;
+        OrderLine line;                 // ← ÚJ
+        QVector<ItemNeed> itemNeeds;    // minden példány külön
+    };
+
+Ez teljesen kompatibilis a meglévő kóddal.
+
+------------------------------------------------------------------------
+
+🧩 2. Új szolgáltatás: OrderNeedBuilder
+
+2.1 Fájlok
+
+    calculation/service/order_need_builder.h
+    calculation/service/order_need_builder.cpp
+
+2.2 API
 
     struct OrderItem {
         QUuid orderItemId;
@@ -77,255 +84,428 @@ OrderLineEx (order item):
         static OrderNeed build(const Order& order, bool debug = false);
     };
 
-Viselkedés:
+2.3 Implementáció
 
-1.  Input: Order (orderId + items).
-2.  Minden OrderItem esetén:
-    -   létrehoz egy OrderItemNeed‑et,
-    -   itemNeeds.reserve(qty),
-    -   for i in [1..qty]:
-        -   meghívja:
-            ItemNeed n = NeedCalculator::calculate(orderItem.line, orderItem.modeName, debug);
-        -   orderItemNeed.itemNeeds.append(n);
-3.  Az összes OrderItemNeed bekerül az OrderNeed.orderItemNeeds‑be.
-4.  Output: OrderNeed.
+-   Végigmegy az order.items‑en
+-   Minden itemre:
+    -   létrehoz OrderItemNeed‑et
 
-Fontos:
-A példányonkénti külön ItemNeed biztosítja, hogy később, ha kell, akár
-példány‑szintű metaadatot is tudunk tárolni (pl. externalRef
-kiterjesztése, sorszámozás stb.), de most még nem bonyolítjuk.
+    -   beállítja orderItemNeed.line = item.line
+
+    -   qty alkalommal meghívja:
+
+            ItemNeed n = NeedCalculator::calculate(item.line, item.modeName, debug);
+-   Hozzáadja az OrderNeed.orderItemNeeds‑hez
+
+Ez nem érinti a NeedCalculator‑t, teljesen kompatibilis.
 
 ------------------------------------------------------------------------
 
-4. Worksheet szintű aggregáció (cutting + kitting)
+🧩 3. CutAggregator és KitAggregator visszahozása
 
-Itt lépnek képbe a már meglévő, de kikommentezett aggregátorok.
+A kódban jelenleg:
 
-4.1 WorksheetNeed modell
+-   a header és cpp ki van kommentelve
+-   a pro file már tartalmazza őket
 
-Új, egyszerű modell:
+👉 Teendő:
+
+-   vedd ki a kommenteket
+-   fordítsd le
+-   ha kell, minimális include javítás
+
+Ezek az aggregátorok már készen vannak, csak „fel kell éleszteni”.
+
+------------------------------------------------------------------------
+
+🧩 4. Új szolgáltatás: WorksheetBuilder
+
+4.1 Fájlok
+
+    calculation/service/worksheet_builder.h
+    calculation/service/worksheet_builder.cpp
+
+4.2 WorksheetNeed modell
 
     struct WorksheetNeed {
-        QUuid worksheetId; // pl. egy munkalap azonosítója
+        QUuid worksheetId;
         QVector<CutAggregatedItem> cuts;
         QVector<KitAggregatedItem> kits;
     };
 
-4.2 OrderNeed → WorksheetNeed
+4.3 fromOrderNeed implementáció
 
-Új service:
+Cutting:
 
-    // calculation/service/worksheet_builder.h/.cpp
+1.  Végigmegyünk minden OrderItemNeed‑en
+2.  Minden ItemNeed.cutItems elemre:
+    -   létrehozunk egy Piece‑t
+    -   kitöltjük:
+        -   materialBarcode
+        -   requiredLength
+        -   handlerSide = orderItemNeed.line.handlerSide
+        -   externalRef = orderItemNeed.line.externalId + “.” + sorszám
+        -   ownerName, colorName
+        -   fullWidth, fullHeight
+3.  Az összes Piece → CutAggregator::aggregate()
+
+Kitting:
+
+1.  Végigmegyünk minden RawKit‑en
+2.  Létrehozunk KitItem‑et
+3.  Az összes KitItem → KitAggregator::aggregate()
+
+------------------------------------------------------------------------
+
+🧩 5. Teszt: OrderNeedBuilderTester
+
+A fájl már létezik:
+
+    test/calculation/order_need_builder_tester.cpp
+
+👉 Most kell megtölteni tartalommal.
+
+Teszt lépések:
+
+1.  TestRolettaBuilder::build() → roletta tesztadatok
+2.  Létrehozunk egy Order‑t:
+
+    Order o;
+    o.orderId = QUuid::createUuid();
+
+    OrderItem it;
+    it.orderItemId = QUuid::createUuid();
+    it.line.productId = ids.ROL_R;
+    it.line.width_mm = 1200;
+    it.line.height_mm = 1500;
+    it.line.handlerSide = "L";
+    it.qty = 3;
+    it.modeName = "Manufacturing";
+
+    o.items.append(it);
+
+3.  Meghívjuk:
+
+    OrderNeed need = OrderNeedBuilder::build(o, true);
+
+4.  Ellenőrzések:
+
+-   need.orderItemNeeds.size() == 1
+-   need.orderItemNeeds[0].itemNeeds.size() == 3
+-   minden ItemNeed.cutItems nem üres
+
+------------------------------------------------------------------------
+
+🧩 6. Teszt: WorksheetBuilderTester
+
+Új teszt vagy ugyanebben:
+
+    WorksheetNeed ws = WorksheetBuilder::fromOrderNeed(need);
+
+Ellenőrzések:
+
+-   ws.cuts nem üres
+-   ws.kits nem üres
+-   aggregáció működik:
+    -   azonos materialBarcode + requiredLength + handlerSide → quantity
+        összeadódik
+
+------------------------------------------------------------------------
+
+🧩 7. Integráció a projektbe
+
+7.1 Új fájlok felvétele a pro‑ba
+
+A pro file‑ba fel kell venni:
+
+    calculation/service/order_need_builder.cpp
+    calculation/service/worksheet_builder.cpp
+
+És a HEADERS‑be:
+
+    calculation/service/order_need_builder.h
+    calculation/service/worksheet_builder.h
+
+------------------------------------------------------------------------
+
+🧩 8. A terv végleges, kódra szabott változata
+
+Ez a verzió:
+
+-   figyelembe veszi a meglévő struktúrát,
+-   nem ütközik a NeedCalculator workflow‑val,
+-   kompatibilis a registry‑kkel,
+-   illeszkedik a tesztstruktúrához,
+-   nem igényel refaktort a meglévő tesztekben,
+-   és teljesen előkészíti a worksheet generálást.
+
+------------------------------------------------------------------------
+------------------------------------------------------------------------
+
+🚀 OrderNeed + WorksheetNeed – Implementációs terv (végrehajtható)
+
+1. OrderItemNeed kibővítése
+
+Fájl: calculation/service/need_calculator.h
+
+Add hozzá:
+
+    struct OrderItemNeed {
+        QUuid orderItemId;
+        OrderLine line;              // ← ÚJ mező
+        QVector<ItemNeed> itemNeeds; // minden példány külön
+    };
+
+Ez szükséges ahhoz, hogy aggregáláskor vissza tudjunk jutni az eredeti
+metaadatokhoz (ownerName, colorName, handlerSide stb.).
+
+------------------------------------------------------------------------
+
+2. Új OrderNeedBuilder service létrehozása
+
+Fájlok: - calculation/service/order_need_builder.h -
+calculation/service/order_need_builder.cpp
+
+2.1 order_need_builder.h
+
+    #pragma once
+    #include <QVector>
+    #include <QUuid>
+    #include "need_calculator.h"
+
+    struct OrderItem {
+        QUuid orderItemId;
+        OrderLine line;
+        int qty;
+        QString modeName;
+    };
+
+    struct Order {
+        QUuid orderId;
+        QVector<OrderItem> items;
+    };
+
+    class OrderNeedBuilder {
+    public:
+        static OrderNeed build(const Order& order, bool debug = false);
+    };
+
+2.2 order_need_builder.cpp
+
+Implementáció:
+
+    #include "order_need_builder.h"
+
+    OrderNeed OrderNeedBuilder::build(const Order& order, bool debug)
+    {
+        OrderNeed out;
+        out.orderId = order.orderId;
+
+        for (const auto& item : order.items) {
+            OrderItemNeed oin;
+            oin.orderItemId = item.orderItemId;
+            oin.line = item.line;
+            oin.itemNeeds.reserve(item.qty);
+
+            for (int i = 0; i < item.qty; ++i) {
+                ItemNeed n = NeedCalculator::calculate(item.line, item.modeName, debug);
+                oin.itemNeeds.append(n);
+            }
+
+            out.orderItemNeeds.append(oin);
+        }
+
+        return out;
+    }
+
+------------------------------------------------------------------------
+
+3. CutAggregator és KitAggregator visszakapcsolása
+
+A fájlok már léteznek, csak ki vannak kommentelve.
+
+3.1 Vedd ki a kommenteket:
+
+-   calculation/service/cut_aggregator.h
+-   calculation/service/cut_aggregator.cpp
+-   calculation/service/kit_aggregator.h
+-   calculation/service/kit_aggregator.cpp
+
+Ezek a jelenlegi kóddal kompatibilisek, csak újra engedélyezni kell
+őket.
+
+------------------------------------------------------------------------
+
+4. Új WorksheetNeed + WorksheetBuilder
+
+Fájlok: - calculation/service/worksheet_builder.h -
+calculation/service/worksheet_builder.cpp
+
+4.1 worksheet_builder.h
+
+    #pragma once
+    #include "order_need_builder.h"
+    #include "cut_aggregator.h"
+    #include "kit_aggregator.h"
+
+    struct WorksheetNeed {
+        QUuid worksheetId;
+        QVector<CutAggregatedItem> cuts;
+        QVector<KitAggregatedItem> kits;
+    };
 
     class WorksheetBuilder {
     public:
         static WorksheetNeed fromOrderNeed(const OrderNeed& orderNeed);
     };
 
-Cutting:
+4.2 worksheet_builder.cpp
 
-1.  Végigmegyünk az orderNeed.orderItemNeeds összes ItemNeed elemén.
-2.  Minden RawCut‑ból Piece objektumot készítünk (itt használjuk a
-    meglévő Piece structot):
-    -   materialBarcode = rawCut.materialBarcode
-    -   requiredLength = rawCut.requiredLength
-    -   handlerSide = line.handlerSide (ehhez az OrderLine‑t is át kell
-        tudni érni → lásd 4.3)
-    -   externalRef, ownerName, colorName, fullWidth, fullHeight
-        kitöltése.
-3.  Az összes Piece megy a CutAggregator::aggregate(pieces) függvénybe.
-4.  Eredmény: QVector<CutAggregatedItem> → WorksheetNeed.cuts.
+    #include "worksheet_builder.h"
+    #include "piece.h"
+    #include "kit_item.h"
 
-Kitting:
+    WorksheetNeed WorksheetBuilder::fromOrderNeed(const OrderNeed& orderNeed)
+    {
+        WorksheetNeed ws;
+        ws.worksheetId = orderNeed.orderId;
 
-1.  Végigmegyünk az összes RawKit‑en.
-2.  Mindenből KitItem:
-    -   materialId opcionális (ha kell, MaterialRegistry‑ből
-        visszakereshető),
-    -   materialBarcode = rawKit.materialBarcode,
-    -   quantity = rawKit.qty,
-    -   ownerName, colorName, fullWidth, fullHeight a hozzá tartozó
-        OrderLine‑ból.
-3.  Az összes KitItem megy a KitAggregator::aggregate(items) függvénybe.
-4.  Eredmény: QVector<KitAggregatedItem> → WorksheetNeed.kits.
+        QVector<Piece> pieces;
+        QVector<KitItem> kits;
 
-4.3 OrderLine elérése aggregáláskor
+        for (const auto& oin : orderNeed.orderItemNeeds) {
+            const OrderLine& line = oin.line;
 
-Ahhoz, hogy a Piece/KitItem mezőit (ownerName, colorName, fullWidth,
-fullHeight, handlerSide, externalRef) ki tudjuk tölteni, az
-OrderNeed‑ben valahogy vissza kell tudni jutni az eredeti OrderLine‑hoz.
+            for (const auto& itemNeed : oin.itemNeeds) {
 
-Egyszerű megoldás:
+                // --- Cutting ---
+                for (const RawCut& rc : itemNeed.cutItems) {
+                    Piece p;
+                    p.materialBarcode = rc.materialBarcode;
+                    p.requiredLength  = rc.requiredLength;
+                    p.handlerSide     = line.handlerSide;
+                    p.externalRef     = line.externalId;
+                    p.ownerName       = line.ownerName;
+                    p.colorName       = line.colorName;
+                    p.fullWidth       = line.width_mm;
+                    p.fullHeight      = line.height_mm;
+                    pieces.append(p);
+                }
 
--   OrderItemNeed bővítése:
+                // --- Kitting ---
+                for (const RawKit& rk : itemNeed.kitItems) {
+                    KitItem ki;
+                    ki.materialBarcode = rk.materialBarcode;
+                    ki.quantity        = rk.qty;
+                    ki.ownerName       = line.ownerName;
+                    ki.colorName       = line.colorName;
+                    ki.fullWidth       = line.width_mm;
+                    ki.fullHeight      = line.height_mm;
+                    kits.append(ki);
+                }
+            }
+        }
 
-    struct OrderItemNeed {
-        QUuid orderItemId;
-        OrderLine line;              // új mező: az eredeti OrderLine
-        QVector<ItemNeed> itemNeeds; // minden példány külön
-    };
+        ws.cuts = CutAggregator::aggregate(pieces);
+        ws.kits = KitAggregator::aggregate(kits);
 
--   Az OrderNeedBuilder::build kitölti ezt a line mezőt.
--   A WorksheetBuilder pedig az OrderItemNeed.line‑ból veszi a
-    metaadatokat.
-
-------------------------------------------------------------------------
-
-5. Teszt forgatókönyv – roletta order
-
-Új teszt: test/calculation/order_need_builder_tester.cpp (már szerepel a
-pro‑ban, tehát ide illeszkedünk).
-
-Teszt case vázlat:
-
-1.  Testdata:
-    -   products.csv, needrules.csv, need_calculation*.csv,
-        materials.csv már léteznek a roletta teszthez.
-    -   Létrehozunk egy Order‑t:
-        -   orderId = QUuid::createUuid()
-        -   2–3 OrderItem:
-            -   pl. 2 db azonos rugós roletta (ugyanaz a méret,
-                handlerSide, szín),
-            -   1 db másik méretű roletta.
-2.  OrderNeedBuilder::build(order):
-    -   Ellenőrizzük:
-        -   orderNeed.orderItemNeeds.size() megfelelő,
-        -   minden OrderItemNeed.itemNeeds.size() == qty.
-3.  WorksheetBuilder::fromOrderNeed(orderNeed):
-    -   Ellenőrizzük:
-        -   cuts és kits nem üresek,
-        -   az aggregáció működik: az azonos anyag+méret+handlerSide
-            kombinációk összeadódnak (cut),
-        -   az azonos anyagok mennyisége összeadódik (kit).
-4.  Roletta‑specifikus ellenőrzések:
-    -   pl. egy adott tengely (TE-R-23) vágási hossza és darabszáma a
-        várt érték.
+        return ws;
+    }
 
 ------------------------------------------------------------------------
 
-6. Megismerendő fájlok – files.txt
+5. OrderNeedBuilder teszt megírása
 
-A fejlesztéshez érdemes átnézni (és a tesztben használni) az alábbi
-fájlokat. A formátum: files.txt – egy sor = egy relatív path.
+Fájl: test/calculation/order_need_builder_tester.cpp
 
-    calculation/service/need_calculator.h
-    calculation/service/need_calculator.cpp
-    calculation/service/raw_cut.h
-    calculation/service/raw_kit.h
-    calculation/service/piece.h
-    calculation/service/cut_key.h
-    calculation/service/cut_aggregator.h
-    calculation/service/cut_aggregator.cpp
-    calculation/service/kit_item.h
-    calculation/service/kit_aggregator.h
-    calculation/service/kit_aggregator.cpp
-    calculation/service/matrix_validator.h
-    calculation/service/matrix_validator.cpp
-    calculation/service/matrix_generator.h
-    calculation/service/matrix_generator.cpp
-    calculation/service/matrix_missing_detail.h
+5.1 Teszt skeleton
 
-    calcmodes/model/need_calculation.h
-    calculation/model/need_calculation_detail.h
-    calcmodes/registry/need_calculation_registry.h
-    calculation/registry/need_calculation_detail_registry.h
-    needs/model/need_rule.h
-    needs/registry/need_rule_registry.h
-    materials/model/material_master.h
-    materials/registry/material_registry.h
+    #include "order_need_builder_tester.h"
+    #include "calculation/service/order_need_builder.h"
+    #include "calculation/service/worksheet_builder.h"
+    #include "test/calculation/test_roletta_builder.h"
 
-    test/calculation/roletta_calculation_tester.h
-    test/calculation/roletta_calculation_tester.cpp
-    test/calculation/order_need_builder_tester.h
-    test/calculation/order_need_builder_tester.cpp
-    test/common/test_data_builder.h
-    test/common/test_data_builder.cpp
-    test/common/test_file_helper.h
-    test/common/test_file_helper.cpp
+    bool OrderNeedBuilderTester::run()
+    {
+        zInfo("=== OrderNeedBuilder TEST START ===");
 
-    testdata/products.csv
-    testdata/needrules.csv
-    testdata/barcodes.csv
-    testdata/settings.ini
+        // 1) Roletta testdata
+        auto ids = TestRolettaBuilder::build();
 
-(Új fájlok – lásd következő pont – ide is felvehetők, ha kész.)
+        // 2) Order összeállítása
+        Order order;
+        order.orderId = QUuid::createUuid();
 
-------------------------------------------------------------------------
+        OrderItem i1;
+        i1.orderItemId = QUuid::createUuid();
+        i1.line.productId = ids.ROL_R;
+        i1.line.width_mm = 1200;
+        i1.line.height_mm = 1500;
+        i1.line.handlerSide = "L";
+        i1.line.externalId = "X";
+        i1.line.ownerName = "Teszt Elek";
+        i1.line.colorName = "Fehér";
+        i1.qty = 2;
+        i1.modeName = "Manufacturing";
 
-7. Implementációs terv (pontonként végrehajtható)
+        order.items.append(i1);
 
-1.  Order modell kiterjesztése
-    -   Hozz létre calculation/service/order_need_builder.h/.cpp
-        fájlokat.
-    -   Definiáld az OrderItem és Order structokat (lásd 3.1).
-    -   Bővítsd az OrderItemNeed structot a line mezővel
-        (need_calculator.h).
-2.  OrderNeedBuilder::build implementálása
-    -   Input: const Order& order, bool debug.
-    -   Végigiterál az order.items‑en.
-    -   Minden itemre:
-        -   létrehoz OrderItemNeed‑et (orderItemId, line),
-        -   for i in [1..qty]:
-            -   ItemNeed n = NeedCalculator::calculate(item.line, item.modeName, debug);
-            -   itemNeed.itemNeeds.append(n);
-    -   Összeállítja az OrderNeed‑et és visszaadja.
-3.  CutAggregator és KitAggregator visszaélesztése
-    -   Vedd ki a kommenteket a cut_aggregator.h/.cpp és
-        kit_aggregator.h/.cpp fájlokból.
-    -   Ellenőrizd, hogy a pro‑ban (QT project file) már benne vannak
-        (benne vannak).
-    -   Fordítsd le, javítsd az esetleges include hibákat.
-4.  WorksheetNeed és WorksheetBuilder
-    -   Hozz létre calculation/service/worksheet_builder.h/.cpp
-        fájlokat.
-    -   Definiáld a WorksheetNeed structot.
-    -   Implementáld a WorksheetBuilder::fromOrderNeed függvényt:
-        -   Gyűjtsd össze az összes RawCut → Piece (OrderItemNeed.line
-            alapján).
-        -   Gyűjtsd össze az összes RawKit → KitItem.
-        -   Hívd meg a CutAggregator::aggregate és
-            KitAggregator::aggregate függvényeket.
-        -   Töltsd ki a WorksheetNeed.cuts és WorksheetNeed.kits
-            mezőket.
-5.  Roletta‑order teszt adat előkészítése
-    -   A meglévő roletta tesztadatokra támaszkodva (products.csv,
-        needrules.csv, materials, need_calculation*).
-    -   A test/common/test_data_builder‑ben (vagy új helperben) készíts
-        egy Order példányt:
-        -   2–3 OrderItem rolettára, különböző méretekkel, qty‑vel.
-6.  OrderNeedBuilder teszt
-    -   A test/calculation/order_need_builder_tester.cpp‑ben:
-        -   Betöltöd a registry‑ket (ahogy a többi teszt is teszi).
-        -   Meghívod az OrderNeedBuilder::build(order) függvényt.
-        -   Ellenőrzöd:
-            -   orderNeed.orderItemNeeds.size() == várt érték.
-            -   Minden OrderItemNeed.itemNeeds.size() == OrderItem.qty.
-            -   Legalább egy ItemNeed tartalmaz cutItems és/vagy
-                kitItems elemeket.
-7.  WorksheetBuilder teszt
-    -   Ugyanebben vagy külön tesztben:
-        -   WorksheetNeed ws = WorksheetBuilder::fromOrderNeed(orderNeed);
-        -   Ellenőrzöd:
-            -   ws.cuts nem üres.
-            -   ws.kits nem üres (ha van kitting formula).
-            -   Az aggregáció működik: az azonos
-                materialBarcode + requiredLength + handlerSide
-                kombinációk darabszáma összeadódik.
-8.  Logok és debug
-    -   Szükség esetén adj hozzá zInfo logokat az OrderNeedBuilder és
-        WorksheetBuilder kritikus pontjaira (orderId, orderItemId,
-        counts).
-    -   A tesztben futtass egy debug = true variánst is, hogy a formula
-        engine debug dumpja látható legyen, ha kell.
-9.  Refaktor és dokumentálás
-    -   Ha a pipeline stabil:
-        -   röviden dokumentáld a run_4_Order.txt vagy egy új
-            run_4_OrderNeed.txt fájlban az order → orderNeed →
-            worksheetNeed folyamatot.
-        -   vedd fel az új fájlokat a files.txt listába is.
+        // 3) Build OrderNeed
+        OrderNeed need = OrderNeedBuilder::build(order, true);
+
+        Q_ASSERT(need.orderItemNeeds.size() == 1);
+        Q_ASSERT(need.orderItemNeeds[0].itemNeeds.size() == 2);
+
+        // 4) WorksheetNeed
+        WorksheetNeed ws = WorksheetBuilder::fromOrderNeed(need);
+
+        Q_ASSERT(!ws.cuts.isEmpty());
+        Q_ASSERT(!ws.kits.isEmpty());
+
+        zInfo("=== OrderNeedBuilder TEST END ===");
+        return true;
+    }
 
 ------------------------------------------------------------------------
 
-Ha szeretnéd, a következő körben meg tudjuk írni konkrétan az
-OrderNeedBuilder::build és a WorksheetBuilder::fromOrderNeed C++ kódját
-is, a mostani struktúrákra ráfeszítve.
+6. Pro file frissítése
+
+Add hozzá:
+
+    calculation/service/order_need_builder.cpp
+    calculation/service/order_need_builder.h
+    calculation/service/worksheet_builder.cpp
+    calculation/service/worksheet_builder.h
+
+És vedd ki a kommenteket az aggregátor fájlokból.
+
+------------------------------------------------------------------------
+
+7. Debug + logolás
+
+A kritikus pontokra tegyél:
+
+    zInfo("Building OrderNeed for order " + order.orderId.toString());
+
+és hasonlókat.
+
+------------------------------------------------------------------------
+
+8. Dokumentáció frissítése
+
+A run_4_Order.txt vagy új run_4_OrderNeed.txt fájlba:
+
+-   Order → OrderNeed → WorksheetNeed pipeline
+-   Aggregációs logika
+-   Példák
+
+------------------------------------------------------------------------
+
+🎉 Kész is az implementációs terv
+
+Ez a terv 100% kompatibilis a meglévő kódbázisoddal, nem ütközik a
+NeedCalculator workflow‑val, és pontosan a roletta‑teszt mintájára
+építkezik.
+
+Ha szeretnéd, megírom a teljes új fájlokat is (header + cpp), vagy a
+teljes tesztet, vagy integrálom a pro‑ba.
