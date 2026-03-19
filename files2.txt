@@ -1,0 +1,1190 @@
+./docs/entity_contract.md:131:## 2.1 BarcodeBase
+./docs/entity_contract.md:134:struct BarcodeBase {
+./docs/entity_contract.md:135:    QString barcode;
+./docs/entity_contract.md:141:- opcionális fizikai azonosító (pl. nyomtatható barcode),
+./docs/entity_contract.md:143:- a barcode workflow (BarcodeRegistry) ettől függetlenül működik.
+./docs/entity_contract.md:147:## 2.2 BarcodeIdentifiableEntity
+./docs/entity_contract.md:150:struct BarcodeIdentifiableEntity : public IdentifiableEntity,
+./docs/entity_contract.md:151:                                  public BarcodeBase
+./docs/entity_contract.md:154:        return barcode.isEmpty()
+./docs/entity_contract.md:156:                   : QString("%1 [%2]").arg(name, barcode);
+./docs/entity_contract.md:160:        return QString("{id=%1, name=%2, barcode=%3}")
+./docs/entity_contract.md:161:            .arg(id.toString(), name, barcode);
+./docs/entity_contract.md:168:- `id + name + barcode` kombinált modell,
+./docs/entity_contract.md:172:- UI‑barát display: `Name [BARCODE]`, ha van barcode.
+./docs/entity_contract.md:174:### Ábra – BarcodeIdentifiableEntity
+./docs/entity_contract.md:186:      BarcodeBase
+./docs/entity_contract.md:189: BarcodeIdentifiableEntity
+./docs/entity_contract.md:190: (id + name + barcode)
+./docs/entity_contract.md:217:## 2.4 BarcodeHierarchicalEntity
+./docs/entity_contract.md:220:struct BarcodeHierarchicalEntity : public BarcodeIdentifiableEntity,
+./docs/entity_contract.md:234:  - `id + name + barcode` (BarcodeIdentifiableEntity),
+./docs/entity_contract.md:239:### Ábra – BarcodeHierarchicalEntity
+./docs/entity_contract.md:251:            BarcodeBase
+./docs/entity_contract.md:254:    BarcodeIdentifiableEntity
+./docs/entity_contract.md:260:      BarcodeHierarchicalEntity
+./docs/entity_contract.md:261: (id + name + barcode + parentId)
+./docs/entity_contract.md:271:struct MaterialMaster : public BarcodeIdentifiableEntity {
+./docs/entity_contract.md:297:- barcode + name + domain mezők.
+./docs/entity_contract.md:311:struct ProductMaster : public BarcodeHierarchicalEntity {
+./docs/entity_contract.md:321:  - `id`, `name`, `barcode`,
+./docs/entity_contract.md:405:    QString leftBarcode() const { ... }
+./docs/entity_contract.md:406:    QString rightBarcode() const { ... }
+./docs/entity_contract.md:434:## 3.6 BarcodeRecord
+./docs/entity_contract.md:437:struct BarcodeRecord {
+./docs/entity_contract.md:458:- auditbarát életút modell egy barcode‑hoz,
+./docs/entity_contract.md:459:- BarcodeRegistry tárolja,
+./docs/entity_contract.md:543:| BarcodeRecord            | BarcodeRegistry             | Audit |
+./docs/entity_contract.md:554:- **BarcodeIdentifiableEntity**:  
+./docs/entity_contract.md:555:  - `barcode` opcionális, de ha van, egyedi vagy auditált  
+./docs/entity_contract.md:577:- **BarcodeRecord**:  
+./docs/registry_matrix.md:198:**Példa:** BarcodeRegistry  
+./docs/registry_matrix.md:293:## BarcodeRegistry  
+./docs/registry_matrix.md:350:5. BarcodeRegistry saját workflow megtartása  
+./docs/barcodes_module_overview.md:1:## *A Barcode modul architekturális szerepe és működése*
+./docs/barcodes_module_overview.md:4:# Barcode modul – architekturális áttekintés
+./docs/barcodes_module_overview.md:7:A Barcode modul a rendszer globális vonalkód-életút könyvelője. 
+./docs/barcodes_module_overview.md:9:önálló, auditált életút-rekordokat (`BarcodeRecord`). 
+./docs/barcodes_module_overview.md:17:## 2. BarcodeRecord – az életút modell
+./docs/barcodes_module_overview.md:18:A `BarcodeRecord` egy auditált, önálló entitás:
+./docs/barcodes_module_overview.md:27:A BarcodeRecord NEM domain entitás, hanem globális erőforrás.
+./docs/barcodes_module_overview.md:31:## 3. BarcodeRepository – CSV adapter
+./docs/barcodes_module_overview.md:34:1. **Convert** – nyers CSV sor → BarcodeRow
+./docs/barcodes_module_overview.md:36:3. **Build** – BarcodeRow → BarcodeRecord
+./docs/barcodes_module_overview.md:48:## 4. BarcodeValidator – központi kapu
+./docs/barcodes_module_overview.md:49:A validator biztosítja, hogy minden új barcode:
+./docs/barcodes_module_overview.md:59:## 5. BarcodeCollisionHelper – emberi ütközés riport
+./docs/barcodes_module_overview.md:70:## 6. BarcodeRegistry – globális életút-könyvelő
+./docs/barcodes_module_overview.md:71:A BarcodeRegistry NEM domain registry, hanem:
+./docs/barcodes_module_overview.md:80:- `RegistryEngineBase<BarcodeRecord>`
+./docs/barcodes_module_overview.md:81:- `CrudMixin<BarcodeRegistry, BarcodeRecord>`
+./docs/barcodes_module_overview.md:82:- `RegisterMe<BarcodeRegistry>`
+./docs/barcodes_module_overview.md:93:A BarcodeRegistry egyedi szerepe miatt külön mixinre van szükség:
+./docs/barcodes_module_overview.md:95:### `BarcodeLedgerMixin<Host, BarcodeRecord>`
+./docs/barcodes_module_overview.md:107:A BarcodeRegistry így épülne fel:
+./docs/barcodes_module_overview.md:109:- `RegistryEngineBase<BarcodeRecord>`
+./docs/barcodes_module_overview.md:110:- `CollectorMixin<BarcodeRegistry, BarcodeRecord>` (update-t támogató verzió)
+./docs/barcodes_module_overview.md:111:- `BarcodeLedgerMixin<BarcodeRegistry>`
+./docs/barcodes_module_overview.md:112:- `RegisterMe<BarcodeRegistry>`
+./docs/barcodes_module_overview.md:115:- kifejezi a BarcodeRegistry speciális szerepét,
+./docs/barcodes_module_overview.md:123:A Barcode modul célja a globális vonalkód-életút könyvelése. 
+./docs/barcodes_module_overview.md:124:A BarcodeRegistry nem domain registry, hanem egy különálló ledger. 
+./docs/barcodes_module_overview.md:127:- dedikált BarcodeLedgerMixin-nel,
+./needs/presenter/material_requirements_presenter.h:31:                           const QString& barcode);
+./needs/presenter/material_requirements_presenter.cpp:21:                            const QString& barcode) {
+./needs/presenter/material_requirements_presenter.cpp:22:                         refreshForProduct(id, name, barcode);
+./needs/presenter/material_requirements_presenter.cpp:72:                                                      const QString& barcode)
+./needs/presenter/material_requirements_presenter.cpp:74:    auto rows = _manager->refreshForProduct(productId, name, barcode);
+./needs/view/material_requirements_view.cpp:62:    // Oszlopok alap szélessége – a barcode is látható legyen
+./needs/view/material_requirements_view.cpp:79:        product_item->setToolTip(QString("Product: %1\nBarcode: %2\nUUID: %3")
+./needs/view/material_requirements_view.cpp:80:                                     .arg(data.product_name, data.product_barcode, data.product_id.toString()));
+./needs/view/material_requirements_view.cpp:81:        material_item->setToolTip(QString("Material: %1\nBarcode: %2\nUUID: %3")
+./needs/view/material_requirements_view.cpp:82:                                      .arg(data.material_name, data.material_barcode, data.material_id.toString()));
+./needs/view/material_requirements_view.cpp:86:        product_item->setData(Qt::UserRole + 1, data.product_barcode);
+./needs/view/material_requirements_view.cpp:89:        material_item->setData(Qt::UserRole + 1, data.material_barcode);
+./needs/view/material_requirements_view.cpp:105:    product_item->setToolTip(QString("Product: %1\nBarcode: %2\nUUID: %3")
+./needs/view/material_requirements_view.cpp:106:                                 .arg(data.product_name, data.product_barcode, data.product_id.toString()));
+./needs/view/material_requirements_view.cpp:107:    material_item->setToolTip(QString("Material: %1\nBarcode: %2\nUUID: %3")
+./needs/view/material_requirements_view.cpp:108:                                  .arg(data.material_name, data.material_barcode, data.material_id.toString()));
+./needs/view/material_requirements_view.cpp:111:    product_item->setData(Qt::UserRole + 1, data.product_barcode);
+./needs/view/material_requirements_view.cpp:114:    material_item->setData(Qt::UserRole + 1, data.material_barcode);
+./needs/view/material_requirements_view.cpp:135:    const QString product_barcode = product_item->data(Qt::UserRole + 1).toString();
+./needs/view/material_requirements_view.cpp:138:    const QString material_barcode = material_item->data(Qt::UserRole + 1).toString();
+./needs/view/material_requirements_view.cpp:140:    emit request_remove_requirement(product_id, product_barcode, material_id, material_barcode);
+./needs/view/material_requirements_view.cpp:148:                                                   const QString& product_barcode)
+./needs/view/material_requirements_view.cpp:152:    _current_product_barcode = product_barcode;
+./needs/view/material_requirements_view.cpp:154:    // UX: clipboard friendly – egy kattintás, és a barcode copyzható (spacebar trükk nélkül)
+./needs/view/material_requirements_view.cpp:155:    // QGuiApplication::clipboard()->setText(product_barcode);
+./needs/view/material_requirements_view.cpp:158:    //emit request_add_requirement(_current_product_id, _current_product_barcode);
+./needs/view/material_requirements_view.cpp:203:    // Felhasználóbarát + auditbarát – name (barcode)
+./needs/view/material_requirements_view.cpp:204:    return QString("%1 (%2)").arg(data.product_name, data.product_barcode);
+./needs/view/material_requirements_view.cpp:208:    return QString("%1 (%2)").arg(data.material_name, data.material_barcode);
+./needs/view/material_picker_dialog.cpp:30:    _searchBox->setPlaceholderText("🔍 Keresés név vagy barcode alapján...");
+./needs/view/material_picker_dialog.cpp:50://         auto* item = new QListWidgetItem(QString("%1 (%2)").arg(m.name, m.barcode));
+./needs/view/material_picker_dialog.cpp:52://         item->setData(Qt::UserRole + 1, m.barcode);
+./needs/view/material_picker_dialog.cpp:68:        const QString barcode = m.barcode.toLower();
+./needs/view/material_picker_dialog.cpp:69:        const QString combined = name + " " + barcode;
+./needs/view/material_picker_dialog.cpp:75:        auto* item = new QListWidgetItem(QString("%1 (%2)").arg(m.name, m.barcode));
+./needs/view/material_picker_dialog.cpp:77:        item->setData(Qt::UserRole + 1, m.barcode);
+./needs/view/material_picker_dialog.cpp:81:        if (!query.isEmpty() && (name.startsWith(query) || barcode.startsWith(query)))
+./needs/view/material_picker_dialog.cpp:99:    _result.material_barcode = item->data(Qt::UserRole + 1).toString();
+./needs/view/material_requirements_view.h:20: * - A data flow auditbarát: barcode + opcionális UUID minden sorban, hogy a repo sync egyértelmű legyen.
+./needs/view/material_requirements_view.h:41:     * - Mindkét oldal azonosítói (UUID + barcode) a későbbi repo integrációhoz.
+./needs/view/material_requirements_view.h:42:     * - A name-ek a felhasználónak, a barcode/UUID az auditnak.
+./needs/view/material_requirements_view.h:47:        QString product_barcode;
+./needs/view/material_requirements_view.h:51:        QString material_barcode;
+./needs/view/material_requirements_view.h:77:     * @note Kötelezően adj meg legalább barcode-ot (auditbarát azonosító).
+./needs/view/material_requirements_view.h:81:                             const QString& product_barcode);
+./needs/view/material_requirements_view.h:100:                                    const QString& product_barcode,
+./needs/view/material_requirements_view.h:102:                                    const QString& material_barcode);
+./needs/view/material_requirements_view.h:121:    QString _current_product_barcode;
+./needs/view/material_picker_dialog.h:20:        QString material_barcode;
+./needs/manager/material_requirements_manager.h:24:                           const QString& productBarcode);
+./needs/manager/material_requirements_manager.h:31:    QString _currentProductBarcode;
+./needs/manager/material_requirements_manager.h:39:                       const QString& productBarcode);
+./needs/manager/material_requirements_manager.cpp:19:                refreshForProduct(_currentProductId, _currentProductName, _currentProductBarcode);
+./needs/manager/material_requirements_manager.cpp:29:                //Q_UNUSED(productBarcode);
+./needs/manager/material_requirements_manager.cpp:69:                   const QString& productBarcode,
+./needs/manager/material_requirements_manager.cpp:71:                   const QString& materialBarcode) {
+./needs/manager/material_requirements_manager.cpp:72:                Q_UNUSED(productBarcode);
+./needs/manager/material_requirements_manager.cpp:73:                Q_UNUSED(materialBarcode);
+./needs/manager/material_requirements_manager.cpp:103:                                                const QString& productBarcode)
+./needs/manager/material_requirements_manager.cpp:113:        r.product_barcode = productBarcode;
+./needs/manager/material_requirements_manager.cpp:124:            r.material_barcode = mat.barcode;
+./needs/manager/material_requirements_manager.cpp:129:            r.material_barcode = "";
+./needs/manager/material_requirements_manager.cpp:149:                                                    const QString& productBarcode)
+./needs/manager/material_requirements_manager.cpp:155:    _currentProductBarcode = productBarcode;
+./needs/manager/material_requirements_manager.cpp:158:        makeRowsForProduct(productId, productName, productBarcode);
+./masi2.txt:24:./barcodes/registry/barcode_registry.h
+./masi2.txt:25:./barcodes/registry/barcode_registry.cpp
+./masi2.txt:26:./barcodes/helpers/barcode_collision_helper.h
+./masi2.txt:27:./barcodes/helpers/barcode_collision_helper.cpp
+./masi2.txt:28:./barcodes/validator/barcode_validator.cpp
+./masi2.txt:29:./barcodes/validator/barcode_validator.h
+./masi2.txt:30:./barcodes/repository/barcode_repository.cpp
+./masi2.txt:31:./barcodes/repository/barcode_repository.h
+./masi2.txt:32:./barcodes/model/barcode_record.h
+./masi2.txt:1108:./testdata/barcodes.csv
+./run_5_2.md:1567:- auditbarát: UUID + barcode + name
+./run_5_2.md:1705:        QString barcode;
+./run_5_2.md:1726:- auditbarát adatok (UUID + barcode)
+./barcodes/registry/barcode_registry.h:7:#include "barcodes/model/barcode_record.h"
+./barcodes/registry/barcode_registry.h:14: * @brief BarcodeRegistry – globális könyvelés a barcode-okhoz.
+./barcodes/registry/barcode_registry.h:20:class BarcodeRegistry
+./barcodes/registry/barcode_registry.h:21:    : public RegistryEngineBase<BarcodeRecord>,
+./barcodes/registry/barcode_registry.h:22:      public RegisterMe<BarcodeRegistry>,
+./barcodes/registry/barcode_registry.h:23:      public BulkLoadMixin<BarcodeRegistry, BarcodeRecord>
+./barcodes/registry/barcode_registry.h:27:    static BarcodeRegistry& instance() {
+./barcodes/registry/barcode_registry.h:28:        static BarcodeRegistry reg;
+./barcodes/registry/barcode_registry.h:33:    const BarcodeRecord* findByCode(const QString& code) const;
+./barcodes/registry/barcode_registry.h:34:    bool isBarcodeUnique(const QString& code) const;
+./barcodes/registry/barcode_registry.h:36:    // ➕ Új barcode regisztrálása / életút-kezelés
+./barcodes/registry/barcode_registry.h:44:    // 💾 CSV persist (BarcodeRepository-on keresztül)
+./barcodes/registry/barcode_registry.h:49:        zInfo("róka4: BarcodeRegistry::onItemsChanged fut");
+./barcodes/registry/barcode_registry.h:50:        RegistryEngineBase<BarcodeRecord>::onItemsChanged();
+./barcodes/registry/barcode_registry.h:54:    bool insertInternal(const BarcodeRecord& r);
+./barcodes/registry/barcode_registry.h:55:    bool updateInternal(const BarcodeRecord& r);
+./barcodes/registry/barcode_registry.h:57:    bool validateDomain(const BarcodeRecord& r) const;
+./barcodes/registry/barcode_registry.h:58:    bool validateDuplicate(const BarcodeRecord& r) const;
+./barcodes/registry/barcode_registry.h:60:    bool beforeInsert(BarcodeRecord& r);
+./barcodes/registry/barcode_registry.h:61:    bool beforeUpdate(BarcodeRecord& r);
+./barcodes/registry/barcode_registry.h:63:    void onInsertLog(const BarcodeRecord& r);
+./barcodes/registry/barcode_registry.h:64:    void onUpdateLog(const BarcodeRecord& r);
+./barcodes/registry/barcode_registry.h:65:    void onRemoveLog(const BarcodeRecord& r);
+./barcodes/registry/barcode_registry.h:68:    BarcodeRegistry()
+./barcodes/registry/barcode_registry.h:69:        : RegistryEngineBase("BarcodeRegistry", "BarcodeRecord")
+./barcodes/registry/barcode_registry.h:79:// #include "barcodes/model/barcode_record.h"
+./barcodes/registry/barcode_registry.h:84://  * @brief BarcodeRegistry – globális könyvelés a barcode-okhoz.
+./barcodes/registry/barcode_registry.h:87://  * - A MaterialRegistry mintájára épül, de BarcodeRecord-okat kezel.
+./barcodes/registry/barcode_registry.h:91:// class BarcodeRegistry : public RegistryEngineBase<BarcodeRecord>,
+./barcodes/registry/barcode_registry.h:92://                         public RegisterMe<BarcodeRegistry>
+./barcodes/registry/barcode_registry.h:94://     AUTO_REGISTER_REGISTRY(BarcodeRegistry);
+./barcodes/registry/barcode_registry.h:96://     BarcodeRegistry() : RegistryEngineBase<BarcodeRecord>("BarcodeRegistry", "Barcode") {}
+./barcodes/registry/barcode_registry.h:97://     BarcodeRegistry(const BarcodeRegistry&) = delete;
+./barcodes/registry/barcode_registry.h:99://     //QVector<BarcodeRecord> _data;  ///< 📦 Globális barcode lista
+./barcodes/registry/barcode_registry.h:101://     //bool registerData_private(const BarcodeRecord &record, bool persistFlag);
+./barcodes/registry/barcode_registry.h:104://     static BarcodeRegistry& instance();
+./barcodes/registry/barcode_registry.h:106://     bool add(const BarcodeRecord& r);
+./barcodes/registry/barcode_registry.h:107://     // Ezek a RegistryEngine API-k nem értelmezhetők BarcodeRecord-ra
+./barcodes/registry/barcode_registry.h:109://     // ➕ Új barcode regisztrálása
+./barcodes/registry/barcode_registry.h:110://     bool registerData(const BarcodeRecord& record);
+./barcodes/registry/barcode_registry.h:111://     bool registerData_volatile(const BarcodeRecord &record);
+./barcodes/registry/barcode_registry.h:114://     const BarcodeRecord* findByCode(const QString& code) const;
+./barcodes/registry/barcode_registry.h:117://     bool isBarcodeUnique(const QString& code) const;
+./barcodes/registry/barcode_registry.h:122://     //const BarcodeIdentifiableEntity* findEntityById(const QUuid& id) const override;
+./barcodes/registry/barcode_registry.cpp:1:#include "barcodes/registry/barcode_registry.h"
+./barcodes/registry/barcode_registry.cpp:5:#include "barcodes/repository/barcode_repository.h"
+./barcodes/registry/barcode_registry.cpp:7:#include "barcodes/helpers/barcode_collision_helper.h"
+./barcodes/registry/barcode_registry.cpp:11:const BarcodeRecord*
+./barcodes/registry/barcode_registry.cpp:12:BarcodeRegistry::findByCode(const QString& code) const
+./barcodes/registry/barcode_registry.cpp:14:    return findIf([&](const BarcodeRecord& r){
+./barcodes/registry/barcode_registry.cpp:19:bool BarcodeRegistry::isBarcodeUnique(const QString& code) const
+./barcodes/registry/barcode_registry.cpp:21:    return !existsBy([&](const BarcodeRecord& r){
+./barcodes/registry/barcode_registry.cpp:26:bool BarcodeRegistry::insertInternal(const BarcodeRecord& r)
+./barcodes/registry/barcode_registry.cpp:31:bool BarcodeRegistry::updateInternal(const BarcodeRecord& r)
+./barcodes/registry/barcode_registry.cpp:38:bool BarcodeRegistry::validateDomain(const BarcodeRecord& r) const
+./barcodes/registry/barcode_registry.cpp:49:bool BarcodeRegistry::validateDuplicate(const BarcodeRecord& r) const
+./barcodes/registry/barcode_registry.cpp:52:    return !existsBy([&](const BarcodeRecord& x){
+./barcodes/registry/barcode_registry.cpp:58:bool BarcodeRegistry::beforeInsert(BarcodeRecord& r)
+./barcodes/registry/barcode_registry.cpp:65:bool BarcodeRegistry::beforeUpdate(BarcodeRecord& r)
+./barcodes/registry/barcode_registry.cpp:74:void BarcodeRegistry::onInsertLog(const BarcodeRecord& r)
+./barcodes/registry/barcode_registry.cpp:77:        zInfo(QString("Barcode registered: %1 [%2]")
+./barcodes/registry/barcode_registry.cpp:82:void BarcodeRegistry::onUpdateLog(const BarcodeRecord& r)
+./barcodes/registry/barcode_registry.cpp:85:        zInfo(QString("Barcode updated: %1 [%2], status=%3")
+./barcodes/registry/barcode_registry.cpp:92:void BarcodeRegistry::onRemoveLog(const BarcodeRecord& r)
+./barcodes/registry/barcode_registry.cpp:94:    zInfo(QString("Barcode removed from registry: %1 [%2]")
+./barcodes/registry/barcode_registry.cpp:100:bool BarcodeRegistry::registerNew(const QString& code,
+./barcodes/registry/barcode_registry.cpp:109:    if (auto* rec = const_cast<BarcodeRecord*>(findByCode(trimmedCode))) {
+./barcodes/registry/barcode_registry.cpp:113:            BarcodeRecord updated = *rec;
+./barcodes/registry/barcode_registry.cpp:117:                zWarning(QString("⚠️ Failed to update existing barcode: %1").arg(trimmedCode));
+./barcodes/registry/barcode_registry.cpp:126:                 if (auto err = BarcodeCollisionHelper::makeBarcodeCollisionError(
+./barcodes/registry/barcode_registry.cpp:128:                       BarcodeCollisionHelper::RowInfo{ trimmedCode, name, id },
+./barcodes/registry/barcode_registry.cpp:142:    BarcodeRecord rec;
+./barcodes/registry/barcode_registry.cpp:150:        zWarning(QString("⚠️ Failed to insert new barcode: %1").arg(trimmedCode));
+./barcodes/registry/barcode_registry.cpp:158:bool BarcodeRegistry::retire(const QString& code, const QString& reason)
+./barcodes/registry/barcode_registry.cpp:164:    if (const BarcodeRecord* rec = findByCode(trimmedCode)) {
+./barcodes/registry/barcode_registry.cpp:170:        BarcodeRecord updated = *rec;
+./barcodes/registry/barcode_registry.cpp:174:            zWarning(QString("⚠️ Failed to retire barcode: %1").arg(trimmedCode));
+./barcodes/registry/barcode_registry.cpp:178:        zInfo(QString("Barcode retired: %1 (reason=%2)").arg(trimmedCode, reason));
+./barcodes/registry/barcode_registry.cpp:189:void BarcodeRegistry::persist() const
+./barcodes/registry/barcode_registry.cpp:192:    BarcodeRepository::saveToCSV(*this);
+./barcodes/helpers/barcode_collision_helper.h:6:#include "barcodes/registry/barcode_registry.h"
+./barcodes/helpers/barcode_collision_helper.h:9: * @brief BarcodeCollisionHelper – egységes, auditbarát ütközés riportoló.
+./barcodes/helpers/barcode_collision_helper.h:13: *   - megnézi a globális uniqueness-et (BarcodeRegistry)
+./barcodes/helpers/barcode_collision_helper.h:15: *   - összerak egy emberbarát üzenetet (typeName, name, barcode, status)
+./barcodes/helpers/barcode_collision_helper.h:17:class BarcodeCollisionHelper {
+./barcodes/helpers/barcode_collision_helper.h:20:        QString barcode;
+./barcodes/helpers/barcode_collision_helper.h:26:    makeBarcodeCollisionError(const QString& myTypeName,
+./barcodes/helpers/barcode_collision_helper.h:31:    static QString formatStatus(const BarcodeRecord& rec);
+./barcodes/helpers/barcode_collision_helper.cpp:1:#include "barcodes/helpers/barcode_collision_helper.h"
+./barcodes/helpers/barcode_collision_helper.cpp:6:QString BarcodeCollisionHelper::formatRowDisplay(const RowInfo& row) {
+./barcodes/helpers/barcode_collision_helper.cpp:7:    if (row.name.isEmpty() && row.barcode.isEmpty()) return QString("<no name, no barcode>");
+./barcodes/helpers/barcode_collision_helper.cpp:8:    if (row.name.isEmpty()) return QString("[%1]").arg(row.barcode);
+./barcodes/helpers/barcode_collision_helper.cpp:9:    if (row.barcode.isEmpty()) return row.name;
+./barcodes/helpers/barcode_collision_helper.cpp:10:    return QString("%1 [%2]").arg(row.name, row.barcode);
+./barcodes/helpers/barcode_collision_helper.cpp:13:QString BarcodeCollisionHelper::formatStatus(const BarcodeRecord& rec) {
+./barcodes/helpers/barcode_collision_helper.cpp:18:BarcodeCollisionHelper::makeBarcodeCollisionError(const QString& myTypeName,
+./barcodes/helpers/barcode_collision_helper.cpp:22:    const QString code = row.barcode.trimmed();
+./barcodes/helpers/barcode_collision_helper.cpp:27:    auto& br = BarcodeRegistry::instance();
+./barcodes/helpers/barcode_collision_helper.cpp:30:    if (!br.isBarcodeUnique(code)) {
+./barcodes/helpers/barcode_collision_helper.cpp:42:            // Ha a barcode-record nem tartalmaz entityId-t, akkor nincs domain-ütközés
+./barcodes/helpers/barcode_collision_helper.cpp:48:            zEventWARN(QString("Barcode collision detected: %1 (%2)").arg(code, myTypeName));
+./barcodes/helpers/barcode_collision_helper.cpp:56:            //     RegistryManager::instance().findEntityByBarcode(myTypeName, row.barcode);
+./barcodes/helpers/barcode_collision_helper.cpp:63:                msg = QString("Barcode collision: %1[%2] ütközik %3[%4](%5)")
+./barcodes/helpers/barcode_collision_helper.cpp:70:                msg = QString("Barcode collision: %1[%2] ütközik %3{%4}(%5)")
+./barcodes/helpers/barcode_collision_helper.cpp:78:            return CsvImporter::RowError{ lineNumber, msg, row.barcode, row.name };
+./barcodes/helpers/barcode_collision_helper.cpp:80:            const QString msg = QString("Barcode collision: %1 (record not found after check)").arg(code);
+./barcodes/helpers/barcode_collision_helper.cpp:81:            zEventERROR(QString("Inconsistent BarcodeRegistry state on collision: %1").arg(code));
+./barcodes/helpers/barcode_collision_helper.cpp:82:            return CsvImporter::RowError{ lineNumber, msg, row.barcode, row.name };
+./barcodes/validator/barcode_validator.cpp:1:#include "barcodes/validator//barcode_validator.h"
+./barcodes/validator/barcode_validator.cpp:4:bool BarcodeValidator::checkAndRegister(const QString& code,
+./barcodes/validator/barcode_validator.cpp:10:    auto& br = BarcodeRegistry::instance();
+./barcodes/validator/barcode_validator.cpp:16:                     QString("Empty barcode is not allowed"),
+./barcodes/validator/barcode_validator.cpp:19:        zEventERROR(QString("Empty barcode for %1 (%2)").arg(name, entityType));
+./barcodes/validator/barcode_validator.cpp:24:    if (!br.isBarcodeUnique(trimmedCode)) {
+./barcodes/validator/barcode_validator.cpp:26:                     QString("Barcode collision: %1").arg(trimmedCode),
+./barcodes/validator/barcode_validator.cpp:29:        zEventERROR(QString("Barcode collision: %1 (%2)").arg(trimmedCode, entityType));
+./barcodes/validator/barcode_validator.cpp:37:                     QString("Failed to register barcode: %1").arg(trimmedCode),
+./barcodes/validator/barcode_validator.cpp:40:        zEventERROR(QString("Failed to register barcode: %1 (%2)")
+./barcodes/validator/barcode_validator.cpp:48:void BarcodeValidator::retire(const QString& code, const QString& reason) {
+./barcodes/validator/barcode_validator.cpp:49:    auto& br = BarcodeRegistry::instance();
+./barcodes/validator/barcode_validator.cpp:58:// bool BarcodeValidator::checkAndRegister(const QString& code,
+./barcodes/validator/barcode_validator.cpp:64://     auto& br = BarcodeRegistry::instance();
+./barcodes/validator/barcode_validator.cpp:69://                      QString("Empty barcode is not allowed"),
+./barcodes/validator/barcode_validator.cpp:72://         zEventERROR(QString("Empty barcode for %1 (%2)").arg(name, entityType));
+./barcodes/validator/barcode_validator.cpp:77://     if (!br.isBarcodeUnique(code)) {
+./barcodes/validator/barcode_validator.cpp:79://                      QString("Barcode collision: %1").arg(code),
+./barcodes/validator/barcode_validator.cpp:82://         zEventERROR(QString("Barcode collision: %1 (%2)").arg(code, entityType));
+./barcodes/validator/barcode_validator.cpp:90://                      QString("Failed to register barcode: %1").arg(code),
+./barcodes/validator/barcode_validator.cpp:93://         zEventERROR(QString("Failed to register barcode: %1 (%2)").arg(code, entityType));
+./barcodes/validator/barcode_validator.cpp:100:// void BarcodeValidator::retire(const QString& code, const QString& reason) {
+./barcodes/validator/barcode_validator.cpp:101://     auto& br = BarcodeRegistry::instance();
+./barcodes/validator/barcode_validator.h:5:#include "barcodes/registry/barcode_registry.h"
+./barcodes/validator/barcode_validator.h:9: * @brief BarcodeValidator – vékony, központi validator helper.
+./barcodes/validator/barcode_validator.h:14:class BarcodeValidator {
+./barcodes/validator/barcode_validator.h:18:     * regisztrálja az új barcode-ot. Ha nem oké, audit hibát tesz a ctx-be.
+./barcodes/validator/barcode_validator.h:29:     * @brief retire – nyugdíjazza a barcode-ot (audit + státusz),
+./barcodes/repository/barcode_repository.cpp:1:#include "barcodes/repository/barcode_repository.h"
+./barcodes/repository/barcode_repository.cpp:25:std::optional<CsvImporter::AuditedRow<BarcodeRepository::BarcodeRow>>
+./barcodes/repository/barcode_repository.cpp:26:BarcodeRepository::convertRowToBarcodeRow(const QVector<QString>& parts,
+./barcodes/repository/barcode_repository.cpp:38:    BarcodeRow row;
+./barcodes/repository/barcode_repository.cpp:44:    return CsvImporter::AuditedRow<BarcodeRow>{ ctx.currentLineNumber(), row };
+./barcodes/repository/barcode_repository.cpp:49:BarcodeRepository::makeError(int lineNumber, const QString& message, const BarcodeRepository::BarcodeRow& row) {
+./barcodes/repository/barcode_repository.cpp:50:    // Auditbarát: a barcode és egy emberi kontextus (entityType) bekerül a hibába
+./barcodes/repository/barcode_repository.cpp:56:BarcodeRepository::validateBarcodeRow(const BarcodeRow& row, int lineNumber)
+./barcodes/repository/barcode_repository.cpp:61:        errors.append(makeError(lineNumber, "⚠️ Hiányzó barcode (code)", row));
+./barcodes/repository/barcode_repository.cpp:87:std::optional<BarcodeRecord>
+./barcodes/repository/barcode_repository.cpp:88:BarcodeRepository::buildRecordFromRow(const BarcodeRow& row,
+./barcodes/repository/barcode_repository.cpp:91:    auto rowErrors = validateBarcodeRow(row, ctx.currentLineNumber());
+./barcodes/repository/barcode_repository.cpp:97:    BarcodeRecord rec;
+./barcodes/repository/barcode_repository.cpp:114:QVector<CsvImporter::AuditedRow<BarcodeRepository::BarcodeRow>>
+./barcodes/repository/barcode_repository.cpp:115:BarcodeRepository::loadBarcodeRows(CsvImporter::FileContext& ctx)
+./barcodes/repository/barcode_repository.cpp:118:    return CsvImporter::readAndConvert<CsvImporter::AuditedRow<BarcodeRepository::BarcodeRow>>(ctx, convertRowToBarcodeRow);
+./barcodes/repository/barcode_repository.cpp:122:bool BarcodeRepository::load(QVector<BarcodeRecord>& out)
+./barcodes/repository/barcode_repository.cpp:124:    const QString fn = FileNameHelper::instance().pathFor(FileKind::Barcodes, FileAccess::Read);
+./barcodes/repository/barcode_repository.cpp:125:    CsvImporter::FileContext ctx("Barcode import", fn);
+./barcodes/repository/barcode_repository.cpp:128:    const QVector<CsvImporter::AuditedRow<BarcodeRow>> rows =
+./barcodes/repository/barcode_repository.cpp:129:        loadBarcodeRows(ctx);
+./barcodes/repository/barcode_repository.cpp:132:    const QVector<BarcodeRecord> records =
+./barcodes/repository/barcode_repository.cpp:133:        CsvImporter::buildAll<BarcodeRow, BarcodeRecord>(
+./barcodes/repository/barcode_repository.cpp:145:                             QString("⚠️ Duplikált barcode a CSV-ben: %1").arg(r.code));
+./barcodes/repository/barcode_repository.cpp:153:        zWarning(QString("⚠️ Hibák a barcode import során (%1)")
+./barcodes/repository/barcode_repository.cpp:159:    zInfo(QString("📦 BarcodeRepository: %1 rekord beolvasva")
+./barcodes/repository/barcode_repository.cpp:166:// bool BarcodeRepository::loadFromCSV(BarcodeRegistry& registry)
+./barcodes/repository/barcode_repository.cpp:175://     //   QString getBarcodeCsvFile() const;
+./barcodes/repository/barcode_repository.cpp:176://     const QString fn = helper.getBarcodeCsvFile(); // auditbarát: központi helyről jön
+./barcodes/repository/barcode_repository.cpp:177://     CsvImporter::FileContext ctx("Barcode import", fn);
+./barcodes/repository/barcode_repository.cpp:180://     const QVector<CsvImporter::AuditedRow<BarcodeRow>> rows = loadBarcodeRows(ctx);
+./barcodes/repository/barcode_repository.cpp:183://     const QVector<BarcodeRecord> records =
+./barcodes/repository/barcode_repository.cpp:184://         CsvImporter::buildAll<BarcodeRow, BarcodeRecord>(rows, buildRecordFromRow, ctx);
+./barcodes/repository/barcode_repository.cpp:193://                              QString("⚠️ Duplikált barcode a CSV-ben: %1").arg(r.code));
+./barcodes/repository/barcode_repository.cpp:201://         zWarning(QString("⚠️ Hibák a barcode import során (%1)").arg(ctx.errorsSize()));
+./barcodes/repository/barcode_repository.cpp:207://         if (registry.isBarcodeUnique(rec.code)) {
+./barcodes/repository/barcode_repository.cpp:214://             zWarning(QString("⚠️ Barcode duplikált a registryben is: %1").arg(rec.code));
+./barcodes/repository/barcode_repository.cpp:218://     zInfo(QString("📊 BarcodeRepository: %1 rekord beolvasva, %2 regisztrálva")
+./barcodes/repository/barcode_repository.cpp:226:bool BarcodeRepository::saveToCSV(const BarcodeRegistry& registry)
+./barcodes/repository/barcode_repository.cpp:228:    const QString path = FileNameHelper::instance().pathFor(FileKind::Barcodes, FileAccess::Write);
+./barcodes/repository/barcode_repository.cpp:243:    ts << "barCode;entityType;introducedAt;retiredAt\n";
+./barcodes/repository/barcode_repository.cpp:254:    zInfo(QString("📦 BarcodeRepository: CSV export kész → %1").arg(path));
+./barcodes/repository/barcode_repository.h:6:#include "barcodes/model/barcode_record.h"
+./barcodes/repository/barcode_repository.h:7:#include "barcodes/registry/barcode_registry.h"
+./barcodes/repository/barcode_repository.h:10: * BarcodeRepository
+./barcodes/repository/barcode_repository.h:13: *  - Stage 1: Convert → CSV sor → BarcodeRow
+./barcodes/repository/barcode_repository.h:14: *  - Stage 2.5: Validate → BarcodeRow → hibák (auditbarát visszajelzés)
+./barcodes/repository/barcode_repository.h:15: *  - Stage 2: Build → BarcodeRow → BarcodeRecord
+./barcodes/repository/barcode_repository.h:16: *  - Stage 3: Assemble → BarcodeRecord → BarcodeRegistry
+./barcodes/repository/barcode_repository.h:23:class BarcodeRepository {
+./barcodes/repository/barcode_repository.h:30://    static bool loadFromCSV(BarcodeRegistry& registry);
+./barcodes/repository/barcode_repository.h:31:    static bool load(QVector<BarcodeRecord>& out);
+./barcodes/repository/barcode_repository.h:37:    static bool saveToCSV(const BarcodeRegistry& registry);
+./barcodes/repository/barcode_repository.h:40:    // 📥 CSV sor logikai modellje (raw → typed, de még nem BarcodeRecord)
+./barcodes/repository/barcode_repository.h:41:    struct BarcodeRow {
+./barcodes/repository/barcode_repository.h:49:    static std::optional<CsvImporter::AuditedRow<BarcodeRow>>
+./barcodes/repository/barcode_repository.h:50:    convertRowToBarcodeRow(const QVector<QString>& parts, CsvImporter::FileContext& ctx);
+./barcodes/repository/barcode_repository.h:54:    validateBarcodeRow(const BarcodeRow& row, int lineNumber);
+./barcodes/repository/barcode_repository.h:57:    static std::optional<BarcodeRecord>
+./barcodes/repository/barcode_repository.h:58:    buildRecordFromRow(const BarcodeRow& row, CsvImporter::FileContext& ctx);
+./barcodes/repository/barcode_repository.h:61:    static QVector<CsvImporter::AuditedRow<BarcodeRow>>
+./barcodes/repository/barcode_repository.h:62:    loadBarcodeRows(CsvImporter::FileContext& ctx);
+./barcodes/repository/barcode_repository.h:65:    makeError(int lineNumber, const QString& message, const BarcodeRow& row);
+./barcodes/model/barcode_record.h:9: * BarcodeRecord – auditbarát életút modell egy barcode-hoz.
+./barcodes/model/barcode_record.h:17:struct BarcodeRecord {
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt:2:a jelenlegi állapotról. Összefoglalom, hol tart most a barcode‑életút,
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt:8:1. Jelenlegi állapot – működik a barcode‑életút, vagy szét van esve?
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt:10:1.1. BarcodeRegistry – szép koncepció, félúton megállva
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt:12:A BarcodeRegistry deklarációja alapján a cél teljesen világos: globális,
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt:23:    RegistryEngineBase<BarcodeRecord> + BulkLoadMixin, tehát a
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt:45:-   A BarcodeRepository::load(QVector<BarcodeRecord>& out) csak egy
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt:49:-   A régi loadFromCSV(BarcodeRegistry&) implementáció ki van
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt:52:-   Exportnál a saveToCSV(const BarcodeRegistry& registry) szépen kiírja
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt:57:BarcodeRegistry‑t, így a registry állapota attól függ, hogy a futás
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt:61:1.3. BarcodeValidator – egy kapu, de csak egy szűk útvonalon
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt:63:A BarcodeValidator::checkAndRegister() szépen megfogalmazza a “helyes”
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt:67:  2)  isBarcodeUnique() a registryben
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt:74:    BarcodeCollisionHelper‑t, ami a registryt használja, de
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt:77:    valójában már létezik barcode‑record.
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt:79:1.4. Product oldal – barcode mint sima string, registry integráció csak foltokban
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt:81:-   A ProductMaster csak egy BarcodeHierarchicalEntity, amiben a barcode
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt:82:    sima QString mező a BarcodeBase‑ből. Nincs semmilyen típus, ami
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt:85:    barcode nem üres – semmi kapcsolat a BarcodeRegistry‑vel.
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt:87:    BarcodeCollisionHelper‑t, de RowInfo.entityId = std::nullopt, tehát
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt:91:    barcode‑ot a fában:
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt:92:    -   megnézi a BarcodeRegistry::findByCode(newCode)‑ot,
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt:96:        BarcodeRegistry‑t nem.
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt:100:  ProductRegistry, a barcode‑életút registry nem kap update‑et.
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt:103:tartja karban a BarcodeRegistry‑t. Van hely, ahol ránéz, van hely, ahol
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt:109:-   A barcode‑életút nincs teljesen halott, de erősen szét van esve:
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt:113:        BarcodeRegistry‑t.
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt:114:    -   A validáció kétféle úton megy (BarcodeValidator
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt:115:        vs. BarcodeCollisionHelper), eltérő szemantikával.
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt:121:2. Terv a barcode‑rendszer felélesztésére – pontonként végrehajtható
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt:126:2.1. Lépés: Teljes barcode‑inventúra (hol van egyáltalán barcode?)
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt:129:barcode‑ot.
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt:133:-   Globális keresés “barcode” kulcsszóra:
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt:134:    -   modellek: minden, ami BarcodeBase, BarcodeIdentifiableEntity,
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt:135:        BarcodeHierarchicalEntity leszármazott, plusz bármi, amiben van
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt:136:        QString barcode;.
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt:138:        bármilyen más CSV import/export, ahol barcode szerepel.
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt:140:        domain registry, ami barcode‑ot kezel.
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt:141:    -   validátorok: BarcodeValidator, bármilyen más *Validator, ami
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt:142:        barcode‑ot érint.
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt:143:    -   UI: minden presenter/manager/view, ahol barcode szerkeszthető
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt:147:    -   az összes *registry.h/.cpp fájlt, ahol barcode‑os entitás lehet
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt:149:    -   az összes *repository.h/.cpp‑t, ahol CSV‑ben szerepel barcode,
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt:150:    -   minden *validator* fájlt, ahol barcode‑ra hivatkozás van,
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt:151:    -   minden UI/presenter/manager fájlt, ahol barcode mezőt
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt:156:2.2. Lépés: A BarcodeRegistry tényleges workflow‑vá tétele
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt:163:-   BarcodeRegistry‑t kibővíteni
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt:164:    CrudWorkflowMixin<BarcodeRegistry, BarcodeRecord>‑del (ha a
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt:167:    -   bool insert(const BarcodeRecord& r) { return insertWithWorkflow(r); }
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt:168:    -   bool update(const BarcodeRecord& r) { return updateWithWorkflow(r); }
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt:175:    -   hanem építsenek BarcodeRecord‑ot, és hívják a workflow‑s
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt:179:Ezzel a barcode‑életút invariánsai központilag, egy helyen
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt:184:Cél: a futás elején a BarcodeRegistry állapota tükrözze a CSV‑ben tárolt
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt:189:-   A BarcodeRepository::load(QVector<BarcodeRecord>& out) mellé:
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt:191:        loadIntoRegistry(BarcodeRegistry&)‑t, ami:
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt:202:Ezzel a BarcodeRegistry induló állapota determinált lesz, nem csak
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt:205:2.4. Lépés: Minden írási útvonalat a BarcodeRegistry‑n keresztül vinni
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt:207:Cél: ne legyen olyan hely, ahol barcode‑ot módosítasz anélkül, hogy a
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt:213:    -   a validateProductRow() most BarcodeCollisionHelper‑t hív, ami a
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt:219:            hívsz egy BarcodeValidator::checkAndRegister()‑hez hasonló
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt:222:    -   amikor a user átírja a barcode‑ot:
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt:223:        -   most csak a ProductRegistry‑t frissíted, a BarcodeRegistry‑t
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt:226:            -   vagy: először a BarcodeRegistry‑ben “retire” a régi kód,
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt:228:            -   vagy: egy dedikált “barcode átnevezés” workflow, ami a
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt:229:                BarcodeRecord‑ot frissíti (code változás, entityId
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt:232:    -   ugyanígy: ahol új entitás jön létre barcode‑dal, ott
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt:234:    -   ahol entitás megszűnik / barcode cserélődik, ott retire() vagy
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt:237:A cél: egyetlen igazságforrás a barcode életútjára: a BarcodeRegistry.
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt:239:2.5. Lépés: Domain modell szigorítása – “barcode mint értékobjektum” (opcionális, de erős lépés)
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt:241:Ez az, amire utaltál: “a productban a barcode ne sima string legyen”.
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt:245:-   Bevezetni egy BarcodeValue vagy hasonló típust, ami:
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt:250:        “validált, regisztrált barcode”‑tól.
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt:251:-   A ProductMaster és más modellek QString barcode mezője helyett:
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt:252:    -   vagy BarcodeValue barcode;,
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt:263:1.  BarcodeRegistry unit tesztek:
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt:272:2.  BarcodeValidator tesztek:
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt:276:3.  ProductRepository + BarcodeCollisionHelper integráció:
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt:277:    -   két azonos barcode a CSV‑ben → collision hiba.
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt:278:    -   olyan barcode, ami már a registryben van más entityId‑vel →
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt:280:    -   ugyanahhoz az entityId‑hez tartozó barcode → nem collision (ha
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt:283:    -   barcode átírása ütközés esetén → visszaállítja a cellát, nem
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt:285:    -   barcode átírása ütközés nélkül → ProductRegistry +
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt:286:        BarcodeRegistry konzisztensen frissül.
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt:295:-   Minden registry, ami barcode‑os entitást kezel:
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt:297:        BarcodeIdentifiableEntity vagy BarcodeHierarchicalEntity
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt:299:-   Minden repository, ahol barcode szerepel a CSV‑ben:
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt:301:-   Minden validator, ami barcode‑ot érint:
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt:304:    -   mert ott is lehet implicit barcode‑használat (pl. anyaglisták,
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt:306:-   Bármilyen UI/presenter, ahol barcode szerkeszthető:
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt:315:Ha egyetlen mondatban kéne megfogalmazni: a barcode‑életút most nem
+./README.md:62:├── barcodes/           # Barcode registry + collision detection
+./materials/registry/material_registry.h:3:#include "common/registry/barcode/id_lookup_registry_interface.h"
+./materials/registry/material_registry.h:4:#include "common/registry/base/barcode_capable_interface.h"
+./materials/registry/material_registry.h:8:#include "common/registry/barcode/barcode_index_mixin.h"
+./materials/registry/material_registry.h:18:      public BarcodeIndexMixin<MaterialRegistry, MaterialMaster>,
+./materials/registry/material_registry.h:19:      public IBarcodeCapable,
+./materials/view/material_table_widget.cpp:26:        "Anyag", "Barcode", "Típus", "Forma",
+./materials/view/material_table_widget.cpp:32:    setColumnWidth(Barcode,       160);
+./materials/view/material_table_widget.h:25:        Barcode,           ///< Vonalkód
+./materials/view/material_table_manager.cpp:63:    // Barcode
+./materials/view/material_table_manager.cpp:64:    setText(MaterialTableWidget::Barcode, m.barcode);
+./materials/view/material_table_manager.cpp:93:    return QString("Anyag: %1\nBarcode: %2\nColor: %3")
+./materials/view/material_table_manager.cpp:95:             m.barcode.isEmpty() ? "—" : m.barcode,
+./materials/repository/material_repository.cpp:19://#include "common/registry/barcode_table.h"
+./materials/repository/material_repository.cpp:21:#include "barcodes/helpers/barcode_collision_helper.h"
+./materials/repository/material_repository.cpp:38:    row.barcode     = parts[1].trimmed();
+./materials/repository/material_repository.cpp:59:    return { lineNumber, message, row.barcode, row.name };
+./materials/repository/material_repository.cpp:63://     return row.name.isEmpty() ? "[" + row.barcode + "]"
+./materials/repository/material_repository.cpp:64://                               : row.name + " [" + row.barcode + "]";
+./materials/repository/material_repository.cpp:72:    // if(row.barcode == "ROL-P"){
+./materials/repository/material_repository.cpp:75:    if (row.barcode.isEmpty()){
+./materials/repository/material_repository.cpp:76:        errors.append(makeError(lineNumber, "⚠️ Hiányzó barcode", row));
+./materials/repository/material_repository.cpp:78:        if (auto err = BarcodeCollisionHelper::makeBarcodeCollisionError(
+./materials/repository/material_repository.cpp:80:                BarcodeCollisionHelper::RowInfo{ row.barcode, row.name, std::nullopt },
+./materials/repository/material_repository.cpp:128:    m.barcode = row.barcode;
+./materials/repository/material_repository.cpp:134:        ctx.addError(ctx.currentLineNumber(), QString("Ismeretlen keresztmetszet forma: %1").arg(row.shapeStr), row.barcode, row.name);
+./materials/repository/material_repository.cpp:139:        ctx.addError(ctx.currentLineNumber(), QString("Ismeretlen anyagtípus: %1").arg(row.typeStr), row.barcode, row.name);
+./materials/repository/material_repository.cpp:144:        ctx.addError(ctx.currentLineNumber(), QString("Ismeretlen vágási mód: %1").arg(row.cuttingMode), row.barcode, row.name);
+./materials/repository/material_repository.cpp:149:        ctx.addError(ctx.currentLineNumber(), QString("Ismeretlen festési mód: %1").arg(row.paintingMode), row.barcode, row.name);
+./materials/repository/material_repository.h:27:        QString barcode;
+./materials/model/material_master.h:5:#include "common/model/barcode_identifiable_entity.h"
+./materials/model/material_master.h:14:struct MaterialMaster : public BarcodeIdentifiableEntity {
+./common/startup/startup_manager.cpp:24:#include "barcodes/registry/barcode_registry.h"
+./common/startup/startup_manager.cpp:25:#include "barcodes/repository/barcode_repository.h"
+./common/startup/startup_manager.cpp:86:        // 2) Barcode
+./common/startup/startup_manager.cpp:87:        initRegistryGeneric<BarcodeRegistry, BarcodeRepository>(
+./common/startup/startup_manager.cpp:88:            "Barcode CSV betöltése sikertelen.", true
+./common/registry/mixins/id_lookup_mixin.h:2:#include "common/registry/barcode/id_lookup_registry_interface.h"
+./common/registry/base/barcode_capable_interface.h:1:// IBarcodeCapable.h
+./common/registry/base/barcode_capable_interface.h:3:class IBarcodeCapable {
+./common/registry/base/barcode_capable_interface.h:5:    virtual ~IBarcodeCapable() = default;
+./common/registry/barcode/barcode_index_mixin.h:8:class BarcodeIndexMixin {
+./common/registry/barcode/barcode_index_mixin.h:10:    BarcodeIndexMixin() {
+./common/registry/barcode/barcode_index_mixin.h:13:            this->buildBarcodeIndex();
+./common/registry/barcode/barcode_index_mixin.h:17:    const Entity* findByBarcode(const QString& barcode) const {
+./common/registry/barcode/barcode_index_mixin.h:18:        const QString key = barcode.trimmed().toLower();
+./common/registry/barcode/barcode_index_mixin.h:19:        auto it = _barcodeIndex.find(key);
+./common/registry/barcode/barcode_index_mixin.h:20:        return (it != _barcodeIndex.end()) ? it.value() : nullptr;
+./common/registry/barcode/barcode_index_mixin.h:25:    void buildBarcodeIndex() {
+./common/registry/barcode/barcode_index_mixin.h:26:        zInfo("róka3: BarcodeIndexMixin::buildBarcodeIndex fut");
+./common/registry/barcode/barcode_index_mixin.h:27:        _barcodeIndex.clear();
+./common/registry/barcode/barcode_index_mixin.h:34:            if (!e->barcode.isEmpty())
+./common/registry/barcode/barcode_index_mixin.h:35:                _barcodeIndex.insert(e->barcode.toLower(), e);
+./common/registry/barcode/barcode_index_mixin.h:40:    QHash<QString, const Entity*> _barcodeIndex;
+./common/registry/barcode/barcode_lookup_mixin.h:6: * 🧩 BarcodeLookupMixin<Derived, Entity>
+./common/registry/barcode/barcode_lookup_mixin.h:10: *  - az Entity rendelkezik `barcode` mezővel
+./common/registry/barcode/barcode_lookup_mixin.h:14: *  - egységes, típusbiztos `findByBarcode(const QString&)` API
+./common/registry/barcode/barcode_lookup_mixin.h:17:class BarcodeLookupMixin {
+./common/registry/barcode/barcode_lookup_mixin.h:19:    const Entity* findByBarcode(const QString& barcode) const
+./common/registry/barcode/barcode_lookup_mixin.h:23:            return e.barcode.compare(barcode, Qt::CaseInsensitive) == 0;
+./common/registry/manager/registry_manager.h:5:#include "common/model/barcode_identifiable_entity.h"
+./common/registry/manager/registry_manager.h:6:#include "common/registry/base/barcode_capable_interface.h"
+./common/registry/manager/registry_manager.h:8:#include "common/registry/barcode/id_lookup_registry_interface.h"
+./common/registry/manager/registry_manager.h:18:// concept BarcodeCapableRegistry =
+./common/registry/manager/registry_manager.h:20://         // A BarcodeIndexMixin által biztosított API
+./common/registry/manager/registry_manager.h:22://         { t.findByBarcode(QString{}) };
+./common/registry/manager/registry_manager.h:51:        static QSet<QString> warned_barcode_capability;
+./common/registry/manager/registry_manager.h:81:        if (dynamic_cast<IBarcodeCapable*>(repo)) {
+./common/registry/manager/registry_manager.h:212:    QVector<RegistryBase*> identifiable;   // csak a barcode-képes registryk audit és loggolás miatt.
+./common/registry/contract_checks.h:12:#define REGISTER_BARCODE_INDEX_CHECK(Host, Entity) \
+./common/registry/contract_checks.h:13:    static_assert(HasBarcodeIndexApi<Host, Entity>, \
+./common/registry/contract_checks.h:14:                  #Host " must provide barcode index API required by BarcodeIndexMixin");
+./common/csv/filecontext_collector.cpp:88://                 agg.barcodes.push_back(err.barcode());
+./common/csv/filecontext_collector.cpp:128://                 const QString& bc = it.value().barcodes[i];
+./common/csv/filecontext_collector.cpp:223:                agg.barcodes.push_back(err.barcode());
+./common/csv/filecontext_collector.cpp:265:                const QString& bc = it.value().barcodes[i];
+./common/csv/filecontext_collector.h:74:        QVector<QString> barcodes;
+./common/csv/rowerror.h:12:    QString _barcode; // opcionális
+./common/csv/rowerror.h:19:             const QString& barcode = QString(), const QString& name = QString())
+./common/csv/rowerror.h:21:        , _barcode(barcode), _name(name)
+./common/csv/rowerror.h:35:    QString barcode() const {
+./common/csv/rowerror.h:36:        return _barcode;
+./common/csv/filecontext.h:71:    const QString& msgBarcode = QString(), const QString& msgName = QString()) {
+./common/csv/filecontext.h:72:        _errors.append({ l, msg, msgBarcode, msgName});
+./common/system/verbose_class_initializer.cpp:11:#include "barcodes/validator/barcode_validator.h"
+./common/system/verbose_class_initializer.cpp:12:#include "barcodes/helpers/barcode_collision_helper.h"
+./common/system/verbose_class_initializer.cpp:22:    vm.registerClass(QString::fromStdString(std::string(nameof::nameof_type<BarcodeRegistry>())), false);
+./common/system/verbose_class_initializer.cpp:25:    //vm.registerClass(QString::fromStdString(std::string(nameof::nameof_type<BarcodeTable>())), false);
+./common/system/verbose_class_initializer.cpp:26:    vm.registerClass(QString::fromStdString(std::string(nameof::nameof_type<BarcodeValidator>())), true);
+./common/system/verbose_class_initializer.cpp:27:    vm.registerClass(QString::fromStdString(std::string(nameof::nameof_type<BarcodeCollisionHelper>())), false);
+./common/utils/filename_helper.h:16:    Barcodes,
+./common/utils/filename_helper.cpp:97:    { FileKind::Barcodes,               { "barcodes.csv",               FileBehavior::Crud } },
+./common/model/barcode_base.h:5:struct BarcodeBase {
+./common/model/barcode_base.h:6:    QString barcode;
+./common/model/barcode_base.h:8:    // QString displayBarcode() const {
+./common/model/barcode_base.h:9:    //     return barcode;
+./common/model/barcode_hierarchical_entity.h:3:#include "barcode_base.h"
+./common/model/barcode_hierarchical_entity.h:4:#include "barcode_identifiable_entity.h"
+./common/model/barcode_hierarchical_entity.h:6://#include "barcode_identifiable_entity.h"
+./common/model/barcode_hierarchical_entity.h:8:struct BarcodeHierarchicalEntity: public BarcodeIdentifiableEntity,
+./common/model/barcode_hierarchical_entity.h:15://A displayName() a BarcodeIdentifiableEntity-ből jön
+./common/model/barcode_identifiable_entity.h:3:#include "barcode_base.h"
+./common/model/barcode_identifiable_entity.h:10:struct BarcodeIdentifiableEntity : public IdentifiableEntity, public BarcodeBase {
+./common/model/barcode_identifiable_entity.h:13:    //QString barcode;    // 🏷️ Nyomtatott, beolvasott vagy egyéb fizikai kód (általában "MAT-..." vagy egyedi string)
+./common/model/barcode_identifiable_entity.h:17:        return barcode.isEmpty()
+./common/model/barcode_identifiable_entity.h:19:                   : QString("%1 [%2]").arg(name, barcode);
+./common/model/barcode_identifiable_entity.h:24:        return QString("{id=%1, name=%2, barcode=%3}")
+./common/model/barcode_identifiable_entity.h:25:        .arg(id.toString(), name, barcode);
+./common/model/barcode_identifiable_entity.h:28:    // // 🏷️ Opcionális címkekód (pl. barcode, de később override-olható)
+./common/model/barcode_identifiable_entity.h:30:    //     return barcode;
+./common/model/hierarchical_entity.h:9:// - Örököl az BarcodeIdentifiableEntity-ből (id, name, barcode)
+./common/model/hierarchical_base.h:8:// - Örököl az BarcodeIdentifiableEntity-ből (id, name, barcode)
+./.git/logs/HEAD:55:c465de4352d52a10ea9fe5cc137b40827c9393a6 50c302fe6f97d02757c9b0979b1b86990cb4ad78 Horváth Zoltán <horvath.zoltan.mobil@gmail.com> 1767220057 +0100	commit: Registry cleanup + BarcodeHelper + unified logging
+./.git/logs/HEAD:66:1c6110a722af284ce9d51de05c05703584e90680 1774e5abec57bfaa977cd1a1e19f258ec01a16fd Horváth Zoltán <horvath.zoltan.mobil@gmail.com> 1768247373 +0100	commit: Registry hook-chain diag + BarcodeRegistry roadmap
+./.git/logs/HEAD:67:1774e5abec57bfaa977cd1a1e19f258ec01a16fd a009254217ab2fa89c2dda98e0e2434a995760eb Horváth Zoltán <horvath.zoltan.mobil@gmail.com> 1768247891 +0100	commit: egistry hook-chain diag + BarcodeRegistry roadmap 2
+./.git/logs/refs/heads/master:55:c465de4352d52a10ea9fe5cc137b40827c9393a6 50c302fe6f97d02757c9b0979b1b86990cb4ad78 Horváth Zoltán <horvath.zoltan.mobil@gmail.com> 1767220057 +0100	commit: Registry cleanup + BarcodeHelper + unified logging
+./.git/logs/refs/heads/master:66:1c6110a722af284ce9d51de05c05703584e90680 1774e5abec57bfaa977cd1a1e19f258ec01a16fd Horváth Zoltán <horvath.zoltan.mobil@gmail.com> 1768247373 +0100	commit: Registry hook-chain diag + BarcodeRegistry roadmap
+./.git/logs/refs/heads/master:67:1774e5abec57bfaa977cd1a1e19f258ec01a16fd a009254217ab2fa89c2dda98e0e2434a995760eb Horváth Zoltán <horvath.zoltan.mobil@gmail.com> 1768247891 +0100	commit: egistry hook-chain diag + BarcodeRegistry roadmap 2
+./test/filenamehelper/filenamehelper_tests.cpp:101:    // CRUD (Products, NeedRules, NeedCalcs, Barcodes)
+./test/filenamehelper/filenamehelper_tests.cpp:114:    assertPath(FileKind::Barcodes,               FileAccess::Read,  "barcodes",               "barcodes.csv");
+./test/filenamehelper/filenamehelper_tests.cpp:115:    assertPath(FileKind::Barcodes,               FileAccess::Write, "barcodes",               "barcodes.csv");
+./test/filenamehelper/filenamehelper_tests.cpp:133:    // CRUD (Products, NeedRules, NeedCalcs, Barcodes)
+./test/filenamehelper/filenamehelper_tests.cpp:146:    assertPath(FileKind::Barcodes,               FileAccess::Read,  "barcodes",               "barcodes.csv");
+./test/filenamehelper/filenamehelper_tests.cpp:147:    assertPath(FileKind::Barcodes,               FileAccess::Write, "barcodes",               "barcodes.csv");
+./test/product/product_registry_tester.cpp:51:    p.barcode = "TP1";
+./test/product/product_registry_tester.cpp:132:    p.barcode = "RT1";
+./test/product/product_registry_tester.cpp:165:    out << "barcode,parentBarcode,name\n";
+./test/product/product_registry_tester.cpp:195:        return pm.barcode == "PB1";
+./test/product/product_registry_tester.cpp:214:    QString bc = p1->barcode;
+./test/product/product_registry_tester.cpp:218:    const ProductMaster* p2 = reg.findByBarcode(bc);
+./test/product/product_registry_tester.cpp:237:    parent.barcode = "PARENT";
+./test/product/product_registry_tester.cpp:242:    child.barcode = "CHILD";
+./test/product/product_registry_tester.cpp:258:// 9) BARCODE COLLISION
+./test/product/product_registry_tester.cpp:260:void ProductRegistryTester::testBarcodeCollision()
+./test/product/product_registry_tester.cpp:262:    zInfo("→ testBarcodeCollision");
+./test/product/product_registry_tester.cpp:269:    p1.barcode = "BC";
+./test/product/product_registry_tester.cpp:277:    zInfo("✓ testBarcodeCollision OK");
+./test/product/product_registry_tester.cpp:295:        return pm.barcode.startsWith("P", Qt::CaseInsensitive);
+./test/product/product_registry_tester.cpp:314:    Q_ASSERT(header.contains("barcode"));
+./test/product/product_registry_tester.cpp:315:    Q_ASSERT(header.contains("parentBarcode"));
+./test/product/product_registry_tester.cpp:338:    testBarcodeCollision();
+./test/product/product_registry_tester.h:40:    // Barcode collision
+./test/product/product_registry_tester.h:41:    void testBarcodeCollision();
+./test/common/test_data_builder.cpp:23:    p.barcode = "P1";
+./test/common/test_data_builder.cpp:30:    m.barcode = "M1";
+./test/common/test_data_builder.cpp:37:    m2.barcode = "M2";
+./test/common/test_data_builder.cpp:41:    ids.P1_barcode = p.barcode;
+./test/common/test_data_builder.cpp:42:    ids.M1_barcode = m.barcode;
+./test/common/test_data_builder.cpp:43:    ids.M2_barcode = m2.barcode;
+./test/common/test_data_builder.h:11:    QString P1_barcode;
+./test/common/test_data_builder.h:12:    QString M1_barcode;
+./test/common/test_data_builder.h:13:    QString M2_barcode;
+./test/material/material_registry_tester.cpp:20:    out << "name,barcode,stockLength,dim1,dim2,shape,machineId,type,color,cuttingMode,paintingMode\n";
+./test/material/material_registry_tester.cpp:50:void MaterialRegistryTester::testFindByBarcode()
+./test/material/material_registry_tester.cpp:52:    zInfo("→ testFindByBarcode");
+./test/material/material_registry_tester.cpp:56:    const MaterialMaster* m1 = reg.findByBarcode("ABC-1");
+./test/material/material_registry_tester.cpp:60:    const MaterialMaster* m4 = reg.findByBarcode("abc-3"); // lowercase
+./test/material/material_registry_tester.cpp:64:    const MaterialMaster* m1_case = reg.findByBarcode("aBc-1");
+./test/material/material_registry_tester.cpp:68:    zInfo("✓ testFindByBarcode OK");
+./test/material/material_registry_tester.cpp:79:            return mm.barcode.startsWith("ABC", Qt::CaseInsensitive);
+./test/material/material_registry_tester.cpp:98:    QString oldBarcode = p1->barcode;
+./test/material/material_registry_tester.cpp:102:    const MaterialMaster* p2 = reg.findByBarcode(oldBarcode);
+./test/material/material_registry_tester.cpp:117:    testFindByBarcode();
+./test/material/material_registry_tester.h:15:    void testFindByBarcode();
+./test/calculation/test_roletta_builder.cpp:29:        root.barcode = "ROL";
+./test/calculation/test_roletta_builder.cpp:39:        p.barcode = "ROL-R";
+./test/calculation/test_roletta_builder.cpp:50:        p.barcode = "ROL-RT";
+./test/calculation/test_roletta_builder.cpp:61:        p.barcode = "GY-A23";
+./test/calculation/test_roletta_builder.cpp:75:        m.barcode = bc;
+./test/calculation/formula_engine_tester.cpp:194:    Q_ASSERT(need.cutItems[0].materialBarcode == ids.M1_barcode);
+./test/calculation/formula_engine_tester.cpp:195:    Q_ASSERT(need.cutItems[1].materialBarcode == ids.M2_barcode);
+./test/calculation/formula_engine_tester.cpp:362:    // choose: feltétel igaz → M1 barcode
+./test/calculation/formula_engine_tester.cpp:366:                      ).arg(ids.M1_barcode, ids.M2_barcode);
+./test/calculation/formula_engine_tester.cpp:378:    // choose → M1 barcode
+./test/calculation/formula_engine_tester.cpp:379:    Q_ASSERT(need.kitItems[0].materialBarcode == ids.M1_barcode);
+./test/calculation/formula_engine_tester.cpp:417:    // choose: feltétel hamis → M2 barcode
+./test/calculation/formula_engine_tester.cpp:421:                      ).arg(ids.M1_barcode, ids.M2_barcode);
+./test/calculation/formula_engine_tester.cpp:433:    // choose → M2 barcode
+./test/calculation/formula_engine_tester.cpp:434:    Q_ASSERT(need.kitItems[0].materialBarcode == ids.M2_barcode);
+./test/calculation/need_calculator_pipeline_tester.cpp:171:    // materialBarcode is helyes
+./test/calculation/need_calculator_pipeline_tester.cpp:172:    Q_ASSERT(need.kitItems[0].materialBarcode == ids.M1_barcode);
+./test/calculation/need_calculator_pipeline_tester.cpp:242:            .arg(ids.M1_barcode, ids.M2_barcode),
+./test/calculation/need_calculator_pipeline_tester.cpp:263:    // choose DSL → M1 barcode
+./test/calculation/need_calculator_pipeline_tester.cpp:264:    Q_ASSERT(need.kitItems[0].materialBarcode == ids.M1_barcode);
+./test/calculation/need_calculator_pipeline_tester.cpp:349:    // materialBarcode is helyes
+./test/calculation/need_calculator_pipeline_tester.cpp:350:    Q_ASSERT(need.kitItems[0].materialBarcode == ids.M1_barcode);
+./test/calculation/need_calculator_pipeline_tester.cpp:396:    // materialBarcode is helyes
+./test/calculation/need_calculator_pipeline_tester.cpp:397:    Q_ASSERT(need.cutItems[0].materialBarcode == ids.M1_barcode);
+./test/calculation/roletta_calculation_tester.cpp:15:// 🔎 Segédfüggvény: vágási tétel keresése barcode alapján
+./test/calculation/roletta_calculation_tester.cpp:16:const RawCut* find_cut_by_barcode(const ItemNeed& need, const QString& barcode)
+./test/calculation/roletta_calculation_tester.cpp:19:        if (c.materialBarcode == barcode)
+./test/calculation/roletta_calculation_tester.cpp:25:// 🔎 Segédfüggvény: kitting tétel keresése barcode alapján
+./test/calculation/roletta_calculation_tester.cpp:26:const RawKit* find_kit_by_barcode(const ItemNeed& need, const QString& barcode)
+./test/calculation/roletta_calculation_tester.cpp:29:        if (k.materialBarcode == barcode)
+./test/calculation/roletta_calculation_tester.cpp:125:        find_cut_by_barcode(need, QStringLiteral("TE-R-23"));
+./test/calculation/roletta_calculation_tester.cpp:131:        find_cut_by_barcode(need, QStringLiteral("ROL-P"));
+./test/calculation/roletta_calculation_tester.cpp:137:        find_cut_by_barcode(need, QStringLiteral("ROL-FABRIC"));
+./test/calculation/roletta_calculation_tester.cpp:147:        find_kit_by_barcode(need, QStringLiteral("ROL-P-ENDCAP"));
+./test/calculation/roletta_calculation_tester.cpp:153:        find_kit_by_barcode(need, QStringLiteral("ROL-RRG"));
+./test/calculation/roletta_calculation_tester.cpp:157:        find_kit_by_barcode(need, QStringLiteral("ROL-TRG"));
+./test/calculation/roletta_calculation_tester.cpp:174:        find_cut_by_barcode(need, QStringLiteral("TE-R-23"));
+./test/calculation/roletta_calculation_tester.cpp:179:        find_cut_by_barcode(need, QStringLiteral("ROL-P"));
+./test/calculation/roletta_calculation_tester.cpp:184:        find_cut_by_barcode(need, QStringLiteral("ROL-FABRIC"));
+./test/calculation/roletta_calculation_tester.cpp:190:        find_kit_by_barcode(need, QStringLiteral("ROL-TRG"));
+./test/calculation/roletta_calculation_tester.cpp:194:        find_kit_by_barcode(need, QStringLiteral("ROL-RRG"));
+./test/calculation/roletta_calculation_tester.cpp:211:        find_cut_by_barcode(need, QStringLiteral("TE-R-23"));
+./test/calculation/roletta_calculation_tester.cpp:216:        find_cut_by_barcode(need, QStringLiteral("ROL-P"));
+./test/calculation/roletta_calculation_tester.cpp:221:        find_cut_by_barcode(need, QStringLiteral("ROL-FABRIC"));
+./test/calculation/roletta_calculation_tester.cpp:227:        find_kit_by_barcode(need, QStringLiteral("ROL-GYZ"));
+./test/calculation/roletta_calculation_tester.cpp:231:        find_kit_by_barcode(need, QStringLiteral("ROL-RRG"));
+./test/calculation/roletta_calculation_tester.cpp:235:        find_kit_by_barcode(need, QStringLiteral("ROL-TRG"));
+./test/calculation/formula_engine_pipeline_tester.cpp:465:    // choose: feltétel igaz → M1 barcode
+./test/calculation/formula_engine_pipeline_tester.cpp:469:            .arg(ids.M1_barcode, ids.M2_barcode),
+./test/calculation/formula_engine_pipeline_tester.cpp:489:    // choose DSL → M1 barcode
+./test/calculation/formula_engine_pipeline_tester.cpp:490:    Q_ASSERT(need.kitItems[0].materialBarcode == ids.M1_barcode);
+./test/calculation/formula_engine_pipeline_tester.cpp:514:    // choose: feltétel hamis → M2 barcode
+./test/calculation/formula_engine_pipeline_tester.cpp:518:            .arg(ids.M1_barcode, ids.M2_barcode),
+./test/calculation/formula_engine_pipeline_tester.cpp:538:    // choose DSL → M2 barcode
+./test/calculation/formula_engine_pipeline_tester.cpp:539:    Q_ASSERT(need.cutItems[0].materialBarcode == ids.M2_barcode);
+./testdata/barcodes.csv:1:barCode;entityType;introducedAt;retiredAt
+./testdata/needrules.csv:1:productBarcode,materialBarcode
+./testdata/products.csv:1:barcode,parentBarcode,name
+./run_4_BOMWorkbench.txt:69:-   Clipboard convenience: aktuális product barcode másolása
+./run_4_BOMWorkbench.txt:128:        -   Headers: needCalculationId, materialBarcode, formula.
+./run_4_BOMWorkbench.txt:129:        -   Load/Save: materialBarcode → lookup MaterialMaster.
+./run_4_BOMWorkbench.txt:136:        -   Columns: Material (name+barcode), Formula, Type icon
+./run_4_BOMWorkbench.txt:176:        -   missingFormula(materialBarcode)
+./run_4_BOMWorkbench.txt:177:        -   invalidFormula(materialBarcode, formula)
+./run_4_BOMWorkbench.txt:178:        -   materialNotFound(barcode)
+./connections/connection_repository.h:17: * 🧩 ConnectionRow – CSV sor modell (barcode-okkal)
+./connections/connection_repository.h:20: * de a CSV réteg barcode-okkal dolgozik, mert az emberi input is ilyen.
+./connections/connection_repository.h:23:    QString leftBarcode;
+./connections/connection_repository.h:24:    QString rightBarcode;
+./connections/connection_repository.h:84:    //         const QString leftBarcode = parts[0].trimmed();
+./connections/connection_repository.h:85:    //         const QString rightBarcode = parts[1].trimmed();
+./connections/connection_repository.h:87:    //         if (leftBarcode.isEmpty() || rightBarcode.isEmpty()) {
+./connections/connection_repository.h:88:    //             ctx.addError(lineNumber, QStringLiteral("⚠️ Hiányzó barcode a kapcsolatsorban"),
+./connections/connection_repository.h:89:    //                          leftBarcode, rightBarcode);
+./connections/connection_repository.h:97:    //         auto* leftEntity = leftReg ? leftReg->findByBarcode(leftBarcode) : nullptr;
+./connections/connection_repository.h:103:    //         auto* rightEntity = rightReg ? rightReg->findByBarcode(rightBarcode) : nullptr;
+./connections/connection_repository.h:107:    //                          QStringLiteral("⚠️ Nem található entitás a barcode alapján"),
+./connections/connection_repository.h:108:    //                          leftBarcode,
+./connections/connection_repository.h:109:    //                          rightBarcode);
+./connections/connection_repository.h:170:            const QString leftBarcode = parts[0].trimmed();
+./connections/connection_repository.h:171:            const QString rightBarcode = parts[1].trimmed();
+./connections/connection_repository.h:173:            if (leftBarcode.isEmpty() || rightBarcode.isEmpty()) {
+./connections/connection_repository.h:174:                ctx.addError(lineNumber, QStringLiteral("⚠️ Hiányzó barcode a kapcsolatsorban"),
+./connections/connection_repository.h:175:                             leftBarcode, rightBarcode);
+./connections/connection_repository.h:182:            auto* leftEntity = leftReg ? leftReg->findByBarcode(leftBarcode) : nullptr;
+./connections/connection_repository.h:187:            auto* rightEntity = rightReg ? rightReg->findByBarcode(rightBarcode) : nullptr;
+./connections/connection_repository.h:191:                             QStringLiteral("⚠️ Nem található entitás a barcode alapján"),
+./connections/connection_repository.h:192:                             leftBarcode, rightBarcode);
+./connections/connection_repository.h:231:            // QString leftBarcode;
+./connections/connection_repository.h:232:            // QString rightBarcode;
+./connections/connection_repository.h:234:            // 🔍 Bal oldali entitás barcode-ja
+./connections/connection_repository.h:236:            //     leftBarcode = opt->barcode;
+./connections/connection_repository.h:238:            //     leftBarcode.clear();
+./connections/connection_repository.h:241:            // // 🔍 Jobb oldali entitás barcode-ja
+./connections/connection_repository.h:243:            //     rightBarcode = opt->barcode;
+./connections/connection_repository.h:245:            //     rightBarcode.clear();
+./connections/connection_repository.h:248:            // out << leftBarcode << "," << rightBarcode << "\n";
+./connections/connection_repository.h:260:        QString leftBarcode;
+./connections/connection_repository.h:261:        QString rightBarcode;
+./connections/connection_repository.h:264:            leftBarcode = opt->barcode;
+./connections/connection_repository.h:267:            rightBarcode = opt->barcode;
+./connections/connection_repository.h:269:        return leftBarcode + "," + rightBarcode;
+./connections/connection_entity.h:54:    QString leftBarcode() const {
+./connections/connection_entity.h:56:            return opt->barcode;   // mert LeftEntity örökli az IdentifiableEntity-t
+./connections/connection_entity.h:61:    QString rightBarcode() const {
+./connections/connection_entity.h:63:            return opt->barcode;   // mert RightEntity örökli az IdentifiableEntity-t
+./connections/connection_entity.h:70:    // Audit convenience: emberbarát rövid leírás (ha van barcode/name)
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:2:a jelenlegi állapotról. Összefoglalom, hol tart most a barcode‑életút,
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:8:1. Jelenlegi állapot – működik a barcode‑életút, vagy szét van esve?
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:10:1.1. BarcodeRegistry – szép koncepció, félúton megállva
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:12:A BarcodeRegistry deklarációja alapján a cél teljesen világos: globális,
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:23:    RegistryEngineBase<BarcodeRecord> + BulkLoadMixin, tehát a
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:45:-   A BarcodeRepository::load(QVector<BarcodeRecord>& out) csak egy
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:49:-   A régi loadFromCSV(BarcodeRegistry&) implementáció ki van
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:52:-   Exportnál a saveToCSV(const BarcodeRegistry& registry) szépen kiírja
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:57:BarcodeRegistry‑t, így a registry állapota attól függ, hogy a futás
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:61:1.3. BarcodeValidator – egy kapu, de csak egy szűk útvonalon
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:63:A BarcodeValidator::checkAndRegister() szépen megfogalmazza a “helyes”
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:67:  2)  isBarcodeUnique() a registryben
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:74:    BarcodeCollisionHelper‑t, ami a registryt használja, de
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:77:    valójában már létezik barcode‑record.
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:79:1.4. Product oldal – barcode mint sima string, registry integráció csak foltokban
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:81:-   A ProductMaster csak egy BarcodeHierarchicalEntity, amiben a barcode
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:82:    sima QString mező a BarcodeBase‑ből. Nincs semmilyen típus, ami
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:85:    barcode nem üres – semmi kapcsolat a BarcodeRegistry‑vel.
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:87:    BarcodeCollisionHelper‑t, de RowInfo.entityId = std::nullopt, tehát
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:91:    barcode‑ot a fában:
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:92:    -   megnézi a BarcodeRegistry::findByCode(newCode)‑ot,
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:96:        BarcodeRegistry‑t nem.
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:100:  ProductRegistry, a barcode‑életút registry nem kap update‑et.
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:103:tartja karban a BarcodeRegistry‑t. Van hely, ahol ránéz, van hely, ahol
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:109:-   A barcode‑életút nincs teljesen halott, de erősen szét van esve:
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:113:        BarcodeRegistry‑t.
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:114:    -   A validáció kétféle úton megy (BarcodeValidator
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:115:        vs. BarcodeCollisionHelper), eltérő szemantikával.
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:121:2. Terv a barcode‑rendszer felélesztésére – pontonként végrehajtható
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:126:2.1. Lépés: Teljes barcode‑inventúra (hol van egyáltalán barcode?)
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:129:barcode‑ot.
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:133:-   Globális keresés “barcode” kulcsszóra:
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:134:    -   modellek: minden, ami BarcodeBase, BarcodeIdentifiableEntity,
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:135:        BarcodeHierarchicalEntity leszármazott, plusz bármi, amiben van
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:136:        QString barcode;.
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:138:        bármilyen más CSV import/export, ahol barcode szerepel.
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:140:        domain registry, ami barcode‑ot kezel.
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:141:    -   validátorok: BarcodeValidator, bármilyen más *Validator, ami
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:142:        barcode‑ot érint.
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:143:    -   UI: minden presenter/manager/view, ahol barcode szerkeszthető
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:147:    -   az összes *registry.h/.cpp fájlt, ahol barcode‑os entitás lehet
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:149:    -   az összes *repository.h/.cpp‑t, ahol CSV‑ben szerepel barcode,
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:150:    -   minden *validator* fájlt, ahol barcode‑ra hivatkozás van,
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:151:    -   minden UI/presenter/manager fájlt, ahol barcode mezőt
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:156:2.2. Lépés: A BarcodeRegistry tényleges workflow‑vá tétele
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:163:-   BarcodeRegistry‑t kibővíteni
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:164:    CrudWorkflowMixin<BarcodeRegistry, BarcodeRecord>‑del (ha a
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:167:    -   bool insert(const BarcodeRecord& r) { return insertWithWorkflow(r); }
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:168:    -   bool update(const BarcodeRecord& r) { return updateWithWorkflow(r); }
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:175:    -   hanem építsenek BarcodeRecord‑ot, és hívják a workflow‑s
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:179:Ezzel a barcode‑életút invariánsai központilag, egy helyen
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:184:Cél: a futás elején a BarcodeRegistry állapota tükrözze a CSV‑ben tárolt
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:189:-   A BarcodeRepository::load(QVector<BarcodeRecord>& out) mellé:
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:191:        loadIntoRegistry(BarcodeRegistry&)‑t, ami:
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:202:Ezzel a BarcodeRegistry induló állapota determinált lesz, nem csak
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:205:2.4. Lépés: Minden írási útvonalat a BarcodeRegistry‑n keresztül vinni
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:207:Cél: ne legyen olyan hely, ahol barcode‑ot módosítasz anélkül, hogy a
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:213:    -   a validateProductRow() most BarcodeCollisionHelper‑t hív, ami a
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:219:            hívsz egy BarcodeValidator::checkAndRegister()‑hez hasonló
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:222:    -   amikor a user átírja a barcode‑ot:
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:223:        -   most csak a ProductRegistry‑t frissíted, a BarcodeRegistry‑t
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:226:            -   vagy: először a BarcodeRegistry‑ben “retire” a régi kód,
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:228:            -   vagy: egy dedikált “barcode átnevezés” workflow, ami a
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:229:                BarcodeRecord‑ot frissíti (code változás, entityId
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:232:    -   ugyanígy: ahol új entitás jön létre barcode‑dal, ott
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:234:    -   ahol entitás megszűnik / barcode cserélődik, ott retire() vagy
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:237:A cél: egyetlen igazságforrás a barcode életútjára: a BarcodeRegistry.
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:239:2.5. Lépés: Domain modell szigorítása – “barcode mint értékobjektum” (opcionális, de erős lépés)
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:241:Ez az, amire utaltál: “a productban a barcode ne sima string legyen”.
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:245:-   Bevezetni egy BarcodeValue vagy hasonló típust, ami:
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:250:        “validált, regisztrált barcode”‑tól.
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:251:-   A ProductMaster és más modellek QString barcode mezője helyett:
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:252:    -   vagy BarcodeValue barcode;,
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:263:1.  BarcodeRegistry unit tesztek:
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:272:2.  BarcodeValidator tesztek:
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:276:3.  ProductRepository + BarcodeCollisionHelper integráció:
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:277:    -   két azonos barcode a CSV‑ben → collision hiba.
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:278:    -   olyan barcode, ami már a registryben van más entityId‑vel →
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:280:    -   ugyanahhoz az entityId‑hez tartozó barcode → nem collision (ha
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:283:    -   barcode átírása ütközés esetén → visszaállítja a cellát, nem
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:285:    -   barcode átírása ütközés nélkül → ProductRegistry +
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:286:        BarcodeRegistry konzisztensen frissül.
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:295:-   Minden registry, ami barcode‑os entitást kezel:
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:297:        BarcodeIdentifiableEntity vagy BarcodeHierarchicalEntity
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:299:-   Minden repository, ahol barcode szerepel a CSV‑ben:
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:301:-   Minden validator, ami barcode‑ot érint:
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:304:    -   mert ott is lehet implicit barcode‑használat (pl. anyaglisták,
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:306:-   Bármilyen UI/presenter, ahol barcode szerkeszthető:
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:317:product/material fájlok a barcode‑életről, és hogyan pontosítják a
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:322:1. Product‑ág: hol él és hogyan mozog a barcode?
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:324:1.1. ProductRegistry – workflow rendben, de barcode csak “string”
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:332:A barcode‑szempontból viszont:
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:334:-   validateDomain: csak azt nézi, hogy name és barcode nem üres:
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:339:            && !p.barcode.isEmpty();
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:342:-   validateDuplicate: csak név+parentId duplikációt tilt, a barcode‑ot
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:351:Tehát a ProductRegistry önmagában nem tud a BarcodeRegistry‑ről, és nem
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:352:kényszerít globális barcode‑egyediséget—ez teljesen egybevág a tegnapi
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:354:tartja karban a BarcodeRegistry‑t”.
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:356:1.2. ProductTreeManager – UI‑ban szerkeszthető barcode, félkarú integráció
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:358:A fa UI‑ban a barcode szerkeszthető:
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:360:    _model->setHorizontalHeaderLabels({ "Terméktípus", "Barcode", "Id" });
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:368:        pm.barcode = "NEW";
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:370:            zWarning("⚠️ Nem sikerült regisztrálni az új gyökérelemet (barcode ütközés?)");
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:376:        pm.barcode = "NEWCHILD";
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:378:            zWarning("⚠️ Nem sikerült regisztrálni az új gyermeket (barcode ütközés?)");
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:384:-   A barcode‑egyediség ellenőrzése csak annyiban történik, amennyiben a
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:386:    miatt—de az nem nézi a barcode‑ot, tehát valójában semmi nem védi a
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:387:    barcode‑ot az UI‑ban.
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:391:A szerkesztéskor (onItemChanged) már bekapcsol a BarcodeRegistry:
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:393:    } else if (item->column() == 1) { // barcode
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:396:        if (auto* rec = BarcodeRegistry::instance().findByCode(newCode)) {
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:398:                zEvent("⚠️ Barcode nem egyedi");
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:399:                item->setText(pm->barcode);
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:403:        updated.barcode = newCode;
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:409:BarcodeRegistry‑t, de nem frissíti:
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:412:  valójában a ProductRegistry, a barcode‑életút registry nem kap
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:417:-   Ha a user átírja a barcode‑ot, a ProductRegistry frissül, de a
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:418:    BarcodeRegistry nem tud róla → életút szétesik.
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:419:-   Ha a BarcodeRegistry‑ben már van egy másik entitáshoz kötött kód,
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:420:    akkor ütközésként jelzi, ez jó—de csak addig, amíg a BarcodeRegistry
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:425:A CSV import háromfázisú, és a barcode‑validáció itt történik:
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:427:    if (row.barcode.isEmpty()){
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:428:        errors.append({lineNumber, "⚠️ Hiányzó barcode", row.barcode, row.name});
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:430:        if (auto err = BarcodeCollisionHelper::makeBarcodeCollisionError(
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:432:                BarcodeCollisionHelper::RowInfo{ row.barcode, row.name, std::nullopt },
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:442:  BarcodeCollisionHelper‑t, ami a registryt használja, de
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:450:    def.barcode = row.barcode;
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:453:Majd a resolveParents() oldja fel a parentBarcode‑ot. A load() végén
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:459:-   Importkor van globális barcode‑collision check (a BarcodeRegistry
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:463:-   A betöltött ProductRegistry és a BarcodeRegistry között nincs
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:468:2. Material‑ág: barcode mint kötelező mező, de csak import‑szinten
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:477:          public BarcodeIndexMixin<MaterialRegistry, MaterialMaster>,
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:478:          public IBarcodeCapable,
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:487:-   A barcode‑szempontból csak annyi pluszt ad, hogy van
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:488:    BarcodeIndexMixin, tehát gyors lookup barcode alapján, de nincs
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:492:barcode‑szerkesztés, csak import.
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:498:    if (row.barcode.isEmpty()){
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:499:        errors.append(makeError(lineNumber, "⚠️ Hiányzó barcode", row));
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:501:        if (auto err = BarcodeCollisionHelper::makeBarcodeCollisionError(
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:503:                BarcodeCollisionHelper::RowInfo{ row.barcode, row.name, std::nullopt },
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:517:    m.barcode = row.barcode;
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:529:-   Importkor van globális barcode‑collision check a BarcodeRegistry
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:531:-   A MaterialRegistry és a BarcodeRegistry között nincs automatikus
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:534:    nézi a m.barcode mezőt, nem módosítja.
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:542:  “A barcode‑életút nincs teljesen halott, de erősen szét van esve:
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:546:  BarcodeRegistry‑t.
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:547:  – A validáció kétféle úton megy (BarcodeValidator
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:548:  vs. BarcodeCollisionHelper), eltérő szemantikával.”
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:553:    -   Importkor: BarcodeCollisionHelper ellenőriz, de entityId nélkül.
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:554:    -   Runtime UI: a fa szerkesztésekor ellenőrzöd a BarcodeRegistry‑t,
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:556:    -   A ProductRegistry WF‑4‑es, de a barcode‑invariáns nincs beépítve
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:559:    -   Importkor: ugyanaz a BarcodeCollisionHelper minta.
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:563:Vagyis: a barcode‑életút jelenleg csak importkor próbál globális
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:575:4.1. Lépés – Barcode‑inventúra: product + material modul kipipálva
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:577:A “hol van barcode?” kérdésre most már elég jó válaszunk van:
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:580:    -   ProductMaster : BarcodeHierarchicalEntity
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:581:    -   MaterialMaster : BarcodeIdentifiableEntity
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:583:    -   ProductRegistry – WF‑4, de barcode‑agnosztikus.
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:584:    -   MaterialRegistry – bulk‑load + barcode index, de nincs CRUD.
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:586:    -   ProductRepository – importkor BarcodeCollisionHelper +
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:590:    -   ProductTreeManager – barcode szerkeszthető, részleges
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:591:        BarcodeRegistry‑check, de nincs életút‑update.
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:594:Ez a modulpár gyakorlatilag lefedi a “törzsadat” barcode‑használatát. A
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:598:4.2. Lépés – BarcodeRegistry mint valódi workflow (változatlan cél, de most már látszik, hova kötjük)
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:602:-   BarcodeRegistry kapjon CrudWorkflowMixin‑t.
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:605:-   A validateDuplicate() legyen a globális barcode‑egyediség központi
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:614:    onItemChanged barcode ágon).
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:616:4.3. Lépés – CSV import → BarcodeRegistry szinkron (konkrétan product + material)
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:627:-   össze lehet gyűjteni egy QVector<BarcodeRecord> listát:
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:629:    -   minden ProductMaster‑ből: code = pm.barcode,
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:634:-   Ezt a listát bulk load módban beönteni a BarcodeRegistry‑be
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:640:Ezzel a BarcodeRegistry induló állapota determináltan tükrözi a
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:643:4.4. Lépés – Minden írási útvonalat a BarcodeRegistry‑n keresztül vinni (most már név szerint)
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:648:    -   A mostani BarcodeCollisionHelper‑es check maradhat, de:
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:654:        BarcodeRegistry‑ben minden productra.
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:661:            -   vagy generálj ideiglenes, garantáltan egyedi barcode‑ot
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:663:            -   vagy azonnal hívd a BarcodeRegistry‑t registerNew()‑vel,
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:665:    -   onItemChanged() barcode ága:
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:666:        -   ha a barcode megváltozik:
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:667:            -   a régi kódhoz tartozó BarcodeRecord‑ot retire() vagy
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:671:            BarcodeRegistry‑s művelet is sikeres volt.
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:674:barcode‑életutat.
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:676:4.5. Lépés – Domain szigorítása (BarcodeValue) – most már két helyen is lenne értelme
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:678:Mivel mind a ProductMaster, mind a MaterialMaster Barcode*Entity‑ből
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:681:-   Bevezetni egy BarcodeValue vagy hasonló típust, amit a közös ős
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:686:        a BarcodeRegistry‑n átment kódot).
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:696:-   ProductRepository + BarcodeRegistry integráció:
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:697:    -   két azonos barcode a products.csv‑ben → import hiba.
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:698:    -   olyan barcode, ami már a BarcodeRegistry‑ben van más
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:700:    -   ugyanahhoz az entityId‑hez tartozó barcode (ha bevezetjük) → nem
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:702:-   MaterialRepository + BarcodeRegistry integráció:
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:705:    -   új root/child létrehozása → ProductRegistry + BarcodeRegistry
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:707:    -   barcode átírása ütközés esetén → cella visszaáll, sem
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:708:        ProductRegistry, sem BarcodeRegistry nem változik.
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:709:    -   barcode átírása ütközés nélkül → mindkét registry frissül, a
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:716:A barcode‑szempontból a törzsadat (product + material) most már jól
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:719:-   Barcode modul teljes forrása (ha még nem küldted fel minden részét):
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:720:    barcode_registry.*, barcode_validator.*, barcode_collision_helper.*,
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:721:    barcode_record.*.
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:723:    load, és hol lehet a BarcodeRegistry bulk‑loadját beakasztani.
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:726:        gyakran implicit módon használod a barcode‑ot.
+./run_1_3_0_OsszesitettHibajegyzek_Refactor.txt.autosave:731:Product/MaterialRegistry + BarcodeRegistry” kettős betöltést.
+./dsl/formula_contract.cpp:4:// material output STRING (barcode), nem numeric
+./dsl/formula_contract.cpp:30:// material output STRING (barcode), nem numeric
+./dsl/formula_contract.h:13:// material output: STRING típus (barcode)
+./dsl/formula_contract.h:17:// material output: STRING típus (barcode)
+./run_5_0.md:1300:  - pl.: `BarcodeValidator`
+./run_5_0.md:5904:- **keresést biztosít** (findById, findByBarcode, findChildren)
+./run_5_0.md:5906:- **életciklust kezel** (barcode register/retire)
+./run_5_0.md:5918:- barcode életciklus
+./run_5_0.md:5986:- a barcode életciklust
+./run_5_0.md:6017:| Barcode életciklus | ✔️ | ❌ |
+./run_5_0.md:6065:- ❌ Repository kezeljen barcode életciklust
+./run_4_2_RendszerKomponensLista.txt:34:    CRUD/connection/barcode mixinek.
+./run_4_2_RendszerKomponensLista.txt:40:-   Material Registry – Anyagok betöltése, validálása, barcode‑index
+./run_4_2_RendszerKomponensLista.txt:91:🧩 Barcodes
+./run_4_2_RendszerKomponensLista.txt:93:-   Barcode Model – Vonalkód entitások (BarcodeRecord).
+./run_4_2_RendszerKomponensLista.txt:94:-   Barcode Registry – Vonalkódok betöltése, lookup, ütközés‑ellenőrzés.
+./run_4_2_RendszerKomponensLista.txt:95:-   Barcode Repository – Vonalkódadatok tárolása, CSV import.
+./run_4_2_RendszerKomponensLista.txt:96:-   Barcode Collision Helper – Ütközésvizsgálat, audit‑barát riport.
+./run_4_2_RendszerKomponensLista.txt:97:-   Barcode Validator – Validálási logika, egyediség‑ellenőrzés.
+./run_4_2_RendszerKomponensLista.txt:187:-   barcode_collision_helper – Vonalkód‑ütközés vizsgálat.
+./run_4_2_RendszerKomponensLista.txt:188:-   barcode_validator – Vonalkód‑validálás.
+./run_4_2_RendszerKomponensLista.txt:249:    🟧      common/registry/barcode/*.h                   Barcode lookup/index mixinek             —
+./run_4_2_RendszerKomponensLista.txt:318:🔵 BARCODES
+./run_4_2_RendszerKomponensLista.txt:322:    🟩      barcodes/model/barcode_record.*               Vonalkód modell
+./run_4_2_RendszerKomponensLista.txt:323:    🟧      barcodes/registry/barcode_registry.*          Registry
+./run_4_2_RendszerKomponensLista.txt:324:    🟨      barcodes/repository/barcode_repository.*      Repo
+./run_4_2_RendszerKomponensLista.txt:325:    ⬜      barcodes/helpers/barcode_collision_helper.*   Ütközésvizsgálat
+./run_4_2_RendszerKomponensLista.txt:326:    ⬜      barcodes/validator/barcode_validator.*        Validálás
+./run_4_ThreePhaseImport.md:24:- barcode  
+./run_4_ThreePhaseImport.md:45:CSV: productBarcode;modeName
+./run_4_ThreePhaseImport.md:52:auto* p = ProductRegistry::instance().findByBarcode(row.productBarcode);
+./run_4_ThreePhaseImport.md:83:    QString productBarcode;
+./run_4_ThreePhaseImport.md:113:auto* p = ProductRegistry::instance().findByBarcode(row.productBarcode);
+./run_4_ThreePhaseImport.md:214:(pl. barcode)
+./run_4_ThreePhaseImport.md:217:(barcode → UUID)
+./products/registry/product_registry.h:8:#include "common/registry/barcode/barcode_index_mixin.h"
+./products/registry/product_registry.h:42:      public BarcodeIndexMixin<ProductRegistry, ProductMaster>,
+./products/registry/product_registry.cpp:28:    && !p.barcode.isEmpty();
+./products/view/product_tree_manager.cpp:8:#include "barcodes/registry/barcode_registry.h"
+./products/view/product_tree_manager.cpp:18:    _model->setHorizontalHeaderLabels({ "Terméktípus", "Barcode", "Id" });
+./products/view/product_tree_manager.cpp:85:        auto* codeItem = new QStandardItem(root.barcode);
+./products/view/product_tree_manager.cpp:114:        auto* codeItem = new QStandardItem(child.barcode);
+./products/view/product_tree_manager.cpp:139:    pm.barcode = "NEW";
+./products/view/product_tree_manager.cpp:143:        zWarning("⚠️ Nem sikerült regisztrálni az új gyökérelemet (barcode ütközés?)");
+./products/view/product_tree_manager.cpp:161:    pm.barcode = "NEWCHILD";
+./products/view/product_tree_manager.cpp:166:        zWarning("⚠️ Nem sikerült regisztrálni az új gyermeket (barcode ütközés?)");
+./products/view/product_tree_manager.cpp:213:        } else if (item->column() == 1) { // barcode
+./products/view/product_tree_manager.cpp:218:                zEvent("⚠️ Barcode nem lehet üres");
+./products/view/product_tree_manager.cpp:219:                item->setText(pm->barcode); // visszaállítjuk
+./products/view/product_tree_manager.cpp:225:            if (auto* rec = BarcodeRegistry::instance().findByCode(newCode)) {
+./products/view/product_tree_manager.cpp:229:                    zEvent("⚠️ Barcode nem egyedi");
+./products/view/product_tree_manager.cpp:230:                    item->setText(pm->barcode);
+./products/view/product_tree_manager.cpp:237:            updated.barcode = newCode;
+./products/view/product_tree_manager.cpp:238:            zEvent(QString("✏️ Product barcode updated: %1").arg(newCode));
+./products/view/product_tree_manager.cpp:256:            //         item->setText(pm->barcode);
+./products/view/product_tree_manager.cpp:284:    QString barcode = _model->itemFromIndex(current.sibling(current.row(), 1))->text();
+./products/view/product_tree_manager.cpp:286:    emit currentProductChanged(id, name, barcode);
+./products/view/product_tree_manager.cpp:304:QString ProductTreeManager::currentProductBarcode() const {
+./products/view/product_tree_manager.h:40:    /// Visszaadja az aktuálisan kijelölt product barcode-ját
+./products/view/product_tree_manager.h:41:    QString currentProductBarcode() const;
+./products/view/product_tree_manager.h:70:                               const QString& barcode);
+./products/repository/product_repository.cpp:11:#include "barcodes/helpers/barcode_collision_helper.h"
+./products/repository/product_repository.cpp:24:        .barcode       = parts[0].trimmed(),
+./products/repository/product_repository.cpp:25:        .parentBarcode = parts[1].trimmed(),
+./products/repository/product_repository.cpp:49://     def.barcode = row.barcode;
+./products/repository/product_repository.cpp:51://     // Parent barcode → lookup → parentId
+./products/repository/product_repository.cpp:52://     if (row.parentBarcode.isEmpty()) {
+./products/repository/product_repository.cpp:55://         if (auto* parent = ProductRegistry::instance().findByBarcode(row.parentBarcode)) {
+./products/repository/product_repository.cpp:59://             zWarning(QString("⚠️ Ismeretlen parentBarcode → fallback root (sor %1) [%2 → %3]")
+./products/repository/product_repository.cpp:61://                          .arg(row.barcode, row.parentBarcode));
+./products/repository/product_repository.cpp:78:    def.barcode = row.barcode;
+./products/repository/product_repository.cpp:87:    return { lineNumber, message, row.barcode, row.name };
+./products/repository/product_repository.cpp:95:    if (row.barcode.isEmpty()){
+./products/repository/product_repository.cpp:96:        errors.append({lineNumber, "⚠️ Hiányzó barcode", row.barcode, row.name});
+./products/repository/product_repository.cpp:98:        if (auto err = BarcodeCollisionHelper::makeBarcodeCollisionError(
+./products/repository/product_repository.cpp:100:                BarcodeCollisionHelper::RowInfo{ row.barcode, row.name, std::nullopt },
+./products/repository/product_repository.cpp:108:        errors.append({lineNumber, "⚠️ Hiányzó name", row.barcode, row.name});
+./products/repository/product_repository.cpp:171://     // Első fázis: buildAll → minden ProductMaster id+barcode+name
+./products/repository/product_repository.cpp:181://     // Második fázis: parentBarcode → parentId feloldás
+./products/repository/product_repository.cpp:197://     //QSet<QString> seenBarcodes;
+./products/repository/product_repository.cpp:199://     // Első kör: saját barcode validáció
+./products/repository/product_repository.cpp:204://         // if (row.barcode.isEmpty()) {
+./products/repository/product_repository.cpp:205://         //     ctx.addError(line, "⚠️ Hiányzó barcode", row.barcode, row.name);
+./products/repository/product_repository.cpp:207://         //     if (seenBarcodes.contains(row.barcode)) {
+./products/repository/product_repository.cpp:208://         //         ctx.addError(line, "⚠️ Duplikált barcode", row.barcode, row.name);
+./products/repository/product_repository.cpp:210://         //     seenBarcodes.insert(row.barcode);
+./products/repository/product_repository.cpp:214://             ctx.addError(line, "⚠️ Hiányzó name", row.barcode, row.name);
+./products/repository/product_repository.cpp:218://     // Második kör: parentBarcode validáció
+./products/repository/product_repository.cpp:223://         if (!row.parentBarcode.isEmpty() && !seenBarcodes.contains(row.parentBarcode)) {
+./products/repository/product_repository.cpp:225://                          "⚠️ Parent barcode nem található",
+./products/repository/product_repository.cpp:226://                          row.barcode,
+./products/repository/product_repository.cpp:227://                          row.parentBarcode);
+./products/repository/product_repository.cpp:232:/// Kétfázisú parent feloldás – barcode → GUID
+./products/repository/product_repository.cpp:236:    // barcode → id
+./products/repository/product_repository.cpp:237:    QHash<QString, QUuid> barcodeToId;
+./products/repository/product_repository.cpp:239:        barcodeToId.insert(pm.barcode, pm.id);
+./products/repository/product_repository.cpp:242:    // barcode → eredeti AuditedRow (sorszámmal)
+./products/repository/product_repository.cpp:243:    QHash<QString, CsvImporter::AuditedRow<ProductRepository::ProductRow>> rowByBarcode;
+./products/repository/product_repository.cpp:245:        rowByBarcode.insert(ar.row.barcode, ar);
+./products/repository/product_repository.cpp:252:        const auto it = rowByBarcode.find(def.barcode);
+./products/repository/product_repository.cpp:253:        if (it == rowByBarcode.end()) {
+./products/repository/product_repository.cpp:255:            ctx.addError(-1, "⚠️ Hiányzik a CSV sor a barcode-hoz", def.barcode, def.name);
+./products/repository/product_repository.cpp:257:            orphanSummaries.append(QString("Sor ?: %1 → hiányzó CSV sor").arg(def.barcode));
+./products/repository/product_repository.cpp:264:        if (row.parentBarcode.isEmpty()) {
+./products/repository/product_repository.cpp:267:        } else if (barcodeToId.contains(row.parentBarcode)) {
+./products/repository/product_repository.cpp:269:            def.parentId = barcodeToId.value(row.parentBarcode);
+./products/repository/product_repository.cpp:274:            const QString msg = QString("⚠️ Parent barcode nem található: %1").arg(row.parentBarcode);
+./products/repository/product_repository.cpp:275:            ctx.addError(line, msg, row.barcode, row.name);
+./products/repository/product_repository.cpp:279:                                        .arg(def.barcode, row.parentBarcode);
+./products/repository/product_repository.cpp:280:            zWarning(QString("⚠️ Parent barcode not found (sor %1): %2 → %3")
+./products/repository/product_repository.cpp:281:                         .arg(line).arg(def.barcode, row.parentBarcode));
+./products/repository/product_repository.cpp:289:            zInfo(QString("resolveParents result: %1 barcode=%2 parentId=%3")
+./products/repository/product_repository.cpp:290:                      .arg(pm.name, pm.barcode, pm.parentId.toString(QUuid::WithoutBraces)));
+./products/repository/product_repository.cpp:309: *     barcode,parentBarcode,name
+./products/repository/product_repository.cpp:311: * - A parentBarcode mező a parentId alapján kerül feloldásra.
+./products/repository/product_repository.cpp:324:    QString parentBarcode;
+./products/repository/product_repository.cpp:328:            parentBarcode = parent->barcode;
+./products/repository/product_repository.cpp:333:    QString e = pm.barcode % X % parentBarcode % X % pm.name;
+./products/repository/product_repository.cpp:342: *     barcode,parentBarcode,name
+./products/repository/product_repository.cpp:374:    out << "barcode,parentBarcode,name\n";     // Fejléc
+./products/repository/product_repository.h:32:        QString barcode;
+./products/repository/product_repository.h:33:        QString parentBarcode;
+./products/model/product_master.h:3:#include "common/model/barcode_hierarchical_entity.h"
+./products/model/product_master.h:9: * - Örökli az IdentifiableEntity és HierarchicalEntity mezőit (id, name, barcode, parentId).
+./products/model/product_master.h:12:struct ProductMaster : public BarcodeHierarchicalEntity {
+./run_4_Order.txt:188:-   aggregálja az anyagokat (azonos barcode + méret + tulajdonságok).
+./run_4_GenerikusKapcsolotabla.txt:25:    barcode).
+./run_4_GenerikusKapcsolotabla.txt:60:        barcode).
+./run_4_AnyagszuksegletSzamitas.txt:216:1.  ProductMaster.barcode
+./run_4_AnyagszuksegletSzamitas.txt:218:3.  MaterialMaster.barcode
+./run_4_AnyagszuksegletSzamitas.txt:518:name;barcode;length;dim1;dim2;shape;machineBarcode;type;color;cuttingMode;paintingMode
+./run_4_AnyagszuksegletSzamitas.txt:575:barcode,parentBarcode,name
+./CutCalculator.pro:15:    barcodes/helpers/barcode_collision_helper.cpp \
+./CutCalculator.pro:16:    barcodes/registry/barcode_registry.cpp \
+./CutCalculator.pro:17:    barcodes/repository/barcode_repository.cpp \
+./CutCalculator.pro:18:    barcodes/validator/barcode_validator.cpp \
+./CutCalculator.pro:125:    barcodes/model/barcode_record.h \
+./CutCalculator.pro:126:    barcodes/registry/barcode_registry.h \
+./CutCalculator.pro:127:    barcodes/repository/barcode_repository.h \
+./CutCalculator.pro:128:    barcodes/helpers/barcode_collision_helper.h \
+./CutCalculator.pro:129:    barcodes/validator/barcode_validator.h \
+./CutCalculator.pro:160:    common/model/barcode_base.h \
+./CutCalculator.pro:161:    common/model/barcode_hierarchical_entity.h \
+./CutCalculator.pro:162:    common/model/barcode_identifiable_entity.h \
+./CutCalculator.pro:167:    common/registry/barcode/barcode_index_mixin.h \
+./CutCalculator.pro:168:    common/registry/barcode/barcode_lookup_mixin.h \
+./CutCalculator.pro:169:    common/registry/barcode/id_lookup_registry_interface.h \
+./CutCalculator.pro:170:    common/registry/base/barcode_capable_interface.h \
+./CutCalculator.pro:320:    docs/barcodes_module_overview.md \
+./CutCalculator.pro:368:    testdata/barcodes.csv \
+./run_4_DataModelPhilosophy.md:39:- `barcode` (Product, Material)  
+./run_4_DataModelPhilosophy.md:67:productBarcode;modeName
+./run_4_DataModelPhilosophy.md:73:1. megkeresni a ProductRegistry-ben a barcode alapján:  
+./run_4_DataModelPhilosophy.md:74:   `findByBarcode("ROL-RR")`
+./run_1_1_AllapotTabla.txt:88:    BarcodeValidator subsystem          ✅ Kész            Ütközéskezelés
+./run_1_1_AllapotTabla.txt:89:    BarcodeTable refaktor               ✅ Kész            Model/repo/registry
+./run_1_1_AllapotTabla.txt:110:    BarcodeRegistry modernizálása       📐 Tervezés        CollectorMixin + LedgerMixin
+./calculation/dialogs/material_picker_dialog2.cpp:17:                                             .arg(m.name, m.barcode));
+./calculation/service/need_calculator.cpp:164://         item.materialBarcode = raw.materialBarcode;
+./calculation/service/need_calculator.cpp:242:            raw.materialBarcode = mat->barcode;
+./calculation/service/need_calculator.cpp:246:            raw.materialBarcode = v.string();
+./calculation/service/need_calculator.cpp:306:            raw.materialBarcode = mat->barcode;
+./calculation/service/need_calculator.cpp:310:            raw.materialBarcode = v.string();
+./calculation/service/need_calculator.cpp:327://     QString barcode = raw.materialBarcode;
+./calculation/service/need_calculator.cpp:332://         //p.materialBarcode = raw.materialBarcode;
+./calculation/service/need_calculator.cpp:333://         p.materialBarcode = barcode;
+./calculation/service/cut_aggregator.cpp:11:        // Kulcs: barcode + length + handlerSide
+./calculation/service/cut_aggregator.cpp:13:                          .arg(p.materialBarcode)
+./calculation/service/cut_aggregator.cpp:19:            item.materialBarcode = p.materialBarcode;
+./calculation/service/worksheet_builder.cpp:25:                p.materialBarcode = rc.materialBarcode;
+./calculation/service/worksheet_builder.cpp:39:                ki.materialBarcode = rk.materialBarcode;
+./calculation/service/piece.h:9:    QString materialBarcode;
+./calculation/service/raw_kit.h:6:    QString materialBarcode;
+./calculation/service/matrix_validator.cpp:97:                  .arg(m.materialBarcode));
+./calculation/service/matrix_validator.cpp:134:                mat ? mat->barcode : QString("unknown")
+./calculation/service/cut_aggregator.h:11:    QString materialBarcode;
+./calculation/service/raw_cut.h:7:    QString materialBarcode;
+./calculation/service/kit_aggregator.h:10:    QString materialBarcode;
+./calculation/service/kit_item.h:8:    QString materialBarcode;
+./calculation/service/cut_key.h:7:    QString materialBarcode;
+./calculation/service/matrix_missing_detail.h:11:    QString materialBarcode;
+./calculation/service/kit_aggregator.cpp:10:        QString barcode = it.materialBarcode;
+./calculation/service/kit_aggregator.cpp:12:        if (!map.contains(barcode)) {
+./calculation/service/kit_aggregator.cpp:15:            agg.materialBarcode = it.materialBarcode;
+./calculation/service/kit_aggregator.cpp:23:            map.insert(barcode, agg);
+./calculation/service/kit_aggregator.cpp:26:            auto& agg = map[barcode];
+./calculation/view/calculation_mode_detail_view.cpp:220:        auto* matItem = new QTableWidgetItem(QString("%1 (%2)").arg(r.materialName, r.materialBarcode));
+./calculation/view/calculation_mode_detail_view.h:25:        QString materialBarcode;
+./calculation/manager/calculation_mode_detail_manager.cpp:33: * - Material lookup: név + barcode feloldása az IdentifiableRegistryBase segítségével.
+./calculation/manager/calculation_mode_detail_manager.cpp:57: * @brief Material név és barcode feloldása. Ha nem található, jelöljük ismeretlenként.
+./calculation/manager/calculation_mode_detail_manager.cpp:65:    const auto* ent = dynamic_cast<const BarcodeIdentifiableEntity*>(entBase);
+./calculation/manager/calculation_mode_detail_manager.cpp:69:    return { ent->name, ent->barcode };
+./calculation/manager/calculation_mode_detail_manager.cpp:88:        auto [name, barcode] = materialLabel(d.materialId);
+./calculation/manager/calculation_mode_detail_manager.cpp:104:            barcode,
+./calculation/manager/calculation_mode_detail_manager.h:16: * - Material lookup: név és barcode feloldása az IdentifiableRegistryBase segítségével.
+./calculation/repository/need_calculation_detail_repository.cpp:24:                     "⚠️ Kevés mező (4 szükséges: productBarcode;modeName;materialBarcode;formula)");
+./calculation/repository/need_calculation_detail_repository.cpp:29:        .productBarcode  = parts[0].trimmed(),
+./calculation/repository/need_calculation_detail_repository.cpp:31:        .materialBarcode = parts[2].trimmed(),
+./calculation/repository/need_calculation_detail_repository.cpp:49:    if (row.productBarcode.isEmpty()) {
+./calculation/repository/need_calculation_detail_repository.cpp:52:            QString("⚠️ Hiányzó productBarcode (mode=%1, material=%2)")
+./calculation/repository/need_calculation_detail_repository.cpp:53:                .arg(row.modeName, row.materialBarcode),
+./calculation/repository/need_calculation_detail_repository.cpp:54:            row.productBarcode,
+./calculation/repository/need_calculation_detail_repository.cpp:63:                .arg(row.productBarcode, row.materialBarcode),
+./calculation/repository/need_calculation_detail_repository.cpp:69:    if (row.materialBarcode.isEmpty()) {
+./calculation/repository/need_calculation_detail_repository.cpp:72:            QString("⚠️ Hiányzó materialBarcode (product=%1, mode=%2)")
+./calculation/repository/need_calculation_detail_repository.cpp:73:                .arg(row.productBarcode, row.modeName),
+./calculation/repository/need_calculation_detail_repository.cpp:74:            row.materialBarcode,
+./calculation/repository/need_calculation_detail_repository.cpp:83:// Stage 2: Build (barcode → UUID feloldás)
+./calculation/repository/need_calculation_detail_repository.cpp:97://         ProductRegistry::instance().findByBarcode(row.productBarcode);
+./calculation/repository/need_calculation_detail_repository.cpp:101://                      QString("⚠️ Ismeretlen productBarcode: %1")
+./calculation/repository/need_calculation_detail_repository.cpp:102://                          .arg(row.productBarcode),
+./calculation/repository/need_calculation_detail_repository.cpp:103://                      row.productBarcode,
+./calculation/repository/need_calculation_detail_repository.cpp:116://                          .arg(row.productBarcode, row.modeName),
+./calculation/repository/need_calculation_detail_repository.cpp:125://                          .arg(row.productBarcode, row.modeName),
+./calculation/repository/need_calculation_detail_repository.cpp:133://         MaterialRegistry::instance().findByBarcode(row.materialBarcode);
+./calculation/repository/need_calculation_detail_repository.cpp:137://                      QString("⚠️ Ismeretlen Material barcode: %1")
+./calculation/repository/need_calculation_detail_repository.cpp:138://                          .arg(row.materialBarcode),
+./calculation/repository/need_calculation_detail_repository.cpp:139://                      row.materialBarcode,
+./calculation/repository/need_calculation_detail_repository.cpp:171:    // 2) Product lookup (barcode → UUID)
+./calculation/repository/need_calculation_detail_repository.cpp:173:        ProductRegistry::instance().findByBarcode(row.productBarcode);
+./calculation/repository/need_calculation_detail_repository.cpp:177:                     QString("⚠️ Ismeretlen productBarcode: '%1' (mode=%2, material=%3)")
+./calculation/repository/need_calculation_detail_repository.cpp:178:                         .arg(row.productBarcode, row.modeName, row.materialBarcode),
+./calculation/repository/need_calculation_detail_repository.cpp:179:                     row.productBarcode,
+./calculation/repository/need_calculation_detail_repository.cpp:191:                      QString("⚠️ Ismeretlen Material barcode: '%1' (product=%2, mode=%3)")
+./calculation/repository/need_calculation_detail_repository.cpp:192:                          .arg(row.materialBarcode, row.productBarcode, row.modeName),
+./calculation/repository/need_calculation_detail_repository.cpp:193:                      row.materialBarcode,
+./calculation/repository/need_calculation_detail_repository.cpp:202:                         .arg(row.productBarcode, row.modeName),
+./calculation/repository/need_calculation_detail_repository.cpp:208:    // 4) Material lookup (barcode → UUID)
+./calculation/repository/need_calculation_detail_repository.cpp:210:        MaterialRegistry::instance().findByBarcode(row.materialBarcode);
+./calculation/repository/need_calculation_detail_repository.cpp:214:                     QString("⚠️ Ismeretlen Material barcode: '%1' (product=%2, mode=%3)")
+./calculation/repository/need_calculation_detail_repository.cpp:215:                         .arg(row.materialBarcode, row.productBarcode, row.modeName),
+./calculation/repository/need_calculation_detail_repository.cpp:216:                     row.materialBarcode,
+./calculation/repository/need_calculation_detail_repository.cpp:310:    out << "productBarcode;modeName;materialBarcode;formula\n";
+./calculation/repository/need_calculation_detail_repository.cpp:325:        out << product->barcode << ";"
+./calculation/repository/need_calculation_detail_repository.cpp:327:            << mat->barcode << ";"
+./calculation/repository/need_calculation_detail_repository.h:19:        QString productBarcode;
+./calculation/repository/need_calculation_detail_repository.h:21:        QString materialBarcode;
+./calculation/repository/need_calculation_detail_repository.h:33:    // Stage 2: Build (barcode → UUID)
+./calcmodes/presenter/calculation_modes_presenter.cpp:23:            this, [this](const QUuid& id, const QString& name, const QString& barcode) {
+./calcmodes/presenter/calculation_modes_presenter.cpp:27:                    refreshForProduct(id, name, barcode);
+./calcmodes/presenter/calculation_modes_presenter.cpp:123:                                                  const QString& barcode)
+./calcmodes/presenter/calculation_modes_presenter.cpp:125:    auto rows = _manager->refreshForProduct(productId, name, barcode);
+./calcmodes/presenter/calculation_modes_presenter.h:23:                           const QString& barcode);
+./calcmodes/view/calculation_modes_view.h:55:                                 const QString& productBarcode);
+./calcmodes/view/calculation_modes_view.h:59:    void set_current_product(const QUuid& productId, const QString& productName, const QString& productBarcode);
+./calcmodes/view/calculation_modes_view.cpp:135:                                               const QString& productBarcode)
+./calcmodes/view/calculation_modes_view.cpp:138:    emit current_product_changed(productId, productName, productBarcode);
+./calcmodes/manager/calculation_modes_manager.h:39:                           const QString& productBarcode);
+./calcmodes/manager/calculation_modes_manager.h:49:    QString _currentProductBarcode;
+./calcmodes/manager/calculation_modes_manager.cpp:33:    refreshForProduct(_currentProductId, _currentProductName, _currentProductBarcode);
+./calcmodes/manager/calculation_modes_manager.cpp:140:                                                const QString& productBarcode)
+./calcmodes/manager/calculation_modes_manager.cpp:144:    _currentProductBarcode = productBarcode;
+./calcmodes/manager/calculation_modes_manager.cpp:186:    _view->set_current_product(productId, productName, productBarcode);
+./calcmodes/manager/calculation_modes_manager.cpp:188:    zEventINFO(QString("🔄 Modes refreshed: %1 (%2)").arg(productName, productBarcode));
+./calcmodes/repository/need_calculation_repository.cpp:24:                     "⚠️ Kevés mező (2 szükséges: productBarcode;modeName)");
+./calcmodes/repository/need_calculation_repository.cpp:29:        .productBarcode = parts[0].trimmed(),
+./calcmodes/repository/need_calculation_repository.cpp:47:    if (row.productBarcode.isEmpty()) {
+./calcmodes/repository/need_calculation_repository.cpp:48:        errors.append({ lineNumber, "⚠️ Hiányzó productBarcode", row.productBarcode, row.modeName });
+./calcmodes/repository/need_calculation_repository.cpp:52:        errors.append({ lineNumber, "⚠️ Hiányzó modeName", row.productBarcode, row.modeName });
+./calcmodes/repository/need_calculation_repository.cpp:59:// Stage 2: Build (barcode → UUID feloldás)
+./calcmodes/repository/need_calculation_repository.cpp:70:    // 🔥 Reláció feloldása: barcode → ProductMaster.id
+./calcmodes/repository/need_calculation_repository.cpp:72:        ProductRegistry::instance().findByBarcode(row.productBarcode);
+./calcmodes/repository/need_calculation_repository.cpp:76:                     QString("⚠️ Ismeretlen productBarcode: %1")
+./calcmodes/repository/need_calculation_repository.cpp:77:                         .arg(row.productBarcode),
+./calcmodes/repository/need_calculation_repository.cpp:78:                     row.productBarcode,
+./calcmodes/repository/need_calculation_repository.cpp:155:    out << "productBarcode;modeName\n";
+./calcmodes/repository/need_calculation_repository.cpp:168:    QString b = p ? p->barcode : "???";
+./calcmodes/repository/need_calculation_repository.h:19:        QString productBarcode;
+./run_1_2_BugList.txt:33:    BarcodeValidator subsystem          ✅ Kész            Ütközéskezelés
+./run_1_2_BugList.txt:34:    BarcodeTable refaktor               ✅ Kész            Model/repo/registry
+./run_1_2_BugList.txt:64:- BarcodeTable refaktor
+./run_1_2_BugList.txt:96:- BarcodeIndexMixin hook‑lánc véglegesítése (diagnózis alapján)
+./run_1_2_BugList.txt:104:BarcodeIndexMixin index‑építése nem futott le a RegistryEngineBase
+./run_1_2_BugList.txt:116:-   Diagnózis: a BarcodeIndexMixin nem építette fel az indexet;
+./run_1_2_BugList.txt:117:    debuggerben _barcodeIndex <0 items>.
+./run_1_2_BugList.txt:148:- Override‑ok hozzáadása a barcode‑képes registrykhez (MaterialRegistry,
+./run_1_2_BugList.txt:159:BarcodeIndexMixin::rebuildIndex() meghívás.

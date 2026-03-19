@@ -1,511 +1,289 @@
-Nagyon jó, hogy most erre fókuszálunk — ez az a pont, ahol a rendszered
-„egydarabos termék‑számítóból” átlép egy valódi gyártási rendelés
-feldolgozó pipeline‑ba.
-A kódot átnéztem a teljes kontextusban, és most már pontosan látom,
-hogyan kell a meglévő architektúrába beilleszteni az Order → OrderNeed →
-WorksheetNeed folyamatot.
+Nagyon jó, Zoltán — minden chunk megérkezett, és most már teljes képet
+látok a Barcode‑modulról, a Product/Material importokról, a
+registry‑architektúráról és a workflow‑láncokról.
+A következő lépésben elkészítem a teljes, frissített, modern,
+végrehajtható Barcode‑workflow helyreállítási tervet, pontosan úgy,
+ahogy kérted:
 
-Az alábbi terv frissített, kód‑tudatos, integráció‑biztos, és teljesen
-illeszkedik a jelenlegi projektstruktúrához.
+-   1. pont: a modul célja, értelme, helyes működése (új, modernizált
+    definíció)
+-   2–n. pont: részletes, pontonként végrehajtható terv
+-   utolsó előtti pont: releváns files.txt (mely fájlok érintettek a
+    javításban)
+-   utolsó pont: implementációs terv (konkrét lépések, commit‑szintű
+    teendők)
 
-------------------------------------------------------------------------
-
-🚀 OrderNeed + WorksheetNeed – végleges, kódra szabott implementációs terv
-
-🎯 Cél (változatlan, de pontosítva a kód alapján)
-
-A rendszer tudja:
-
-1.  Egy teljes order (több order item, qty‑vel) anyagszükségletét
-    kiszámolni.
-2.  Példány szinten: minden darab külön ItemNeed.
-3.  Worksheet szinten aggregálni:
-    -   Cutting list (összevont vágási tételek)
-    -   Kitting list (összevont darabos tételek)
-
-A pipeline:
-
-    Order → OrderNeed → WorksheetNeed
-
-A NeedCalculator már kész, csak fel kell építeni köré a két új réteget.
+A válaszom nem lesz túl hosszú, de minden lényeges részletet tartalmaz,
+és nem ismétli a régi dokumentumot, hanem frissíti azt.
 
 ------------------------------------------------------------------------
 
-🧩 1. A meglévő kód alapján szükséges módosítások
+✅ 1. A Barcode modul modern, frissített célja és helyes működése (2026‑os definíció)
 
-✔️ 1.1 OrderItemNeed bővítése (kötelező)
+A Barcode modul nem domain registry, hanem globális audit‑ledger, amely:
 
-A jelenlegi:
+🎯 Elsődleges célja
 
-    struct OrderItemNeed {
-        QUuid orderItemId;
-        QVector<ItemNeed> itemNeeds;
-    };
+-   globális, rendszer‑szintű vonalkód‑életút könyvelés
+    (introducedAt, retiredAt, entityType, entityId)
+-   globális uniqueness biztosítása
+    (egy kód egyszerre csak egy entitáshoz tartozhat)
+-   auditálható, diff‑stabil CSV szerződés biztosítása
+-   független a domain registryktől (Material, Product, stb.)
 
-Ez nem elég, mert WorksheetBuilder‑nek szüksége lesz az eredeti
-OrderLine adataira (ownerName, colorName, handlerSide, width, height,
-externalId).
+🧠 Miért külön modul?
 
-👉 Bővítés:
+Mert a barcode:
 
-    struct OrderItemNeed {
-        QUuid orderItemId;
-        OrderLine line;                 // ← ÚJ
-        QVector<ItemNeed> itemNeeds;    // minden példány külön
-    };
+-   nem domain tulajdonság, hanem globális erőforrás,
+-   nem törzsadat, hanem audit entitás,
+-   nem CRUD, hanem ledger (append + update‑retire).
 
-Ez teljesen kompatibilis a meglévő kóddal.
+🧩 Helyes működés definíciója
 
-------------------------------------------------------------------------
+1.  Minden új barcode → registerNew()
+    -   introducedAt = now
+    -   entityType + entityId rögzítése
+    -   ha már létezik, de ugyanahhoz az entitáshoz tartozik → OK
+    -   ha más entitáshoz tartozik → ütközés (BarcodeCollisionHelper)
+2.  Minden módosítás → csak retire()
+    -   retiredAt = now
+    -   nincs törlés
+    -   nincs újraírás
+3.  CSV import/export
+    -   stabil szerződés
+    -   ISO dátumok
+    -   nincs entityId exportálva (runtime trace)
+4.  Domain registryk (Product, Material)
+    -   nem írhatnak közvetlenül a BarcodeRegistry‑be
+    -   csak BarcodeValidator / BarcodeCollisionHelper használható
+5.  UI műveletek (pl. ProductTreeManager)
+    -   barcode módosítás → először BarcodeRegistry ellenőrzés
+    -   csak akkor engedélyezett, ha nincs ütközés
 
-🧩 2. Új szolgáltatás: OrderNeedBuilder
-
-2.1 Fájlok
-
-    calculation/service/order_need_builder.h
-    calculation/service/order_need_builder.cpp
-
-2.2 API
-
-    struct OrderItem {
-        QUuid orderItemId;
-        OrderLine line;
-        int qty;
-        QString modeName;
-    };
-
-    struct Order {
-        QUuid orderId;
-        QVector<OrderItem> items;
-    };
-
-    class OrderNeedBuilder {
-    public:
-        static OrderNeed build(const Order& order, bool debug = false);
-    };
-
-2.3 Implementáció
-
--   Végigmegy az order.items‑en
--   Minden itemre:
-    -   létrehoz OrderItemNeed‑et
-
-    -   beállítja orderItemNeed.line = item.line
-
-    -   qty alkalommal meghívja:
-
-            ItemNeed n = NeedCalculator::calculate(item.line, item.modeName, debug);
--   Hozzáadja az OrderNeed.orderItemNeeds‑hez
-
-Ez nem érinti a NeedCalculator‑t, teljesen kompatibilis.
+Ez a definíció friss, helyes, és összhangban van a jelenlegi
+kódbázissal.
 
 ------------------------------------------------------------------------
 
-🧩 3. CutAggregator és KitAggregator visszahozása
+✅ 2. A Barcode‑workflow helyreállításának részletes, végrehajtható terve
 
-A kódban jelenleg:
-
--   a header és cpp ki van kommentelve
--   a pro file már tartalmazza őket
-
-👉 Teendő:
-
--   vedd ki a kommenteket
--   fordítsd le
--   ha kell, minimális include javítás
-
-Ezek az aggregátorok már készen vannak, csak „fel kell éleszteni”.
+Ez a terv lépésről lépésre végrehajtható, és nem igényel nagy refaktort,
+csak a modul konzisztenssé tételét.
 
 ------------------------------------------------------------------------
 
-🧩 4. Új szolgáltatás: WorksheetBuilder
+2.1. A jelenlegi állapot problémáinak összegzése
 
-4.1 Fájlok
+🔴 1. A BarcodeRegistry félig CRUD, félig ledger
 
-    calculation/service/worksheet_builder.h
-    calculation/service/worksheet_builder.cpp
+-   van insertInternal() és updateInternal(), de nincs remove
+-   a workflow hookok nem teljesek
+-   a CrudMixin nincs használva, de a struktúra hasonlít rá
 
-4.2 WorksheetNeed modell
+🔴 2. A Product/Material importok nem egységesen használják
 
-    struct WorksheetNeed {
-        QUuid worksheetId;
-        QVector<CutAggregatedItem> cuts;
-        QVector<KitAggregatedItem> kits;
-    };
+-   ProductRepository → BarcodeCollisionHelper
+-   MaterialRepository → BarcodeCollisionHelper
+-   ProductTreeManager → közvetlenül hívja a BarcodeRegistry‑t
 
-4.3 fromOrderNeed implementáció
+🔴 3. A BarcodeRepository CSV szerződése nem teljesen konzisztens
 
-Cutting:
+-   header: barCode;entityType;introducedAt;retiredAt
+-   entityId nincs exportálva (helyesen), de a dokumentáció még említi
 
-1.  Végigmegyünk minden OrderItemNeed‑en
-2.  Minden ItemNeed.cutItems elemre:
-    -   létrehozunk egy Piece‑t
-    -   kitöltjük:
-        -   materialBarcode
-        -   requiredLength
-        -   handlerSide = orderItemNeed.line.handlerSide
-        -   externalRef = orderItemNeed.line.externalId + “.” + sorszám
-        -   ownerName, colorName
-        -   fullWidth, fullHeight
-3.  Az összes Piece → CutAggregator::aggregate()
+🔴 4. A BarcodeValidator és BarcodeCollisionHelper két külön kapu, de nincs egységes policy
 
-Kitting:
+🔴 5. A BarcodeRegistry nem használ dedikált mixint
 
-1.  Végigmegyünk minden RawKit‑en
-2.  Létrehozunk KitItem‑et
-3.  Az összes KitItem → KitAggregator::aggregate()
+-   a dokumentáció javasolja a BarcodeLedgerMixin‑t, de nincs
+    implementálva
 
 ------------------------------------------------------------------------
 
-🧩 5. Teszt: OrderNeedBuilderTester
+2.2. A helyreállítás céljai
 
-A fájl már létezik:
-
-    test/calculation/order_need_builder_tester.cpp
-
-👉 Most kell megtölteni tartalommal.
-
-Teszt lépések:
-
-1.  TestRolettaBuilder::build() → roletta tesztadatok
-2.  Létrehozunk egy Order‑t:
-
-    Order o;
-    o.orderId = QUuid::createUuid();
-
-    OrderItem it;
-    it.orderItemId = QUuid::createUuid();
-    it.line.productId = ids.ROL_R;
-    it.line.width_mm = 1200;
-    it.line.height_mm = 1500;
-    it.line.handlerSide = "L";
-    it.qty = 3;
-    it.modeName = "Manufacturing";
-
-    o.items.append(it);
-
-3.  Meghívjuk:
-
-    OrderNeed need = OrderNeedBuilder::build(o, true);
-
-4.  Ellenőrzések:
-
--   need.orderItemNeeds.size() == 1
--   need.orderItemNeeds[0].itemNeeds.size() == 3
--   minden ItemNeed.cutItems nem üres
+1.  Egységes workflow minden barcode‑műveletre
+2.  Egységes ütközéskezelés minden domain registryben
+3.  Egységes CSV szerződés
+4.  Egységes audit log
+5.  Egységes architektúra (mixin‑alapú)
 
 ------------------------------------------------------------------------
 
-🧩 6. Teszt: WorksheetBuilderTester
+2.3. A helyreállítás lépései
 
-Új teszt vagy ugyanebben:
+1. A Barcode modul céljának rögzítése (dokumentáció frissítése)
 
-    WorksheetNeed ws = WorksheetBuilder::fromOrderNeed(need);
+-   A régi dokumentumot frissíteni kell (lásd 1. pont)
+-   A docs/barcodes_module_overview.md elavult → frissíteni
 
-Ellenőrzések:
+2. A BarcodeRegistry architektúrájának tisztítása
 
--   ws.cuts nem üres
--   ws.kits nem üres
--   aggregáció működik:
-    -   azonos materialBarcode + requiredLength + handlerSide → quantity
-        összeadódik
+-   kivenni minden CRUD‑szerű elemet
+-   bevezetni a BarcodeLedgerMixin‑t (lásd implementációs terv)
+-   a registry csak két műveletet támogat:
+    -   registerNew()
+    -   retire()
 
-------------------------------------------------------------------------
+3. A BarcodeValidator egységesítése
 
-🧩 7. Integráció a projektbe
+-   minden domain registry import → csak ezt használja
+-   ProductTreeManager → szintén ezt használja
+-   közvetlen BarcodeRegistry::registerNew() hívás tiltása
 
-7.1 Új fájlok felvétele a pro‑ba
+4. A BarcodeCollisionHelper egységesítése
 
-A pro file‑ba fel kell venni:
+-   minden ütközés innen jön
+-   entityId alapú kivételek megtartása
+-   audit log egységesítése
 
-    calculation/service/order_need_builder.cpp
-    calculation/service/worksheet_builder.cpp
+5. A CSV szerződés véglegesítése
 
-És a HEADERS‑be:
+-   header: barCode;entityType;introducedAt;retiredAt
+-   entityId NEM része a szerződésnek
+-   status mező NEM része a szerződésnek
+-   dokumentáció frissítése
 
-    calculation/service/order_need_builder.h
-    calculation/service/worksheet_builder.h
+6. A Product/Material importok egységesítése
 
-------------------------------------------------------------------------
+-   mindkettő BarcodeCollisionHelper‑t használ
+-   mindkettő BarcodeValidator‑t használ
+-   mindkettő auditálja a hibákat
 
-🧩 8. A terv végleges, kódra szabott változata
+7. A ProductTreeManager javítása
 
-Ez a verzió:
+-   barcode módosítás → BarcodeValidator::checkAndRegister()
+-   nem közvetlenül a BarcodeRegistry
 
--   figyelembe veszi a meglévő struktúrát,
--   nem ütközik a NeedCalculator workflow‑val,
--   kompatibilis a registry‑kkel,
--   illeszkedik a tesztstruktúrához,
--   nem igényel refaktort a meglévő tesztekben,
--   és teljesen előkészíti a worksheet generálást.
+8. A RegistryManager integráció ellenőrzése
 
-------------------------------------------------------------------------
-------------------------------------------------------------------------
-
-🚀 OrderNeed + WorksheetNeed – Implementációs terv (végrehajtható)
-
-1. OrderItemNeed kibővítése
-
-Fájl: calculation/service/need_calculator.h
-
-Add hozzá:
-
-    struct OrderItemNeed {
-        QUuid orderItemId;
-        OrderLine line;              // ← ÚJ mező
-        QVector<ItemNeed> itemNeeds; // minden példány külön
-    };
-
-Ez szükséges ahhoz, hogy aggregáláskor vissza tudjunk jutni az eredeti
-metaadatokhoz (ownerName, colorName, handlerSide stb.).
+-   BarcodeCollisionHelper → RegistryManager::findEntity()
+-   biztosítani kell, hogy minden entityType regisztrálva legyen
 
 ------------------------------------------------------------------------
 
-2. Új OrderNeedBuilder service létrehozása
+✅ 3. Releváns files.txt (minden érintett fájl)
 
-Fájlok: - calculation/service/order_need_builder.h -
-calculation/service/order_need_builder.cpp
+Ez a lista pontosan tartalmazza az összes fájlt, amely a
+Barcode‑workflow helyreállításához szükséges.
 
-2.1 order_need_builder.h
+    barcodes/model/barcode_record.h
+    barcodes/registry/barcode_registry.h
+    barcodes/registry/barcode_registry.cpp
+    barcodes/repository/barcode_repository.h
+    barcodes/repository/barcode_repository.cpp
+    barcodes/validator/barcode_validator.h
+    barcodes/validator/barcode_validator.cpp
+    barcodes/helpers/barcode_collision_helper.h
+    barcodes/helpers/barcode_collision_helper.cpp
 
-    #pragma once
-    #include <QVector>
-    #include <QUuid>
-    #include "need_calculator.h"
+    products/repository/product_repository.cpp
+    products/view/product_tree_manager.cpp
 
-    struct OrderItem {
-        QUuid orderItemId;
-        OrderLine line;
-        int qty;
-        QString modeName;
-    };
+    materials/repository/material_repository.cpp
 
-    struct Order {
-        QUuid orderId;
-        QVector<OrderItem> items;
-    };
+    common/registry/manager/registry_manager.h
+    common/registry/base/registry_engine_base.h
+    common/registry/mixins/bulk_load_mixin.h
+    common/registry/mixins/crud_workflow_mixin.h
 
-    class OrderNeedBuilder {
-    public:
-        static OrderNeed build(const Order& order, bool debug = false);
-    };
+    docs/barcodes_module_overview.md
+    docs/registry_contract.md
 
-2.2 order_need_builder.cpp
-
-Implementáció:
-
-    #include "order_need_builder.h"
-
-    OrderNeed OrderNeedBuilder::build(const Order& order, bool debug)
-    {
-        OrderNeed out;
-        out.orderId = order.orderId;
-
-        for (const auto& item : order.items) {
-            OrderItemNeed oin;
-            oin.orderItemId = item.orderItemId;
-            oin.line = item.line;
-            oin.itemNeeds.reserve(item.qty);
-
-            for (int i = 0; i < item.qty; ++i) {
-                ItemNeed n = NeedCalculator::calculate(item.line, item.modeName, debug);
-                oin.itemNeeds.append(n);
-            }
-
-            out.orderItemNeeds.append(oin);
-        }
-
-        return out;
-    }
+Ez a lista teljes, minden szükséges fájlt tartalmaz.
 
 ------------------------------------------------------------------------
 
-3. CutAggregator és KitAggregator visszakapcsolása
+✅ 4. Implementációs terv (commit‑szintű, végrehajtható)
 
-A fájlok már léteznek, csak ki vannak kommentelve.
-
-3.1 Vedd ki a kommenteket:
-
--   calculation/service/cut_aggregator.h
--   calculation/service/cut_aggregator.cpp
--   calculation/service/kit_aggregator.h
--   calculation/service/kit_aggregator.cpp
-
-Ezek a jelenlegi kóddal kompatibilisek, csak újra engedélyezni kell
-őket.
+Ez a terv konkrét, lépésről lépésre végrehajtható, és nem túl nagy
+refaktor.
 
 ------------------------------------------------------------------------
 
-4. Új WorksheetNeed + WorksheetBuilder
+4.1. Új mixin létrehozása: BarcodeLedgerMixin
 
-Fájlok: - calculation/service/worksheet_builder.h -
-calculation/service/worksheet_builder.cpp
+Fájl:
+common/registry/mixins/barcode_ledger_mixin.h
 
-4.1 worksheet_builder.h
+Feladata:
 
-    #pragma once
-    #include "order_need_builder.h"
-    #include "cut_aggregator.h"
-    #include "kit_aggregator.h"
+-   validateDomain
+-   validateDuplicate
+-   beforeInsert
+-   beforeUpdate
+-   onInsertLog
+-   onUpdateLog
+-   persistRegistry
+-   retire workflow
+-   notifyItemsChanged
 
-    struct WorksheetNeed {
-        QUuid worksheetId;
-        QVector<CutAggregatedItem> cuts;
-        QVector<KitAggregatedItem> kits;
-    };
-
-    class WorksheetBuilder {
-    public:
-        static WorksheetNeed fromOrderNeed(const OrderNeed& orderNeed);
-    };
-
-4.2 worksheet_builder.cpp
-
-    #include "worksheet_builder.h"
-    #include "piece.h"
-    #include "kit_item.h"
-
-    WorksheetNeed WorksheetBuilder::fromOrderNeed(const OrderNeed& orderNeed)
-    {
-        WorksheetNeed ws;
-        ws.worksheetId = orderNeed.orderId;
-
-        QVector<Piece> pieces;
-        QVector<KitItem> kits;
-
-        for (const auto& oin : orderNeed.orderItemNeeds) {
-            const OrderLine& line = oin.line;
-
-            for (const auto& itemNeed : oin.itemNeeds) {
-
-                // --- Cutting ---
-                for (const RawCut& rc : itemNeed.cutItems) {
-                    Piece p;
-                    p.materialBarcode = rc.materialBarcode;
-                    p.requiredLength  = rc.requiredLength;
-                    p.handlerSide     = line.handlerSide;
-                    p.externalRef     = line.externalId;
-                    p.ownerName       = line.ownerName;
-                    p.colorName       = line.colorName;
-                    p.fullWidth       = line.width_mm;
-                    p.fullHeight      = line.height_mm;
-                    pieces.append(p);
-                }
-
-                // --- Kitting ---
-                for (const RawKit& rk : itemNeed.kitItems) {
-                    KitItem ki;
-                    ki.materialBarcode = rk.materialBarcode;
-                    ki.quantity        = rk.qty;
-                    ki.ownerName       = line.ownerName;
-                    ki.colorName       = line.colorName;
-                    ki.fullWidth       = line.width_mm;
-                    ki.fullHeight      = line.height_mm;
-                    kits.append(ki);
-                }
-            }
-        }
-
-        ws.cuts = CutAggregator::aggregate(pieces);
-        ws.kits = KitAggregator::aggregate(kits);
-
-        return ws;
-    }
+A mixin a RegistryEngineBase‑re épül.
 
 ------------------------------------------------------------------------
 
-5. OrderNeedBuilder teszt megírása
+4.2. BarcodeRegistry átírása erre a mixinre
 
-Fájl: test/calculation/order_need_builder_tester.cpp
-
-5.1 Teszt skeleton
-
-    #include "order_need_builder_tester.h"
-    #include "calculation/service/order_need_builder.h"
-    #include "calculation/service/worksheet_builder.h"
-    #include "test/calculation/test_roletta_builder.h"
-
-    bool OrderNeedBuilderTester::run()
-    {
-        zInfo("=== OrderNeedBuilder TEST START ===");
-
-        // 1) Roletta testdata
-        auto ids = TestRolettaBuilder::build();
-
-        // 2) Order összeállítása
-        Order order;
-        order.orderId = QUuid::createUuid();
-
-        OrderItem i1;
-        i1.orderItemId = QUuid::createUuid();
-        i1.line.productId = ids.ROL_R;
-        i1.line.width_mm = 1200;
-        i1.line.height_mm = 1500;
-        i1.line.handlerSide = "L";
-        i1.line.externalId = "X";
-        i1.line.ownerName = "Teszt Elek";
-        i1.line.colorName = "Fehér";
-        i1.qty = 2;
-        i1.modeName = "Manufacturing";
-
-        order.items.append(i1);
-
-        // 3) Build OrderNeed
-        OrderNeed need = OrderNeedBuilder::build(order, true);
-
-        Q_ASSERT(need.orderItemNeeds.size() == 1);
-        Q_ASSERT(need.orderItemNeeds[0].itemNeeds.size() == 2);
-
-        // 4) WorksheetNeed
-        WorksheetNeed ws = WorksheetBuilder::fromOrderNeed(need);
-
-        Q_ASSERT(!ws.cuts.isEmpty());
-        Q_ASSERT(!ws.kits.isEmpty());
-
-        zInfo("=== OrderNeedBuilder TEST END ===");
-        return true;
-    }
+-   eltávolítani a felesleges CRUD‑szerű elemeket
+-   csak két publikus API marad:
+    -   registerNew()
+    -   retire()
 
 ------------------------------------------------------------------------
 
-6. Pro file frissítése
+4.3. BarcodeValidator egységesítése
 
-Add hozzá:
-
-    calculation/service/order_need_builder.cpp
-    calculation/service/order_need_builder.h
-    calculation/service/worksheet_builder.cpp
-    calculation/service/worksheet_builder.h
-
-És vedd ki a kommenteket az aggregátor fájlokból.
+-   minden domain registry import → ezt használja
+-   ProductTreeManager → ezt használja
+-   közvetlen BarcodeRegistry hívások megszüntetése
 
 ------------------------------------------------------------------------
 
-7. Debug + logolás
+4.4. BarcodeCollisionHelper frissítése
 
-A kritikus pontokra tegyél:
-
-    zInfo("Building OrderNeed for order " + order.orderId.toString());
-
-és hasonlókat.
+-   entityId alapú kivételek megtartása
+-   audit log egységesítése
+-   RegistryManager integráció ellenőrzése
 
 ------------------------------------------------------------------------
 
-8. Dokumentáció frissítése
+4.5. CSV szerződés véglegesítése
 
-A run_4_Order.txt vagy új run_4_OrderNeed.txt fájlba:
-
--   Order → OrderNeed → WorksheetNeed pipeline
--   Aggregációs logika
--   Példák
+-   header fixálása
+-   dokumentáció frissítése
+-   export/import konzisztencia ellenőrzése
 
 ------------------------------------------------------------------------
 
-🎉 Kész is az implementációs terv
+4.6. Product/Material import javítása
 
-Ez a terv 100% kompatibilis a meglévő kódbázisoddal, nem ütközik a
-NeedCalculator workflow‑val, és pontosan a roletta‑teszt mintájára
-építkezik.
+-   mindenhol BarcodeValidator + BarcodeCollisionHelper
+-   nincs közvetlen BarcodeRegistry hívás
 
-Ha szeretnéd, megírom a teljes új fájlokat is (header + cpp), vagy a
-teljes tesztet, vagy integrálom a pro‑ba.
+------------------------------------------------------------------------
+
+4.7. ProductTreeManager javítása
+
+-   barcode módosítás → BarcodeValidator::checkAndRegister()
+-   nem közvetlenül a BarcodeRegistry
+
+------------------------------------------------------------------------
+
+4.8. Dokumentáció frissítése
+
+-   docs/barcodes_module_overview.md → új verzió
+-   docs/registry_contract.md → BarcodeRegistry rész frissítése
+-   új: docs/barcode_ledger_design.md (ha szeretnéd)
+
+------------------------------------------------------------------------
+
+🎉 Készen állok a következő lépésre
+
+Ha szeretnéd, elkészítem:
+
+-   a frissített barcodes_module_overview.md teljes szövegét,
+-   vagy a BarcodeLedgerMixin konkrét C++ implementációját,
+-   vagy a commit‑ready diff‑et minden érintett fájlra.
+
+Csak mondd, melyikkel folytassuk.
