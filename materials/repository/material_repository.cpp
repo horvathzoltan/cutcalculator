@@ -19,6 +19,7 @@
 //#include "common/registry/barcode_table.h"
 //#include "common/registry/registry_manager.h"
 #include "barcodes/helpers/barcode_collision_helper.h"
+#include <barcodes/validator//barcode_validator.h>
 //#include "common/system/verbose_manager.h"
 
 // --- Stage 1: Convert ---
@@ -69,16 +70,13 @@ QVector<CsvImporter::RowError>
 MaterialRepository::validateMaterialRow(const MaterialRow& row, int lineNumber) {
     QVector<CsvImporter::RowError> errors;
 
-    // if(row.barcode == "ROL-P"){
-    //     zInfo("brekk");
-    // }
-    if (row.barcode.isEmpty()){
+    if (row.barcode.isEmpty()) {
         errors.append(makeError(lineNumber, "⚠️ Hiányzó barcode", row));
     } else {
         if (auto err = BarcodeCollisionHelper::makeBarcodeCollisionError(
-                  "Material",
+                "Material",
                 BarcodeCollisionHelper::RowInfo{ row.barcode, row.name, std::nullopt },
-                  lineNumber))
+                lineNumber))
         {
             errors.append(*err);
         }
@@ -116,7 +114,7 @@ std::optional<MaterialMaster>
 MaterialRepository::buildMaterialFromRow(const MaterialRow& row,
                                          CsvImporter::FileContext& ctx) {
 
-    // Tartalmi validáció hibák gyűjtése
+    // Tartalmi validáció hibák gyűjtése (barcode-regisztráció NEM itt történik)
     auto rowErrors = validateMaterialRow(row, ctx.currentLineNumber());
     ctx.addErrors(rowErrors);
     if (!rowErrors.isEmpty())
@@ -188,7 +186,11 @@ MaterialRepository::buildMaterialFromRow(const MaterialRow& row,
         }
     }
 
+    if (!BarcodeValidator::checkAndRegister(row.barcode, "Material", m.id, m.name, ctx))
+        return std::nullopt;
+
     return m;
+
 }
 
 // --- Stage 3: Load & Assemble ---
@@ -201,7 +203,10 @@ MaterialRepository::loadMaterialRows(CsvImporter::FileContext& ctx) {
 // ⚠️ Szerződés (load-only path):
 // - csak CSV → memória betöltés
 // - NEM ír registrybe, NEM hív persistet
+// - barcode-regisztráció itt történik a BarcodeValidatoron keresztül
+//   (globális ledger-kapu, auditált életút-kezelés)
 // - StartupManager végzi a setAll() hívást
+
 bool MaterialRepository::load(QVector<MaterialMaster>& out)
 {
 

@@ -148,9 +148,36 @@ bool MaterialRegistry::beforeInsert(MaterialMaster& m) {
 
 ---
 
-### Következő lépések javaslat
+## BarcodeRegistry – különálló ledger (nem domain registry)
 
-- Azonnal commitold a pilot változtatásokat és futtasd a smoke tesztet.  
-- Ha a smoke teszt zöld, készítek egy PR sablont és a CI scriptet, valamint segítek az első további registry migrációjában.  
+A BarcodeRegistry NEM domain registry és NEM használ CrudWorkflowMixin‑t.
 
-Ha szeretnéd, most generálom a `docs/registry_contract.md` teljes szövegét fájlformátumban, vagy bemásolom ide a kész markdownt, hogy commitolhasd.
+Jellemzői:
+
+- append‑only ledger (insertInternal + updateInternal)
+- nincs remove művelet
+- nincs domain‑szintű validateDomain / validateDuplicate
+- nincs CrudWorkflowMixin
+- minden módosítás a BarcodeValidatoron keresztül történik
+- CSV szerződés 4 mezővel:  
+  `barCode;entityType;introducedAt;retiredAt`
+
+A BarcodeRegistry architektúrája teljesen elkülönül a domain registryktől.
+
+---
+
+## Ledger-specifikus registryk (BarcodeRegistry)
+
+A BarcodeRegistry NEM követi a CrudMixin / RegistryEngineBase host contractot.
+A BarcodeRegistry külön ledger-modell szerint működik, saját invariánsokkal:
+
+- append-only ledger (insertInternal + updateInternal)
+- nincs remove művelet
+- retiredAt időben monoton (csak előre haladhat)
+- globális uniqueness (code + entityType)
+- domain-validáció NEM itt történik, hanem a BarcodeValidatorban
+- minden módosítás a Validatoron keresztül történik
+- CSV szerződés fix: barCode;entityType;introducedAt;retiredAt
+
+A BarcodeRegistry architektúrája teljesen elkülönül a domain registryktől.
+

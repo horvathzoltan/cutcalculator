@@ -25,6 +25,12 @@ public:
                                  const QString& name,
                                  CsvImporter::FileContext& ctx);
 
+    static bool checkAndRegisterUI(const QString& code,
+                                   const QString& entityType,
+                                   const QUuid& id,
+                                   const QString& name,
+                                   QString& outErrorMessage);
+
     /**
      * @brief retire – nyugdíjazza a barcode-ot (audit + státusz),
      * nem dob hibát, ha a kód nem létezik, csak figyelmeztet.

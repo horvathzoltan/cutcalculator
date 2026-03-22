@@ -10,9 +10,9 @@
  *
  * - Ne legyen copy-paste a Material/Product validátorban,
  *   hanem hívd ezt a helpert, és ő megoldja:
- *   - megnézi a globális uniqueness-et (BarcodeRegistry)
- *   - előkeresi az ütköző entitást (RegistryManager)
- *   - összerak egy emberbarát üzenetet (typeName, name, barcode, status)
+ *   - ledger-alapú globális uniqueness ellenőrzés
+ *   - ütköző entitás lookup (RegistryManager)
+ *   - egységes, auditbarát üzenet (typeName, name, barcode, status)
  */
 class BarcodeCollisionHelper {
 public:

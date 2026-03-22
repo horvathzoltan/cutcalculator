@@ -1,10 +1,3 @@
-Nagyon jó, Zoltán 🤓 – így már teljes képet adunk a rendszer egészéről,
-és az Order rész sem marad ki. Összefésültem a korábbi specifikációt a
-most bemásolt orderes résszel, hogy minden blokk meglegyen, még ha egyes
-pontok üresen is maradnak a későbbi kitöltéshez.
-
-------------------------------------------------------------------------
-
 📘 Követelményspecifikáció – CutCalculator rendszer (Anyagszükséglet számítás + Order kezelés)
 
 🎯 Cél
@@ -153,12 +146,3 @@ Extra kényelmi funkciók
     -   UI tabok létrehozása: Anyagtörzs, Terméktípusok, Megrendelések,
         Szükséglet preview, Audit log.
 
-------------------------------------------------------------------------
-
-👉 Így most már minden blokk megvan: az OrderHeader/OrderLine, az
-OrderRepository és OrderService is szerepel, még ha üresen vagy 🚧
-státuszban is. Ez biztosítja, hogy a specifikáció teljes, és később
-pontosan kitölthető.
-
-Szeretnéd, hogy készítsek egy összefoglaló táblázatot a modulok
-státuszáról (✅ / 🚧 / ➕),

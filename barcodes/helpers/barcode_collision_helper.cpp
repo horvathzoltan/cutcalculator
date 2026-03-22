@@ -30,7 +30,7 @@ BarcodeCollisionHelper::makeBarcodeCollisionError(const QString& myTypeName,
     if (!br.isBarcodeUnique(code)) {
         if (auto rec = br.findByCode(code)) {
 
-        // 🔥 ÚJ: Ha ugyanahhoz az entitáshoz tartozik → nem ütközés
+            // CSV audit‑policy: ctx.addError – UI/ledger nem érintett
             if (rec->entityId.has_value() &&
                      row.entityId.has_value() &&
                      rec->entityId == row.entityId)
@@ -45,7 +45,8 @@ BarcodeCollisionHelper::makeBarcodeCollisionError(const QString& myTypeName,
                 return std::nullopt;
             }
 
-            zEventWARN(QString("Barcode collision detected: %1 (%2)").arg(code, myTypeName));
+            // UI audit‑policy: zEventERROR
+            // Ledger audit‑policy: zWarning
 
             const auto* otherEntity =
                 rec->entityId.has_value()
@@ -60,14 +61,14 @@ BarcodeCollisionHelper::makeBarcodeCollisionError(const QString& myTypeName,
 
             QString msg;
             if (otherEntity) {
-                msg = QString("Barcode collision: %1[%2] ütközik %3[%4](%5)")
+                msg = QString("Barcode collision: %1 %2 → %3 %4 (%5)")
                           .arg(myTypeName)
                           .arg(formatRowDisplay(row))
                           .arg(rec->entityType)
                           .arg(otherEntity->displayName())
                           .arg(status);
             } else {
-                msg = QString("Barcode collision: %1[%2] ütközik %3{%4}(%5)")
+                msg = QString("Barcode collision: %1 %2 → %3 %4 (%5)")
                           .arg(myTypeName)
                           .arg(formatRowDisplay(row))
                           .arg(rec->entityType)

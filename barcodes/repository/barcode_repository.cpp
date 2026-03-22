@@ -12,8 +12,8 @@
 /**
  * CSV formátum – stabil szerződés audit és diff szempontból.
  *
- * Header (ajánlott, nem kötelező):
- *   code;entityType;entityId;introducedAt;retiredAt;status
+ * Header:
+ *   barCode;entityType;introducedAt;retiredAt
  *
  * *
  * - Dátumok: Qt::ISODate (YYYY-MM-DDTHH:MM:SS).
@@ -26,7 +26,7 @@ std::optional<CsvImporter::AuditedRow<BarcodeRepository::BarcodeRow>>
 BarcodeRepository::convertRowToBarcodeRow(const QVector<QString>& parts,
                                           CsvImporter::FileContext& ctx)
 {
-    // Most pontosan 4 mezőt várunk
+    // Ledger CSV: pontosan 4 mező (barCode;entityType;introducedAt;retiredAt)
     if (parts.size() < 4) {
         ctx.addError(ctx.currentLineNumber(), "⚠️ Kevés mező (4 szükséges)");
         return std::nullopt;
@@ -105,7 +105,7 @@ BarcodeRepository::buildRecordFromRow(const BarcodeRow& row,
         if (retired.isValid()) rec.retiredAt = retired;
     }
 
-    // Status getterből számolódik → nincs explicit mező
+    // Ledger modell: status mező nincs, a státusz a retiredAt alapján számolódik
     return rec;
 }
 

@@ -13,7 +13,7 @@
  *  - Stage 1: Convert → CSV sor → MaterialRow
  *  - Stage 2.5: Validate → MaterialRow → hibák
  *  - Stage 2: Build → MaterialRow → MaterialMaster
- *  - Stage 3: Assemble → MaterialMaster → MaterialRegistry
+ *  - Stage 3: Assemble → MaterialMaster → MaterialRegistry (barcode-regisztráció NEM itt történik)
  */
 class MaterialRepository {
 public:

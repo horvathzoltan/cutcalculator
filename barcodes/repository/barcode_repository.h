@@ -16,9 +16,9 @@
  *  - Stage 3: Assemble → BarcodeRecord → BarcodeRegistry
  *
  * *
- * - A CSV minden sorában egy teljes életút rekord van: code;entityType;entityId;introducedAt;retiredAt;status
+ * - A CSV minden sorában egy ledger rekord van: barCode;entityType;introducedAt;retiredAt
  * - Dátumok ISO 8601 formátumban (Qt::ISODate), retiredAt üres, ha nincs.
- * - A globális uniqueness elv érvényes: ugyanaz a "code" csak egyszer szerepelhet a teljes CSV-ben.
+ * - A globális uniqueness elv érvényes: ugyanaz a "barCode" csak egyszer szerepelhet a teljes CSV-ben.
  */
 class BarcodeRepository {
 public:

@@ -13,6 +13,7 @@ DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs depr
 
 SOURCES += \
     barcodes/helpers/barcode_collision_helper.cpp \
+    barcodes/helpers/barcode_generator.cpp \
     barcodes/registry/barcode_registry.cpp \
     barcodes/repository/barcode_repository.cpp \
     barcodes/validator/barcode_validator.cpp \
@@ -122,6 +123,7 @@ SOURCES += \
     ui/adapters/log_view_adapter.cpp
 
 HEADERS += \
+    barcodes/helpers/barcode_generator.h \
     barcodes/model/barcode_record.h \
     barcodes/registry/barcode_registry.h \
     barcodes/repository/barcode_repository.h \

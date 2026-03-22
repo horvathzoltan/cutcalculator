@@ -1,10 +1,6 @@
 #include "barcodes/registry/barcode_registry.h"
 #include "common/logger/logger.h"
-#include "common/logger/event_logger.h"
-#include "common/system/verbose_manager.h"
 #include "barcodes/repository/barcode_repository.h"
-#include "common/utils/filename_helper.h"
-#include "barcodes/helpers/barcode_collision_helper.h"
 
 // --- Lookup API ---
 
@@ -33,7 +29,7 @@ bool BarcodeRegistry::updateInternal(const BarcodeRecord& r)
     return storeUpdateImpl(r);
 }
 
-// --- Workflow hookok ---
+// --- Workflow hookok (ledger invariánsok érvényesítése) ---
 
 bool BarcodeRegistry::validateDomain(const BarcodeRecord& r) const
 {
@@ -48,10 +44,8 @@ bool BarcodeRegistry::validateDomain(const BarcodeRecord& r) const
 
 bool BarcodeRegistry::validateDuplicate(const BarcodeRecord& r) const
 {
-    // Globális uniqueness: ugyanazzal a kóddal nem lehet másik rekord
     return !existsBy([&](const BarcodeRecord& x){
-        return x.code == r.code && x.entityType == r.entityType
-               && x.introducedAt != r.introducedAt;
+        return x.code == r.code && x.entityId != r.entityId;
     });
 }
 
@@ -73,27 +67,24 @@ bool BarcodeRegistry::beforeUpdate(BarcodeRecord& r)
 
 void BarcodeRegistry::onInsertLog(const BarcodeRecord& r)
 {
-    if (IS_VERBOSE_THIS()) {
-        zInfo(QString("Barcode registered: %1 [%2]")
-                  .arg(r.entityType, r.code));
-    }
+    zInfo(QString("Barcode ledger insert: %1 [%2]").arg(r.entityType, r.code));
 }
 
 void BarcodeRegistry::onUpdateLog(const BarcodeRecord& r)
 {
-    if (IS_VERBOSE_THIS()) {
-        zInfo(QString("Barcode updated: %1 [%2], status=%3")
-                  .arg(r.entityType,
-                       r.code,
-                       r.isActive() ? "Active" : "Retired"));
-    }
+    zInfo(QString("Barcode ledger update: %1 [%2], status=%3")
+              .arg(r.entityType,
+                   r.code,
+                   r.isActive() ? "Active" : "Retired"));
 }
 
-void BarcodeRegistry::onRemoveLog(const BarcodeRecord& r)
-{
-    zInfo(QString("Barcode removed from registry: %1 [%2]")
-              .arg(r.entityType, r.code));
-}
+
+// törölve – ledger modellben nincs remove
+// void BarcodeRegistry::onRemoveLog(const BarcodeRecord& r)
+// {
+//     zInfo(QString("Barcode removed from registry: %1 [%2]")
+//               .arg(r.entityType, r.code));
+// }
 
 // --- Public API: registerNew / retire ---
 
@@ -121,19 +112,24 @@ bool BarcodeRegistry::registerNew(const QString& code,
             persist();
             return true;
         } else {
-            // EntityId már van, és ha más, akkor ütközés
             if (rec->entityId != id) {
-                 if (auto err = BarcodeCollisionHelper::makeBarcodeCollisionError(
-                       entityType,
-                       BarcodeCollisionHelper::RowInfo{ trimmedCode, name, id },
-                       /* lineNumber */ 0))
-                {
-                    zWarning(err->errorMessage());
-                    zEventWARN(err->errorMessage());
-                }
+                zWarning(QString("Barcode collision: %1").arg(trimmedCode));
                 return false;
             }
-            // Ugyanaz az entitás → nincs teendő
+
+            // // EntityId már van, és ha más, akkor ütközés
+            // if (rec->entityId != id) {
+            //      if (auto err = BarcodeCollisionHelper::makeBarcodeCollisionError(
+            //            entityType,
+            //            BarcodeCollisionHelper::RowInfo{ trimmedCode, name, id },
+            //            /* lineNumber */ 0))
+            //     {
+            //         zWarning(err->errorMessage());
+            //         zEventWARN(err->errorMessage());
+            //     }
+            //     return false;
+            // }
+            // // Ugyanaz az entitás → nincs teendő
             return true;
         }
     }

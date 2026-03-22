@@ -14,8 +14,8 @@
  * Three Phase Import minta alapján tölti be a terméktípusokat CSV-ből.
  * Fázisok:
  *  - Convert: CSV sor → ProductRow
- *  - Build: ProductRow → ProductDefinition
- *  - Assemble: ProductDefinition → ProductRegistry
+ *  - Build: ProductRow → ProductDefinition (barcode-regisztráció NEM itt történik)
+ *  - Assemble: ProductDefinition → ProductRegistry (StartupManager végzi a barcode-regisztrációt)
  */
 
 class ProductRepository {

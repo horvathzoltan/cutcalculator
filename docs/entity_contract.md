@@ -433,6 +433,62 @@ NeedRule
 
 ## 3.6 BarcodeRecord
 
+---
+
+## 3.6.1 Barcode workflow szerződés (Validator + Ledger)
+
+A BarcodeRecord önmagában csak az életút-modell.  
+A barcode workflow teljes szerződése három komponensből áll:
+
+---
+
+## 3.6.2 Naming konzisztencia – CSV vs. belső mezőnevek
+
+A barcode mező elnevezése rétegenként eltér, de a jelentése azonos.
+
+### CSV szerződés (külső adatcsere)
+- mező neve: **`barCode`**
+- szerepe: a ledger export/import formális mezőneve
+- fix, visszafelé kompatibilis formátum
+
+### Belső modell (BarcodeRecord)
+- mező neve: **`code`**
+- szerepe: a barcode tényleges értéke a ledger‑modellben
+- a `barCode` CSV mező erre a mezőre mapelődik
+
+### Domain entitások
+- mező neve: **`barcode`**
+- szerepe: az entitás aktuális, ember által látható vonalkódja
+- a BarcodeValidator gondoskodik a ledger‑szinkronról
+
+### Összefoglaló
+- **CSV → `barCode`**  
+- **Ledger → `code`**  
+- **Domain entitás → `barcode`**
+
+A három név különböző rétegeket jelöl, de ugyanazt a fogalmat hordozza.
+
+### 1) BarcodeValidator – a központi kapu
+- minden új barcode ezen keresztül kerül regisztrálásra,
+- üres kód tiltása,
+- globális uniqueness ellenőrzése,
+- CSV audit-policy: `ctx.addError` (sorhoz kötött hiba),
+- UI audit-policy: `zEventERROR` (felhasználói audit esemény),
+- Ledger audit-policy: `zWarning` (rendszerszintű audit figyelmeztetés).
+
+### 2) BarcodeRegistry – globális életút ledger
+- append-only ledger (insertInternal + updateInternal),
+- nincs remove művelet,
+- retiredAt időben monoton,
+- domain-validáció NEM itt történik,
+- CSV szerződés fix: `barCode;entityType;introducedAt;retiredAt`.
+
+### 3) Domain entitások – csak a barcode mezőt hordozzák
+- az entitások NEM írhatnak közvetlenül a BarcodeRegistry-be,
+- minden módosítás a Validatoron keresztül történik,
+- a barcode mező opcionális, de ha van → auditált életút tartozik hozzá.
+
+
 ```cpp
 struct BarcodeRecord {
     using IdType = QUuid;
@@ -457,9 +513,9 @@ struct BarcodeRecord {
 
 - auditbarát életút modell egy barcode‑hoz,
 - BarcodeRegistry tárolja,
-- export/import szerződés:
-  - `code`, `entityType`, `introducedAt`, `retiredAt`,
-  - `entityId` csak runtime trace.
+export/import szerződés (ledger CSV):
+  - `barCode;entityType;introducedAt;retiredAt`
+  - `entityId` NEM része a CSV-nek (csak runtime trace)
 
 **Invariánsok:**
 

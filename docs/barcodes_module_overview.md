@@ -1,12 +1,74 @@
 ## *A Barcode modul architekturális szerepe és működése*
 
-# Barcode modul – architekturális áttekintés
+# Barcode modul – architekturális áttekintés (v3 – Ledger modell)
 
-A Barcode modul a rendszer globális vonalkód-életút könyvelője.  
-Feladata: minden olyan vonalkód, amely bármely domain entitáshoz tartozik (Product, Material, stb.),  
-önálló, auditált életút-rekordokat (`BarcodeRecord`) kapjon.
+A Barcode modul a rendszer globális, auditált **ledger‑e**.  
+Feladata: minden vonalkód életútját (introducedAt → retiredAt) megőrizni.
 
-A modul NEM domain registry, hanem egy különálló, globális ledger.
+A modul **nem domain registry**, nem CRUD, nem WorkflowMixin‑alapú.
+
+---
+
+## 1. Ledger modell
+
+A BarcodeRegistry:
+
+- append‑only ledger (insertInternal + updateInternal)
+- nincs remove művelet
+- nincs CrudWorkflowMixin
+- nincs domain‑szintű validáció
+- minden módosítás a Validatoron keresztül történik
+
+---
+
+## 2. Validator – a központi kapu
+
+A BarcodeValidator biztosítja:
+
+- üres kód tiltása
+- globális uniqueness
+- ledger‑bejegyzés (registerNew)
+- UI audit‑policy: zEventERROR (felhasználói audit esemény)
+- CSV audit‑policy: ctx.addError (sorhoz kötött audit hiba)
+- Ledger audit‑policy: zWarning (rendszerszintű audit figyelmeztetés)
+
+A domain registryk és a UI **soha nem hívhatják közvetlenül** a BarcodeRegistry‑t.
+
+---
+
+## 3. CollisionHelper – emberi ütközés riport
+
+A `BarcodeCollisionHelper`:
+
+- CSV import validációban használatos
+- emberbarát üzenetet készít
+- entityId‑alapú kivételeket kezel
+- nem ír a ledgerbe
+
+---
+
+## 4. CSV szerződés (végleges)
+
+A barcode ledger CSV formátuma **4 mezőből áll**:
+barCode;entityType;introducedAt;retiredAt
+
+
+- `entityId` NEM része a CSV‑nek  
+- `status` NEM része a CSV‑nek  
+- dátumok ISO 8601 formátumban
+
+---
+
+## 5. Összegzés
+
+A Barcode modul:
+
+- globális ledger
+- Validator a kapu
+- CollisionHelper a riportoló
+- CSV szerződés stabil
+- domain registryktől független
+
 
 ---
 
@@ -28,12 +90,15 @@ A BarcodeRecord NEM domain entitás, hanem globális erőforrás.
 
 A repository háromlépcsős CSV import mintát követ:
 
-1. **Convert** – nyers CSV sor → BarcodeRow
-2. **Validate** – BarcodeRow → audit hibák
-3. **Build** – BarcodeRow → BarcodeRecord
+1. **Convert** – nyers CSV sor → BarcodeRow  
+2. **Validate** – BarcodeRow → audit hibák  
+3. **Build** – BarcodeRow → BarcodeRecord (ledger formátum)
+
+A CSV szerződés végleges formája: barCode;entityType;introducedAt;retiredAt
+
 
 A repository NEM tölti fel automatikusan a BarcodeRegistry-t,  
-csak visszaadja a rekordokat.
+csak visszaadja a ledger-rekordokat.
 
 ---
 
@@ -42,14 +107,14 @@ csak visszaadja a rekordokat.
 A validator biztosítja, hogy minden új barcode:
 
 - ne legyen üres,
-- legyen globálisan egyedi,
+- a CollisionHelper alapján ne ütközzön,
 - sikeresen regisztrálódjon a BarcodeRegistry-ben.
 
 A `checkAndRegister()` a helyes út:
 
 1. üres kód → audit hiba  
-2. `isBarcodeUnique()`  
-3. `registerNew()` → audit log
+2. CollisionHelper → emberbarát ütközés riport  
+3. `registerNew()` → ledger insert vagy update  
 
 ---
 
@@ -70,33 +135,21 @@ Feladata:
 
 A BarcodeRegistry NEM domain registry, hanem:
 
-- globális ledger,
+- globális ledger (append + retire),
 - auditált életút-nyilvántartás,
-- egyedi workflow.
+- nincs remove művelet,
+- nincs klasszikus CRUD workflow,
+- minden módosítás a Validatoron keresztül történik.
 
-A jelenlegi felépítés:
+A BarcodeRegistry egyedi szerepe miatt külön ledger-modell szerint működik:
 
-- `RegistryEngineBase<BarcodeRecord>`
-- `CrudMixin<BarcodeRegistry, BarcodeRecord>`
-- `RegisterMe<BarcodeRegistry>`
+- nincs remove művelet,
+- nincs klasszikus update (csak retire),
+- globális uniqueness enforcement entityId alapján,
+- minden regisztráció a BarcodeValidatoron keresztül történik,
+- a ledger-rekordok append + retire mintát követnek.
 
-A BarcodeRegistry egyedi szerepe miatt külön mixinre van szükség:
-
-### `BarcodeLedgerMixin<Host, BarcodeRecord>`
-
-Ez biztosítja:
-
-- életút-invariánsok érvényesítését,
-- introducedAt / retiredAt kezelését,
-- globális uniqueness enforcement-et,
-- audit logokat.
-
-A BarcodeRegistry így épülne fel:
-
-- `RegistryEngineBase<BarcodeRecord>`
-- `CollectorMixin<BarcodeRegistry, BarcodeRecord>` (update-t támogató verzió)
-- `BarcodeLedgerMixin<BarcodeRegistry>`
-- `RegisterMe<BarcodeRegistry>`
+A BarcodeRegistry architektúrája teljesen elkülönül a domain registryktől.
 
 Ez a struktúra:
 

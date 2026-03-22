@@ -1,13 +1,14 @@
 // products/view/product_tree_manager.cpp
 #include "products/view/product_tree_manager.h"
+#include "common/csv/filecontext.h"
 #include "ui/style/color_helper.h"
 #include "common/logger/event_logger.h"
 #include <QStandardItem>
 #include "products/registry/product_registry.h"
 #include "products/view/product_tree_view.h"
-#include "barcodes/registry/barcode_registry.h"
 #include "common/logger/logger.h"
-#include "common/registry/feature/register_me.h"
+#include <barcodes/validator/barcode_validator.h>
+#include <barcodes/helpers/barcode_generator.h>
 
 /**
  * Konstruktor: létrehozza a modellt és beállítja a QTreeView-hoz.
@@ -136,7 +137,7 @@ void ProductTreeManager::addRootProduct() {
     pm.id = QUuid::createUuid();
     pm.parentId = QUuid(); // gyökér
     pm.name = "Új gyökérelem";
-    pm.barcode = "NEW";
+    pm.barcode = BarcodeGenerator::generate("PROD-", pm.name, 6);
 
     //ProductRegistry::instance().insert(pm);
     if (!ProductRegistry::instance().insert(pm)) {
@@ -158,7 +159,7 @@ void ProductTreeManager::addChildProduct() {
     pm.id = QUuid::createUuid();
     pm.parentId = parentId;
     pm.name = "Új gyermek";
-    pm.barcode = "NEWCHILD";
+    pm.barcode = BarcodeGenerator::generate("PROD-", pm.name, 6);
    //ProductRegistry::instance().insert(pm);
 
     //ProductRegistry::instance().insert(pm);
@@ -219,22 +220,21 @@ void ProductTreeManager::onItemChanged(QStandardItem* item) {
                 item->setText(pm->barcode); // visszaállítjuk
                 return;
             }
-
-            // Validálás: egyediség
-            // Validálás: egyediség
-            if (auto* rec = BarcodeRegistry::instance().findByCode(newCode)) {
-
-                // Ha létezik, de nem ehhez az entitáshoz tartozik → ütközés
-                if (rec->entityId.has_value() && rec->entityId.value() != pm->id) {
-                    zEvent("⚠️ Barcode nem egyedi");
-                    item->setText(pm->barcode);
-                    return;
-                }
+            
+            QString err;
+            if (!BarcodeValidator::checkAndRegisterUI(newCode,
+                                                      "Product",
+                                                      pm->id,
+                                                      pm->name,
+                                                      err))
+            {
+                item->setText(pm->barcode);
+                zEventWARN(err);
+                return;
             }
 
-
-            // Ha minden rendben → registry frissítése
-            updated.barcode = newCode;
+            
+            updated.barcode = newCode; // Validator már regisztrálta
             zEvent(QString("✏️ Product barcode updated: %1").arg(newCode));
         }
 

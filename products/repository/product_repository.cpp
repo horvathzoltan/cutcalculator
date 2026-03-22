@@ -3,6 +3,8 @@
 #include <QFile>
 #include <QTextStream>
 
+#include <barcodes/validator//barcode_validator.h>
+
 #include "products/repository/product_repository.h"
 #include "products/registry/product_registry.h"
 #include "common/csv/csvimporter.h"
@@ -33,41 +35,15 @@ ProductRepository::convertRowToProductRow(const QVector<QString>& parts,
 }
 
 // --- Stage 2: Build ---
-// std::optional<ProductMaster>
-// ProductRepository::buildProductFromRow(const ProductRow& row,
-//                                        CsvImporter::FileContext& ctx) {
-//     auto rowErrors = validateProductRow(row, ctx.currentLineNumber());
-//     ctx.addErrors(rowErrors);
-
-//     if (!rowErrors.isEmpty()) {
-//         return std::nullopt;
-//     }
-
-//     ProductMaster def;
-//     def.id = QUuid::createUuid();  // * belső GUID generálás
-//     def.name = row.name;
-//     def.barcode = row.barcode;
-
-//     // Parent barcode → lookup → parentId
-//     if (row.parentBarcode.isEmpty()) {
-//         def.parentId = QUuid(); // root
-//     } else {
-//         if (auto* parent = ProductRegistry::instance().findByBarcode(row.parentBarcode)) {
-//             def.parentId = parent->id;
-//         } else {
-//             def.parentId = QUuid(); // fallback root
-//             zWarning(QString("⚠️ Ismeretlen parentBarcode → fallback root (sor %1) [%2 → %3]")
-//                          .arg(ctx.currentLineNumber())
-//                          .arg(row.barcode, row.parentBarcode));
-//         }
-//     }
-
-//     return def;
-// }
+// A ProductMaster objektum felépítése registry-hívás nélkül.
+// A parentBarcode feloldása NEM itt történik (resolveParents végzi).
+// A barcode-regisztráció itt történik a BarcodeValidatoron keresztül
+// (globális ledger-kapu, auditált életút-kezelés).
 
 std::optional<ProductMaster>
 ProductRepository::buildProductFromRow(const ProductRow& row,
                                        CsvImporter::FileContext& ctx) {
+    // Tartalmi validáció (barcode-regisztráció NEM itt történik)
     auto rowErrors = validateProductRow(row, ctx.currentLineNumber());
     ctx.addErrors(rowErrors);
     if (!rowErrors.isEmpty()) return std::nullopt;
@@ -77,7 +53,12 @@ ProductRepository::buildProductFromRow(const ProductRow& row,
     def.name = row.name;
     def.barcode = row.barcode;
     def.parentId = QUuid(); // ne állíts itt parentet
+
+    if (!BarcodeValidator::checkAndRegister(row.barcode, "Product", def.id, def.name, ctx))
+        return std::nullopt;
+
     return def;
+
 }
 
 
@@ -88,6 +69,7 @@ CsvImporter::RowError ProductRepository::makeError(int lineNumber,
 }
 
 // --- Stage 2.5: Validate ---
+// Barcode-validáció egységesen a BarcodeCollisionHelper-rel (registry-hívás nélkül)
 QVector<CsvImporter::RowError>
 ProductRepository::validateProductRow(const ProductRow& row, int lineNumber) {
     QVector<CsvImporter::RowError> errors;
@@ -118,6 +100,7 @@ ProductRepository::loadProductRows(CsvImporter::FileContext& ctx) {
 }
 
 // --- Entry Point ---
+// CSV → ProductMaster betöltés (barcode-regisztráció itt történik a BarcodeValidatoron keresztül)
 bool ProductRepository::load(QVector<ProductMaster>& out)
 {
     auto& helper = FileNameHelper::instance();
@@ -152,83 +135,6 @@ bool ProductRepository::load(QVector<ProductMaster>& out)
     return true;
 }
 
-
-// bool ProductRepository::loadFromCSV(ProductRegistry& registry) {
-//     const auto& fileNameHelper_instance = FileNameHelper::instance();
-//     if (!fileNameHelper_instance.isInitialized()) {
-//         zWarning("⚠️ A FileNameHelper nincs inicializálva.");
-//         return false;
-//     }
-
-//     const QString path = fileNameHelper_instance.getProductCsvFile(); // products.csv
-//     CsvImporter::FileContext ctx("Product import", path);
-
-//     const auto rows = loadProductRows(ctx);
-
-//     // 🔍 Validáció a buildAll előtt
-//     //validateProductRows(rows, ctx);
-
-//     // Első fázis: buildAll → minden ProductMaster id+barcode+name
-//     // Domain objektumok építése
-//     QVector<ProductMaster> defs =
-//         CsvImporter::buildAll<ProductRow, ProductMaster>(
-//             rows,
-//             buildProductFromRow,
-//             ctx
-//         );
-
-
-//     // Második fázis: parentBarcode → parentId feloldás
-//     resolveParents(defs, rows, ctx);
-
-//     if (ctx.hasErrors()) {
-//         zWarning(QString("⚠️ Hibák a Product import során (%1)").arg(ctx.errorsSize()));
-//     }
-
-//     registry.setAll(defs);
-
-//     zInfo(QString("📊 ProductRepository: %1 terméktípus betöltve").arg(defs.size()));
-//     return !defs.isEmpty();
-// }
-
-// --- Új helper: validáció a buildAll előtt ---
-// void ProductRepository::validateProductRows(const QVector<CsvImporter::AuditedRow<ProductRepository::ProductRow>>& rows,
-//                                 CsvImporter::FileContext& ctx) {
-//     //QSet<QString> seenBarcodes;
-
-//     // Első kör: saját barcode validáció
-//     for (const auto& audited : rows) {
-//         const auto& row = audited.row;
-//         int line = audited.rawLineNumber;
-
-//         // if (row.barcode.isEmpty()) {
-//         //     ctx.addError(line, "⚠️ Hiányzó barcode", row.barcode, row.name);
-//         // } else {
-//         //     if (seenBarcodes.contains(row.barcode)) {
-//         //         ctx.addError(line, "⚠️ Duplikált barcode", row.barcode, row.name);
-//         //     }
-//         //     seenBarcodes.insert(row.barcode);
-//         // }
-
-//         if (row.name.isEmpty()) {
-//             ctx.addError(line, "⚠️ Hiányzó name", row.barcode, row.name);
-//         }
-//     }
-
-//     // Második kör: parentBarcode validáció
-//     for (const auto& audited : rows) {
-//         const auto& row = audited.row;
-//         int line = audited.rawLineNumber;
-
-//         if (!row.parentBarcode.isEmpty() && !seenBarcodes.contains(row.parentBarcode)) {
-//             ctx.addError(line,
-//                          "⚠️ Parent barcode nem található",
-//                          row.barcode,
-//                          row.parentBarcode);
-//         }
-//     }
-// }
-
 /// Kétfázisú parent feloldás – barcode → GUID
 void ProductRepository::resolveParents(QVector<ProductMaster>& defs,
                                        const QVector<CsvImporter::AuditedRow<ProductRepository::ProductRow>>& rows,
@@ -252,9 +158,12 @@ void ProductRepository::resolveParents(QVector<ProductMaster>& defs,
         const auto it = rowByBarcode.find(def.barcode);
         if (it == rowByBarcode.end()) {
             // védőháló: hiányzó CSV sor
-            ctx.addError(-1, "⚠️ Hiányzik a CSV sor a barcode-hoz", def.barcode, def.name);
             def.parentId = QUuid();
+            ctx.addError(-1, "Hiányzik a CSV sor a barcode-hoz", def.barcode, def.name);
             orphanSummaries.append(QString("Sor ?: %1 → hiányzó CSV sor").arg(def.barcode));
+            zWarning(QString("ProductRepository::resolveParents – missing CSV row for barcode: %1")
+                         .arg(def.barcode));
+
             continue;
         }
         const auto& audited = it.value();
@@ -271,29 +180,30 @@ void ProductRepository::resolveParents(QVector<ProductMaster>& defs,
             // orphan → root + audit
             def.parentId = QUuid();
 
-            const QString msg = QString("⚠️ Parent barcode nem található: %1").arg(row.parentBarcode);
+            const QString msg = QString("Parent barcode nem található: %1").arg(row.parentBarcode);
             ctx.addError(line, msg, row.barcode, row.name);
 
             const QString summary = QString("Sor %1: %2 → %3 (parent nem található)")
                                         .arg(line)
                                         .arg(def.barcode, row.parentBarcode);
-            zWarning(QString("⚠️ Parent barcode not found (sor %1): %2 → %3")
+            zWarning(QString("ProductRepository::resolveParents – parent not found (line %1): %2 → %3")
                          .arg(line).arg(def.barcode, row.parentBarcode));
             orphanSummaries.append(summary);
+
         }
     }
 
     if(IS_VERBOSE(ProductRepository)){
-        // részletes feloldási log (diagnosztika)
+        // verbose diagnostic output
         for (const auto& pm : defs) {
-            zInfo(QString("resolveParents result: %1 barcode=%2 parentId=%3")
+            zInfo(QString("ProductRepository::resolveParents – result: %1 barcode=%2 parentId=%3")
                       .arg(pm.name, pm.barcode, pm.parentId.toString(QUuid::WithoutBraces)));
         }
     }
 
     // orphan összefoglaló blokk
     if (!orphanSummaries.isEmpty()) {
-        zWarning("— Orphan összefoglaló —");
+        zWarning("ProductRepository::resolveParents – orphan summary:");
         for (const auto& s : orphanSummaries) {
             zWarning(s);
         }

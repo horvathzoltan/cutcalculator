@@ -1,22 +1,3 @@
-Zoltán, mielőtt bármit frissítenék, lefuttattam az előírt
-integritás‑ellenőrzést a megadott állapottáblára.
-
-🔒 Állapottábla integritás‑ellenőrzése
-
-A táblázat megfelel a formátumkövetelményeknek.
-
--   3 oszlop van
--   a fejléc és az elválasztók rendben
--   nincs üres sor két sor között
--   minden sor egy blokk
--   monospaced‑kompatibilis
--   a Megjegyzés oszlop több sorra törhet, de nem törik hibásan
-
-👉 A frissítés engedélyezett.
-
-Most pedig jön a frissített, teljes állapottábla és a hozzá tartozó
-blokkok.
-
 ------------------------------------------------------------------------
 
 ⭐ NAPI FÓKUSZRA OPTIMALIZÁLT FELADATLISTA
@@ -76,7 +57,7 @@ VI. Kényelmi funkciók
     CutCalculator                       ✅ Kész            OrderNeed + WorksheetNeed pipeline teljes, aggregáció működik.
     NeedsPresenter + NeedsView          ✅ Kész            MVP működik
     UI réteg (Qt)                       📐 Tervezés        Order entry dialog
-    Audit funkció                       📐 Tervezés        AuditEntry + Service
+    Audit funkció                       ⚪ Részben kész    DataStateReporter + RegistryAuditReporter működik; AuditService UI még nincs.
     Test framework                      ✅ Kész            EventLogger + FileNameHelper tests
     NamedColor / Color registry         ✅ Kész            Pantone-ready
     NeedRule                            ✅ Kész            Engine‑alapú NeedRule workflow stabil; lookup + audit kész.
@@ -85,8 +66,8 @@ VI. Kényelmi funkciók
     Formula értelmezés                  ✅ Kész            Parser + evaluator + trace integráció stabil; NeedCalculator kompatibilis.
     SOS / Tűzoltás                      ❌ Törölve         NeedRule import hibakezelés
     Generikus kapcsolótábla             ✅ Kész            ConnectionEntity + Engine
-    BarcodeValidator subsystem          ✅ Kész            Ütközéskezelés
-    BarcodeTable refaktor               ✅ Kész            Model/repo/registry
+    BarcodeValidator subsystem          ✅ Kész            Teljes, egységesített kapu; minden import és UI workflow ezt használja.
+    BarcodeTable refaktor               ✅ Kész            Ledger‑modell stabil; Registry + Repository tiszta.
     DataStateReporter                   ✅ Kész            Audit riport
     MVP logika                          ✅ Kész            Presenter/Manager tisztítás befejezve
     VerboseManager                      ✅ Kész            Verbosity routing
@@ -96,29 +77,29 @@ VI. Kényelmi funkciók
     GeometryHelper finomhangolás        ✅ Kész            Deferred restore
     SnapshotManager                     ✅ Kész            Monitorprofil alapú
     LayoutDefaultStore                  ✅ Kész            Fallback baseline
-    UI Snapshot Architecture            ✅ Kész            Teljes architektúra
+    UI Snapshot Architecture            ✅ Kész            Teljes snapshot‑architektúra kész.
     OverlayIconWidget                   ✅ Kész            Cache + render pipeline
-    Overlay‑alapú adat‑létezés jelzés   ✅ Kész            UX egységes; overlay pipeline teljes
+    Overlay‑alapú adat‑létezés jelzés   ✅ Kész            UX egységes; overlay pipeline teljes.
     NeedCalculation UI-szinkron         ✅ Kész            Teljes jelzéslánc auditálva
     NeedCalculation overlay ikon        ✅ Kész            Presenter‑szintű policy kész
-    CalculationModesPresenter audit     ✅ Kész            Registry + TreeStats + ViewReady fixek
-    CalculationModeDetailPresenter audit✅ Kész            ModeSelected → DetailRefresh stabil
+    CalculationModesPresenter audit     ✅ Kész            TreeStats + ViewReady lánc stabil.
+    CalculationModeDetailPresenter audit✅ Kész            ModeSelected → DetailRefresh teljesen stabil.
     CSV warning UX                      ❌ Törölve         Nem szükséges külön feature
     EventLog tisztítása                 💡 Új ötlet        SystemLog szétválasztás
     RegistryEngineBase ↔
-    Mixin hook‑lánc implementálása      ✅ Kész            Hook‑lánc tiszta
-    BarcodeRegistry modernizálása       📐 Tervezés        CollectorMixin + LedgerMixin
+    Mixin hook‑lánc implementálása      ✅ Kész            Hook‑lánc teljesen tiszta; pointer‑stabilitás garantált.
+    BarcodeRegistry modernizálása       ✅ Kész        Mixin‑irány törölve; ledger‑modell modernizálva; workflow tiszta.
     CollectorMixin update-támogatása    ✅ Kész            Update workflow implementálva
-    Persist‑policy konzisztencia        ✅ Kész            Kettősség megszűnt; végső audit következik
-    MatrixValidator integráció          ✅ Kész            v2 audit pipeline integrálva; teljes mátrix‑ellenőrzés működik.
-    NeedRuleRegistry workflow audit     ✅ Kész            Workflow audit + formula‑validáció teljes; registry‑szintű hibakezelés kész.
+    Persist‑policy konzisztencia        ✅ Kész            Kettősség megszűnt; minden registry egységes persist‑policyt követ.
+    MatrixValidator integráció          ✅ Kész            v2 audit pipeline integrálva; mátrix‑ellenőrzés stabil.
+    NeedRuleRegistry workflow audit     ✅ Kész            Lookup + audit + formula‑validáció teljes.
     Új Registry Fejlettségi Mátrix      ❌ Törölve         Modernizálási terv kiváltja
-    ProductDefinition felvitele         🚧 Folyamatban     1 új termék felvitele a ProductTree-be
-    NeedRule sorok felvitele            🚧 Folyamatban     3–5 új NeedRule egy termékhez
+    ProductDefinition felvitele         ⚪ Backend kész    UI még hiányos, de registry + validator workflow stabil.
+    NeedRule sorok felvitele            ⚪ Backend kész    NeedRuleRegistry workflow teljes; UI oldali felvitel van hátra.
     NeedCalculation mód felvitele       🚧 Folyamatban     1 új számítási mód létrehozása
     NeedCalculationDetail formulák      ✅ Kész            DSL teljesen működik; minden formula értelmezhető.
-    Három torony adatmegjelenítés teszt 📐 Tervezés        Adatfelvitel utáni UI ellenőrzés
-    CSV import/export teszt             🚧 Folyamatban     CSV működik; tesztek hiányoznak.
+    Három torony adatmegjelenítés teszt ⚪ Backend kész     Registry overlay + presenter pipeline működik; UI teszt hiányzik.
+    CSV import/export teszt             ⚪ Backend kész    Pipeline stabil; csak tesztek hiányoznak.
     Registry overlay frissítés teszt    ✅ Kész            OverlayPresenter PASSED
     lookupRules implementálása          ✅ Kész            NeedRule lookup(productId)
     lookupCalculation implementálása    ✅ Kész            Calculation lookup(productId, modeName)
@@ -150,8 +131,8 @@ VI. Kényelmi funkciók
     Unit teszt: NeedCalculation lookup  ✅ Kész            Lookup működés ellenőrzése
     Unit teszt: NeedCalculationDetail   ✅ Kész            Lookup működés ellenőrzése
     Unit teszt: formula parser          ✅ Kész            Parser teljes lefedettsége biztosított: SyntaxTester + SyntaxTester_2.
-    Unit teszt: NeedCalculator pipeline ✅ Kész            Pipeline teljes lefedettsége biztosított: PipelineTester + RolettaTester + FormulaEngine tesztek.
-    Unit teszt: Order → Calculator      ✅ Kész            OrderNeedBuilderTester működik, pipeline validálva.
+    Unit teszt: NeedCalculator pipeline ✅ Kész            Teljes pipeline lefedve több tesztmodulban.
+    Unit teszt: Order → Calculator      ✅ Kész            OrderNeedBuilderTester működik; integráció stabil.
     MaterialPickerDialog finomhangolás  📐 Tervezés        Keresés, szűrés
     ModeNameDialog duplikáció‑ellenőrzés📐 Tervezés        UX javítás
     Formula‑színezés finomítása         ✅ Kész            CalculationModeDetailView

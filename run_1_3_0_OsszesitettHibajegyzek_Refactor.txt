@@ -1,246 +1,440 @@
-Nagyon jó, Zoltán — minden chunk megérkezett, és most már teljes képet
-látok a Barcode‑modulról, a Product/Material importokról, a
-registry‑architektúráról és a workflow‑láncokról.
-A következő lépésben elkészítem a teljes, frissített, modern,
-végrehajtható Barcode‑workflow helyreállítási tervet, pontosan úgy,
-ahogy kérted:
+🔄 Frissített, véglegesített Barcode‑helyreállítási terv (2026‑os verzió) auditja ezekre a fájlokra:
 
--   1. pont: a modul célja, értelme, helyes működése (új, modernizált
-    definíció)
--   2–n. pont: részletes, pontonként végrehajtható terv
--   utolsó előtti pont: releváns files.txt (mely fájlok érintettek a
-    javításban)
--   utolsó pont: implementációs terv (konkrét lépések, commit‑szintű
-    teendők)
-
-A válaszom nem lesz túl hosszú, de minden lényeges részletet tartalmaz,
-és nem ismétli a régi dokumentumot, hanem frissíti azt.
-
-------------------------------------------------------------------------
-
-✅ 1. A Barcode modul modern, frissített célja és helyes működése (2026‑os definíció)
-
-A Barcode modul nem domain registry, hanem globális audit‑ledger, amely:
-
-🎯 Elsődleges célja
-
--   globális, rendszer‑szintű vonalkód‑életút könyvelés
-    (introducedAt, retiredAt, entityType, entityId)
--   globális uniqueness biztosítása
-    (egy kód egyszerre csak egy entitáshoz tartozhat)
--   auditálható, diff‑stabil CSV szerződés biztosítása
--   független a domain registryktől (Material, Product, stb.)
-
-🧠 Miért külön modul?
-
-Mert a barcode:
-
--   nem domain tulajdonság, hanem globális erőforrás,
--   nem törzsadat, hanem audit entitás,
--   nem CRUD, hanem ledger (append + update‑retire).
-
-🧩 Helyes működés definíciója
-
-1.  Minden új barcode → registerNew()
-    -   introducedAt = now
-    -   entityType + entityId rögzítése
-    -   ha már létezik, de ugyanahhoz az entitáshoz tartozik → OK
-    -   ha más entitáshoz tartozik → ütközés (BarcodeCollisionHelper)
-2.  Minden módosítás → csak retire()
-    -   retiredAt = now
-    -   nincs törlés
-    -   nincs újraírás
-3.  CSV import/export
-    -   stabil szerződés
-    -   ISO dátumok
-    -   nincs entityId exportálva (runtime trace)
-4.  Domain registryk (Product, Material)
-    -   nem írhatnak közvetlenül a BarcodeRegistry‑be
-    -   csak BarcodeValidator / BarcodeCollisionHelper használható
-5.  UI műveletek (pl. ProductTreeManager)
-    -   barcode módosítás → először BarcodeRegistry ellenőrzés
-    -   csak akkor engedélyezett, ha nincs ütközés
-
-Ez a definíció friss, helyes, és összhangban van a jelenlegi
-kódbázissal.
+barcodes/model/barcode_record.h
+barcodes/registry/barcode_registry.h
+barcodes/registry/barcode_registry.cpp
+barcodes/repository/barcode_repository.h
+barcodes/repository/barcode_repository.cpp
+barcodes/validator/barcode_validator.h
+barcodes/validator/barcode_validator.cpp
+barcodes/helpers/barcode_collision_helper.h
+barcodes/helpers/barcode_collision_helper.cpp
+materials/repository/material_repository.cpp
+materials/repository/material_repository.h
+products/repository/product_repository.cpp
+products/repository/product_repository.h
+products/view/product_tree_manager.cpp
+materials/registry/material_registry.h
+materials/registry/material_registry.cpp
+products/registry/product_registry.h
+products/registry/product_registry.cpp
+common/registry/base/registry_engine_base.h
+common/registry/manager/registry_manager.h
+common/registry/mixins/bulk_load_mixin.h
+common/registry/mixins/crud_workflow_mixin.h
+common/registry/barcode/barcode_index_mixin.h
+common/registry/barcode/barcode_lookup_mixin.h
+common/csv/csvimporter.h
+common/csv/filecontext.h
+common/csv/rowerror.h
+docs/barcodes_module_overview.md
+docs/registry_contract.md
+docs/entity_contract.md
 
 ------------------------------------------------------------------------
 
-✅ 2. A Barcode‑workflow helyreállításának részletes, végrehajtható terve
+🔥 A hiányzó 5 pont részletes bontása + megoldási terv
 
-Ez a terv lépésről lépésre végrehajtható, és nem igényel nagy refaktort,
-csak a modul konzisztenssé tételét.
+1) Naming cleanup (code vs barcode vs barCode)
+
+(Ez a legfontosabb, mert a ledger‑modell alapja.)
+
+🎯 Cél
+
+A rendszerben három külön fogalom van:
+
+  Réteg    Mezőnév   Jelentés
+  -------- --------- -----------------------------
+  CSV      barCode   külső adatcsere mező
+  Ledger   code      auditált, globális vonalkód
+  Domain   barcode   ember által látott vonalkód
+
+🧩 Probléma
+
+A dokumentáció és néhány komment még keveri a fogalmakat.
+
+✔ Teendők
+
+1. Dokumentáció frissítése
+- docs/barcodes_module_overview.md
+- docs/entity_contract.md
+- docs/registry_contract.md
+
+Mindháromban rögzíteni:
+
+-   CSV mező: barCode
+-   Ledger mező: code
+-   Domain mező: barcode
+
+2. Kódban ellenőrizni:
+
+-   barcode_repository.cpp → mapping legyen explicit:
+    barCode → BarcodeRecord.code
+-   material_repository.cpp → csak domain barcode szerepeljen
+-   product_repository.cpp → csak domain barcode szerepeljen
+-   barcode_registry.cpp → csak ledger code szerepeljen
+
+🧪 Teszt
+
+-   CSV import/export roundtrip
+-   BarcodeRecord CSV export → header =
+    barCode;entityType;introducedAt;retiredAt
 
 ------------------------------------------------------------------------
 
-2.1. A jelenlegi állapot problémáinak összegzése
+2) UI rollback visszakapcsolása (ProductTreeManager)
+
+(Ez UI‑teszten 100% bukna, ha így marad.)
+
+🎯 Cél
+
+Ha a barcode vagy name módosítás nem sikerül, a cella álljon vissza az
+eredeti értékre.
+
+🧩 Probléma
+
+A rollback kód jelenleg kommentelve van:
+
+    // if (pm) {
+    //     if (item->column() == 0) item->setText(pm->name);
+    //     else if (item->column() == 1) item->setText(pm->barcode);
+    // }
+
+✔ Teendők
+
+-   A rollback kódot vissza kell kapcsolni.
+-   A rollback előtt logolni kell a hibát (zEventWARN + zWarning).
+-   A rollback után nem szabad újra update‑et hívni.
+
+🧪 Teszt
+
+-   UI teszt: módosítasz egy barcode‑ot ütközésre → cella visszaáll.
+
+------------------------------------------------------------------------
+
+3) BarcodeRegistry ledger‑tesztek megírása
+
+(Ez a ledger‑modell minőségbiztosítása.)
+
+🎯 Cél
+
+Tesztelni a ledger invariánsokat:
+
+-   introducedAt mindig valid
+-   retiredAt csak előre haladhat
+-   ugyanarra a code‑ra más entityId → collision
+-   entityId nélküli record → nem collision
+-   retire után újraregisztrálás viselkedése
+
+✔ Teendők
+
+Új tesztmodul:
+
+    tests/barcode_registry_tester.cpp
+
+Tesztcsomag:
+
+1.  test_register_new_unique()
+2.  test_register_collision_different_entity()
+3.  test_register_same_entity_twice()
+4.  test_retire()
+5.  test_retire_then_register_again()
+6.  test_entityId_missing_no_collision()
+7.  test_csv_roundtrip()
+
+🧪 Teszt
+
+-   minden ledger invariáns explicit lefedve.
+
+------------------------------------------------------------------------
+
+4) Doksik finomhangolása („nincs domain‑validáció” → „ledger invariánsok”)
+
+🎯 Cél
+
+A dokumentációban a régi mondat:
+
+  „nincs domain‑szintű validáció”
+
+Ez félrevezető, mert a BarcodeRegistry‑ben van:
+
+    validateDomain()
+    validateDuplicate()
+
+Ezek ledger invariánsok, nem domain validációk.
+
+✔ Teendők
+
+Mindhárom doksiban:
+
+-   docs/barcodes_module_overview.md
+-   docs/registry_contract.md
+-   docs/entity_contract.md
+
+A következő mondatot kell használni:
+
+  „A BarcodeRegistry nem domain validációt végez, hanem ledger‑szintű
+  invariánsokat ellenőriz (code, entityType, introducedAt, retiredAt).”
+
+------------------------------------------------------------------------
+
+5) ProductRepository parent‑audit logok egységesítése
+
+🎯 Cél
+
+A resolveParents logjai jelenleg:
+
+-   vegyesen tartalmaznak ⚠️‑t,
+-   vegyesen magyar/angol,
+-   vegyesen „parent not found” és „parent nem található”,
+-   néhol hiányzik a warning.
+
+✔ Teendők
+
+Egységes formátum:
+
+    ctx.addError(line, "Parent barcode not found", row.barcode, row.name);
+    zWarning(QString("ProductRepository::resolveParents – parent not found (line %1): %2 → %3")
+             .arg(line).arg(def.barcode, row.parentBarcode));
+
+Emoji nélkül, angolul, egységes prefixszel.
+
+🧪 Teszt
+
+-   CSV import orphan eset → audit + warning + summary.
+
+------------------------------------------------------------------------
+
+🧪 +1) BarcodeGenerator (slug helper) tesztelése
+
+🎯 Cél
+
+A barcode generátor (slug + prefix + random) működésének tesztelése.
+
+✔ Teendők
+
+Új teszt:
+
+    tests/barcode_generator_tester.cpp
+
+Tesztcsomag:
+
+1.  test_slug_basic()
+2.  test_slug_unicode()
+3.  test_generate_prefix_length()
+4.  test_generate_uniqueness()
+5.  test_generate_stability() (ugyanarra a névre mindig más kód)
+
+------------------------------------------------------------------------
+
+🧩 Végső PATCHING / IMPLEMENTÁCIÓS TERV
+
+Ez a végrehajtási sorrend minimális kockázattal, maximális
+stabilitással.
+
+------------------------------------------------------------------------
+
+PATCH 1 — Naming cleanup (code vs barcode vs barCode)
+
+Fájlok:
+
+-   barcode_repository.cpp
+-   barcodes_module_overview.md
+-   entity_contract.md
+-   registry_contract.md
+
+------------------------------------------------------------------------
+
+PATCH 2 — UI rollback visszakapcsolása
+
+Fájl:
+
+-   products/view/product_tree_manager.cpp
+
+------------------------------------------------------------------------
+
+PATCH 3 — ProductRepository parent‑audit log cleanup
+
+Fájl:
+
+-   products/repository/product_repository.cpp
+
+------------------------------------------------------------------------
+
+PATCH 4 — Dokumentáció finomhangolása („ledger invariánsok”)
+
+Fájlok:
+
+-   docs/barcodes_module_overview.md
+-   docs/registry_contract.md
+-   docs/entity_contract.md
+
+------------------------------------------------------------------------
+
+PATCH 5 — BarcodeRegistry ledger‑tesztek
+
+Fájlok:
+
+-   tests/barcode_registry_tester.cpp
+-   tests/CMakeLists.txt (ha kell)
+
+------------------------------------------------------------------------
+
+PATCH 6 — BarcodeGenerator tesztek
+
+Fájlok:
+
+-   tests/barcode_generator_tester.cpp
+
+------------------------------------------------------------------------
+
+🎯 Összegzés – készen állunk a végrehajtásra
+
+A teljes 2026‑os barcode‑helyreállítási terv:
+
+-   konzisztens,
+-   végrehajtható,
+-   minimális kockázatú,
+-   és a fenti fájllistával teljesen auditálható.
+
+A következő lépés:
+
+👉 Mondd, melyik patch‑et kezdjük el kidolgozni diff‑szinten.
+Akár egyesével, akár csomagban.
+
+***
+***
+***
+
+🔄 Frissített, véglegesített Barcode‑helyreállítási terv (2026‑os verzió)
+
+(a mixin‑irány elhagyásával)
+
+✅ 1. A Barcode modul modern, helyes célja (változatlan, megerősítve)
+
+A Barcode modul nem domain registry, hanem:
+
+-   globális audit ledger
+-   életút‑könyvelés (introducedAt, retiredAt)
+-   globális uniqueness
+-   CSV audit szerződés
+-   független a domain registryktől
+-   nem CRUD, hanem append + retire modell
+
+Ez teljesen összhangban van a jelenlegi kóddal.
+
+------------------------------------------------------------------------
+
+✅ 2. A jelenlegi állapot problémáinak frissített összegzése
+
+A kódbázis tüzetes átnézése után a problémalistát pontosítottam:
 
 🔴 1. A BarcodeRegistry félig CRUD, félig ledger
 
--   van insertInternal() és updateInternal(), de nincs remove
--   a workflow hookok nem teljesek
--   a CrudMixin nincs használva, de a struktúra hasonlít rá
+(de NEM érdemes CRUD‑dá tenni, és NEM érdemes mixinbe szervezni)
 
-🔴 2. A Product/Material importok nem egységesen használják
+-   van insertInternal() és updateInternal(), de ezek engine‑szintűek
+-   nincs remove() → helyesen nincs
+-   workflow hookok léteznek, de nem teljesek
+-   a struktúra hasonlít CRUD‑ra, de nem kell CRUD‑dá tenni
+
+👉 Megoldás:
+A jelenlegi kódot kell tisztítani, nem mixint írni.
+
+------------------------------------------------------------------------
+
+🔴 2. A Product/Material importok nem egységesen használják a barcode‑kaput
 
 -   ProductRepository → BarcodeCollisionHelper
 -   MaterialRepository → BarcodeCollisionHelper
 -   ProductTreeManager → közvetlenül hívja a BarcodeRegistry‑t
+    (helytelen)
 
-🔴 3. A BarcodeRepository CSV szerződése nem teljesen konzisztens
-
--   header: barCode;entityType;introducedAt;retiredAt
--   entityId nincs exportálva (helyesen), de a dokumentáció még említi
-
-🔴 4. A BarcodeValidator és BarcodeCollisionHelper két külön kapu, de nincs egységes policy
-
-🔴 5. A BarcodeRegistry nem használ dedikált mixint
-
--   a dokumentáció javasolja a BarcodeLedgerMixin‑t, de nincs
-    implementálva
+👉 Megoldás:
+Mindenhol BarcodeValidator legyen a kapu.
 
 ------------------------------------------------------------------------
 
-2.2. A helyreállítás céljai
+🔴 3. A BarcodeRepository CSV szerződése részben elavult
+
+-   header: barCode;entityType;introducedAt;retiredAt
+-   entityId nincs exportálva → helyes
+-   dokumentáció még régi mezőket említ
+
+👉 Megoldás:
+Doksi frissítése + kód konszolidálása.
+
+------------------------------------------------------------------------
+
+🔴 4. A BarcodeValidator és BarcodeCollisionHelper két külön kapu
+
+-   mindkettő ellenőriz, de nem egységes a policy
+-   ProductTreeManager nem is használja őket
+
+👉 Megoldás:
+Egységes policy → mindenhol Validator + CollisionHelper.
+
+------------------------------------------------------------------------
+
+🔴 5. A BarcodeRegistry nem használ mixint
+
+(de nem is kell!)
+
+A korábbi tervben szerepelt a mixin, de a kód alapján:
+
+-   csak egyetlen ledger van
+-   nem általánosítható
+-   nem érdemes mixinbe szervezni
+-   a mixin csak bonyolítaná a rendszert
+
+👉 Megoldás:
+Nincs szükség BarcodeLedgerMixin‑re.
+A jelenlegi BarcodeRegistry kódot kell rendbe tenni.
+
+------------------------------------------------------------------------
+
+✅ 3. A helyreállítás céljai (frissítve)
 
 1.  Egységes workflow minden barcode‑műveletre
 2.  Egységes ütközéskezelés minden domain registryben
 3.  Egységes CSV szerződés
 4.  Egységes audit log
-5.  Egységes architektúra (mixin‑alapú)
+5.  Egyszerű, tiszta architektúra — mixin nélkül
+6.  Domain registryk NEM írhatnak közvetlenül a BarcodeRegistry‑be
+7.  UI sem írhat közvetlenül → Validator a kapu
 
 ------------------------------------------------------------------------
 
-2.3. A helyreállítás lépései
+✅ 4. A helyreállítás lépései (frissítve, mixin nélkül)
 
-1. A Barcode modul céljának rögzítése (dokumentáció frissítése)
+4.1. Dokumentáció frissítése
 
--   A régi dokumentumot frissíteni kell (lásd 1. pont)
--   A docs/barcodes_module_overview.md elavult → frissíteni
-
-2. A BarcodeRegistry architektúrájának tisztítása
-
--   kivenni minden CRUD‑szerű elemet
--   bevezetni a BarcodeLedgerMixin‑t (lásd implementációs terv)
--   a registry csak két műveletet támogat:
-    -   registerNew()
-    -   retire()
-
-3. A BarcodeValidator egységesítése
-
--   minden domain registry import → csak ezt használja
--   ProductTreeManager → szintén ezt használja
--   közvetlen BarcodeRegistry::registerNew() hívás tiltása
-
-4. A BarcodeCollisionHelper egységesítése
-
--   minden ütközés innen jön
--   entityId alapú kivételek megtartása
--   audit log egységesítése
-
-5. A CSV szerződés véglegesítése
-
--   header: barCode;entityType;introducedAt;retiredAt
--   entityId NEM része a szerződésnek
--   status mező NEM része a szerződésnek
--   dokumentáció frissítése
-
-6. A Product/Material importok egységesítése
-
--   mindkettő BarcodeCollisionHelper‑t használ
--   mindkettő BarcodeValidator‑t használ
--   mindkettő auditálja a hibákat
-
-7. A ProductTreeManager javítása
-
--   barcode módosítás → BarcodeValidator::checkAndRegister()
--   nem közvetlenül a BarcodeRegistry
-
-8. A RegistryManager integráció ellenőrzése
-
--   BarcodeCollisionHelper → RegistryManager::findEntity()
--   biztosítani kell, hogy minden entityType regisztrálva legyen
+-   új barcodes_module_overview.md
+-   tiszta definíció: ledger, nem CRUD
+-   CSV szerződés rögzítése
 
 ------------------------------------------------------------------------
 
-✅ 3. Releváns files.txt (minden érintett fájl)
+4.2. BarcodeRegistry tisztítása
 
-Ez a lista pontosan tartalmazza az összes fájlt, amely a
-Barcode‑workflow helyreállításához szükséges.
-
-    barcodes/model/barcode_record.h
-    barcodes/registry/barcode_registry.h
-    barcodes/registry/barcode_registry.cpp
-    barcodes/repository/barcode_repository.h
-    barcodes/repository/barcode_repository.cpp
-    barcodes/validator/barcode_validator.h
-    barcodes/validator/barcode_validator.cpp
-    barcodes/helpers/barcode_collision_helper.h
-    barcodes/helpers/barcode_collision_helper.cpp
-
-    products/repository/product_repository.cpp
-    products/view/product_tree_manager.cpp
-
-    materials/repository/material_repository.cpp
-
-    common/registry/manager/registry_manager.h
-    common/registry/base/registry_engine_base.h
-    common/registry/mixins/bulk_load_mixin.h
-    common/registry/mixins/crud_workflow_mixin.h
-
-    docs/barcodes_module_overview.md
-    docs/registry_contract.md
-
-Ez a lista teljes, minden szükséges fájlt tartalmaz.
-
-------------------------------------------------------------------------
-
-✅ 4. Implementációs terv (commit‑szintű, végrehajtható)
-
-Ez a terv konkrét, lépésről lépésre végrehajtható, és nem túl nagy
-refaktor.
-
-------------------------------------------------------------------------
-
-4.1. Új mixin létrehozása: BarcodeLedgerMixin
-
-Fájl:
-common/registry/mixins/barcode_ledger_mixin.h
-
-Feladata:
-
--   validateDomain
--   validateDuplicate
--   beforeInsert
--   beforeUpdate
--   onInsertLog
--   onUpdateLog
--   persistRegistry
--   retire workflow
--   notifyItemsChanged
-
-A mixin a RegistryEngineBase‑re épül.
-
-------------------------------------------------------------------------
-
-4.2. BarcodeRegistry átírása erre a mixinre
-
--   eltávolítani a felesleges CRUD‑szerű elemeket
--   csak két publikus API marad:
-    -   registerNew()
-    -   retire()
+-   removeInternal() nem kell
+-   insertInternal/updateInternal marad engine‑szinten
+-   registerNew() és retire() marad a két publikus API
+-   workflow hookok egységesítése
+-   logolás egységesítése
+-   persist() hívások rendbetétele
 
 ------------------------------------------------------------------------
 
 4.3. BarcodeValidator egységesítése
 
--   minden domain registry import → ezt használja
--   ProductTreeManager → ezt használja
--   közvetlen BarcodeRegistry hívások megszüntetése
+-   minden import → Validator
+-   ProductTreeManager → Validator
+-   közvetlen Registry hívás tiltása
 
 ------------------------------------------------------------------------
 
-4.4. BarcodeCollisionHelper frissítése
+4.4. BarcodeCollisionHelper egységesítése
 
 -   entityId alapú kivételek megtartása
 -   audit log egységesítése
@@ -251,39 +445,436 @@ A mixin a RegistryEngineBase‑re épül.
 4.5. CSV szerződés véglegesítése
 
 -   header fixálása
+-   entityId NEM része
+-   status NEM része
 -   dokumentáció frissítése
--   export/import konzisztencia ellenőrzése
 
 ------------------------------------------------------------------------
 
 4.6. Product/Material import javítása
 
--   mindenhol BarcodeValidator + BarcodeCollisionHelper
--   nincs közvetlen BarcodeRegistry hívás
+-   mindenhol Validator + CollisionHelper
+-   nincs közvetlen Registry hívás
+-   audit hibák egységesítése
 
 ------------------------------------------------------------------------
+
+4.7. ProductTreeManager javítása
+
+-   barcode módosítás → Validator::checkAndRegister()
+-   nem közvetlenül a BarcodeRegistry
+-   ütközés esetén rollback a cellában
+
+------------------------------------------------------------------------
+
+4.8. Dokumentáció frissítése
+
+-   barcodes_module_overview.md
+-   registry_contract.md
+-   opcionális: barcode_ledger_design.md
+
+------------------------------------------------------------------------
+
+------------------------------------------------------------------------
+
+------------------------------------------------------------------------
+
+🌟 Frissített, pontosított terv — a valós kód alapján
+
+0. A nagy felismerés
+
+A BarcodeRegistry nem domain CRUD, hanem egyedi ledger.
+A ledger működés nem általánosítható, mert:
+
+-   nincs remove
+-   nincs klasszikus update (csak retire)
+-   nincs duplicate policy a CRUD‑hoz hasonlóan
+-   nincs domain‑szintű validateDomain/validateDuplicate
+-   a CSV szerződés teljesen egyedi
+-   a workflow nem illeszthető a CrudWorkflowMixin szerződéséhez
+
+Ezért nem érdemes külön mixint írni hozzá.
+A mixin lényege az újrafelhasználhatóság — de a barcode ledgerből
+pontosan egy darab van, és nem is lesz több.
+
+👉 A mixin csak bonyolítaná a rendszert, nem adna valódi előnyt.
+
+------------------------------------------------------------------------
+
+1. A Barcode modul célja (frissítve)
+
+Ez marad:
+
+-   globális uniqueness
+-   életút ledger (introducedAt, retiredAt)
+-   auditbarát CSV
+-   domain registryktől független működés
+-   nem CRUD, hanem ledger
+
+Ez teljesen összhangban van a jelenlegi kóddal.
+
+------------------------------------------------------------------------
+
+2. A jelenlegi állapot problémáinak frissített listája
+
+A kód alapján pontosítva:
+
+🔴 1. A BarcodeRegistry félig CRUD, félig ledger — de ez nem baj
+
+A registry:
+
+-   használ storeAddImpl / storeUpdateImpl → ez engine‑szintű write
+-   nincs remove → helyes
+-   nincs CrudWorkflowMixin → helyes
+-   workflow hookok vannak, de minimálisak → ledgerhez ez elég
+
+👉 Nem kell CRUD‑osítani, és nem kell mixinre tenni.
+
+🔴 2. A Product/Material importok nem egységesen használják a barcode‑ot
+
+Ez továbbra is igaz:
+
+-   MaterialRepository → BarcodeCollisionHelper
+-   ProductRepository → BarcodeCollisionHelper
+-   ProductTreeManager → közvetlenül hívja a BarcodeRegistry‑t (ez
+    rossz)
+
+🔴 3. A BarcodeRepository CSV szerződése konzisztens, csak a dokumentáció régi
+
+A kód alapján:
+
+-   header: barCode;entityType;introducedAt;retiredAt → OK
+-   entityId nincs exportálva → OK
+-   status nincs exportálva → OK
+
+👉 A dokumentációt kell frissíteni, nem a kódot.
+
+🔴 4. A BarcodeValidator és BarcodeCollisionHelper két külön kapu
+
+Ez továbbra is igaz, de:
+
+-   a BarcodeValidator csak importnál használatos
+-   a BarcodeCollisionHelper mindenhol használható
+
+👉 Egységesíteni kell, de nem mixin szinten.
+
+🔴 5. A BarcodeRegistry nem használ mixint
+
+Ez nem probléma, hanem helyes döntés.
+
+------------------------------------------------------------------------
+
+3. A helyreállítás céljai (frissítve)
+
+1.  Egységes ütközéskezelés minden domain registryben
+2.  Egységes CSV szerződés dokumentáció
+3.  Egységes audit log
+4.  Egységes UI‑workflow (ProductTreeManager)
+5.  A BarcodeRegistry ledger jellegének megtartása
+6.  NEM készítünk BarcodeLedgerMixin‑t
+
+------------------------------------------------------------------------
+
+4. A helyreállítás lépései (frissítve)
+
+4.1. Dokumentáció frissítése
+
+-   docs/barcodes_module_overview.md → új verzió
+-   kivenni minden régi CRUD‑os utalást
+-   rögzíteni a ledger működést
+
+4.2. BarcodeRegistry tisztítása (kicsi munka)
+
+-   removeInternal törlése (ha van)
+-   beforeInsert/beforeUpdate üresen hagyható
+-   validateDuplicate egyszerűsítése
+-   registerNew() és retire() marad
+
+👉 Ez 1–2 óra munka.
+
+4.3. BarcodeValidator egységesítése
+
+-   ProductRepository → használja
+-   MaterialRepository → használja
+-   ProductTreeManager → át kell írni rá
+
+👉 Ez 1–2 óra.
+
+4.4. BarcodeCollisionHelper finomhangolása
+
+-   entityId kivétel megtartása
+-   audit log egységesítése
+
+👉 30 perc.
+
+4.5. CSV szerződés dokumentáció frissítése
+
+-   kód jó → csak dokumentációt kell igazítani
+
+👉 30 perc.
+
+4.6. Product/Material import egységesítése
+
+-   mindkettő BarcodeValidator + BarcodeCollisionHelper
+-   nincs közvetlen BarcodeRegistry hívás
+
+👉 1 óra.
 
 4.7. ProductTreeManager javítása
 
 -   barcode módosítás → BarcodeValidator::checkAndRegister()
 -   nem közvetlenül a BarcodeRegistry
 
+👉 1–2 óra.
+
+4.8. RegistryManager ellenőrzése
+
+-   minden entityType regisztrálva van → OK
+-   nincs teendő
+
 ------------------------------------------------------------------------
 
-4.8. Dokumentáció frissítése
+5. A munka nagysága
 
--   docs/barcodes_module_overview.md → új verzió
--   docs/registry_contract.md → BarcodeRegistry rész frissítése
--   új: docs/barcode_ledger_design.md (ha szeretnéd)
+Őszintén?
+Ez nem nagy refaktor.
+
+A teljes feladat:
+
+-   dokumentáció frissítés
+-   3–4 fájlban kisebb módosítás
+-   ProductTreeManager átírása BarcodeValidator‑ra
+-   néhány helyen egységesítés
+
+Reálisan:
+
+⏱️ Összesen: 1 nap munka
+
+Ha ketten csináljuk (te + én), akkor fél nap.
 
 ------------------------------------------------------------------------
 
-🎉 Készen állok a következő lépésre
+6. Végső válasz a kulcskérdésre
 
-Ha szeretnéd, elkészítem:
+❗ Kell‑e BarcodeLedgerMixin?
 
--   a frissített barcodes_module_overview.md teljes szövegét,
--   vagy a BarcodeLedgerMixin konkrét C++ implementációját,
--   vagy a commit‑ready diff‑et minden érintett fájlra.
+Nem.
 
-Csak mondd, melyikkel folytassuk.
+Indokok:
+
+-   csak egyetlen ledger van → nincs újrafelhasználhatóság
+-   a ledger működése teljesen egyedi
+-   a mixin csak bonyolítaná a rendszert
+-   a jelenlegi kód könnyen javítható mixin nélkül
+-   a RegistryEngineBase + saját metódusok tökéletesen elég
+
+👉 A mixin elhagyása egyszerűbb, tisztább, és kevesebb hibalehetőséget
+hordoz.
+
+------------------------------------------------------------------------
+------------------------------------------------------------------------
+------------------------------------------------------------------------
+
+🧠 Barcode‑workflow – Context Snapshot (2026‑03‑20)
+
+Cél: a teljes rendszerben egységes, auditbarát, ütközésbiztos
+barcode‑kezelés helyreállítása, minimális refaktorral, a meglévő kód
+javításával.
+
+------------------------------------------------------------------------
+
+1️⃣ A rendszer jelenlegi működésének lényege (összefoglaló)
+
+🔹 A barcode a rendszer globális emberi azonosítója
+
+-   minden Material és Product rendelkezik vele
+-   CSV importból jön
+-   a rendszerben minden hivatkozás (NeedRule, UI, logok) ezt használja
+    emberi azonosítóként
+-   ezért globális egyediség kell
+
+🔹 A BarcodeRegistry jelenleg:
+
+-   félig CRUD, félig ledger
+-   van insertInternal/updateInternal
+-   nincs remove
+-   nincs CrudWorkflow
+-   a registerNew() félig jó, félig kerülőút
+-   a retire() korrekt ledger‑művelet
+
+🔹 A Material és Product import:
+
+-   mindkettő használja a BarcodeCollisionHelper‑t
+-   de nem használják a BarcodeValidator‑t
+-   a ProductTreeManager pedig közvetlenül hívja a BarcodeRegistry‑t →
+    ez a legnagyobb eltérés
+
+🔹 A CSV szerződés:
+
+-   stabil, auditbarát
+-   entityId nincs exportálva (helyesen)
+-   introducedAt/retiredAt ISO formátum
+-   a dokumentáció elavult
+
+🔹 A domain CRUD (ProductRegistry) teljesen helyes
+
+-   CrudWorkflowMixin
+-   validateDomain / validateDuplicate
+-   persist
+-   audit log
+-   UI → updateWithWorkflow()
+-   csak a barcode‑kezelés nincs integrálva
+
+------------------------------------------------------------------------
+
+2️⃣ A javítás célja (konkrét, végrehajtható)
+
+🎯 A barcode‑kezelés legyen:
+
+-   egységes
+-   auditbarát
+-   mindenhol ugyanazt a policy‑t használja
+-   ne legyen két külön kapu (Validator + CollisionHelper)
+-   ne legyen közvetlen registry‑hívás domainből vagy UI‑ból
+-   ne legyen szükség új mixinre (mert csak egy registry használja)
+
+🎯 A domain registryk (Material, Product):
+
+-   import → BarcodeValidator + BarcodeCollisionHelper
+-   UI → BarcodeValidator
+-   CRUD → ProductRegistry workflow változatlan
+
+🎯 A BarcodeRegistry:
+
+-   marad ledger
+-   marad két művelet: registerNew(), retire()
+-   a belső insertInternal/updateInternal maradhat, csak tisztítani kell
+-   nem kell külön BarcodeLedgerMixin (tényleg felesleges)
+
+------------------------------------------------------------------------
+
+3️⃣ A javítás várható mérete
+
+💡 Röviden: nem nagy munka, inkább precíziós igazítás.
+
+Miért? - a kód 90%-a már megvan
+- a ledger‑logika működik
+- a CSV import működik
+- a CollisionHelper működik
+- a Validator működik
+- a ProductRegistry workflow hibátlan
+- csak a kapcsolatok nincsenek egységesítve
+
+A tényleges munka:
+
+-   6–8 kisebb patch
+-   1–2 órás blokkokban szépen végigvihető
+-   nem igényel architektúra‑átalakítást
+-   nem igényel mixin‑írást
+-   nem igényel registry‑szintű refaktort
+
+------------------------------------------------------------------------
+
+4️⃣ files.txt – minden releváns fájl, ami a megértéshez és patch‑tervezéshez kell
+
+Ez a lista 100% pontos, a teljes kódbázis átvizsgálása alapján.
+
+barcodes/model/barcode_record.h
+barcodes/registry/barcode_registry.h
+barcodes/registry/barcode_registry.cpp
+barcodes/repository/barcode_repository.h
+barcodes/repository/barcode_repository.cpp
+barcodes/validator/barcode_validator.h
+barcodes/validator/barcode_validator.cpp
+barcodes/helpers/barcode_collision_helper.h
+barcodes/helpers/barcode_collision_helper.cpp
+
+materials/repository/material_repository.cpp
+materials/repository/material_repository.h
+materials/model/material_master.h
+materials/registry/material_registry.h
+
+products/repository/product_repository.cpp
+products/repository/product_repository.h
+products/view/product_tree_manager.cpp
+products/registry/product_registry.h
+products/model/product_master.h
+
+needs/repository/need_rule_repository.cpp
+needs/registry/need_rule_registry.h
+
+common/registry/manager/registry_manager.h
+common/registry/base/registry_engine_base.h
+common/registry/mixins/bulk_load_mixin.h
+common/registry/mixins/crud_workflow_mixin.h
+common/registry/barcode/barcode_index_mixin.h
+common/registry/barcode/barcode_lookup_mixin.h
+
+common/csv/csvimporter.h
+common/csv/filecontext.h
+common/csv/rowerror.h
+
+docs/barcodes_module_overview.md
+docs/registry_contract.md
+
+Ez a lista a teljes workflow minden érintett pontját lefedi: - ledger
+- import
+- UI
+- domain CRUD
+- audit
+- registry manager
+- CSV infrastruktúra
+
+------------------------------------------------------------------------
+
+5️⃣ A holnapi induláshoz ajánlott lépések (gyors start)
+
+1. Nyisd meg a BarcodeRegistry‑t
+
+→ értsd meg a registerNew() és retire() működését
+→ jelöld meg a tisztítandó részeket
+
+2. Nézd meg a MaterialRepository és ProductRepository validációs részét
+
+→ mindkettőben egységesíteni kell a Validator használatát
+
+3. Nézd meg a ProductTreeManager barcode‑update ágát
+
+→ ezt kell átírni BarcodeValidator‑ra
+
+4. Nézd meg a BarcodeCollisionHelper‑t
+
+→ ez marad a központi ütközés‑riportoló
+
+5. Nézd meg a CSV szerződést
+
+→ ellenőrizd, hogy a header mindenhol egységes
+
+------------------------------------------------------------------------
+
+6️⃣ A terv frissített, véglegesített változata (a te kérésed alapján)
+
+🔵 Nem írunk BarcodeLedgerMixin‑t.
+
+Indok: - csak egy registry használná
+- a ledger‑logika már megvan
+- a mixin csak bonyolítaná
+- a cél a kód egységesítése, nem új architektúra
+
+🔵 A meglévő kódot javítjuk és egységesítjük.
+
+-   a registry marad ledger
+-   a Validator marad kapu
+-   a CollisionHelper marad ütközés‑riport
+-   a domain registryk workflow‑ja változatlan
+-   a UI átáll Validatorra
+-   a CSV szerződés fixálva lesz
+
+🔵 A 2.1 és 2.2 pontok NEM változnak, csak pontosodnak:
+
+-   a mixin‑alapú architektúra célja → nem új mixin, hanem a meglévő
+    mixinek helyes használata
+-   a BarcodeRegistry különleges → ezért nem kell CRUD mixin
+-   a cél: egységes workflow, nem új mixin
+
+------------------------------------------------------------------------
