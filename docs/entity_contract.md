@@ -437,14 +437,32 @@ NeedRule
 
 ## 3.6.1 Barcode workflow szerződés (Validator + Ledger)
 
-A BarcodeRecord önmagában csak az életút-modell.  
+A BarcodeRecord önmagában csak az életút-modell; a BarcodeRegistry ledger‑szintű invariánsokat ellenőriz (code nem üres, introducedAt érvényes, retiredAt időben előre halad).
 A barcode workflow teljes szerződése három komponensből áll:
+
+1. **BarcodeValidator** – a központi kapu, amely minden új vagy módosított barcode‑ot ellenőriz és regisztrál.  
+2. **BarcodeRegistry** – a globális, append‑only életút‑ledger, amely a barcode‑ok auditált történetét tárolja.  
+3. **Domain entitások** – az aktuális, ember által látható `barcode` mezőt hordozzák; minden módosítás a Validatoron keresztül történik.
+
+**Megjegyzés – entityId‑alapú kivétel:**  
+A CollisionHelper nem tekinti ütközésnek azokat a ledger‑rekordokat, ahol az `entityId` mező üres.  
+Ez lehetővé teszi, hogy a rendszerben létezzenek olyan korábbi, nem entitáshoz kötött barcode‑bejegyzések, amelyek nem blokkolják az új regisztrációt.
 
 ---
 
-## 3.6.2 Naming konzisztencia – CSV vs. belső mezőnevek
+### 3.6.2 Naming konzisztencia – CSV vs Ledger vs Domain
+
+- CSV mező: **barCode**
+- Ledger mező: **code**
+- Domain mező: **barcode**
 
 A barcode mező elnevezése rétegenként eltér, de a jelentése azonos.
+
+**Részletes jelentés:**
+
+- A CSV mező (`barCode`) a külső adatcsere formális mezőneve; ez jelenik meg import/export során.
+- A Ledger mező (`code`) a barcode tényleges értéke a ledger‑modellben; minden CSV `barCode` erre mapelődik.
+- A Domain mező (`barcode`) az entitás aktuális, ember által látható vonalkódja; a BarcodeValidator gondoskodik a ledger‑szinkronról.
 
 ### CSV szerződés (külső adatcsere)
 - mező neve: **`barCode`**
@@ -521,7 +539,9 @@ export/import szerződés (ledger CSV):
 
 - `code` nem üres,
 - `introducedAt` érvényes időpont,
+- ha `retiredAt` jelen van → időben későbbi, mint `introducedAt`,
 - ha `retiredAt` jelen van → `status() == Retired`.
+
 
 ---
 

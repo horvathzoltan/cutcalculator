@@ -16,7 +16,7 @@ A BarcodeRegistry:
 - append‑only ledger (insertInternal + updateInternal)
 - nincs remove művelet
 - nincs CrudWorkflowMixin
-- nincs domain‑szintű validáció
+- nem domain‑szintű validációt végez, hanem ledger‑szintű invariánsokat ellenőriz (code, entityType, introducedAt, retiredAt)
 - minden módosítás a Validatoron keresztül történik
 
 ---
@@ -42,7 +42,7 @@ A `BarcodeCollisionHelper`:
 
 - CSV import validációban használatos
 - emberbarát üzenetet készít
-- entityId‑alapú kivételeket kezel
+- entityId‑alapú kivételeket kezel (ha a ledger‑rekord entityId mezője üres → nem collision)
 - nem ír a ledgerbe
 
 ---
@@ -52,9 +52,13 @@ A `BarcodeCollisionHelper`:
 A barcode ledger CSV formátuma **4 mezőből áll**:
 barCode;entityType;introducedAt;retiredAt
 
+**Naming konzisztencia (CSV → Ledger → Domain):**
+- CSV mező: `barCode` → külső adatcsere formális mezőneve
+- Ledger mező: `code` → a barcode tényleges értéke a ledger‑modellben
+- Domain mező: `barcode` → az entitás aktuális, ember által látható vonalkódja
 
-- `entityId` NEM része a CSV‑nek  
-- `status` NEM része a CSV‑nek  
+- `entityId` NEM része a CSV‑nek (csak runtime trace a ledger‑modellben)
+- `status` NEM része a CSV‑nek (a retiredAt mezőből következik)
 - dátumok ISO 8601 formátumban
 
 ---
@@ -94,7 +98,8 @@ A repository háromlépcsős CSV import mintát követ:
 2. **Validate** – BarcodeRow → audit hibák  
 3. **Build** – BarcodeRow → BarcodeRecord (ledger formátum)
 
-A CSV szerződés végleges formája: barCode;entityType;introducedAt;retiredAt
+A CSV szerződés végleges formája (külső adatcsere):
+**barCode;entityType;introducedAt;retiredAt**
 
 
 A repository NEM tölti fel automatikusan a BarcodeRegistry-t,  
@@ -107,7 +112,7 @@ csak visszaadja a ledger-rekordokat.
 A validator biztosítja, hogy minden új barcode:
 
 - ne legyen üres,
-- a CollisionHelper alapján ne ütközzön,
+- a CollisionHelper alapján ne ütközzön (entityId‑alapú kivétel támogatott),
 - sikeresen regisztrálódjon a BarcodeRegistry-ben.
 
 A `checkAndRegister()` a helyes út:
@@ -145,7 +150,8 @@ A BarcodeRegistry egyedi szerepe miatt külön ledger-modell szerint működik:
 
 - nincs remove művelet,
 - nincs klasszikus update (csak retire),
-- globális uniqueness enforcement entityId alapján,
+- globális uniqueness enforcement (code + entityType),
+- ledger‑szintű invariánsok: code nem üres, introducedAt érvényes, retiredAt időben előre halad,
 - minden regisztráció a BarcodeValidatoron keresztül történik,
 - a ledger-rekordok append + retire mintát követnek.
 

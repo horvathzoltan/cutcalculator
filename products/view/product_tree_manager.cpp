@@ -200,6 +200,9 @@ void ProductTreeManager::removeProduct() {
 
 
 void ProductTreeManager::onItemChanged(QStandardItem* item) {
+    static bool _rollbackGuard = false;
+    if (_rollbackGuard) return;
+
     auto index = item->index();
     QString idStr = _model->itemFromIndex(index.sibling(index.row(), 2))->text();
     QUuid id(idStr);
@@ -228,11 +231,16 @@ void ProductTreeManager::onItemChanged(QStandardItem* item) {
                                                       pm->name,
                                                       err))
             {
-                item->setText(pm->barcode);
                 zEventWARN(err);
+                zWarning(QString("ProductTreeManager: barcode update failed → rollback: %1 → %2")
+                             .arg(newCode, pm->barcode));
+
+                _rollbackGuard = true;
+                item->setText(pm->barcode);
+                _rollbackGuard = false;
+
                 return;
             }
-
             
             updated.barcode = newCode; // Validator már regisztrálta
             zEvent(QString("✏️ Product barcode updated: %1").arg(newCode));
@@ -241,22 +249,30 @@ void ProductTreeManager::onItemChanged(QStandardItem* item) {
         // audit-barát update → perzisztál is
         bool ok = ProductRegistry::instance().update(updated);
         if (!ok) {
-            // EventLogger figyelmeztetés (felhasználói/üzleti esemény)
-            zEventWARN(QString("⚠️ Product update failed: id=%1, field column=%2, attempted value=%3")
-                           .arg(id.toString()).arg(item->column()).arg(item->text()));
+            if (item->column() == 0) {
+                // name rollback
+                zEventWARN(QString("Product update failed: id=%1, field=name").arg(id.toString()));
+                zWarning(QString("ProductTreeManager: name update failed → rollback: %1 → %2")
+                             .arg(item->text(), pm->name));
 
-            // Fejlesztői log
-            zWarning() << "Product update failed for id" << id << "column" << item->column();
+                _rollbackGuard = true;
+                item->setText(pm->name);
+                _rollbackGuard = false;
+            }
+            else if (item->column() == 1) {
+                // barcode rollback
+                zEventWARN(QString("Product update failed: id=%1, field=barcode").arg(id.toString()));
+                zWarning(QString("ProductTreeManager: barcode update failed at workflow → rollback: %1 → %2")
+                             .arg(item->text(), pm->barcode));
 
-            // Visszaállítjuk a cellát az eredeti értékre (ha még van pm)
-            // if (pm) {
-            //     if (item->column() == 0) {
-            //         item->setText(pm->name);
-            //     } else if (item->column() == 1) {
-            //         item->setText(pm->barcode);
-            //     }
-            // }
-        } else {
+                _rollbackGuard = true;
+                item->setText(pm->barcode);
+                _rollbackGuard = false;
+            }
+
+            return;
+        }
+         else {
             // Sikeres update esemény (audit)
             zEvent(QString("✏️ Product updated: id=%1").arg(id.toString()));
         }

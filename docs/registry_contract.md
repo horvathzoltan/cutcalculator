@@ -156,11 +156,16 @@ Jellemzői:
 
 - append‑only ledger (insertInternal + updateInternal)
 - nincs remove művelet
-- nincs domain‑szintű validateDomain / validateDuplicate
+- nem domain‑szintű validateDomain / validateDuplicate, hanem ledger‑szintű invariáns‑ellenőrzés (code, introducedAt, retiredAt)
 - nincs CrudWorkflowMixin
 - minden módosítás a BarcodeValidatoron keresztül történik
 - CSV szerződés 4 mezővel:  
   `barCode;entityType;introducedAt;retiredAt`
+
+**Naming konzisztencia (CSV → Ledger → Domain):**
+- CSV mező: `barCode`
+- Ledger mező: `code`
+- Domain mező: `barcode`
 
 A BarcodeRegistry architektúrája teljesen elkülönül a domain registryktől.
 

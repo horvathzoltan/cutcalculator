@@ -159,10 +159,13 @@ void ProductRepository::resolveParents(QVector<ProductMaster>& defs,
         if (it == rowByBarcode.end()) {
             // védőháló: hiányzó CSV sor
             def.parentId = QUuid();
-            ctx.addError(-1, "Hiányzik a CSV sor a barcode-hoz", def.barcode, def.name);
-            orphanSummaries.append(QString("Sor ?: %1 → hiányzó CSV sor").arg(def.barcode));
-            zWarning(QString("ProductRepository::resolveParents – missing CSV row for barcode: %1")
+            ctx.addError(-1, "Missing CSV row for barcode", def.barcode, def.name);
+
+            zWarning(QString("ProductRepository::resolveParents – missing CSV row (barcode=%1)")
                          .arg(def.barcode));
+
+            orphanSummaries.append(
+                QString("Line ?: %1 → missing CSV row").arg(def.barcode));
 
             continue;
         }
@@ -181,15 +184,16 @@ void ProductRepository::resolveParents(QVector<ProductMaster>& defs,
             def.parentId = QUuid();
 
             const QString msg = QString("Parent barcode nem található: %1").arg(row.parentBarcode);
-            ctx.addError(line, msg, row.barcode, row.name);
+            ctx.addError(line, "Parent barcode not found", row.barcode, row.name);
 
-            const QString summary = QString("Sor %1: %2 → %3 (parent nem található)")
-                                        .arg(line)
-                                        .arg(def.barcode, row.parentBarcode);
             zWarning(QString("ProductRepository::resolveParents – parent not found (line %1): %2 → %3")
                          .arg(line).arg(def.barcode, row.parentBarcode));
-            orphanSummaries.append(summary);
 
+            const QString summary =
+                QString("Line %1: %2 → %3 (parent not found)")
+                    .arg(line)
+                    .arg(def.barcode, row.parentBarcode);
+            orphanSummaries.append(summary);
         }
     }
 
