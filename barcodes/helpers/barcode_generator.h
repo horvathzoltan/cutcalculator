@@ -16,8 +16,9 @@ public:
 
     // slug: kvázi-szótagolás – második magánhangzó előtt vágunk
     static QString slugFromName(const QString& name);
+    static QString generateToken(int length = 6);
 
 private:
     static QString normalize(const QString& s);
-    static QString makeToken(int length);
+    static QString makeToken(int length = 6);
 };

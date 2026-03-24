@@ -8,6 +8,7 @@
 #include "common/registry/base/registry_engine_base.h"
 #include "common/registry/feature/register_me.h"
 #include "common/registry/mixins/bulk_load_mixin.h"
+#include "common/registry/mixins/test_support_mixin.h"
 //#include "common/registry/mixins/crud_mixin.h"
 
 /**
@@ -21,7 +22,8 @@
 class BarcodeRegistry
     : public RegistryEngineBase<BarcodeRecord>,
       public RegisterMe<BarcodeRegistry>,
-      public BulkLoadMixin<BarcodeRegistry, BarcodeRecord>
+      public BulkLoadMixin<BarcodeRegistry, BarcodeRecord>,
+      public TestSupportMixin<BarcodeRegistry>
 {
     AUTO_REGISTER_REGISTRY
 public:

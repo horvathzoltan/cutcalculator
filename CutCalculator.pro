@@ -67,6 +67,9 @@ SOURCES += \
     calcmodes/view/calculation_modes_view.cpp \
     products/presenter/product_tree_presenter.cpp \
     products/view/product_tree_panel.cpp \
+    test/barcode/barcode_generator_tester.cpp \
+    test/barcode/barcode_registry_tester.cpp \
+    test/barcode/barcode_validator_tester.cpp \
     test/calcmode/need_calculation_registry_tester.cpp \
     test/calculation/formula_engine_syntax_tester.cpp \
     test/calculation/formula_engine_pipeline_tester.cpp \
@@ -232,6 +235,9 @@ HEADERS += \
     calcmodes/view/calculation_modes_view.h \
     products/presenter/product_tree_presenter.h \
     products/view/product_tree_panel.h \
+    test/barcode/barcode_generator_tester.h \
+    test/barcode/barcode_registry_tester.h \
+    test/barcode/barcode_validator_tester.h \
     test/calcmode/need_calculation_registry_tester.h \
     test/calculation/formula_engine_syntax_tester.h \
     test/calculation/formula_engine_pipeline_tester.h \

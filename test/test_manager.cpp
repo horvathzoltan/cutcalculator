@@ -4,6 +4,9 @@
 #include "material/material_registry_tester.h"
 #include "product/product_registry_tester.h"
 #include "settings_manager_tester.h"
+#include "test/barcode/barcode_generator_tester.h"
+#include "test/barcode/barcode_registry_tester.h"
+#include "test/barcode/barcode_validator_tester.h"
 #include "test/calcmode/need_calculation_registry_tester.h"
 #include "test/calculation/formula_engine_pipeline_tester.h"
 #include "test/calculation/formula_engine_syntax_tester_2.h"
@@ -102,6 +105,15 @@ void TestManager::runBusinessLogicTests(const QString& profile) {
     }
     else if (profile == "matrixvalidator") {
         runModule<MatrixValidatorTester>();
+    }
+    else if (profile == "barcode_registry") {
+        runModule<BarcodeRegistryTester>();
+    }
+    else if (profile == "barcode_generator") {
+        runModule<BarcodeGeneratorTester>();
+    }
+    else if (profile == "barcode_validator") {
+        runModule<BarcodeValidatorTester>();
     }
 
     // --- Ismeretlen profil ---

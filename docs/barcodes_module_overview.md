@@ -19,6 +19,12 @@ A BarcodeRegistry:
 - nem domain‑szintű validációt végez, hanem ledger‑szintű invariánsokat ellenőriz (code, entityType, introducedAt, retiredAt)
 - minden módosítás a Validatoron keresztül történik
 
+továbbá:
+
+- retired barcode SOHA nem használható újra (globális identitás‑invariáns)
+- a ledger minden code értéket örökre lefoglal
+- a retiredAt mező lezárja az életutat, de nem teszi újra kioszthatóvá
+
 ---
 
 ## 2. Validator – a központi kapu
@@ -34,16 +40,27 @@ A BarcodeValidator biztosítja:
 
 A domain registryk és a UI **soha nem hívhatják közvetlenül** a BarcodeRegistry‑t.
 
+- ha a ledgerben létezik a kód retired állapotban → a Validator elutasítja a regisztrációt
+    - audit: zEventERROR
+    - CSV: ctx.addError
+    - ledger: változatlan marad
+    
 ---
 
-## 3. CollisionHelper – emberi ütközés riport
+## 3. BarcodeCollisionHelper – emberi ütközés riport
 
-A `BarcodeCollisionHelper`:
+A `BarcodeCollisionHelper` a Validator részeként működik, és feladata:
 
-- CSV import validációban használatos
-- emberbarát üzenetet készít
-- entityId‑alapú kivételeket kezel (ha a ledger‑rekord entityId mezője üres → nem collision)
-- nem ír a ledgerbe
+- CSV import során emberbarát ütközés riport készítése,
+- a BarcodeRegistry aktuális állapotának vizsgálata,
+- különbségtétel:
+  - ütközés,
+  - hiányzó rekord,
+  - többértelmű helyzet között,
+- entityId‑alapú kivételek kezelése (ha a ledger‑rekord entityId mezője üres → nem collision),
+- **retired rekord esetén mindig ütközést jelent**, még akkor is, ha az entityId eltér,
+- a retired státusz **nem felszabadítás**, hanem **végleges lezárás**,
+- nem ír a ledgerbe, csak riportot készít.
 
 ---
 
@@ -60,10 +77,14 @@ barCode;entityType;introducedAt;retiredAt
 - `entityId` NEM része a CSV‑nek (csak runtime trace a ledger‑modellben)
 - `status` NEM része a CSV‑nek (a retiredAt mezőből következik)
 - dátumok ISO 8601 formátumban
+továbbá:
+- a retiredAt mező végleges lezárást jelent
+- a CSV‑ben szereplő retired rekordok örökre lefoglalják a kódot
+- a CSV‑ben szereplő retired kódot tilos újra kiosztani
 
 ---
 
-## 5. Összegzés
+## 5. Modul összefoglalás
 
 A Barcode modul:
 
@@ -123,19 +144,6 @@ A `checkAndRegister()` a helyes út:
 
 ---
 
-## 5. BarcodeCollisionHelper – emberi ütközés riport
-
-Feladata:
-
-- CSV import során emberbarát ütközés riport készítése,
-- a BarcodeRegistry állapotát használja,
-- különbséget tesz:
-  - ütközés,
-  - hiányzó rekord,
-  - többértelmű helyzet között.
-
----
-
 ## 6. BarcodeRegistry – globális életút-könyvelő
 
 A BarcodeRegistry NEM domain registry, hanem:
@@ -150,7 +158,12 @@ A BarcodeRegistry egyedi szerepe miatt külön ledger-modell szerint működik:
 
 - nincs remove művelet,
 - nincs klasszikus update (csak retire),
-- globális uniqueness enforcement (code + entityType),
+- globális uniqueness enforcement csak code alapján
+- entityType NEM old fel ütközést
+- retired rekord nem írható felül, nem „éleszthető újra”
+- egy code értékhez csak egyetlen életút tartozhat
+- a retiredAt kitöltése után a rekord örökre lezárt
+
 - ledger‑szintű invariánsok: code nem üres, introducedAt érvényes, retiredAt időben előre halad,
 - minden regisztráció a BarcodeValidatoron keresztül történik,
 - a ledger-rekordok append + retire mintát követnek.
@@ -165,7 +178,7 @@ Ez a struktúra:
 
 ---
 
-## Összegzés
+## Végső összegzés
 
 A Barcode modul célja a globális vonalkód-életút könyvelése.  
 A BarcodeRegistry nem domain registry, hanem egy különálló ledger.
@@ -176,4 +189,5 @@ A modul:
 - auditált, globális egyediséget biztosít,
 - dedikált BarcodeLedgerMixin-nel,
 - CSV import/export támogatással.
-
+- A barcode identitás, nem újrahasznosítható erőforrás.
+- A retired státusz végleges, a kód örökre lefoglalt.

@@ -84,3 +84,8 @@ QString BarcodeGenerator::generate(const QString& prefix,
     const QString slug  = slugFromName(name);
     return prefix + token + "-" + slug;
 }
+
+QString BarcodeGenerator::generateToken(int length)
+{
+    return makeToken(length);
+}

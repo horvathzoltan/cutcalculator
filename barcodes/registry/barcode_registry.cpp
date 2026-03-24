@@ -98,41 +98,47 @@ bool BarcodeRegistry::registerNew(const QString& code,
         return false;
 
     if (auto* rec = const_cast<BarcodeRecord*>(findByCode(trimmedCode))) {
-        // Már létezik ez a kód
-        if (!rec->entityId.has_value()) {
-            // Csak entityId hiányzik → frissítsük
-            BarcodeRecord updated = *rec;
-            updated.entityId = id;
-
-            if (!updateInternal(updated)) {
-                zWarning(QString("⚠️ Failed to update existing barcode: %1").arg(trimmedCode));
-                return false;
-            }
-
-            persist();
-            return true;
-        } else {
-            if (rec->entityId != id) {
-                zWarning(QString("Barcode collision: %1").arg(trimmedCode));
-                return false;
-            }
-
-            // // EntityId már van, és ha más, akkor ütközés
-            // if (rec->entityId != id) {
-            //      if (auto err = BarcodeCollisionHelper::makeBarcodeCollisionError(
-            //            entityType,
-            //            BarcodeCollisionHelper::RowInfo{ trimmedCode, name, id },
-            //            /* lineNumber */ 0))
-            //     {
-            //         zWarning(err->errorMessage());
-            //         zEventWARN(err->errorMessage());
-            //     }
-            //     return false;
-            // }
-            // // Ugyanaz az entitás → nincs teendő
-            return true;
-        }
+        // ÚJ TÖRVÉNY: ha létezik, TILTOTT – még akkor is, ha ugyanaz az entityId
+        // Non‑Reuse Identifier Policy-t valósít meg
+        return false;
     }
+
+    // if (auto* rec = const_cast<BarcodeRecord*>(findByCode(trimmedCode))) {
+    //     // Már létezik ez a kód
+    //     if (!rec->entityId.has_value()) {
+    //         // Csak entityId hiányzik → frissítsük
+    //         BarcodeRecord updated = *rec;
+    //         updated.entityId = id;
+
+    //         if (!updateInternal(updated)) {
+    //             zWarning(QString("⚠️ Failed to update existing barcode: %1").arg(trimmedCode));
+    //             return false;
+    //         }
+
+    //         persist();
+    //         return true;
+    //     } else {
+    //         if (rec->entityId != id) {
+    //             zWarning(QString("Barcode collision: %1").arg(trimmedCode));
+    //             return false;
+    //         }
+
+    //         // // EntityId már van, és ha más, akkor ütközés
+    //         // if (rec->entityId != id) {
+    //         //      if (auto err = BarcodeCollisionHelper::makeBarcodeCollisionError(
+    //         //            entityType,
+    //         //            BarcodeCollisionHelper::RowInfo{ trimmedCode, name, id },
+    //         //            /* lineNumber */ 0))
+    //         //     {
+    //         //         zWarning(err->errorMessage());
+    //         //         zEventWARN(err->errorMessage());
+    //         //     }
+    //         //     return false;
+    //         // }
+    //         // // Ugyanaz az entitás → nincs teendő
+    //         return true;
+    //     }
+    // }
 
     // Új kód → létrehozás
     BarcodeRecord rec;

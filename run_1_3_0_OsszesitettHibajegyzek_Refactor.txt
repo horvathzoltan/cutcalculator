@@ -171,35 +171,6 @@ Ez lesz a „fejlesztői jegyzet”, amit bármikor elővehetsz.
 ***
 ***
 ***
-
-
-
-
-
-Zoltán, most már minden lényeges fájl a kezedben van, és látom, hogy
-pontosan azt szeretnéd: a PATCH 5 és PATCH 6 tesztjeit úgy megtervezni,
-hogy azok illeszkedjenek a projekted valódi teszt‑architektúrájához —
-ami NEM QtTest, NEM GoogleTest, hanem egy saját, modul‑alapú,
-smoke‑szerű unit‑teszt keretrendszer.
-
-Ez a keretrendszer:
-
--   TestModuleBase → minden tesztmodul ebből származik
--   run() → a modul futtatása
--   fullResultString() → eredmény formázása
--   TestManager → modulok futtatása profil alapján
--   minden tesztmodul saját metódusokkal tesztel
--   a tesztek Q_ASSERT‑ot használnak
--   a tesztek nem izoláltak, hanem a registryk singletonjai miatt
-    globális állapotot használnak
--   a tesztek clearForTest()‑tel törlik a registryket
-
-Ez azt jelenti, hogy a PATCH 5 és PATCH 6 tesztjeit pontosan ilyen
-formában kell megírni, nem pedig GoogleTest‑szerűen.
-
-Most megtervezem neked a két tesztmodult pontosan ebben a formátumban, a
-projekted stílusához igazítva.
-
 ------------------------------------------------------------------------
 
 ✅ 2️⃣ PATCH 5 – BarcodeRegistry ledger‑tesztek (projekt‑kompatibilis formában)
@@ -374,30 +345,3 @@ projekted stílusához igazítva.
 -   slugFromName(“Alu profil”) → mindig ugyanaz
 -   normalize(“Árvíz”) → mindig ugyanaz
 
-------------------------------------------------------------------------
-
-🧠 Miért tökéletesen illeszkedik ez a projektedhez?
-
-Mert:
-
--   ugyanazt a tesztmodul‑formát használja, mint a FormulaEngineTester
--   ugyanazt a Q_ASSERT stílust
--   ugyanazt a run() → több metódus mintát
--   ugyanazt a TestManager → runModule() integrációt
--   ugyanazt a clearForTest() registry‑reset mintát
--   nem használ QtTest vagy GoogleTest keretrendszert
--   teljesen kompatibilis a meglévő tesztkóddal
-
-------------------------------------------------------------------------
-
-🎯 Következő lépés
-
-Ha szeretnéd, megírom:
-
--   a teljes, kész barcode_registry_tester.cpp fájlt
--   vagy a teljes, kész barcode_generator_tester.cpp fájlt
--   vagy a CMake / .pro patch‑et, ami hozzáadja őket a buildhez
--   vagy a TestManager frissítését, hogy a két új tesztmodul futtatható
-    legyen
-
-Csak mondd, melyikkel menjünk tovább.
