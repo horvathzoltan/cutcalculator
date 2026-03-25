@@ -192,7 +192,7 @@ void BarcodeRegistryTester::testEntityIdMissingNoCollision()
     csvRec.introducedAt = QDateTime::currentDateTime();
     csvRec.entityId = std::nullopt;
 
-    bool okInsert = reg.insertInternal(csvRec);
+    bool okInsert = reg.insertForTest(csvRec);
     Q_ASSERT(okInsert);
 
     const BarcodeRecord* r1 = reg.findByCode("CSVX");
@@ -230,7 +230,7 @@ void BarcodeRegistryTester::testCsvRoundtrip()
         r1.code = "C1";
         r1.entityType = "Material";
         r1.introducedAt = QDateTime::fromString("2024-01-01T10:00:00", Qt::ISODate);
-        Q_ASSERT(reg.insertInternal(r1));
+        Q_ASSERT(reg.insertForTest(r1));
 
         BarcodeRecord r2;
         r2.id = QUuid::createUuid();
@@ -238,7 +238,7 @@ void BarcodeRegistryTester::testCsvRoundtrip()
         r2.entityType = "Product";
         r2.introducedAt = QDateTime::fromString("2024-01-02T10:00:00", Qt::ISODate);
         r2.retiredAt = QDateTime::fromString("2024-02-01T10:00:00", Qt::ISODate);
-        Q_ASSERT(reg.insertInternal(r2));
+        Q_ASSERT(reg.insertForTest(r2));
     }
 
     // 2) Export → CSV

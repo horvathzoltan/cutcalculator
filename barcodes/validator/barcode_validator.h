@@ -13,27 +13,27 @@
  */
 class BarcodeValidator {
 public:
-    /**
-     * @brief checkAndRegister – ellenőrzi a globális uniqueness-t, és ha oké,
-     * regisztrálja az új barcode-ot. Ha nem oké, audit hibát tesz a ctx-be.
-     *
-     * @return true, ha sikerült regisztrálni; false, ha ütközött vagy hibás
-     */
-    static bool checkAndRegister(const QString& code,
-                                 const QString& entityType,
-                                 const QUuid& id,
-                                 const QString& name,
-                                 CsvImporter::FileContext& ctx);
+    static bool checkAndRegister_CSV(const QString& code,
+                                     const QString& entityType,
+                                     const QUuid& id,
+                                     const QString& name,
+                                     CsvImporter::FileContext& ctx);
 
-    static bool checkAndRegisterUI(const QString& code,
-                                   const QString& entityType,
-                                   const QUuid& id,
-                                   const QString& name,
-                                   QString& outErrorMessage);
+    static bool checkAndRegister_UI(const QString& code,
+                                    const QString& entityType,
+                                    const QUuid& id,
+                                    const QString& name,
+                                    QString& outErrorMessage);
 
-    /**
-     * @brief retire – nyugdíjazza a barcode-ot (audit + státusz),
-     * nem dob hibát, ha a kód nem létezik, csak figyelmeztet.
-     */
-    static void retire(const QString& code, const QString& reason);
+private:
+    enum class Mode { CSV, UI };
+
+    static bool checkAndRegister_impl(const QString& code,
+                                      const QString& entityType,
+                                      const QUuid& id,
+                                      const QString& name,
+                                      Mode mode,
+                                      CsvImporter::FileContext* ctx,
+                                      QString* outErrorMessage);
 };
+

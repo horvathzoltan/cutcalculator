@@ -186,7 +186,7 @@ MaterialRepository::buildMaterialFromRow(const MaterialRow& row,
         }
     }
 
-    if (!BarcodeValidator::checkAndRegister(row.barcode, "Material", m.id, m.name, ctx))
+    if (!BarcodeValidator::checkAndRegister_CSV(row.barcode, "Material", m.id, m.name, ctx))
         return std::nullopt;
 
     return m;

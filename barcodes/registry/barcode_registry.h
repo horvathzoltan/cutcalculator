@@ -53,10 +53,6 @@ public:
         RegistryEngineBase<BarcodeRecord>::onItemsChanged();
     }
 
-public:
-    bool insertInternal(const BarcodeRecord& r);
-    bool updateInternal(const BarcodeRecord& r);
-
 private:
     // Ledger-specifikus belső hookok
     bool validateDomain(const BarcodeRecord& r) const;
@@ -70,6 +66,26 @@ private:
     // törölve – ledger modellben nincs remove
     //void onRemoveLog(const BarcodeRecord& r);
 
+private:
+    // 🧩 Barát mixinek – hozzáférnek a protected/private storage API-hoz
+    friend struct TestSupportMixin<BarcodeRegistry>;
+    friend struct BulkLoadMixin<BarcodeRegistry, BarcodeRecord>;
+
+    // ❌ Ezeket TILOS hívni business logikából
+    bool add(const BarcodeRecord&) = delete;
+    bool removeInternal(const QUuid&) = delete;
+    bool removeInternal(const QUuid&, const QUuid&) = delete;
+
+    // ❗ Ezeket NEM töröljük, mert a mixinek használják
+    using RegistryEngineBase<BarcodeRecord>::addAll;
+    using RegistryEngineBase<BarcodeRecord>::setAll;
+    using RegistryEngineBase<BarcodeRecord>::clear;
+
+    // ❗ Az örökölt updateInternal-t elrejtjük, de nem töröljük
+    using RegistryEngineBase<BarcodeRecord>::updateInternal;
+
+    // ✔ A saját ledger-műveletek megmaradnak
+    bool insertInternal(const BarcodeRecord& r);
 
 private:
     BarcodeRegistry()

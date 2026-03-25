@@ -187,7 +187,8 @@ void BarcodeValidatorTester::testRetiredCodeRejected()
 
     // 2) Nyugdíjazás
     {
-        BarcodeValidator::retire(code, "test-retire");
+        BarcodeRegistry& r = BarcodeRegistry::instance();
+        r.retire(code, "test-retire");
         // retire() nem ad vissza hibát, csak auditál
     }
 

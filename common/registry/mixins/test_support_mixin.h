@@ -11,6 +11,11 @@ public:
         static_cast<Host*>(this)->clear();
     }
 
+    template<typename Entity>
+    bool insertForTest(const Entity& e) {
+        return static_cast<Host*>(this)->insertInternal(e);
+    }
+
     // egy elem hozzáadása teszthez (engine add)
     template<typename Entity>
     bool addForTest(const Entity& e) {

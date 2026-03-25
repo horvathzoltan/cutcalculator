@@ -225,7 +225,7 @@ void ProductTreeManager::onItemChanged(QStandardItem* item) {
             }
             
             QString err;
-            if (!BarcodeValidator::checkAndRegisterUI(newCode,
+            if (!BarcodeValidator::checkAndRegister_UI(newCode,
                                                       "Product",
                                                       pm->id,
                                                       pm->name,

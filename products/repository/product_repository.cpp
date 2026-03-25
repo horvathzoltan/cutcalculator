@@ -54,7 +54,7 @@ ProductRepository::buildProductFromRow(const ProductRow& row,
     def.barcode = row.barcode;
     def.parentId = QUuid(); // ne állíts itt parentet
 
-    if (!BarcodeValidator::checkAndRegister(row.barcode, "Product", def.id, def.name, ctx))
+    if (!BarcodeValidator::checkAndRegister_CSV(row.barcode, "Product", def.id, def.name, ctx))
         return std::nullopt;
 
     return def;
