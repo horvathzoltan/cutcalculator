@@ -325,6 +325,7 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 
 DISTFILES += \
     README.md \
+    docs/barcode_rules.md \
     docs/barcodes_module_overview.md \
     docs/entity_contract.md \
     docs/entity_matrix.md \

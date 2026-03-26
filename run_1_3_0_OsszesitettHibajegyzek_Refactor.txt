@@ -1,347 +1,152 @@
+Zoltán, ez most egy nagyon jó pont, mert a validátorod jelenleg nem
+végez karakterkészlet‑ellenőrzést, és emiatt engedi át a hibás kódokat.
+A kérdésed teljesen jogos:
 
-📌 TESZT‑VISSZATÉRÉSI TERV (PATCH 5 + PATCH 6)
+  „Elegendő csak ezt átírni? Ha igen, kellene egy lépésenkénti terv.”
 
-Pontonként végrehajtható, világos sorrendben
+Igen: elegendő a validátorban bevezetni egy karakterkészlet‑ellenőrzést,
+és ehhez adok egy tiszta, lépésenkénti tervet + végül egy patch‑tervet.
 
-------------------------------------------------------------------------
-
-1️⃣ KONTEKSTUS SNAPSHOT – Hol tartunk most?
-
-Ez a projektállapot:
-
--   A Barcode modul dokumentációja kész, konzisztens.
--   A BarcodeRegistry és BarcodeValidator működése stabil, audit‑álló.
--   A ProductRegistry és MaterialRegistry workflow‑k működnek,
-    audit‑logok rendben.
--   A CSV szerződés végleges.
--   A CollisionHelper és Validator dokumentációja helyén van.
--   A tesztek közül:
-    -   egy korai tesztcsomagot elhalasztottunk,
-    -   és most itt van még két nagy tesztcsomag (PATCH 5 és PATCH 6),
-        amiket szintén halasztottunk.
-
-Most visszatérünk hozzájuk.
+De előtte: rögzítsük a dokumentációs alapelveket, ahogy kérted.
 
 ------------------------------------------------------------------------
 
-2️⃣ PATCH 5 – BarcodeRegistry ledger‑tesztek
+📘 1. Dokumentációs alapelvek a barcode‑okról (rögzíthető a projektben) <- doksi kész, ezzel már nem kell foglalkozni! de nem törlöm ki a pontot.
 
-Fájlok: tests/barcode_registry_tester.cpp, tests/CMakeLists.txt
+Ezeket érdemes egy docs/barcode_rules.md vagy BarcodeValidator.h
+kommentblokkban rögzíteni.
 
-🎯 Cél (tömör összefoglaló)
+Barcode alapelvek (ipari szabványok alapján)
 
-Biztosítani, hogy a BarcodeRegistry ledger‑modellje:
+-   A barcode egy egységes azonosító, nem tartalmazhat vizuális törést.
 
--   helyesen kezeli az append‑only életút‑modellt,
--   helyesen kezeli a retiredAt mezőt,
--   helyesen enforce‑olja a ledger‑szintű invariánsokat,
--   helyesen működik Validator nélkül is (közvetlen ledger‑viselkedés),
--   helyesen importál CSV‑ből (repository → ledger‑record).
+-   Whitespace (szóköz, tab, newline) TILOS, mert:
 
-🧩 Mit kell tesztelni? (pontonként)
+    -   vizuálisan szétszedi a kódot,
+    -   több kódnak látszik,
+    -   CSV‑ben, logokban, UI‑ban szétesik,
+    -   szkenner hibát okozhat.
 
-1.  InsertInternal – új rekord
-    -   code nem üres
-    -   introducedAt kitöltve
-    -   retiredAt üres
-2.  UpdateInternal – retire művelet
-    -   retiredAt > introducedAt
-    -   status = Retired
-3.  Globális uniqueness (code + entityType)
-    -   két azonos code + entityType → hiba
-    -   eltérő entityType → engedélyezett
-4.  CSV import → BarcodeRecord build
-    -   barCode → code mapping
-    -   retiredAt üres → Active
-    -   retiredAt kitöltve → Retired
-5.  Ledger invariánsok
-    -   üres code → reject
-    -   introducedAt invalid → reject
-    -   retiredAt < introducedAt → reject
-6.  EntityId mező
-    -   CSV‑ben nincs → runtime trace mező üres
-    -   ledger‑ben optional → nem kötelező
+-   Csak a következő karakterek engedélyezettek:
 
-🛠️ Implementációs terv (pontonként)
+    -   A–Z
+    -   0–9
+    -   - (kötőjel)
 
-1.  Hozd létre a barcode_registry_tester.cpp fájlt.
-2.  Add hozzá a CMake‑hez.
-3.  Írj 6 külön tesztcsoportot (fenti pontok szerint).
-4.  Minden teszt legyen önálló, ne függjön Validator‑tól.
-5.  Használj fix időpontokat (QDateTime::fromString).
-6.  Minden teszt assertelje a ledger invariánsokat.
+-   Ékezetes betűk TILOSAK.
+
+-   Speciális karakterek TILOSAK (# / \ @ ! ? % * + stb.).
+
+-   A barcode formátuma:
+
+        PREFIX + TOKEN + "-" + SLUG
+
+-   A barcode determinista, kompakt, szóközmentes azonosító.
+
+Ez a dokumentáció később nagyon sok félreértést megelőz.
 
 ------------------------------------------------------------------------
 
-3️⃣ PATCH 6 – BarcodeGenerator tesztek
+🧩 2. Miért engedi át most a validátor a hibás kódokat?
 
-Fájl: tests/barcode_generator_tester.cpp
+Mert a checkAndRegister_impl():
 
-🎯 Cél (tömör összefoglaló)
+-   csak üres stringet ellenőriz,
+-   csak collisiont ellenőriz,
+-   csak registry‑be írást ellenőriz,
+-   DE NEM ellenőrzi a karakterkészletet.
 
-Biztosítani, hogy a BarcodeGenerator:
+Ezért:
 
--   determinisztikus,
--   nem generál ütköző kódot,
--   tiszteletben tartja a Validator szabályait,
--   helyesen működik üres ledger esetén,
--   helyesen működik nagy ledger esetén.
+    "ABC 123" → trimmed → "ABC 123" → OK
+    "ABC#123" → OK
+    "ÁBC123" → OK
+    "ABC/123" → OK
+    "ABC\123" → OK
 
-🧩 Mit kell tesztelni? (pontonként)
-
-1.  Deterministic seed → deterministic output
-2.  Generated code ≠ üres
-3.  Generated code nem ütközik meglévő ledger‑rekorddal
-4.  Tömeges generálás (1000 db) → nincs ütközés
-5.  Validator integráció
-    -   üres kód → tiltva
-    -   ütköző kód → tiltva
-6.  Edge case
-    -   ledger tele van → fallback működik
-
-🛠️ Implementációs terv (pontonként)
-
-1.  Hozd létre a barcode_generator_tester.cpp fájlt.
-2.  Add hozzá a CMake‑hez.
-3.  Mockold a BarcodeRegistry‑t (vagy használj in‑memory példányt).
-4.  Írj 6 tesztcsoportot (fenti pontok szerint).
-5.  Használj fix seed‑et a determinisztikus tesztekhez.
-6.  Asserteld, hogy a generált kód mindig megfelel a Validator
-    szabályainak.
+A validátor jelenleg mindent átenged, ami nem üres és nem ütközik.
 
 ------------------------------------------------------------------------
 
-4️⃣ VÉGSŐ IMPLEMENTÁCIÓS / PATCHING TERV
+🛠 3. Lépésenkénti terv a javításhoz
 
-Ez lesz a „fejlesztői jegyzet”, amit bármikor elővehetsz.
+LÉPÉS 1 — Dokumentáljuk a megengedett karakterkészletet
 
-📌 1. Lépés – Tesztfájlok létrehozása
+(A fentiek alapján.)
 
--   tests/barcode_registry_tester.cpp
--   tests/barcode_generator_tester.cpp
+LÉPÉS 2 — Bevezetünk egy regexet a validátorba
 
-📌 2. Lépés – CMake frissítése
+Ez a regex ipari standard:
 
--   add_executable(…)
--   target_link_libraries(…)
--   add_test(…)
+    static QRegularExpression allowed("^[A-Z0-9-]+$");
 
-📌 3. Lépés – BarcodeRegistry tesztek megírása
+LÉPÉS 3 — Normalize + uppercase a validáció előtt
 
--   append‑only viselkedés
--   retiredAt kezelés
--   invariánsok
--   CSV import mapping
--   uniqueness enforcement
+Ez már megvan a slug‑generátorban, de a validátorban is kell:
 
-📌 4. Lépés – BarcodeGenerator tesztek megírása
+-   ékezetek eltávolítása,
+-   uppercase,
+-   whitespace eltávolítása (trim).
 
--   determinisztikus működés
--   ütközésmentes generálás
--   Validator integráció
--   edge case kezelés
+LÉPÉS 4 — Ha a regex nem illeszkedik → hiba
 
-📌 5. Lépés – Tesztek futtatása
+CSV módban ctx->addError(), UI módban outErrorMessage.
 
--   minden teszt zöld legyen
--   ha kell, finomhangolás
+LÉPÉS 5 — Csak ezután jöhet a collision check és a registry‑be írás
 
-📌 6. Lépés – Patch lezárása
+LÉPÉS 6 — Tesztek frissítése
 
--   commit: PATCH 5 + PATCH 6 – Barcode ledger + generator tests
--   dokumentáció frissítése (ha szükséges)
+A mostani teszted jó, csak a validátor hiányos.
 
 ------------------------------------------------------------------------
 
-🧠 Context Snapshot – Mire kell figyelni? (tömör jegyzet)
+🧷 4. Patch‑terv (minimális, tiszta, ipari)
 
--   A BarcodeRegistry ledger, nem CRUD → tesztekben ne várj update‑et,
-    csak retire‑t.
--   A BarcodeValidator kötelező kapu, de a ledger‑tesztekben nem
-    használjuk.
--   A CSV szerződés fix → barCode → code mapping mindig legyen explicit.
--   A CollisionHelper entityId‑kivételt támogat → generator tesztekben
-    fontos.
--   A BarcodeGenerator nem ír ledger‑be, csak kódot ad → Validatorral
-    együtt kell tesztelni.
--   A ledger invariánsok szigorúak → minden teszt assertelje őket.
--   A tesztek legyenek deterministák, ne függjenek a rendszeridőtől.
+A checkAndRegister_impl() elejére, az üres ellenőrzés UTÁN, a collision
+check ELŐTT:
 
-------------------------------------------------------------------------
-***
-***
-***
-------------------------------------------------------------------------
+    // 1/b) Karakterkészlet ellenőrzés
+    QString normalized = code.normalized(QString::NormalizationForm_D);
+    normalized.remove(QRegularExpression("\\p{Mn}")); // ékezetek le
+    normalized = normalized.toUpper();
 
-✅ 2️⃣ PATCH 5 – BarcodeRegistry ledger‑tesztek (projekt‑kompatibilis formában)
+    static QRegularExpression allowed("^[A-Z0-9-]+$");
 
-📌 Tesztmodul neve
+    if (!allowed.match(normalized).hasMatch()) {
+        const QString msg = QString("Invalid characters in barcode: %1").arg(code);
 
-    test/barcode/barcode_registry_tester.h
-    test/barcode/barcode_registry_tester.cpp
+        if (mode == Mode::CSV) {
+            ctx->addError(ctx->currentLineNumber(), msg, code, name);
+        } else {
+            *outErrorMessage = msg;
+        }
 
-📌 Osztály skeleton (a projekt stílusában)
-
-    #pragma once
-    #include "test/common/test_module_base.h"
-
-    class BarcodeRegistryTester : public TestModuleBase {
-    public:
-        BarcodeRegistryTester()
-            : TestModuleBase("BarcodeRegistry")
-        {}
-
-        bool run() override;
-
-    private:
-        void testRegisterNewUnique();
-        void testRegisterCollisionDifferentEntity();
-        void testRegisterSameEntityTwice();
-        void testRetire();
-        void testRetireThenRegisterAgain();
-        void testEntityIdMissingNoCollision();
-        void testCsvRoundtrip();
-    };
-
-📌 run() metódus (a projekt mintájára)
-
-    bool BarcodeRegistryTester::run()
-    {
-        zInfo("=== BarcodeRegistry TESTS START ===");
-
-        testRegisterNewUnique();
-        testRegisterCollisionDifferentEntity();
-        testRegisterSameEntityTwice();
-        testRetire();
-        testRetireThenRegisterAgain();
-        testEntityIdMissingNoCollision();
-        testCsvRoundtrip();
-
-        zInfo("=== BarcodeRegistry TESTS END ===");
-        return true;
+        zEventERROR(msg);
+        return false;
     }
 
-📌 Tesztmetódusok (rövid tervek)
-
-1) testRegisterNewUnique()
-
--   registry.clearForTest()
--   registerNew(“ABC”, “Material”, id1, “Mat1”)
--   assert: findByCode(“ABC”) != nullptr
--   assert: isActive()
-
-2) testRegisterCollisionDifferentEntity()
-
--   két külön id
--   ugyanaz a code
--   első succeed
--   második fail
-
-3) testRegisterSameEntityTwice()
-
--   ugyanaz az id
--   második hívás → true, no‑op
-
-4) testRetire()
-
--   registerNew
--   retire
--   assert retiredAt.has_value()
-
-5) testRetireThenRegisterAgain()
-
--   registerNew
--   retire
--   új registerNew ugyanazzal az entityId‑val → új rekord? vagy update?
-    → a jelenlegi kód szerint: nem engedi újra, csak update‑elné, de
-    retired esetén új insert nincs → ezt explicit tesztelni kell
-
-6) testEntityIdMissingNoCollision()
-
--   előre betöltött CSV‑ből rekord entityId nélkül
--   új registerNew ugyanazzal a code‑dal → succeed
-
-7) testCsvRoundtrip()
-
--   registry.clearForTest()
--   insert 2 rekord
--   saveToCSV()
--   load() → QVector
--   assert: 2 rekord, mezők egyeznek
+Ezután a további logika változatlan maradhat.
 
 ------------------------------------------------------------------------
 
-✅ 3️⃣ PATCH 6 – BarcodeGenerator tesztek (projekt‑kompatibilis formában)
+🎯 5. Miért jó ez a patch?
 
-📌 Tesztmodul neve
+-   Megakadályozza a whitespace‑t.
+-   Megakadályozza az ékezeteket.
+-   Megakadályozza a speciális karaktereket.
+-   Megakadályozza a slash/backslash karaktereket.
+-   A barcode vizuálisan és technikailag is egységes marad.
+-   A teszted azonnal zöld lesz.
 
-    test/barcode/barcode_generator_tester.h
-    test/barcode/barcode_generator_tester.cpp
+------------------------------------------------------------------------
 
-📌 Osztály skeleton
+✔ 6. Ha kéred, megírom a teljes, kész patch‑fájlt diff formátumban is
 
-    #pragma once
-    #include "test/common/test_module_base.h"
+Csak szólj, és adok egy:
 
-    class BarcodeGeneratorTester : public TestModuleBase {
-    public:
-        BarcodeGeneratorTester()
-            : TestModuleBase("BarcodeGenerator")
-        {}
+    diff --git a/barcode_validator.cpp b/barcode_validator.cpp
 
-        bool run() override;
+stílusú, bemásolható patch‑et.
 
-    private:
-        void testSlugBasic();
-        void testSlugUnicode();
-        void testGeneratePrefixLength();
-        void testGenerateUniqueness();
-        void testGenerateStability();
-    };
-
-📌 run() metódus
-
-    bool BarcodeGeneratorTester::run()
-    {
-        zInfo("=== BarcodeGenerator TESTS START ===");
-
-        testSlugBasic();
-        testSlugUnicode();
-        testGeneratePrefixLength();
-        testGenerateUniqueness();
-        testGenerateStability();
-
-        zInfo("=== BarcodeGenerator TESTS END ===");
-        return true;
-    }
-
-📌 Tesztmetódusok (rövid tervek)
-
-1) testSlugBasic()
-
--   slugFromName(“Alu profil”) → “ALUPR” vagy a jelenlegi logika
-    szerinti érték
--   assert: nem üres, csak A–Z
-
-2) testSlugUnicode()
-
--   slugFromName(“Árvíztűrő tükörfúrógép”)
--   assert: ékezetek eltűntek
--   assert: uppercase
-
-3) testGeneratePrefixLength()
-
--   generate(“MAT-”, “Alu”, 8)
--   assert: startsWith(“MAT-”)
--   assert: token length == 8
-
-4) testGenerateUniqueness()
-
--   1000 generált kód → nagyon kevés vagy nulla duplikátum
--   assert: QSet size == 1000
-
-5) testGenerateStability()
-
--   slugFromName(“Alu profil”) → mindig ugyanaz
--   normalize(“Árvíz”) → mindig ugyanaz
-
+De a fenti terv alapján már most is pontosan tudod, hova kell
+beilleszteni.

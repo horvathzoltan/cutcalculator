@@ -243,6 +243,8 @@ bool BarcodeRepository::saveToCSV(const BarcodeRegistry& registry)
     ts << "barCode;entityType;introducedAt;retiredAt\n";
 
     const auto& all = registry.readAll();
+    int count = all.size();
+
     for (const auto& r : all) {
         ts << r.code << ";"
            << r.entityType << ";"
@@ -251,6 +253,13 @@ bool BarcodeRepository::saveToCSV(const BarcodeRegistry& registry)
            << "\n";
     }
 
-    zInfo(QString("📦 BarcodeRepository: CSV export kész → %1").arg(path));
+    if (count == 0) {
+        zInfo(QString("📦 BarcodeRepository: üres CSV kiírva → %1").arg(path));
+    } else {
+        zInfo(QString("📦 BarcodeRepository: %1 rekord kiírva → %2")
+                  .arg(count)
+                  .arg(path));
+    }
+
     return true;
 }

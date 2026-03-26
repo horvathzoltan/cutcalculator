@@ -39,7 +39,7 @@ void BarcodeValidatorTester::testEmptyCodeRejected()
     QString name = "TestMaterial";
 
     // A Validator singleton registryt használ, nekünk nem kell példányosítani
-    bool ok = BarcodeValidator::checkAndRegister(code, entityType, id, name, ctx);
+    bool ok = BarcodeValidator::checkAndRegister_CSV(code, entityType, id, name, ctx);
 
     // 1) A validáció sikertelen kell legyen
     Q_ASSERT(ok == false);
@@ -73,7 +73,7 @@ void BarcodeValidatorTester::testInvalidCharactersRejected()
     for (const QString& code : invalidCodes) {
         CsvImporter::FileContext localCtx("test-op", "test.csv");
 
-        bool ok = BarcodeValidator::checkAndRegister(code,
+        bool ok = BarcodeValidator::checkAndRegister_CSV(code,
                                                      entityType,
                                                      id,
                                                      name,
@@ -103,7 +103,7 @@ void BarcodeValidatorTester::testDuplicateCodeRejected()
     // 1) Első regisztráció → sikeres kell legyen
     {
         CsvImporter::FileContext ctx("test-op", "test.csv");
-        bool ok = BarcodeValidator::checkAndRegister(code, entityType, id1, name, ctx);
+        bool ok = BarcodeValidator::checkAndRegister_CSV(code, entityType, id1, name, ctx);
 
         Q_ASSERT(ok == true);
         Q_ASSERT(ctx.errorsSize() == 0);
@@ -112,7 +112,7 @@ void BarcodeValidatorTester::testDuplicateCodeRejected()
     // 2) Második regisztráció ugyanazzal a kóddal → el kell utasítani
     {
         CsvImporter::FileContext ctx("test-op", "test.csv");
-        bool ok = BarcodeValidator::checkAndRegister(code, entityType, id2, name, ctx);
+        bool ok = BarcodeValidator::checkAndRegister_CSV(code, entityType, id2, name, ctx);
 
         Q_ASSERT(ok == false);
         Q_ASSERT(ctx.errorsSize() >= 1);   // collision error expected
@@ -134,7 +134,7 @@ void BarcodeValidatorTester::testDifferentEntityAllowed()
     // 1) Első regisztráció: Material
     {
         CsvImporter::FileContext ctx("test-op", "test.csv");
-        bool ok = BarcodeValidator::checkAndRegister(code,
+        bool ok = BarcodeValidator::checkAndRegister_CSV(code,
                                                      "Material",
                                                      id1,
                                                      name,
@@ -147,7 +147,7 @@ void BarcodeValidatorTester::testDifferentEntityAllowed()
     // 2) Második regisztráció: Product (ugyanaz a code, más entityType)
     {
         CsvImporter::FileContext ctx("test-op", "test.csv");
-        bool ok = BarcodeValidator::checkAndRegister(code,
+        bool ok = BarcodeValidator::checkAndRegister_CSV(code,
                                                      "Product",
                                                      id2,
                                                      name,
@@ -175,7 +175,7 @@ void BarcodeValidatorTester::testRetiredCodeRejected()
     // 1) Első regisztráció → sikeres
     {
         CsvImporter::FileContext ctx("test-op", "test.csv");
-        bool ok = BarcodeValidator::checkAndRegister(code,
+        bool ok = BarcodeValidator::checkAndRegister_CSV(code,
                                                      entityType,
                                                      id,
                                                      name,
@@ -195,7 +195,7 @@ void BarcodeValidatorTester::testRetiredCodeRejected()
     // 3) Újra regisztrálás → el kell utasítani
     {
         CsvImporter::FileContext ctx("test-op", "test.csv");
-        bool ok = BarcodeValidator::checkAndRegister(code,
+        bool ok = BarcodeValidator::checkAndRegister_CSV(code,
                                                      entityType,
                                                      QUuid::createUuid(),
                                                      name,
@@ -222,7 +222,7 @@ void BarcodeValidatorTester::testEntityIdRequired()
 
     CsvImporter::FileContext ctx("test-op", "test.csv");
 
-    bool ok = BarcodeValidator::checkAndRegister(code,
+    bool ok = BarcodeValidator::checkAndRegister_CSV(code,
                                                  entityType,
                                                  nullId,
                                                  name,
@@ -249,7 +249,7 @@ void BarcodeValidatorTester::testPrefixRules()
         CsvImporter::FileContext ctx("test-op", "test.csv");
         QString code = "   OK123";
 
-        bool ok = BarcodeValidator::checkAndRegister(code,
+        bool ok = BarcodeValidator::checkAndRegister_CSV(code,
                                                      entityType,
                                                      id,
                                                      name,
@@ -264,7 +264,7 @@ void BarcodeValidatorTester::testPrefixRules()
         CsvImporter::FileContext ctx("test-op", "test.csv");
         QString code = "@@ABC123";
 
-        bool ok = BarcodeValidator::checkAndRegister(code,
+        bool ok = BarcodeValidator::checkAndRegister_CSV(code,
                                                      entityType,
                                                      QUuid::createUuid(),
                                                      name,
@@ -279,7 +279,7 @@ void BarcodeValidatorTester::testPrefixRules()
         CsvImporter::FileContext ctx("test-op", "test.csv");
         QString code = "PREFIX_TOO_LONG_1234567890_ABC";
 
-        bool ok = BarcodeValidator::checkAndRegister(code,
+        bool ok = BarcodeValidator::checkAndRegister_CSV(code,
                                                      entityType,
                                                      QUuid::createUuid(),
                                                      name,
@@ -294,7 +294,7 @@ void BarcodeValidatorTester::testPrefixRules()
         CsvImporter::FileContext ctx("test-op", "test.csv");
         QString code = "ÁBC123";
 
-        bool ok = BarcodeValidator::checkAndRegister(code,
+        bool ok = BarcodeValidator::checkAndRegister_CSV(code,
                                                      entityType,
                                                      QUuid::createUuid(),
                                                      name,
@@ -321,7 +321,7 @@ void BarcodeValidatorTester::testGeneratorIntegration()
     // 2) Első regisztráció → sikeres kell legyen
     {
         CsvImporter::FileContext ctx("test-op", "test.csv");
-        bool ok = BarcodeValidator::checkAndRegister(generated,
+        bool ok = BarcodeValidator::checkAndRegister_CSV(generated,
                                                      entityType,
                                                      QUuid::createUuid(),
                                                      name,
@@ -334,7 +334,7 @@ void BarcodeValidatorTester::testGeneratorIntegration()
     // 3) Második regisztráció ugyanazzal a kóddal → ütközés → elutasítás
     {
         CsvImporter::FileContext ctx("test-op", "test.csv");
-        bool ok = BarcodeValidator::checkAndRegister(generated,
+        bool ok = BarcodeValidator::checkAndRegister_CSV(generated,
                                                      entityType,
                                                      QUuid::createUuid(),
                                                      name,
@@ -361,7 +361,7 @@ void BarcodeValidatorTester::testFallbackLogic()
         QString code = prefix + QString::number(i);
 
         CsvImporter::FileContext ctx("test-op", "test.csv");
-        bool ok = BarcodeValidator::checkAndRegister(code,
+        bool ok = BarcodeValidator::checkAndRegister_CSV(code,
                                                      entityType,
                                                      QUuid::createUuid(),
                                                      name,
@@ -379,7 +379,7 @@ void BarcodeValidatorTester::testFallbackLogic()
     // 3) A fallback kódot a Validatornak el kell fogadnia
     {
         CsvImporter::FileContext ctx("test-op", "test.csv");
-        bool ok = BarcodeValidator::checkAndRegister(generated,
+        bool ok = BarcodeValidator::checkAndRegister_CSV(generated,
                                                      entityType,
                                                      QUuid::createUuid(),
                                                      name,

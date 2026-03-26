@@ -8,7 +8,16 @@ struct TestSupportMixin {
 public:
     // registry teljes törlése teszthez
     void clearForTest() {
-        static_cast<Host*>(this)->clear();
+        Host* h = static_cast<Host*>(this);
+
+        // 1) Memória ürítése (engine-level clear)
+        h->clear();
+
+        // 2) CSV kiürítése (domain-level persist)
+        //    Csak akkor, ha a Host rendelkezik persist() metódussal
+        if constexpr (requires(Host* x) { x->persist(); }) {
+            h->persist();   // üres readAll() → üres CSV
+        }
     }
 
     template<typename Entity>

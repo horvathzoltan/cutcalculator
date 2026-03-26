@@ -7,13 +7,14 @@
  * ============================================================ */
 QString BarcodeGenerator::normalize(const QString& s)
 {
-    QString out = s.normalized(QString::NormalizationForm_D)
-    .remove(QRegularExpression("[\\u0300-\\u036F]"))
-        .toUpper();
+    QString out = s.normalized(QString::NormalizationForm_D);
+    out.remove(QRegularExpression("\\p{Mn}"));   // minden nonspacing mark (ékezet) le
+    out = out.toUpper();
 
     out.replace(QRegularExpression("[×xX*/]"), "X");
     return out;
 }
+
 
 /* ============================================================
  * 🧩 Base36 token generálás
@@ -39,7 +40,7 @@ QString BarcodeGenerator::slugFromName(const QString& name)
     QString norm = normalize(name);
     QStringList parts = norm.split(QRegularExpression("\\s+"), Qt::SkipEmptyParts);
 
-    QString slug;
+    QStringList stems;                   // <-- ÚJ: ide gyűjtjük a szótöveket
     static QRegularExpression vowels("[AEIOU]");
 
     for (const QString& p : parts) {
@@ -48,7 +49,7 @@ QString BarcodeGenerator::slugFromName(const QString& name)
         if (p.contains(QRegularExpression("[0-9]"))) {
             QString param = p;
             param.remove(QRegularExpression("[^0-9A-Z]"));
-            slug += param;
+            stems << param;              // <-- ide tesszük
             continue;
         }
 
@@ -58,20 +59,21 @@ QString BarcodeGenerator::slugFromName(const QString& name)
 
         int first = word.indexOf(vowels);
         if (first < 0) {
-            slug += word;
+            stems << word;
             continue;
         }
 
         int second = word.indexOf(vowels, first + 1);
         if (second < 0) {
-            slug += word.left(first + 1);
+            stems << word.left(first + 1);
         } else {
-            slug += word.left(second);
+            stems << word.left(second);
         }
     }
 
-    return slug;
+    return stems.join("-");              // <-- ÚJ: szóhatár jelölése
 }
+
 
 /* ============================================================
  * 🧩 Teljes barcode generálás: prefix + token + "-" + slug

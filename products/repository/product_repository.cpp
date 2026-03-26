@@ -287,12 +287,20 @@ bool ProductRepository::saveToCSV(const QVector<ProductMaster>& data) {
     QTextStream out(&file);
     out << "barcode,parentBarcode,name\n";     // Fejléc
 
+    int count = data.size();
+
     for (const auto& pm : data) {
         out << ProductRepository::toCsvLine(pm) << "\n";
     }
 
-    zInfo(QString("💾 ProductRepository: %1 terméktípus mentve → %2")
-              .arg(data.size()).arg(path));
+    if (count == 0) {
+        zInfo(QString("📦 ProductRepository: üres CSV kiírva → %1").arg(path));
+    } else {
+        zInfo(QString("📦 ProductRepository: %1 rekord kiírva → %2")
+                  .arg(count)
+                  .arg(path));
+    }
+
     return true;
 }
 

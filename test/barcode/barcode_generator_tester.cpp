@@ -30,16 +30,16 @@ void BarcodeGeneratorTester::testSlugBasic()
     zInfo("→ testSlugBasic");
 
     QString slug = BarcodeGenerator::slugFromName("Simple Name");
-    Q_ASSERT(slug == "simple-name");
+    Q_ASSERT(slug == "SIMPL-NAM");
 
     slug = BarcodeGenerator::slugFromName("Hello  World");
-    Q_ASSERT(slug == "hello-world");
+    Q_ASSERT(slug == "HELL-WO");
 
     slug = BarcodeGenerator::slugFromName("A");
-    Q_ASSERT(slug == "a");
+    Q_ASSERT(slug == "A");
 
     slug = BarcodeGenerator::slugFromName("  Leading  and  trailing  ");
-    Q_ASSERT(slug == "leading-and-trailing");
+    Q_ASSERT(slug == "LE-A-TRA");
 
     zInfo("✓ testSlugBasic OK");
 }
@@ -53,16 +53,16 @@ void BarcodeGeneratorTester::testSlugUnicode()
     zInfo("→ testSlugUnicode");
 
     QString slug = BarcodeGenerator::slugFromName("Árvíztűrő tükörfúrógép");
-    Q_ASSERT(slug == "arvizturo-tukorfurogep");
+    Q_ASSERT(slug == "ARV-TUK");
 
     slug = BarcodeGenerator::slugFromName("ŐűÚő");
-    Q_ASSERT(slug == "ouuo");
+    Q_ASSERT(slug == "O");
 
     slug = BarcodeGenerator::slugFromName("ÉÉÉ   ÓÓ");
-    Q_ASSERT(slug == "eee-oo");
+    Q_ASSERT(slug == "E-O");
 
     slug = BarcodeGenerator::slugFromName("  Üveg   Űrhajó  ");
-    Q_ASSERT(slug == "uveg-urhajo");
+    Q_ASSERT(slug == "UV-URH");
 
     zInfo("✓ testSlugUnicode OK");
 }
