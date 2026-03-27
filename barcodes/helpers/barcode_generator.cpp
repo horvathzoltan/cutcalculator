@@ -1,6 +1,7 @@
 #include "barcode_generator.h"
 #include <QRandomGenerator>
 #include <QRegularExpression>
+#include <barcodes/registry/barcode_registry.h>
 
 /* ============================================================
  * 🧩 Normalizálás – ékezetek eltávolítása, nagybetű, ×→X
@@ -15,6 +16,28 @@ QString BarcodeGenerator::normalize(const QString& s)
     return out;
 }
 
+QString normalizeForSlug(const QString& s)
+{
+    // 1) NFD normalizáció (ékezetek szétválasztása)
+    QString out = s.normalized(QString::NormalizationForm_D);
+
+    // 2) Combining mark-ok eltávolítása (ékezetek törlése)
+    out.remove(QRegularExpression("\\p{Mn}"));
+
+    // 3) Unicode whitespace → sima space
+    out.replace(QRegularExpression("\\s+"), " ");
+
+    // 4) Speciális karakterek → kötőjel
+    out.replace(QRegularExpression("[^A-Za-z0-9 ]"), "-");
+
+    // 5) Lowercase (slug mindig kisbetűs)
+    out = out.toLower();
+
+    // 6) NFC visszaalakítás (kompakt forma)
+    out = out.normalized(QString::NormalizationForm_C);
+
+    return out;
+}
 
 /* ============================================================
  * 🧩 Base36 token generálás
@@ -37,25 +60,37 @@ QString BarcodeGenerator::makeToken(int length)
  * ============================================================ */
 QString BarcodeGenerator::slugFromName(const QString& name)
 {
-    QString norm = normalize(name);
-    QStringList parts = norm.split(QRegularExpression("\\s+"), Qt::SkipEmptyParts);
+    // 1) Unicode‑tudatos normalizáció
+    const QString norm = normalizeForSlug(name);
 
-    QStringList stems;                   // <-- ÚJ: ide gyűjtjük a szótöveket
-    static QRegularExpression vowels("[AEIOU]");
+    // 2) Szavakra bontás
+    const QStringList parts = norm.split(' ', Qt::SkipEmptyParts);
+
+    QStringList stems;
+    stems.reserve(parts.size());
+
+    // Magánhangzók több nyelvhez (latin alapú)
+    static const QRegularExpression vowels("[aeiouy]");
 
     for (const QString& p : parts) {
 
-        // Paraméter? (számot tartalmaz)
+        // 3) Paraméter (számot tartalmaz)
         if (p.contains(QRegularExpression("[0-9]"))) {
             QString param = p;
-            param.remove(QRegularExpression("[^0-9A-Z]"));
-            stems << param;              // <-- ide tesszük
+            param.remove(QRegularExpression("[^0-9a-z]"));
+            stems << param;
             continue;
         }
 
-        // Szó → első két magánhangzóig
+        // 4) Rövidítések (pl. MDF, PVC, ABS)
+        if (p.length() <= 4 && p.contains(QRegularExpression("^[a-z]+$"))) {
+            stems << p;
+            continue;
+        }
+
+        // 5) Szótő képzése: első két magánhangzóig
         QString word = p;
-        word.remove(QRegularExpression("[^A-Z]"));
+        word.remove(QRegularExpression("[^a-z]"));
 
         int first = word.indexOf(vowels);
         if (first < 0) {
@@ -71,8 +106,17 @@ QString BarcodeGenerator::slugFromName(const QString& name)
         }
     }
 
-    return stems.join("-");              // <-- ÚJ: szóhatár jelölése
+    // 6) Kötőjelek összevonása
+    QString slug = stems.join("-");
+    slug.replace(QRegularExpression("-+"), "-");
+
+    // 7) Trim
+    if (slug.startsWith('-')) slug.remove(0, 1);
+    if (slug.endsWith('-')) slug.chop(1);
+
+    return slug;
 }
+
 
 
 /* ============================================================
@@ -82,10 +126,58 @@ QString BarcodeGenerator::generate(const QString& prefix,
                                    const QString& name,
                                    int tokenLength)
 {
+    // 1) Prefix normalizálása
+    QString fixedPrefix = prefix;
+    if (!fixedPrefix.endsWith(QLatin1Char('-')))
+        fixedPrefix.append(QLatin1Char('-'));
+
+    // 2) Slug generálása
+    const QString slug = slugFromName(name);
+
+    // 3) Token generálása
     const QString token = makeToken(tokenLength);
-    const QString slug  = slugFromName(name);
-    return prefix + token + "-" + slug;
+
+    // 4) Alap jelölt kód
+    const QString base = fixedPrefix + token + QLatin1Char('-') + slug;
+
+    // 5) Prefix alatti kódok lekérése
+    const QStringList existing =
+        BarcodeRegistry::instance().barcodesWithPrefix(fixedPrefix);
+
+    // 6) Ha nincs ütközés → kész
+    if (!existing.contains(base))
+        return base;
+
+    // 7) Numerikus postfix fallback
+    int maxPostfix = 0;
+    const int baseLen = base.length();
+
+    for (const QString& code : existing) {
+
+        // Pontos egyezés → postfix = 0
+        if (code == base) {
+            maxPostfix = std::max(maxPostfix, 0);
+            continue;
+        }
+
+        // Ha nem base + '-' kezdettel indul → nem releváns
+        if (!code.startsWith(base + QLatin1Char('-')))
+            continue;
+
+        // A postfix rész kinyerése
+        const QStringView tail = QStringView{code}.mid(baseLen + 1);
+
+        bool ok = false;
+        const int n = tail.toInt(&ok);
+        if (ok)
+            maxPostfix = std::max(maxPostfix, n);
+    }
+
+    // 8) Következő postfix
+    return base + QLatin1Char('-') + QString::number(maxPostfix + 1);
 }
+
+
 
 QString BarcodeGenerator::generateToken(int length)
 {

@@ -20,5 +20,6 @@ public:
 
 private:
     static QString normalize(const QString& s);
+    static QString normalizeForSlug(const QString& s);
     static QString makeToken(int length = 6);
 };

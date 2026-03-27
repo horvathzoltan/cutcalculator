@@ -254,3 +254,29 @@ void BarcodeRegistry::persist() const
     // Egyelőre megtartjuk a meglévő API-t
     BarcodeRepository::saveToCSV(*this);
 }
+
+
+QStringList BarcodeRegistry::barcodesWithPrefix(const QString &prefix) const
+{
+    // Prefix normalizálása
+    QString fixed = prefix;
+    if (!fixed.endsWith(QLatin1Char('-')))
+        fixed.append(QLatin1Char('-'));
+
+    // findAll → QVector<BarcodeRecord>
+    const QVector<BarcodeRecord> matches =
+        findAll([&fixed](const BarcodeRecord &r) {
+            return r.code.startsWith(fixed, Qt::CaseSensitive);
+        });
+
+    // Átalakítás QStringList-té
+    QStringList out;
+    out.reserve(matches.size());
+
+    for (const BarcodeRecord &r : matches)
+        out.append(r.code);
+
+    return out;
+}
+
+

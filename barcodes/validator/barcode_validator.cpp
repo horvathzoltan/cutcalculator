@@ -8,6 +8,8 @@
 #include "common/logger/event_logger.h"
 #include <barcodes/helpers/barcode_collision_helper.h>
 
+#include <QRegularExpression>
+
 // =========================
 // PRIVATE COMMON IMPLEMENTATION
 // =========================
@@ -21,9 +23,11 @@ bool BarcodeValidator::checkAndRegister_impl(const QString& code,
                                              QString* outErrorMessage)
 {
     auto& br = BarcodeRegistry::instance();
+
+    // A felhasználó által megadott kód whitespace-mentesítése
     const QString trimmedCode = code.trimmed();
 
-    // 1) Üres kód
+    // 1) Üres kód tiltása
     if (trimmedCode.isEmpty()) {
         const QString msg = "Barcode cannot be empty";
 
@@ -37,10 +41,45 @@ bool BarcodeValidator::checkAndRegister_impl(const QString& code,
         return false;
     }
 
-    // 2) Collision check
+    // 1/b) Normalize → ékezetek eltávolítása, nagybetűsítés
+    QString normalized = trimmedCode.normalized(QString::NormalizationForm_D);
+    normalized.remove(QRegularExpression("\\p{Mn}")); // diakritikus jelek eltávolítása
+    normalized = normalized.toUpper();
+
+    // Ha a normalize után megváltozott a kód → tiltott karakter volt (ékezet, unicode stb.)
+    if (normalized != trimmedCode.toUpper()) {
+        const QString msg = QString("Invalid characters in barcode: %1").arg(code);
+
+        if (mode == Mode::CSV) {
+            ctx->addError(ctx->currentLineNumber(), msg, code, name);
+        } else {
+            *outErrorMessage = msg;
+        }
+
+        zEventERROR(msg);
+        return false;
+    }
+
+    // 1/c) Regex alapú karakterkészlet ellenőrzés (A–Z, 0–9, '-')
+    static QRegularExpression allowed("^[A-Z0-9-]+$");
+
+    if (!allowed.match(normalized).hasMatch()) {
+        const QString msg = QString("Invalid characters in barcode: %1").arg(code);
+
+        if (mode == Mode::CSV) {
+            ctx->addError(ctx->currentLineNumber(), msg, code, name);
+        } else {
+            *outErrorMessage = msg;
+        }
+
+        zEventERROR(msg);
+        return false;
+    }
+
+    // 2) Collision check – normalized kóddal
     if (auto err = BarcodeCollisionHelper::makeBarcodeCollisionError(
             entityType,
-            BarcodeCollisionHelper::RowInfo{ trimmedCode, name, id },
+            BarcodeCollisionHelper::RowInfo{ normalized, name, id },
             (mode == Mode::CSV ? ctx->currentLineNumber() : 0)))
     {
         if (mode == Mode::CSV) {
@@ -54,14 +93,14 @@ bool BarcodeValidator::checkAndRegister_impl(const QString& code,
         return false;
     }
 
-    // 3) Ledger regisztráció
-    if (!br.registerNew(trimmedCode, entityType, id, name)) {
+    // 3) Ledger regisztráció – normalized kóddal
+    if (!br.registerNew(normalized, entityType, id, name)) {
 
         const QString msg = QString("Barcode registration failed: %1")
-        .arg(trimmedCode);
+        .arg(normalized);
 
         if (mode == Mode::CSV) {
-            ctx->addError(ctx->currentLineNumber(), msg, trimmedCode, name);
+            ctx->addError(ctx->currentLineNumber(), msg, code, name);
         } else {
             *outErrorMessage = msg;
         }
@@ -70,14 +109,15 @@ bool BarcodeValidator::checkAndRegister_impl(const QString& code,
         return false;
     }
 
-    // 4) Siker
+    // 4) Sikeres regisztráció
     if (mode == Mode::UI) {
         zEventINFO(QString("Barcode registered (UI): %1 → %2")
-                       .arg(name, trimmedCode));
+                       .arg(name, normalized));
     }
 
     return true;
 }
+
 
 // =========================
 // PUBLIC CSV WRAPPER

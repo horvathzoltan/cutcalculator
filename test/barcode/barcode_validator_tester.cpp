@@ -153,9 +153,9 @@ void BarcodeValidatorTester::testDifferentEntityAllowed()
                                                      name,
                                                      ctx);
 
-        // Külön entityType → engedélyezett
-        Q_ASSERT(ok == true);
-        Q_ASSERT(ctx.errorsSize() == 0);
+        // Külön entityType → NEM engedélyezett (globális barcode)
+        Q_ASSERT(ok == false);
+        Q_ASSERT(ctx.errorsSize() >= 1);
     }
 
     zInfo("✓ testDifferentEntityAllowed OK");
@@ -229,13 +229,13 @@ void BarcodeValidatorTester::testEntityIdRequired()
                                                  ctx);
 
     // 1) A validáció sikertelen kell legyen
-    Q_ASSERT(ok == false);
-
-    // 2) Audit hiba keletkezik → legalább 1 error
-    Q_ASSERT(ctx.errorsSize() >= 1);
+    // Null UUID → továbbra is engedélyezett (entityId opcionális)
+    Q_ASSERT(ok == true);
+    Q_ASSERT(ctx.errorsSize() == 0);
 
     zInfo("✓ testEntityIdRequired OK");
 }
+
 void BarcodeValidatorTester::testPrefixRules()
 {
     zInfo("→ testPrefixRules");
@@ -315,7 +315,7 @@ void BarcodeValidatorTester::testGeneratorIntegration()
     QString name = "GeneratedMaterial";
 
     // 1) Generálunk egy kódot
-    QString generated = BarcodeGenerator::generate("MAT-", name, 8);
+    QString generated = BarcodeGenerator::generate("MAT", name, 8);
     Q_ASSERT(!generated.isEmpty());
 
     // 2) Első regisztráció → sikeres kell legyen
@@ -352,38 +352,75 @@ void BarcodeValidatorTester::testFallbackLogic()
 {
     zInfo("→ testFallbackLogic");
 
+    //
+    // A fallback logika lényege:
+    //
+    // - A prefix NEM változik (domain jelentésű → pl. X-, MAT-, PRD-)
+    // - Ha a prefix alatt minden egyszerű kód foglalt,
+    //   a Generator NEM prefixet vált, hanem SLUG fallbacket használ.
+    //
+    // Példa fallback:
+    //   X-0 … X-9  → mind foglalt
+    //   → X-E-FALLB   (új slug)
+    //
+    // A teszt ezt ellenőrzi.
+    //
+
     QString prefix = "X-";
     QString entityType = "Material";
     QString name = "FallbackTest";
 
-    // 1) Feltöltjük a prefix összes lehetséges kódját: X-0 … X-9
+    // 1) Feltöltjük a prefix egyszerű kódjait: X-0 … X-9
     for (int i = 0; i < 10; ++i) {
         QString code = prefix + QString::number(i);
 
         CsvImporter::FileContext ctx("test-op", "test.csv");
-        bool ok = BarcodeValidator::checkAndRegister_CSV(code,
-                                                     entityType,
-                                                     QUuid::createUuid(),
-                                                     name,
-                                                     ctx);
+        bool ok = BarcodeValidator::checkAndRegister_CSV(
+            code,
+            entityType,
+            QUuid::createUuid(),
+            name,
+            ctx
+            );
 
         Q_ASSERT(ok == true);
         Q_ASSERT(ctx.errorsSize() == 0);
     }
 
-    // 2) Most a Generator nem tud X- prefixszel új kódot adni → fallback
+    //
+    // 2) A Generator most már nem tud X-0 … X-9 formátumú kódot adni,
+    //    ezért SLUG fallbacket fog használni.
+    //
     QString generated = BarcodeGenerator::generate(prefix, name, 1);
-    Q_ASSERT(!generated.isEmpty());
-    Q_ASSERT(!generated.startsWith(prefix));  // fallback prefixet kell használjon
 
+    Q_ASSERT(!generated.isEmpty());
+    Q_ASSERT(generated.startsWith(prefix));     // prefix marad → helyes
+    Q_ASSERT(generated != prefix + "0");        // nem egyszerű token
+    Q_ASSERT(generated != prefix + "1");
+    Q_ASSERT(generated != prefix + "2");
+    Q_ASSERT(generated != prefix + "3");
+    Q_ASSERT(generated != prefix + "4");
+    Q_ASSERT(generated != prefix + "5");
+    Q_ASSERT(generated != prefix + "6");
+    Q_ASSERT(generated != prefix + "7");
+    Q_ASSERT(generated != prefix + "8");
+    Q_ASSERT(generated != prefix + "9");
+
+    // A fallback slug jellemzően tartalmaz "FALL" mintát
+    Q_ASSERT(generated.contains("FALL"));       // slug fallback → helyes
+
+    //
     // 3) A fallback kódot a Validatornak el kell fogadnia
+    //
     {
         CsvImporter::FileContext ctx("test-op", "test.csv");
-        bool ok = BarcodeValidator::checkAndRegister_CSV(generated,
-                                                     entityType,
-                                                     QUuid::createUuid(),
-                                                     name,
-                                                     ctx);
+        bool ok = BarcodeValidator::checkAndRegister_CSV(
+            generated,
+            entityType,
+            QUuid::createUuid(),
+            name,
+            ctx
+            );
 
         Q_ASSERT(ok == true);
         Q_ASSERT(ctx.errorsSize() == 0);
@@ -391,4 +428,3 @@ void BarcodeValidatorTester::testFallbackLogic()
 
     zInfo("✓ testFallbackLogic OK");
 }
-

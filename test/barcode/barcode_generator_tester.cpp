@@ -99,7 +99,7 @@ void BarcodeGeneratorTester::testGeneratePrefixAndLength()
 {
     zInfo("→ testGeneratePrefixAndLength");
 
-    QString code = BarcodeGenerator::generate("MAT-", "Steel Bolt", 6);
+    QString code = BarcodeGenerator::generate("MAT", "Steel Bolt", 6);
     // formátum: MAT-XXXXXX-steelbolt
     Q_ASSERT(code.startsWith("MAT-"));
 
@@ -136,7 +136,7 @@ void BarcodeGeneratorTester::testGenerateStability()
     Q_ASSERT(s1 == s3);
 
     // slug stabil, token nem — ezért a generate() csak a slug részét ellenőrizzük
-    QString code = BarcodeGenerator::generate("MAT-", "Stainless Steel");
+    QString code = BarcodeGenerator::generate("MAT", "Stainless Steel");
     QString afterPrefix = code.mid(4);
     int dashPos = afterPrefix.indexOf('-');
     Q_ASSERT(dashPos > 0);

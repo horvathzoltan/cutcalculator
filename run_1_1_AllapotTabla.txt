@@ -66,8 +66,10 @@ VI. Kényelmi funkciók
     Formula értelmezés                  ✅ Kész            Parser + evaluator + trace integráció stabil; NeedCalculator kompatibilis.
     SOS / Tűzoltás                      ❌ Törölve         NeedRule import hibakezelés
     Generikus kapcsolótábla             ✅ Kész            ConnectionEntity + Engine
-    BarcodeValidator subsystem          ✅ Kész            Teljes, egységesített kapu; minden import és UI workflow ezt használja.
-    BarcodeTable refaktor               ✅ Kész            Ledger‑modell stabil; Registry + Repository tiszta.
+    BarcodeValidator subsystem          ✅ Kész            Teljes kapu‑logika egységesítve; minden import és UI workflow ezt használja.
+    BarcodeTable refaktor               ✅ Kész            Ledger‑modell stabil; mixin‑irány megszüntetve; workflow tiszta.
+    BarcodeRegistry modernizálása       ✅ Kész            Ledger‑modell stabil; mixin‑irány megszüntetve; workflow tiszta.
+    BarcodeGenerator                    ✅ Kész            Prefix‑szűrés, slug‑generátor, token, fallback teljesen kész.
     DataStateReporter                   ✅ Kész            Audit riport
     MVP logika                          ✅ Kész            Presenter/Manager tisztítás befejezve
     VerboseManager                      ✅ Kész            Verbosity routing
@@ -87,10 +89,9 @@ VI. Kényelmi funkciók
     CSV warning UX                      ❌ Törölve         Nem szükséges külön feature
     EventLog tisztítása                 💡 Új ötlet        SystemLog szétválasztás
     RegistryEngineBase ↔
-    Mixin hook‑lánc implementálása      ✅ Kész            Hook‑lánc teljesen tiszta; pointer‑stabilitás garantált.
-    BarcodeRegistry modernizálása       ✅ Kész        Mixin‑irány törölve; ledger‑modell modernizálva; workflow tiszta.
+    Mixin hook‑lánc implementálása      ✅ Kész            Hook‑lánc pointer‑stabil, workflow‑szintű tisztítás befejezve.
     CollectorMixin update-támogatása    ✅ Kész            Update workflow implementálva
-    Persist‑policy konzisztencia        ✅ Kész            Kettősség megszűnt; minden registry egységes persist‑policyt követ.
+    Persist‑policy konzisztencia        ✅ Kész            Minden registry egységes persist‑policyt követ.
     MatrixValidator integráció          ✅ Kész            v2 audit pipeline integrálva; mátrix‑ellenőrzés stabil.
     NeedRuleRegistry workflow audit     ✅ Kész            Lookup + audit + formula‑validáció teljes.
     Új Registry Fejlettségi Mátrix      ❌ Törölve         Modernizálási terv kiváltja
@@ -133,6 +134,9 @@ VI. Kényelmi funkciók
     Unit teszt: formula parser          ✅ Kész            Parser teljes lefedettsége biztosított: SyntaxTester + SyntaxTester_2.
     Unit teszt: NeedCalculator pipeline ✅ Kész            Teljes pipeline lefedve több tesztmodulban.
     Unit teszt: Order → Calculator      ✅ Kész            OrderNeedBuilderTester működik; integráció stabil.
+    Unit teszt: BarcodeRegistry         ✅ Kész            RegisterNew, retire, collision, CSV roundtrip stabil.
+    Unit teszt: BarcodeGenerator        ✅ Kész            Slug, token, prefix, fallback, uniqueness stabil.
+    Unit teszt: BarcodeValidator        ✅ Kész            Valid/invalid case‑ek stabilak minden workflow‑ban.
     MaterialPickerDialog finomhangolás  📐 Tervezés        Keresés, szűrés
     ModeNameDialog duplikáció‑ellenőrzés📐 Tervezés        UX javítás
     Formula‑színezés finomítása         ✅ Kész            CalculationModeDetailView

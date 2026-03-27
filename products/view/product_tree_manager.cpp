@@ -137,7 +137,7 @@ void ProductTreeManager::addRootProduct() {
     pm.id = QUuid::createUuid();
     pm.parentId = QUuid(); // gyökér
     pm.name = "Új gyökérelem";
-    pm.barcode = BarcodeGenerator::generate("PROD-", pm.name, 6);
+    pm.barcode = BarcodeGenerator::generate("PROD", pm.name, 6);
 
     //ProductRegistry::instance().insert(pm);
     if (!ProductRegistry::instance().insert(pm)) {
@@ -159,7 +159,7 @@ void ProductTreeManager::addChildProduct() {
     pm.id = QUuid::createUuid();
     pm.parentId = parentId;
     pm.name = "Új gyermek";
-    pm.barcode = BarcodeGenerator::generate("PROD-", pm.name, 6);
+    pm.barcode = BarcodeGenerator::generate("PROD", pm.name, 6);
    //ProductRegistry::instance().insert(pm);
 
     //ProductRegistry::instance().insert(pm);

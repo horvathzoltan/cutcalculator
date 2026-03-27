@@ -53,6 +53,8 @@ public:
         RegistryEngineBase<BarcodeRecord>::onItemsChanged();
     }
 
+    QStringList barcodesWithPrefix(const QString& prefix) const;
+
 private:
     // Ledger-specifikus belső hookok
     bool validateDomain(const BarcodeRecord& r) const;
