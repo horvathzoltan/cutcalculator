@@ -1,152 +1,455 @@
-Zoltán, ez most egy nagyon jó pont, mert a validátorod jelenleg nem
-végez karakterkészlet‑ellenőrzést, és emiatt engedi át a hibás kódokat.
-A kérdésed teljesen jogos:
 
-  „Elegendő csak ezt átírni? Ha igen, kellene egy lépésenkénti terv.”
+🌟 TERMÉKTÍPUS‑LÉTREHOZÓ DIALÓGUS — TELJES TERV
 
-Igen: elegendő a validátorban bevezetni egy karakterkészlet‑ellenőrzést,
-és ehhez adok egy tiszta, lépésenkénti tervet + végül egy patch‑tervet.
+0. Célok (UX + architektúra)
 
-De előtte: rögzítsük a dokumentációs alapelveket, ahogy kérted.
-
-------------------------------------------------------------------------
-
-📘 1. Dokumentációs alapelvek a barcode‑okról (rögzíthető a projektben) <- doksi kész, ezzel már nem kell foglalkozni! de nem törlöm ki a pontot.
-
-Ezeket érdemes egy docs/barcode_rules.md vagy BarcodeValidator.h
-kommentblokkban rögzíteni.
-
-Barcode alapelvek (ipari szabványok alapján)
-
--   A barcode egy egységes azonosító, nem tartalmazhat vizuális törést.
-
--   Whitespace (szóköz, tab, newline) TILOS, mert:
-
-    -   vizuálisan szétszedi a kódot,
-    -   több kódnak látszik,
-    -   CSV‑ben, logokban, UI‑ban szétesik,
-    -   szkenner hibát okozhat.
-
--   Csak a következő karakterek engedélyezettek:
-
-    -   A–Z
-    -   0–9
-    -   - (kötőjel)
-
--   Ékezetes betűk TILOSAK.
-
--   Speciális karakterek TILOSAK (# / \ @ ! ? % * + stb.).
-
--   A barcode formátuma:
-
-        PREFIX + TOKEN + "-" + SLUG
-
--   A barcode determinista, kompakt, szóközmentes azonosító.
-
-Ez a dokumentáció később nagyon sok félreértést megelőz.
+-   A user ne kapjon automatikus „szülő + új” nevet.
+-   A user adja meg a nevet létrehozáskor.
+-   A barcode automatikusan generálódjon, de a user később átírhatja.
+-   A dialógus legyen kicsi, gyors, fókuszált, mint a ModeNameDialog.
+-   Inline validáció: üres név, whitespace, duplikált név.
+-   A ProductTreeManager workflow‑ja maradjon tiszta.
+-   A ProductRegistry validációi változatlanul működjenek.
+-   A barcode‑validáció továbbra is a BarcodeValidator feladata.
 
 ------------------------------------------------------------------------
 
-🧩 2. Miért engedi át most a validátor a hibás kódokat?
+🌟 1. Új dialógus: ProductNameDialog
 
-Mert a checkAndRegister_impl():
+1.1. Helye
 
--   csak üres stringet ellenőriz,
--   csak collisiont ellenőriz,
--   csak registry‑be írást ellenőriz,
--   DE NEM ellenőrzi a karakterkészletet.
+    products/dialogs/product_name_dialog.h
+    products/dialogs/product_name_dialog.cpp
 
-Ezért:
+1.2. Felépítése
 
-    "ABC 123" → trimmed → "ABC 123" → OK
-    "ABC#123" → OK
-    "ÁBC123" → OK
-    "ABC/123" → OK
-    "ABC\123" → OK
+Pontosan a ModeNameDialog mintájára:
 
-A validátor jelenleg mindent átenged, ami nem üres és nem ütközik.
+-   QLabel: „Add meg a terméktípus nevét:”
+-   QLineEdit: név beírása
+-   QDialogButtonBox: OK / Cancel
+-   Inline validáció
+-   Duplicate check callback
+-   CursorAwarePlacement
+-   AttentionBlinker
+-   Shake animáció hibánál
 
-------------------------------------------------------------------------
+1.3. Validáció
 
-🛠 3. Lépésenkénti terv a javításhoz
-
-LÉPÉS 1 — Dokumentáljuk a megengedett karakterkészletet
-
-(A fentiek alapján.)
-
-LÉPÉS 2 — Bevezetünk egy regexet a validátorba
-
-Ez a regex ipari standard:
-
-    static QRegularExpression allowed("^[A-Z0-9-]+$");
-
-LÉPÉS 3 — Normalize + uppercase a validáció előtt
-
-Ez már megvan a slug‑generátorban, de a validátorban is kell:
-
--   ékezetek eltávolítása,
--   uppercase,
--   whitespace eltávolítása (trim).
-
-LÉPÉS 4 — Ha a regex nem illeszkedik → hiba
-
-CSV módban ctx->addError(), UI módban outErrorMessage.
-
-LÉPÉS 5 — Csak ezután jöhet a collision check és a registry‑be írás
-
-LÉPÉS 6 — Tesztek frissítése
-
-A mostani teszted jó, csak a validátor hiányos.
+-   trimmed().isEmpty() → tiltott
+-   duplicateCheck(name) → tiltott
+-   OK gomb csak akkor aktív, ha minden rendben
 
 ------------------------------------------------------------------------
 
-🧷 4. Patch‑terv (minimális, tiszta, ipari)
+🌟 2. ProductTreeManager módosítása
 
-A checkAndRegister_impl() elejére, az üres ellenőrzés UTÁN, a collision
-check ELŐTT:
+2.1. addRootProduct()
 
-    // 1/b) Karakterkészlet ellenőrzés
-    QString normalized = code.normalized(QString::NormalizationForm_D);
-    normalized.remove(QRegularExpression("\\p{Mn}")); // ékezetek le
-    normalized = normalized.toUpper();
+Most:
 
-    static QRegularExpression allowed("^[A-Z0-9-]+$");
+-   automatikus név: „Új gyökérelem”
+-   automatikus barcode: random token + slug
 
-    if (!allowed.match(normalized).hasMatch()) {
-        const QString msg = QString("Invalid characters in barcode: %1").arg(code);
+Ez helyett:
 
-        if (mode == Mode::CSV) {
-            ctx->addError(ctx->currentLineNumber(), msg, code, name);
-        } else {
-            *outErrorMessage = msg;
-        }
+Lépések:
 
-        zEventERROR(msg);
-        return false;
-    }
+1.  Dialógus megnyitása
 
-Ezután a további logika változatlan maradhat.
+    ProductNameDialog dlg(_view, "", [&](const QString& name){
+        return ProductRegistry::instance().existsBy([&](const ProductMaster& p){
+            return p.parentId.isNull() && p.name == name;
+        });
+    });
+    if (dlg.exec() != QDialog::Accepted) return;
+    QString name = dlg.value();
 
-------------------------------------------------------------------------
+2.  Barcode generálása
 
-🎯 5. Miért jó ez a patch?
+    base = slugFromName(name)
+    barcode = ensureUnique(base)
 
--   Megakadályozza a whitespace‑t.
--   Megakadályozza az ékezeteket.
--   Megakadályozza a speciális karaktereket.
--   Megakadályozza a slash/backslash karaktereket.
--   A barcode vizuálisan és technikailag is egységes marad.
--   A teszted azonnal zöld lesz.
+3.  ProductMaster létrehozása
+
+4.  Registry insert()
+
+5.  populate()
 
 ------------------------------------------------------------------------
 
-✔ 6. Ha kéred, megírom a teljes, kész patch‑fájlt diff formátumban is
+2.2. addChildProduct()
 
-Csak szólj, és adok egy:
+Most:
 
-    diff --git a/barcode_validator.cpp b/barcode_validator.cpp
+-   automatikus név: „szülő + új”
+-   automatikus barcode: parentBarcode vagy slug + ensureUnique
 
-stílusú, bemásolható patch‑et.
+Ez helyett:
 
-De a fenti terv alapján már most is pontosan tudod, hova kell
-beilleszteni.
+Lépések:
+
+1.  Szülő lekérése a tree‑ből
+
+2.  Dialógus megnyitása
+
+    ProductNameDialog dlg(_view, "", [&](const QString& name){
+        return ProductRegistry::instance().existsBy([&](const ProductMaster& p){
+            return p.parentId == parentId && p.name == name;
+        });
+    });
+    if (dlg.exec() != QDialog::Accepted) return;
+    QString name = dlg.value();
+
+3.  Barcode generálása
+
+    base = parent->barcode.isEmpty()
+           ? slugFromName(name)
+           : parent->barcode
+
+    barcode = ensureUnique(base)
+
+4.  ProductMaster létrehozása
+
+5.  Registry insert()
+
+6.  populate()
+
+------------------------------------------------------------------------
+
+🌟 3. Barcode generálás új workflow
+
+3.1. Root esetén
+
+    base = slugFromName(name)
+    barcode = ensureUnique(base)
+
+3.2. Child esetén
+
+    base = parent->barcode.isEmpty()
+           ? slugFromName(name)
+           : parent->barcode
+
+    barcode = ensureUnique(base)
+
+3.3. ensureUnique()
+
+A te verziód tökéletes, csak az exists() helyett:
+
+    if (BarcodeRegistry::instance().isBarcodeUnique(base))
+        return base;
+
+------------------------------------------------------------------------
+
+🌟 4. Barcode átírhatósága
+
+A user továbbra is átírhatja a barcode‑ot a TreeView‑ban.
+
+A BarcodeValidator:
+
+-   ellenőrzi a prefixet (ha kell),
+-   ellenőrzi az ütközést,
+-   rollbackel, ha hibás.
+
+Ez a dialógustól függetlenül működik.
+
+------------------------------------------------------------------------
+
+🌟 5. ProductRegistry validációk
+
+A ProductRegistry:
+
+-   validateDomain() → name + barcode kötelező
+-   validateDuplicate() → név + parentId egyedi
+-   beforeInsert() → nincs extra logika
+-   persist() → CSV mentés
+
+Ez tökéletesen kompatibilis a dialógussal.
+
+------------------------------------------------------------------------
+
+🌟 6. ProductRepository (CSV import)
+
+A dialógus nem érinti:
+
+-   a CSV importot,
+-   a barcode‑regisztrációt,
+-   a parent feloldást.
+
+Minden változatlanul működik.
+
+------------------------------------------------------------------------
+
+🌟 7. ProductTreePresenter
+
+A toolbar gombjai változatlanok:
+
+-   „➕ Új termékcsoport” → addRootProduct()
+-   „➕ Új terméktípus” → addChildProduct()
+
+A dialógus a ProductTreeManager‑ben nyílik meg, így a Presenterhez nem
+kell nyúlni.
+
+------------------------------------------------------------------------
+
+🌟 8. BOMWorkbench
+
+A dialógus popup, nem része a layoutnak.
+A Workbenchhez nem kell nyúlni.
+
+------------------------------------------------------------------------
+
+🌟 9. PATCHING TERV (implementációs lépések)
+
+9.1. Új fájlok létrehozása
+
+    products/dialogs/product_name_dialog.h
+    products/dialogs/product_name_dialog.cpp
+
+A ModeNameDialog alapján.
+
+9.2. ProductTreeManager módosítása
+
+-   addRootProduct() → dialógus + új barcode workflow
+-   addChildProduct() → dialógus + új barcode workflow
+
+9.3. BarcodeGenerator módosítása
+
+-   ensureUnique() → exists() helyett isBarcodeUnique()
+
+9.4. ProductTreeView / Presenter / Workbench
+
+-   nincs módosítás
+
+9.5. Tesztelés
+
+-   root létrehozás
+-   child létrehozás
+-   duplikált név root alatt
+-   duplikált név child alatt
+-   barcode automatikus generálása
+-   barcode átírás validációval
+-   CSV export/import
+
+
+****
+
+products/model/product_master.h
+products/registry/product_registry.h
+products/registry/product_registry.cpp
+
+products/view/product_tree_manager.h
+products/view/product_tree_manager.cpp
+products/view/product_tree_view.h
+products/view/product_tree_view.cpp
+
+products/presenter/product_tree_presenter.h
+products/presenter/product_tree_presenter.cpp
+
+barcodes/helpers/barcode_generator.h
+barcodes/helpers/barcode_generator.cpp
+barcodes/registry/barcode_registry.h
+barcodes/registry/barcode_registry.cpp
+barcodes/validator/barcode_validator.h
+barcodes/validator/barcode_validator.cpp
+
+calcmodes/dialogs/mode_name_dialog.h
+calcmodes/dialogs/mode_name_dialog.cpp
+
+workbench/view/bom_workbench.h
+workbench/view/bom_workbench.cpp
+
+
+products/repository/product_repository.h
+products/repository/product_repository.cpp
+
+barcodes/helpers/barcode_collision_helper.h
+barcodes/helpers/barcode_collision_helper.cpp
+
+common/registry/hierarchy/hierarchy_mixin.h
+common/registry/barcode/barcode_index_mixin.h
+
+common/utils/cursor_aware_placement.h
+common/utils/attention_blinker.h
+
+products/view/product_tree_panel.h
+products/view/product_tree_panel.cpp
+
+
+*****
+
+Zoltán, hozom a **lenyomatot**, amit kértél — egy olyan *stabil, visszatölthető kontextus‑pillanatképet*, ami akkor is megtartja a projekt fókuszát, ha holnap reggel újra kell indítani a gondolkodást.
+Ez nem a rendszerem belső működésének feltárása (azt nem tudom és nem is szabad megosztanom), hanem **egy emberi értelemben vett projekt‑memória**, amit bármikor újra be tudsz dobni, és én ugyaninnen folytatom.
+
+A cél:
+👉 **egy tömör, de teljes kontextus snapshot**,
+👉 **egy token‑gazdaságos, újra betölthető projekt‑állapot**,
+👉 **egy fejlesztési fókusz, ami nem halványul el**.
+
+---
+
+# 🌟 **CONTEXT SNAPSHOT (projektállapot-lenyomat)**
+
+## **1) A feladat lényege**
+Egy új **Terméktípus létrehozó dialógus** bevezetése a BOM Workbench bal oldali termékfájába, amely:
+
+- a usertől **bekéri a nevet**,
+- automatikusan generál **barcode‑ot** (hierarchikus számozással),
+- inline validációt végez (üres név, duplikált név),
+- a ProductTreeManager workflow‑jába illeszkedik,
+- kompatibilis a ProductRegistry és BarcodeRegistry invariánsaival,
+- UX‑ben a ModeNameDialog mintáját követi.
+
+---
+
+## **2) A jelenlegi rendszer működése**
+- A ProductTreePresenter toolbarján két gomb van:
+  - „Új termékcsoport” → addRootProduct()
+  - „Új terméktípus” → addChildProduct()
+- A ProductTreeManager jelenleg automatikus nevet és barcode‑ot generál.
+- A user ezeket **mindig átírja**, ami UX‑szempontból felesleges.
+- A barcode átírása a TreeView‑ban működik, a BarcodeValidator ellenőrzi.
+
+---
+
+## **3) A cél workflow**
+### **Root létrehozás**
+1. Dialógus → név bekérése
+2. slugFromName(name)
+3. ensureUnique(base)
+4. ProductRegistry::insert()
+
+### **Child létrehozás**
+1. Szülő lekérése
+2. Dialógus → név bekérése
+3. base = parent->barcode vagy slugFromName(name)
+4. ensureUnique(base)
+5. ProductRegistry::insert()
+
+---
+
+## **4) A dialógus követelményei**
+- QDialog alapú
+- QLineEdit + OK/Cancel
+- Inline validáció
+- DuplicateCheck callback
+- CursorAwarePlacement
+- AttentionBlinker
+- Shake animáció hibánál
+- A barcode NEM része a dialógusnak
+
+---
+
+## **5) A barcode generálás új szabályai**
+### **Root:**
+```
+base = slugFromName(name)
+barcode = ensureUnique(base)
+```
+
+### **Child:**
+```
+base = parent->barcode.isEmpty()
+       ? slugFromName(name)
+       : parent->barcode
+
+barcode = ensureUnique(base)
+```
+
+### **ensureUnique(base):**
+- Ha base egyedi → visszaadja
+- Ha nem → számozás:
+  ```
+  base-1
+  base-2
+  base-3
+  ```
+
+---
+
+## **6) A validációs rétegek**
+### **ProductRegistry**
+- name kötelező
+- barcode kötelező
+- name + parentId egyedi
+
+### **BarcodeRegistry**
+- ledger modell
+- isBarcodeUnique()
+- barcodesWithPrefix()
+
+### **BarcodeValidator**
+- UI‑validáció barcode átíráskor
+
+---
+
+## **7) A fejlesztéshez szükséges fájlok (minimális files.txt)**
+```
+products/model/product_master.h
+products/registry/product_registry.h
+products/registry/product_registry.cpp
+
+products/view/product_tree_manager.h
+products/view/product_tree_manager.cpp
+products/view/product_tree_view.h
+products/view/product_tree_view.cpp
+
+products/presenter/product_tree_presenter.h
+products/presenter/product_tree_presenter.cpp
+
+barcodes/helpers/barcode_generator.h
+barcodes/helpers/barcode_generator.cpp
+barcodes/registry/barcode_registry.h
+barcodes/registry/barcode_registry.cpp
+barcodes/validator/barcode_validator.h
+barcodes/validator/barcode_validator.cpp
+
+calcmodes/dialogs/mode_name_dialog.h
+calcmodes/dialogs/mode_name_dialog.cpp
+
+workbench/view/bom_workbench.h
+workbench/view/bom_workbench.cpp
+```
+
+---
+
+## **8) Jó‑ha‑van fájlok**
+```
+products/repository/product_repository.h
+products/repository/product_repository.cpp
+
+common/utils/cursor_aware_placement.h
+common/utils/attention_blinker.h
+
+common/registry/hierarchy/hierarchy_mixin.h
+common/registry/barcode/barcode_index_mixin.h
+```
+
+---
+
+# 🌟 **TOKEN SNAPSHOT (a projekt fókusza 10 sorban)**
+
+```
+- Új ProductNameDialog kell, ModeNameDialog mintájára.
+- addRootProduct() és addChildProduct() dialógust nyit, nem generál automatikus nevet.
+- A név alapján generáljuk a barcode-ot: slugFromName() + ensureUnique().
+- Child esetén a base a parent barcode-ja.
+- ensureUnique() számoz: base-1, base-2, base-3.
+- ProductRegistry validál: name kötelező, barcode kötelező, name+parentId egyedi.
+- BarcodeRegistry validál: ledger, isBarcodeUnique(), barcodesWithPrefix().
+- BarcodeValidator továbbra is ellenőrzi a kézi átírást.
+- ProductTreePresenter toolbarja változatlan.
+- BOMWorkbench nem igényel módosítást.
+```
+
+---
+
+# 🌟 **Ha holnap újraindulunk, csak ezt a snapshotot dobd be, és ugyaninnen folytatom.**
+
+Ha szeretnéd, a következő lépés lehet:
+
+👉 **ProductNameDialog implementáció (header + cpp)**
+👉 **ProductTreeManager patch**
+👉 **BarcodeGenerator patch**
+
+Csak szólj, melyikkel kezdjem.

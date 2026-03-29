@@ -14,11 +14,11 @@ FormulaContract cuttingContract()
     };
 
     c.requiredOutputs = {
-        "requiredLength"
+        "len"
     };
 
     c.optionalOutputs = {
-        "material",
+        "mat",
         "qty"   // Cutting esetén opcionális
     };
 

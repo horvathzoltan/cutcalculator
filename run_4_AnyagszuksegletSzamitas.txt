@@ -570,6 +570,10 @@ AlsóPálca;ROL-P;6000;10;;Round;CM2;Aluminum;;Length;None
 ErősítettZáró;ROL-EZ;6000;;;;CM2;Aluminum;RAL9016;Length;Paintable
 RugósRugó;ROL-RRG;0;;Spring;CM3;Steel;;;Piece;None
 TetőtériRugó;ROL-TRG;0;;Spring;CM3;Steel;;;Piece;None
+#roletta kiegészítők
+RolettaVászon;ROL-FAB;0;;;;CM2;Fabric;;Length;None
+AlsóPálcaDugó;ROL-PD;0;;Fitting;CM3;Plastic;;;Piece;None
+TengelyVég;ROL-TEV;0;;Fitting;CM3;Plastic;;;Piece;None
 
 products:
 barcode,parentBarcode,name
@@ -603,30 +607,49 @@ NP-CK,NP-C,Kurblis
 
 roletta - rugós:(w*h)115*150cm
 
-tengely 112 -3 cm
-vászon 111 -4 cm
-alsópálca 112.3 -2.7 cm
-záróléc
-tok
-────────────────────────────────────────────
+gyártási méret
+
+tengely: 112 -3cm TE-R-23
+vászon 111 -4cm anyag külön van megadva
+alsópálca 112.3 -2.7 cm ROL-P
+alsópálca dugó 2 db
+tengelyvég 1 db
+rugós rugó 1 db
+
+--------
 
 roletta - tetőtéri 64.7*120 cm
 
-tengely: 62.2 -2,5 cm
-vászon 62.0 -2,7 cm
-alsópálca 62.0 -2,7 cm
+gyártási méret
+
+tengely: 62.2 -2,5 cm TE-R-23
+vászon 62.0 -2,7 cm anyag külön van megadva
+alsópálca 62.0 -2,7 cm ROL-P
+alsópálca dugó 2 db
+tengelyvég 1 db
+tetőtéri rugó 1 db
+
 --------
 
 roletta - tetőtéri-NagyK 130*160cm
 
-tengely: 127 -3 cm
-vászon 126 -4 cm
-alsópálca 127.3 -2.7 cm
+gyártási méret
 
-----
+tengely: 127 -3 cm TE-R-23
+vászon 126 -4 cm anyag külön van megadva
+alsópálca 127.3 -2.7 cm ROL-P
+alsópálca dugó 2 db
+tengelyvég 1 db
+tetőtéri rugó 1 db
+
+--------
+
 roletta - alap 45*40.5cm
 
-tengely: 41.5 -3.5 cm
-vászon 40.5 -4.5 cm
-alsópálca 40.5 -4.5 cm
+gyártási méret
+
+tengely: 41.5 -3.5 cm TE-R-23
+vászon 40.5 -4.5 cm anyag külön van megadva
+alsópálca 40.5 -4.5 cm ROL-P
+alsópálca dugó 2 db
 

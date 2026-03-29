@@ -162,12 +162,12 @@ void FormulaEngineTester::testNeedCalculatorSimpleRoletta()
     // v1 DSL továbbra is támogatott: requiredLength = w-15, w-10
     auto d1 = TestDataBuilder::makeDetail(
         mode.id, ids.M1,
-        "requiredLength = w - 15",
+        "len = w - 15",
         NeedCalculationDetail::DetailKind::Cutting
         );
     auto d2 = TestDataBuilder::makeDetail(
         mode.id, ids.M2,
-        "requiredLength = w - 10",
+        "len = w - 10",
         NeedCalculationDetail::DetailKind::Cutting
         );
 

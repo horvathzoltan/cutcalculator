@@ -16,7 +16,7 @@ QString BarcodeGenerator::normalize(const QString& s)
     return out;
 }
 
-QString normalizeForSlug(const QString& s)
+QString BarcodeGenerator::normalizeForSlug(const QString& s)
 {
     // 1) NFD normalizáció (ékezetek szétválasztása)
     QString out = s.normalized(QString::NormalizationForm_D);
@@ -182,4 +182,29 @@ QString BarcodeGenerator::generate(const QString& prefix,
 QString BarcodeGenerator::generateToken(int length)
 {
     return makeToken(length);
+}
+
+QString BarcodeGenerator::ensureUnique(const QString& base)
+{
+    // 1) Ha nincs ilyen barcode → ez lesz az új
+    if (BarcodeRegistry::instance().isBarcodeUnique(base))
+        return base;
+
+    // 2) Keresünk postfixeket
+    int maxPostfix = 0;
+    const QStringList existing =
+        BarcodeRegistry::instance().barcodesWithPrefix(base);
+
+    for (const QString& code : existing) {
+        if (!code.startsWith(base + "-"))
+            continue;
+
+        bool ok = false;
+        int n = code.mid(base.length() + 1).toInt(&ok);
+        if (ok)
+            maxPostfix = std::max(maxPostfix, n);
+    }
+
+    // 3) Következő postfix
+    return base + "-" + QString::number(maxPostfix + 1);
 }

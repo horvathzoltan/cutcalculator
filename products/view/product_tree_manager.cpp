@@ -155,14 +155,27 @@ void ProductTreeManager::addChildProduct() {
     QString parentIdStr = _model->itemFromIndex(index.sibling(index.row(), 2))->text();
     QUuid parentId(parentIdStr);
 
+    const ProductMaster *parent =
+        ProductRegistry::instance().findById(parentId);
+
+    if (!parent) {
+        zWarning("⚠️ addChildProduct: parent not found, aborting");
+        return;
+    }
+
+    QString base = parent->barcode.isEmpty()
+                       ? BarcodeGenerator::slugFromName(parent->name)
+                       : parent->barcode;
+
+
+    QString parentName = parent->name;
+
     ProductMaster pm;
     pm.id = QUuid::createUuid();
     pm.parentId = parentId;
-    pm.name = "Új gyermek";
-    pm.barcode = BarcodeGenerator::generate("PROD", pm.name, 6);
-   //ProductRegistry::instance().insert(pm);
+    pm.name = parentName + " - új";
+    pm.barcode = BarcodeGenerator::ensureUnique(base);
 
-    //ProductRegistry::instance().insert(pm);
     if (!ProductRegistry::instance().insert(pm)) {
         zWarning("⚠️ Nem sikerült regisztrálni az új gyermeket (barcode ütközés?)");
         return;

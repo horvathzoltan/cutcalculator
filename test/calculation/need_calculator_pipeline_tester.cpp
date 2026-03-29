@@ -43,7 +43,7 @@ void NeedCalculatorPipelineTester::testLenDsl()
     // requiredLength = w - 20
     auto d = TestDataBuilder::makeDetail(
         mode.id, ids.M1,
-        "requiredLength = w - 20",
+        "len = w - 20",
         NeedCalculationDetail::DetailKind::Cutting
         );
     NeedCalculationDetailRegistry::instance().insert(d);
@@ -193,7 +193,7 @@ void NeedCalculatorPipelineTester::testOptDsl()
     // requiredLength = w - 20 + opt: 1 ? +40
     auto d = TestDataBuilder::makeDetail(
         mode.id, ids.M1,
-        "requiredLength = w - 20 + opt: 1 ? +40",
+        "len = w - 20 + opt: 1 ? +40",
         NeedCalculationDetail::DetailKind::Cutting
         );
     NeedCalculationDetailRegistry::instance().insert(d);
@@ -370,7 +370,7 @@ void NeedCalculatorPipelineTester::testCutting()
     // requiredLength = w - 30
     auto d = TestDataBuilder::makeDetail(
         mode.id, ids.M1,
-        "requiredLength = w - 30",
+        "len = w - 30",
         NeedCalculationDetail::DetailKind::Cutting
         );
     NeedCalculationDetailRegistry::instance().insert(d);

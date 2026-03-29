@@ -216,9 +216,9 @@ Result<RawCut> NeedCalculator::evalFormulaCut(const OrderLine& line,
 
     // 4) requiredLength
     {
-        Value v = vars.get("requiredLength");
+        Value v = vars.get("len");
         if (v.type() == Value::Type::Null)
-            return Result<RawCut>::failure("requiredLength not set");
+            return Result<RawCut>::failure("len not set");
         raw.requiredLength = (int)v.number();
     }
 
@@ -233,7 +233,7 @@ Result<RawCut> NeedCalculator::evalFormulaCut(const OrderLine& line,
     // 6) material
     // 6) material
     {
-        Value v = vars.get("material");
+        Value v = vars.get("mat");
         if (v.type() == Value::Type::Null) {
             // fallback
             auto mat = MaterialRegistry::instance().findById(detail.materialId);

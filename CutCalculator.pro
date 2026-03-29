@@ -330,6 +330,7 @@ DISTFILES += \
     docs/entity_contract.md \
     docs/entity_matrix.md \
     docs/formula_engine_dsl_v3.md \
+    docs/formula_engine_quickstart.md \
     docs/formula_engine_syntax.txt \
     docs/overlay_ux_rules.md \
     docs/registry_contract.md \

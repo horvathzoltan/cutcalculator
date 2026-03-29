@@ -238,7 +238,7 @@ A NeedCalculator:
 
 -   feltölti a DSL változókat (w, h, color, stb.),
 -   futtatja a FormulaEngine‑t,
--   kiolvassa a requiredLength, material, qty változókat,
+-   kiolvassa a  len, mat, qty változókat,
 -   visszaad egy ItemNeed‑et.
 
 A qty szorzás nem itt történik, hanem a builderben.

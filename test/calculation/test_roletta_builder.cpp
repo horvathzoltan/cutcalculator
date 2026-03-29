@@ -156,9 +156,9 @@ TestRolettaBuilder::Ids TestRolettaBuilder::build()
     // --- Cutting DSL – mindhárom módra ugyanaz a geometria ---
 
     auto add_common_cutting = [&](QUuid calcId) {
-        add_detail(calcId, ids.TE_R_23,    "requiredLength = w - 30", NeedCalculationDetail::DetailKind::Cutting);
-        add_detail(calcId, ids.ROL_P,      "requiredLength = w - 30", NeedCalculationDetail::DetailKind::Cutting);
-        add_detail(calcId, ids.ROL_FABRIC, "requiredLength = h - 20", NeedCalculationDetail::DetailKind::Cutting);
+        add_detail(calcId, ids.TE_R_23,    "len = w - 30", NeedCalculationDetail::DetailKind::Cutting);
+        add_detail(calcId, ids.ROL_P,      "len = w - 30", NeedCalculationDetail::DetailKind::Cutting);
+        add_detail(calcId, ids.ROL_FABRIC, "len = h - 20", NeedCalculationDetail::DetailKind::Cutting);
         // ⚠️ Dugók NEM Cutting! (különben nem kerülnek be a kitItems-be)
     };
 
