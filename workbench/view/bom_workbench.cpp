@@ -5,21 +5,16 @@
 #include <QAction>
 #include <QLabel>
 #include <QTableWidget>
+#include <QTimer>
 
-//#include "common/settings/settings_manager.h"
 #include "common/logger/event_logger.h"
 
-
 #include "needs/manager/material_requirements_manager.h"
-#include "needs/view/material_picker_dialog.h"
 #include "needs/view/material_requirements_view.h"
-#include "needs/registry/need_rule_registry.h"
 
 #include "products/view/product_tree_manager.h"
-#include "products/registry/product_registry.h"
 
 #include "calculation/manager/calculation_mode_detail_manager.h"
-#include "calculation/registry/need_calculation_detail_registry.h"
 
 #include "common/utils/geometry_helper.h"
 #include "common/utils/qt_event_util.h"
@@ -51,6 +46,11 @@ BOMWorkbench::BOMWorkbench(QWidget* parent)
     // Jobb panel: BOM tabok
     buildRightPanel();
 
+    if (auto* mw = this->window()) {
+        connect(mw, SIGNAL(finalPlacementReached()),
+                this, SLOT(onFinalPlacementReached()));
+    }
+
     zEventINFO("BOMWorkbench initialized");
 }
 
@@ -72,9 +72,10 @@ void BOMWorkbench::showEvent(QShowEvent* event) {
 
     // Biztosítsuk, hogy a layout már kiosztotta a méreteket
     QTimer::singleShot(0, this, [this]() {
-         restoreState();
-         _restoredOnce = true;
-         zEventINFO("🧩 BOMWorkbench state restored (showEvent + queued)");
+        _restoredOnce = true;
+        _isFullyShown = true;
+        zEventINFO("🧩 BOMWorkbench fully shown, waiting for final placement");
+        tryRestore();
     });
 
     _isFullyShown = true;
@@ -181,6 +182,11 @@ void BOMWorkbench::buildRightPanel() {
 
 void BOMWorkbench::restoreState()
 {
+    if (!_isFullyShown || !_canRestore) {
+        zEventINFO("⏳ Workbench restore skipped: not fully shown or final placement not reached");
+        return;
+    }
+
     const QString profile =
         SnapshotManager::instance().monitorProfileFor(this);
 
@@ -189,7 +195,8 @@ void BOMWorkbench::restoreState()
 
     // 1) Monitorprofilhoz kötött snapshot betöltése
     WorkbenchSnapshot snap =
-        SnapshotManager::instance().loadWorkbenchSnapshot(this);
+        SnapshotManager::instance().restoreSnapshot_BOMWorkbench("bom_workbench");
+
 
     // 2) Bal vertical splitter – snapshot vagy fallback
     if (_leftVerticalSplitter) {
@@ -243,6 +250,11 @@ void BOMWorkbench::saveState()
         return;
     }
 
+    if (!_canSaveSnapshots) {
+        zEventINFO("⏳ Workbench snapshot skipped: MainWindow not in final placement yet");
+        return;
+    }
+
     WorkbenchSnapshot snap;
 
     // 1) Bal vertical splitter – fallback + snapshot
@@ -277,7 +289,7 @@ void BOMWorkbench::saveState()
     LayoutDefaultStore::instance().flush();
 
     // Monitor-profilos snapshot mentése (per monitor layout)
-    SnapshotManager::instance().saveWorkbenchSnapshot(snap, this);
+    SnapshotManager::instance().saveSnapshot_BOMWorkbench(snap, "bom_workbench");
 
     zEventINFO("BOMWorkbench state saved (percent-based + snapshot-aware)");
 }
@@ -298,4 +310,12 @@ QToolBar* BOMWorkbench::buildDetailsToolbar(QWidget* parent, CalculationModeDeta
 {
     Q_UNUSED(view);
     return _detailPresenter->buildToolbar(parent);
+}
+
+void BOMWorkbench::tryRestore()
+{
+    if (!_isFullyShown || !_canRestore)
+        return;
+
+    restoreState();
 }

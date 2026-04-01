@@ -101,7 +101,10 @@ static const QMap<FileKind, FileKindInfo> FILE_INFO = {
 
     { FileKind::LogDir, { "CutCalculator_logs", FileBehavior::Config } },
     { FileKind::SettingsIni, { "settings.ini", FileBehavior::Config } },
-    { FileKind::CacheDir, { "%1_cache", FileBehavior::Config } }
+    { FileKind::CacheDir,           { "%1_cache", FileBehavior::Config } },
+    { FileKind::MainWindow_SnapshotFile, { "ui_snapshots/geometry_%1.ini", FileBehavior::Config } },
+    { FileKind::BOM_Workbench_SnapshotFile, { "ui_snapshots/bom_workbench/%1.ini", FileBehavior::Config } }
+
 };
 
 
@@ -127,6 +130,13 @@ QString FileNameHelper::pathFor(FileKind kind, FileAccess access, const QString&
             fileName = fileName.arg(overrideName);
         else
             fileName = overrideName;
+    }
+
+    // 🚨 Általános guard: minden %1 sablonhoz kötelező overrideName
+    if (fileName.contains("%1") && overrideName.isEmpty()) {
+        zError() << "❌ FileNameHelper::pathFor – template filename requires non-empty overrideName. "
+                 << "fileName=" << fileName;
+        return "";
     }
 
     // Csak CRUD és ReadOnly fájloknál kötelező a dataRoot

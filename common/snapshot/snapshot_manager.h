@@ -10,11 +10,11 @@
 
 /**
  * @class SnapshotManager
- * @brief Monitorprofilhoz kötött UI snapshot kezelés (window + BOMWorkbench).
+ * @brief UI snapshot kezelés (Window monitorprofilos + Workbench monitorfüggetlen).
  *
  * Felelősség:
  * - Window geometry snapshot mentése/visszaállítása (per monitor profil).
- * - BOMWorkbench splitter/header snapshot mentése/visszaállítása.
+ * - Workbench splitter/header snapshot mentése/visszaállítása (monitorfüggetlen).
  * - Snapshot file path feloldása FileNameHelper alapján (ui_snapshots alatt).
  * - Guardolt, auditbarát logika (zEventINFO/WARN).
  *
@@ -30,18 +30,19 @@ public:
     static SnapshotManager& instance();
 
     /// Window geometry snapshot mentése (monitorprofilos ini-be).
-    void saveWindowSnapshot(QWidget* window);
+    void saveSnapshot_MainWindow(QWidget* window);
 
     /// Window geometry snapshot visszaállítása.
     /// @return true, ha talált és sikeresen elindította a restore folyamatot.
-    bool restoreWindowSnapshot(QWidget* window);
+    bool restoreSnapshot_MainWindow(QWidget* window);
 
     /// BOMWorkbench snapshot betöltése (splitters + header percent stringek).
-    WorkbenchSnapshot loadWorkbenchSnapshot(QWidget* contextWindow);
-
     /// BOMWorkbench snapshot mentése.
-    void saveWorkbenchSnapshot(const WorkbenchSnapshot& s,
-                               QWidget* contextWindow);
+
+    WorkbenchSnapshot restoreSnapshot_BOMWorkbench(const QString& workbenchName);
+
+    void saveSnapshot_BOMWorkbench(const WorkbenchSnapshot& s,
+                               const QString& workbenchName);
 
     /// Monitor profil (pl. "1920x1080_96dpi") lekérdezése UI widgethez.
     QString monitorProfileFor(QWidget* w) const;
@@ -51,7 +52,4 @@ private:
 
     /// Belső segédfüggvény: monitorprofil generálása.
     QString currentMonitorProfile(QWidget* window) const;
-
-    /// Snapshot ini file path feloldása adott widgethez (monitorprofil alapján).
-    QString snapshotFilePathFor(QWidget* window) const;
 };

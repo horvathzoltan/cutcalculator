@@ -95,11 +95,14 @@ private:
     void showEvent(QShowEvent* event) override;
 
     bool _restoredOnce = false;
-    bool _isFullyShown = false;
 
-    //SubscriptionToken _treeRegistryToken;
+    bool _isFullyShown = false;      // showEvent után lesz true
+    bool _canSaveSnapshots = false;  // finalPlacementReached után lesz true
+    bool _canRestore = false;
 
+    void tryRestore();
 
-   // void closeEvent(QCloseEvent *event) override;
+private slots:
+    void onFinalPlacementReached() { _canSaveSnapshots = true; _canRestore = true; tryRestore(); }
 
 };

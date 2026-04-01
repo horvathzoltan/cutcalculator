@@ -122,6 +122,9 @@ StartupStatus StartupManager::runStartupSequence()
         finalStatus.addWarnings(s.warnings());
     }
 
+    // Minden registry betöltve, minden hazatalálás lefutott
+    BarcodeRegistry::instance().persistIfDirty();
+
     // 🔎 ÚJ: MatrixValidator diagnosztika indulás után
     //MatrixValidator_2();
     MatrixValidator::logHumanReadableDiagnostics();

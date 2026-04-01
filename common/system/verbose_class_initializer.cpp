@@ -2,6 +2,7 @@
 #include "calcmodes/model/need_calculation.h"
 #include "calculation/model/need_calculation_detail.h"
 #include "common/system/verbose_manager.h"
+#include "verbose_class_initializer.h"
 
 // 🔍 Minden regisztrált osztály includeolva – így a fordító validálja a típusneveket
 #include "connections/connection_entity.h"
@@ -18,27 +19,32 @@
 void registerAllVerbose() {
     auto& vm = VerboseManager::instance();
 
-    vm.registerClass(QString::fromStdString(std::string(nameof::nameof_type<MaterialRegistry>())), false);
-    vm.registerClass(QString::fromStdString(std::string(nameof::nameof_type<BarcodeRegistry>())), false);
-    vm.registerClass(QString::fromStdString(std::string(nameof::nameof_type<ProductRepository>())), false);
-    vm.registerClass(QString::fromStdString(std::string(nameof::nameof_type<ProductRegistry>())), true);
-    //vm.registerClass(QString::fromStdString(std::string(nameof::nameof_type<BarcodeTable>())), false);
-    vm.registerClass(QString::fromStdString(std::string(nameof::nameof_type<BarcodeValidator>())), true);
-    vm.registerClass(QString::fromStdString(std::string(nameof::nameof_type<BarcodeCollisionHelper>())), false);
-    vm.registerClass(QString::fromStdString(std::string(nameof::nameof_type<RegistryManager>())), false);
-    vm.registerClass(QString::fromStdString(std::string(nameof::nameof_type<TableFormatter>())), false);
-    vm.registerClass(QString::fromStdString(std::string(nameof::nameof_type<OverlayIconWidget>())), false);
+    // 🧩 Típuslista – bővíthető, átlátható
+    const QVector<VerboseEntry> entries = {
+        VERBOSE_OFF<MaterialRegistry>(),
+        VERBOSE_OFF<BarcodeRegistry>(),
+        VERBOSE_OFF<ProductRepository>(),
+        VERBOSE_ON<ProductRegistry>(),
+        VERBOSE_ON<BarcodeValidator>(),
+        VERBOSE_OFF<BarcodeCollisionHelper>(),
+        VERBOSE_OFF<RegistryManager>(),
+        VERBOSE_OFF<TableFormatter>(),
+        VERBOSE_OFF<OverlayIconWidget>(),
+        VERBOSE_ON<RegistryBase>(),
+        VERBOSE_OFF<RegistryEngineBase<BarcodeRecord>>(),
 
-    vm.registerClass(QString::fromStdString(std::string(nameof::nameof_type<RegistryBase>())), true);
+        // Engine specializációk
+        VERBOSE_OFF<RegistryEngineBase<ProductMaster>>(),
+        VERBOSE_OFF<RegistryEngineBase<MaterialMaster>>(),
+        VERBOSE_OFF<RegistryEngineBase<NeedCalculation>>(),
+        VERBOSE_OFF<RegistryEngineBase<NeedCalculationDetail>>(),
+        VERBOSE_OFF<RegistryEngineBase<ConnectionEntity<ProductMaster, MaterialMaster>>>(),
+    };
 
-
-    // Konkrét engine specializációk
-    vm.registerClass(QString::fromStdString(std::string(nameof::nameof_type<RegistryEngineBase<ProductMaster>>())), false);
-    vm.registerClass(QString::fromStdString(std::string(nameof::nameof_type<RegistryEngineBase<MaterialMaster>>())), false);
-    vm.registerClass(QString::fromStdString(std::string(nameof::nameof_type<RegistryEngineBase<NeedCalculation>>())), false);
-    vm.registerClass(QString::fromStdString(std::string(nameof::nameof_type<RegistryEngineBase<NeedCalculationDetail>>())), false);
-    vm.registerClass(QString::fromStdString(std::string(nameof::nameof_type<RegistryEngineBase<ConnectionEntity<ProductMaster, MaterialMaster>>>())), false);
-
+    // 🔁 Egyetlen ciklus — tiszta, clazy‑barát
+    for (const auto& e : entries) {
+        vm.registerClass(e.className, e.verbose);
+    }
     // 🔍 Audit összefoglaló
     vm.dumpRegistry();
 }

@@ -31,42 +31,42 @@ MainWindow::MainWindow(QWidget *parent)
     // — Ablak geometria visszaállítása —
     // ablakméret - az esemény időzítve (Qt event queue-ban)
     QTimer::singleShot(0, this, [this]() {
-        // 1) Window restore snapshotból (per monitor profil)
-        bool restoredFromSnapshot = SnapshotManager::instance().restoreWindowSnapshot(this);
+        _initialMonitorProfile = SnapshotManager::instance().monitorProfileFor(this);
+        zInfo(QString("🖥️ Initial monitor profile: %1").arg(_initialMonitorProfile));
 
-        // 2) Ha nincs snapshot, akkor fallback a UiDefaultStore-ból (settings.ini)
-        if (!restoredFromSnapshot) {
-            const QString geom = LayoutDefaultStore::instance().windowGeometryPercent();
-            const QSize savedScreen = GeometryHelper::parseScreenSize(
-                LayoutDefaultStore::instance().screenSizeString());
-            if (!geom.isEmpty()) {
-                GeometryHelper::restoreWindowGeometry(this, geom, savedScreen);
-            }
+        const QString geom = LayoutDefaultStore::instance().windowGeometryPercent();
+
+        const QSize savedScreen = GeometryHelper::parseScreenSize(
+            LayoutDefaultStore::instance().screenSizeString());
+        if (!geom.isEmpty()) {
+            GeometryHelper::restoreWindowGeometry(this, geom, savedScreen);
         }
 
-        // ✅ Itt állítjuk be
-        _windowRestoredOnce = true;
 
-        // 3) MainWindow splitter állapot – fallback percent alapú
         const QString split = LayoutDefaultStore::instance().mainSplitterPercent();
         if (!split.isEmpty()) {
             GeometryHelper::restoreSplitterState(ui->splitter, split);
         }
 
-        zInfo("✅ UI Settings loaded (percent-based + snapshot-aware)");
+        // — Aktív tab (opcionális) —
+        int savedTab = SettingsManager::instance().currentTabIndex();
+        int tabMax = ui->tabWidget->count();
+        if (savedTab >= 0 && savedTab < tabMax) {
+            ui->tabWidget->setCurrentIndex(savedTab);
+            zInfo("✅ Tab index restored (delayed): " + QString::number(savedTab)+" of "+QString::number(tabMax)+" tabs");
+        } else{
+            zInfo("⚠️ Tab index cannot restored (delayed): " + QString::number(savedTab)+" of "+QString::number(tabMax)+" tabs");
+        }
+
+        zInfo("✅ UI Settings loaded (percent-based + snapshot-aware, early restore)");
     });
 
 
-    // — Aktív tab (opcionális) —
-    int savedTab = SettingsManager::instance().currentTabIndex();
-    if (savedTab >= 0 && savedTab < ui->tabWidget->count()) {
-        ui->tabWidget->setCurrentIndex(savedTab);
-    }
 
-    //loadMaterials(); // 1) Anyagok betöltése registry-be (CSV)
-    initMaterialsTab(); // 2) Viewer fül inicializálása és feltöltése
+    // 1) Materials tab  inicializálása és feltöltése
+    initMaterialsTab();
 
-    // BOM Workbench fül
+    // BOM Workbench tab
     {
         auto* bomTab = new BOMWorkbench(ui->tabWidget);
         ui->tabWidget->addTab(bomTab, tr("BOM Workbench"));
@@ -81,24 +81,90 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
+void MainWindow::showEvent(QShowEvent* e) {
+    QMainWindow::showEvent(e);
+
+    static bool logged = false;
+    if (!logged) {
+        logged = true;
+
+        QScreen* s = this->screen();
+        if (s) {
+            zInfo(QString("🪟 showEvent: window is now visible on screen %1 (%2x%3, %4dpi)")
+                      .arg(s->name())
+                      .arg(s->size().width())
+                      .arg(s->size().height())
+                      .arg(int(std::lround(s->logicalDotsPerInch()))));
+        } else {
+            zInfo("🪟 showEvent: window is visible, but screen() is null");
+        }
+    }
+
+    _lastSeenProfile = SnapshotManager::instance().monitorProfileFor(this);
+    QTimer::singleShot(200, this, &MainWindow::checkFinalPlacement);
+}
+
+
 void MainWindow::resizeEvent(QResizeEvent* e) {
     QMainWindow::resizeEvent(e);
     if (_windowRestoredOnce && GeometryHelper::isWindowGeometryReady(this)) {
-        SnapshotManager::instance().saveWindowSnapshot(this);
+        SnapshotManager::instance().saveSnapshot_MainWindow(this);
     }
 }
 
+// void MainWindow::moveEvent(QMoveEvent* e) {
+//     QMainWindow::moveEvent(e);
+//     if (_windowRestoredOnce && GeometryHelper::isWindowGeometryReady(this)) {
+//         SnapshotManager::instance().saveSnapshot_MainWindow(this);
+//     }
+// }
 void MainWindow::moveEvent(QMoveEvent* e) {
     QMainWindow::moveEvent(e);
+
+    _lastSeenProfile = SnapshotManager::instance().monitorProfileFor(this);
+
+    if (!_windowRestoredOnce) {
+        QTimer::singleShot(200, this, &MainWindow::checkFinalPlacement);
+    }
+
     if (_windowRestoredOnce && GeometryHelper::isWindowGeometryReady(this)) {
-        SnapshotManager::instance().saveWindowSnapshot(this);
+        SnapshotManager::instance().saveSnapshot_MainWindow(this);
     }
 }
+
+
+void MainWindow::checkFinalPlacement()
+{
+    if (_windowRestoredOnce) {
+        return;
+    }
+
+    const QString current = SnapshotManager::instance().monitorProfileFor(this);
+
+    if (current != _initialMonitorProfile) {
+        zInfo(QString("🖥️ Monitor profile stabilized: %1 → %2")
+                  .arg(_initialMonitorProfile, current));
+    } else {
+        zInfo(QString("🖥️ Monitor profile stabilized without change (%1)").arg(current));
+    }
+
+    const bool restored = SnapshotManager::instance().restoreSnapshot_MainWindow(this);
+    if (!restored) {
+        zWarning("⚠️ No geometry snapshot for final monitor profile; keeping current geometry");
+    }
+
+    _windowRestoredOnce = true;
+    emit finalPlacementReached();
+
+    SnapshotManager::instance().saveSnapshot_MainWindow(this);
+
+}
+
 
 void MainWindow::changeEvent(QEvent* e) {
     if (e->type() == QEvent::WindowStateChange) {
         if (_windowRestoredOnce && GeometryHelper::isWindowGeometryReady(this)) {
-            SnapshotManager::instance().saveWindowSnapshot(this);
+            SnapshotManager::instance().saveSnapshot_MainWindow(this);
         }
     }
     QMainWindow::changeEvent(e);

@@ -65,6 +65,7 @@ SOURCES += \
     calculation/service/need_calculator.cpp \
     calculation/view/calculation_mode_detail_view.cpp \
     calcmodes/view/calculation_modes_view.cpp \
+    products/dialogs/product_name_dialog.cpp \
     products/presenter/product_tree_presenter.cpp \
     products/view/product_tree_panel.cpp \
     test/barcode/barcode_generator_tester.cpp \
@@ -233,6 +234,7 @@ HEADERS += \
     calculation/service/need_calculator.h \
     calculation/view/calculation_mode_detail_view.h \
     calcmodes/view/calculation_modes_view.h \
+    products/dialogs/product_name_dialog.h \
     products/presenter/product_tree_presenter.h \
     products/view/product_tree_panel.h \
     test/barcode/barcode_generator_tester.h \

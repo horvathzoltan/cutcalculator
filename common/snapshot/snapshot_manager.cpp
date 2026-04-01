@@ -4,10 +4,16 @@
 #include <QScreen>
 #include <QGuiApplication>
 #include <QSettings>
+#include <QElapsedTimer>
 
 #include "common/logger/event_logger.h"   // zEventINFO/WARN
 
 #include "workbench_snapshot.h"
+
+// --- Window snapshot throttle state ---
+static bool g_isRestoring = false;
+static QElapsedTimer g_throttleTimer;
+static QString g_lastSavedGeometry;
 
 SnapshotManager& SnapshotManager::instance()
 {
@@ -39,38 +45,32 @@ QString SnapshotManager::currentMonitorProfile(QWidget* window) const
         .arg(dpi);
 }
 
-QString SnapshotManager::snapshotFilePathFor(QWidget* window) const
-{
-    if (!window) {
-        return {};
-    }
-
-    const QString profile = currentMonitorProfile(window);
-    const QString path =
-        FileNameHelper::instance().pathFor(FileKind::UiSnapshotFile, FileAccess::Read, profile);
-
-    if (path.isEmpty()) {
-        zWarning("⚠️ SnapshotManager: snapshot path is empty");
-        return {};
-    }
-
-    return path;
-}
-
 /* Window snapshot */
 
-void SnapshotManager::saveWindowSnapshot(QWidget* window)
+void SnapshotManager::saveSnapshot_MainWindow(QWidget* window)
 {
+
     if (!window) {
         zWarning("⚠️ Window snapshot save skipped: null window");
         return;
     }
 
-    const QString path = snapshotFilePathFor(window);
-    if (path.isEmpty()) {
-        // Log már megtörtént snapshotFilePathFor-ben
+    if (g_isRestoring) {
+        zInfo("⏳ Window snapshot skipped: restore in progress");
         return;
     }
+
+    if (!g_throttleTimer.isValid()) {
+        g_throttleTimer.start();
+    } else if (g_throttleTimer.elapsed() < 300) {
+        zInfo("⏳ Window snapshot skipped: throttle (too frequent)");
+        return;
+    }
+
+    const QString path =
+        FileNameHelper::instance().pathFor(FileKind::MainWindow_SnapshotFile,
+                                           FileAccess::Write,
+                                           currentMonitorProfile(window));
 
     // Percent-based geometry mentés
     const QString geom = GeometryHelper::saveWindowGeometry(window);
@@ -78,6 +78,13 @@ void SnapshotManager::saveWindowSnapshot(QWidget* window)
         // GeometryHelper már logolta, miért üres
         return;
     }
+
+    // Geometry unchanged guard
+    if (geom == g_lastSavedGeometry) {
+        zInfo("⏳ Window snapshot skipped: geometry unchanged");
+        return;
+    }
+    g_lastSavedGeometry = geom;
 
     // Screen méret audit célra
     QString screenStr;
@@ -90,27 +97,39 @@ void SnapshotManager::saveWindowSnapshot(QWidget* window)
     snap.setValue("Window/screen",   screenStr);
     snap.sync();
 
-    const QString profile = currentMonitorProfile(window);
-    zInfo(QString("💾 Geometry snapshot saved for profile '%1' → %2")
-                   .arg(profile, path));
+
+    // Throttle timer restart – mostantól 300 ms-ig nem mentünk újra
+    g_throttleTimer.restart();
+
+    zInfo(QString("💾 Window snapshot saved: %1").arg(path));
 }
 
-bool SnapshotManager::restoreWindowSnapshot(QWidget* window)
+bool SnapshotManager::restoreSnapshot_MainWindow(QWidget* window)
 {
     if (!window) {
         zWarning("⚠️ Window snapshot restore skipped: null window");
         return false;
     }
 
-    const QString path = snapshotFilePathFor(window);
+    // RAII guard – minden return esetén visszaállítja a flaget
+    struct RestoreGuard {
+        bool* flag;
+        RestoreGuard(bool* f) : flag(f) { *flag = true; }
+        ~RestoreGuard() { *flag = false; }
+    } guard(&g_isRestoring);
+
+
+    const QString path =
+        FileNameHelper::instance().pathFor(FileKind::MainWindow_SnapshotFile,
+                                           FileAccess::Read,
+                                           currentMonitorProfile(window));
     if (path.isEmpty()) {
         // path invalid → nincs értelme továbbmenni
         return false;
     }
 
     if (!QFile::exists(path)) {
-        const QString profile = currentMonitorProfile(window);
-        zWarning(QString("⚠️ No geometry snapshot for profile '%1'").arg(profile));
+        zWarning(QString("⚠️ No window snapshot file: %1").arg(path));
         return false;
     }
 
@@ -120,40 +139,35 @@ bool SnapshotManager::restoreWindowSnapshot(QWidget* window)
     const QSize   savedScreen = GeometryHelper::parseScreenSize(screenStr);
 
     if (geom.isEmpty()) {
-        zWarning(QString("⚠️ Snapshot restore: empty geometry string in '%1'").arg(path));
+        zWarning(QString("⚠️ Window snapshot restore: empty geometry string in file: %1").arg(path));
         return false;
     }
 
     // Guard-os, delayed restoreWindowGeometry – a GeometryHelper kezeli a timingot.
     GeometryHelper::restoreWindowGeometry(window, geom, savedScreen);
 
-    const QString profile = currentMonitorProfile(window);
-    zInfo(QString("✅ Window restored from geometry snapshot '%1' (%2)")
-                   .arg(profile, path));
+    zInfo(QString("✅ Window snapshot restored: %1").arg(path));
     return true;
 }
 
 /* BOMWorkbench snapshot */
 
 WorkbenchSnapshot
-SnapshotManager::loadWorkbenchSnapshot(QWidget* contextWindow)
+SnapshotManager::restoreSnapshot_BOMWorkbench(const QString& workbenchName)
 {
     WorkbenchSnapshot result;
 
-    if (!contextWindow) {
-        zWarning("⚠️ loadWorkbenchSnapshot skipped: null contextWindow");
-        return result;
-    }
-
-    const QString path = snapshotFilePathFor(contextWindow);
+    const QString path =
+        FileNameHelper::instance().pathFor(FileKind::BOM_Workbench_SnapshotFile,
+                                           FileAccess::Read,
+                                           workbenchName);
     if (path.isEmpty()) {
-        zWarning("⚠️ loadWorkbenchSnapshot: snapshot path is empty");
+        zWarning("⚠️ Workbench snapshot: path is empty");
         return result;
     }
 
     if (!QFile::exists(path)) {
-        const QString profile = currentMonitorProfile(contextWindow);
-        zWarning(QString("ℹ️ No BOMWorkbench snapshot for profile '%1'").arg(profile));
+        zWarning(QString("ℹ️ No Workbench snapshot found at: %1").arg(path));
         return result;
     }
 
@@ -163,26 +177,20 @@ SnapshotManager::loadWorkbenchSnapshot(QWidget* contextWindow)
     result.rightVertical = snap.value("Workbench/right_vertical").toString();
     result.treeHeader    = snap.value("Workbench/tree_header").toString();
 
+    zInfo(QString("ℹ️ Workbench snapshot restored: %1").arg(path));
     return result;
 }
 
-void SnapshotManager::saveWorkbenchSnapshot(const WorkbenchSnapshot& s,
-                                            QWidget* contextWindow)
+void SnapshotManager::saveSnapshot_BOMWorkbench(const WorkbenchSnapshot& s,
+                                            const QString& workbenchName)
 {
-    if (!contextWindow) {
-        zWarning("⚠️ BOMWorkbench snapshot skipped: null contextWindow");
-        return;
-    }
+    const QString path =
+        FileNameHelper::instance().pathFor(FileKind::BOM_Workbench_SnapshotFile,
+                                           FileAccess::Write,
+                                           workbenchName);
 
-    if (!GeometryHelper::isWindowGeometryReady(contextWindow)) {
-        // * ha a window még nem stabil, akkor snapshot mentés csak zaj lenne.
-        zWarning("⏳ Workbench snapshot skipped: window not ready");
-        return;
-    }
-
-    const QString path = snapshotFilePathFor(contextWindow);
     if (path.isEmpty()) {
-        zWarning("⚠️ BOMWorkbench snapshot skipped: snapshot path is empty");
+        zWarning("⚠️ Workbench snapshot save skipped: snapshot path is empty");
         return;
     }
 
@@ -193,9 +201,7 @@ void SnapshotManager::saveWorkbenchSnapshot(const WorkbenchSnapshot& s,
     snap.setValue("Workbench/tree_header",    s.treeHeader);
     snap.sync();
 
-    const QString profile = currentMonitorProfile(contextWindow);
-    zInfo(QString("💾 BOMWorkbench snapshot saved for profile '%1' → %2")
-                   .arg(profile, path));
+    zInfo(QString("💾 Workbench snapshot saved: %1").arg(path));
 }
 
 QString SnapshotManager::monitorProfileFor(QWidget* w) const

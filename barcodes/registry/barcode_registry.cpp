@@ -170,8 +170,7 @@ bool BarcodeRegistry::registerNew(const QString& code,
     if (auto* rec = findByCode(trimmedCode)) {
 
         // 1/A) Félkész rekord (CSV-ből jött, nincs entityId)
-        //      → ez NEM collision, hanem "hazatalálás"
-        //      → befejezzük a rekordot: kitöltjük az entityId-t
+        //      → hazatalálás (update), NEM CSV-dirty
         if (!rec->entityId.has_value()) {
             BarcodeRecord updated = *rec;
             updated.entityId = id;
@@ -182,38 +181,34 @@ bool BarcodeRegistry::registerNew(const QString& code,
                 return false;
             }
 
-            persist();
-            return true;
+            return true;   // hazatalálás → NEM CSV-dirty
         }
 
-        // 1/B) Ugyanaz az entity → idempotens vagy retired tiltás
+        // 1/B) Ugyanaz az entity → idempotens
         if (rec->entityId.value() == id) {
-
-            if (rec->isActive()) {
-                // Idempotens: ugyanaz az entitás, aktív rekord → OK
-                return true;
-            } else {
-                // Retired rekordot újra regisztrálni TILTOTT
-                return false;
-            }
+            if (rec->isActive())
+                return true;   // idempotens, nincs változás
+            else
+                return false;  // retired → tiltott
         }
 
         // 1/C) Más entity → collision
         return false;
     }
 
-    // 2) Új kód → teljesen új ledger rekord létrehozása
+    // 2) Új kód → insert → CSV-dirty
     BarcodeRecord rec;
-    rec.id = QUuid::createUuid();              // belső technikai ID
+    rec.id = QUuid::createUuid();
     rec.code = trimmedCode;
     rec.entityType = entityType;
-    rec.entityId = id;                         // már ismert entitás
+    rec.entityId = id;
     rec.introducedAt = QDateTime::currentDateTime();
 
     if (!insertInternal(rec))
         return false;
 
-    persist();
+    markCsvDirty();   // 🔥 új rekord → CSV-ben is látszik → dirty
+
     return true;
 }
 
@@ -238,9 +233,11 @@ bool BarcodeRegistry::retire(const QString& code, const QString& reason)
             return false;
         }
 
+        markCsvDirty();   // 🔥 CSV-ben látható változás
+
+
         zInfo(QString("Barcode retired: %1 (reason=%2)").arg(trimmedCode, reason));
-        persist();
-        return true;
+        return true;   // 🔥 nincs persist
     }
 
     zWarning(QString("Retire requested for unknown code: %1").arg(trimmedCode));
@@ -277,6 +274,27 @@ QStringList BarcodeRegistry::barcodesWithPrefix(const QString &prefix) const
         out.append(r.code);
 
     return out;
+}
+
+bool BarcodeRegistry::persistIfDirty()
+{
+    if (!_csvDirty) {
+        zInfo("📦 BarcodeRegistry::persistIfDirty → nincs változás, skip");
+        return true;
+    }
+
+    zInfo("📦 BarcodeRegistry::persistIfDirty → változás detektálva, CSV mentése indul...");
+
+    bool ok = BarcodeRepository::saveToCSV(*this);
+
+    if (ok) {
+        zInfo("📦 BarcodeRegistry::persistIfDirty → mentés sikeres, dirty flag törölve");
+        _csvDirty = false;
+    } else {
+        zWarning("⚠️ BarcodeRegistry::persistIfDirty → mentés SIKERTELEN, dirty flag megmarad");
+    }
+
+    return ok;
 }
 
 

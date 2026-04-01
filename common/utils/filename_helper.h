@@ -24,7 +24,9 @@ enum class FileKind {
     UiSnapshotFile,  // fájl
     LogDir,
     SettingsIni,
-    CacheDir
+    CacheDir,
+    MainWindow_SnapshotFile,
+    BOM_Workbench_SnapshotFile
 };
 
 enum class FileAccess {

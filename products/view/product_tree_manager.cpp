@@ -1,6 +1,7 @@
 // products/view/product_tree_manager.cpp
 #include "products/view/product_tree_manager.h"
 #include "common/csv/filecontext.h"
+#include "products/dialogs/product_name_dialog.h"
 #include "ui/style/color_helper.h"
 #include "common/logger/event_logger.h"
 #include <QStandardItem>
@@ -132,55 +133,146 @@ void ProductTreeManager::buildSubtree(QStandardItem* parentItem, const QUuid& pa
 
 // CRUD
 
+// void ProductTreeManager::addRootProduct() {
+//     ProductMaster pm;
+//     pm.id = QUuid::createUuid();
+//     pm.parentId = QUuid(); // gyökér
+//     pm.name = "Új gyökérelem";
+//     pm.barcode = BarcodeGenerator::generate("PROD", pm.name, 6);
+
+//     //ProductRegistry::instance().insert(pm);
+//     if (!ProductRegistry::instance().insert(pm)) {
+//         zWarning("⚠️ Nem sikerült regisztrálni az új gyökérelemet (barcode ütközés?)");
+//         return;
+//     }
+
+//     populate();
+// }
+
 void ProductTreeManager::addRootProduct() {
+    // 1) Dialógus – név bekérése
+    ProductNameDialog dlg(_view,
+                          "",
+                          [&](const QString& name){
+                              return ProductRegistry::instance().existsBy([&](const ProductMaster& p){
+                                  return p.parentId.isNull() && p.name == name;
+                              });
+                          });
+
+    if (dlg.exec() != QDialog::Accepted)
+        return;
+
+    QString name = dlg.value();
+
+    // 2) Barcode generálása
+    QString base = BarcodeGenerator::slugFromName(name);
+    QString barcode = BarcodeGenerator::ensureUnique(base);
+
+    // 3) ProductMaster létrehozása
     ProductMaster pm;
     pm.id = QUuid::createUuid();
-    pm.parentId = QUuid(); // gyökér
-    pm.name = "Új gyökérelem";
-    pm.barcode = BarcodeGenerator::generate("PROD", pm.name, 6);
+    pm.parentId = QUuid();   // root
+    pm.name = name;
+    pm.barcode = barcode;
 
-    //ProductRegistry::instance().insert(pm);
+    // 4) Insert
     if (!ProductRegistry::instance().insert(pm)) {
-        zWarning("⚠️ Nem sikerült regisztrálni az új gyökérelemet (barcode ütközés?)");
+        zWarning("⚠️ Nem sikerült regisztrálni az új gyökérelemet");
         return;
     }
 
+    // 5) UI frissítés
     populate();
 }
+
+
+// void ProductTreeManager::addChildProduct() {
+//     auto index = _view->currentIndex();
+//     if (!index.isValid()) return;
+
+//     QString parentIdStr = _model->itemFromIndex(index.sibling(index.row(), 2))->text();
+//     QUuid parentId(parentIdStr);
+
+//     const ProductMaster *parent =
+//         ProductRegistry::instance().findById(parentId);
+
+//     if (!parent) {
+//         zWarning("⚠️ addChildProduct: parent not found, aborting");
+//         return;
+//     }
+
+//     QString base = parent->barcode.isEmpty()
+//                        ? BarcodeGenerator::slugFromName(parent->name)
+//                        : parent->barcode;
+
+
+//     QString parentName = parent->name;
+
+//     ProductMaster pm;
+//     pm.id = QUuid::createUuid();
+//     pm.parentId = parentId;
+//     pm.name = parentName + " - új";
+//     pm.barcode = BarcodeGenerator::ensureUnique(base);
+
+//     if (!ProductRegistry::instance().insert(pm)) {
+//         zWarning("⚠️ Nem sikerült regisztrálni az új gyermeket (barcode ütközés?)");
+//         return;
+//     }
+
+//     populate();
+// }
 
 void ProductTreeManager::addChildProduct() {
     auto index = _view->currentIndex();
     if (!index.isValid()) return;
 
-    QString parentIdStr = _model->itemFromIndex(index.sibling(index.row(), 2))->text();
+    QString parentIdStr =
+        _model->itemFromIndex(index.sibling(index.row(), 2))->text();
     QUuid parentId(parentIdStr);
 
-    const ProductMaster *parent =
+    const ProductMaster* parent =
         ProductRegistry::instance().findById(parentId);
 
     if (!parent) {
-        zWarning("⚠️ addChildProduct: parent not found, aborting");
+        zWarning("⚠️ addChildProduct: parent not found");
         return;
     }
 
+    // 1) Dialógus – név bekérése
+    ProductNameDialog dlg(_view,
+                          "",
+                          [&](const QString& name){
+                              return ProductRegistry::instance().existsBy([&](const ProductMaster& p){
+                                  return p.parentId == parentId && p.name == name;
+                              });
+                          });
+
+    if (dlg.exec() != QDialog::Accepted)
+        return;
+
+    QString name = dlg.value();
+
+    // 2) Barcode generálása
     QString base = parent->barcode.isEmpty()
-                       ? BarcodeGenerator::slugFromName(parent->name)
+                       ? BarcodeGenerator::slugFromName(name)
                        : parent->barcode;
 
+    QString barcode = BarcodeGenerator::ensureUnique(base);
 
-    QString parentName = parent->name;
-
+    // 3) ProductMaster létrehozása
     ProductMaster pm;
     pm.id = QUuid::createUuid();
     pm.parentId = parentId;
-    pm.name = parentName + " - új";
-    pm.barcode = BarcodeGenerator::ensureUnique(base);
+    pm.name = name;
+    pm.barcode = barcode;
 
+    // 4) Insert
     if (!ProductRegistry::instance().insert(pm)) {
-        zWarning("⚠️ Nem sikerült regisztrálni az új gyermeket (barcode ütközés?)");
+        zWarning("⚠️ Nem sikerült regisztrálni az új gyermeket");
         return;
     }
 
+    // 5) UI frissítés
     populate();
 }
 

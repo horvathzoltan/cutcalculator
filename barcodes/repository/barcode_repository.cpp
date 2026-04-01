@@ -225,6 +225,8 @@ bool BarcodeRepository::load(QVector<BarcodeRecord>& out)
 // --- Export (opcionális) ---
 bool BarcodeRepository::saveToCSV(const BarcodeRegistry& registry)
 {
+    zTrace();
+
     const QString path = FileNameHelper::instance().pathFor(FileKind::Barcodes, FileAccess::Write);
     if (path.isEmpty())
         return false;

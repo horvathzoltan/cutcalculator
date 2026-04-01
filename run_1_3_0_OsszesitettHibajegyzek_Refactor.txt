@@ -1,455 +1,450 @@
-
-🌟 TERMÉKTÍPUS‑LÉTREHOZÓ DIALÓGUS — TELJES TERV
-
-0. Célok (UX + architektúra)
-
--   A user ne kapjon automatikus „szülő + új” nevet.
--   A user adja meg a nevet létrehozáskor.
--   A barcode automatikusan generálódjon, de a user később átírhatja.
--   A dialógus legyen kicsi, gyors, fókuszált, mint a ModeNameDialog.
--   Inline validáció: üres név, whitespace, duplikált név.
--   A ProductTreeManager workflow‑ja maradjon tiszta.
--   A ProductRegistry validációi változatlanul működjenek.
--   A barcode‑validáció továbbra is a BarcodeValidator feladata.
+Nagyon szép, kerek a kép most — minden fontos fájl a kezünkben van.
+Nézzük végig, mi van most, és utána lépésről lépésre megtervezzük a
+Final placement after first stable frame stratégiát.
 
 ------------------------------------------------------------------------
 
-🌟 1. Új dialógus: ProductNameDialog
+1. Jelenlegi viselkedés összefoglalása
 
-1.1. Helye
+MainWindow:
 
-    products/dialogs/product_name_dialog.h
-    products/dialogs/product_name_dialog.cpp
+-   Konstruktorban:
 
-1.2. Felépítése
+        QTimer::singleShot(0, this, [this]() {
+            bool restoredFromSnapshot = SnapshotManager::instance().restoreWindowSnapshot(this);
+            if (!restoredFromSnapshot) { ... fallback LayoutDefaultStore ... }
+            _windowRestoredOnce = true;
+            GeometryHelper::restoreSplitterState(...);
+        });
 
-Pontosan a ModeNameDialog mintájára:
+-   showEvent csak logol.
 
--   QLabel: „Add meg a terméktípus nevét:”
--   QLineEdit: név beírása
--   QDialogButtonBox: OK / Cancel
--   Inline validáció
--   Duplicate check callback
--   CursorAwarePlacement
--   AttentionBlinker
--   Shake animáció hibánál
+-   moveEvent:
 
-1.3. Validáció
+    -   monitorprofilt logol (monitorProfileFor(this) →
+        currentMonitorProfile()),
+    -   ha
+        _windowRestoredOnce && GeometryHelper::isWindowGeometryReady(this)
+        → saveWindowSnapshot().
 
--   trimmed().isEmpty() → tiltott
--   duplicateCheck(name) → tiltott
--   OK gomb csak akkor aktív, ha minden rendben
+-   resizeEvent is ment snapshotot hasonló guarddal.
+
+-   closeEvent menti a fallback percent‑based geometriát
+    (LayoutDefaultStore).
+
+SnapshotManager:
+
+-   currentMonitorProfile(QWidget*):
+
+    -   ha van window->screen() → azt használja,
+    -   különben QGuiApplication::primaryScreen(),
+    -   profil: "{width}x{height}_{dpi}dpi".
+
+-   snapshotFilePathFor(window, access):
+
+    -   currentMonitorProfile(window) alapján kér path‑ot a
+        FileNameHelper‑től.
+
+-   saveWindowSnapshot(window):
+
+    -   path a jelenlegi monitorprofil alapján,
+    -   GeometryHelper::saveWindowGeometry(window) → percent string,
+    -   window->screen()->size() → audit screen,
+    -   QSettings → Window/geometry, Window/screen.
+
+-   restoreWindowSnapshot(window):
+
+    -   path a jelenlegi monitorprofil alapján,
+    -   ha létezik: Window/geometry, Window/screen,
+    -   GeometryHelper::restoreWindowGeometry(window, geom, savedScreen).
+
+GeometryHelper:
+
+-   saveWindowGeometry:
+
+    -   guard: visible + polished + screen,
+    -   ha nem stabil → log + QTimer::singleShot(0, ...) újrapróbálás,
+    -   percent‑based mentés (x%, y%, w%, h%) a window->screen()->size()
+        alapján.
+
+-   restoreWindowGeometry:
+
+    -   guard: isGeometryReadyForRestore (visible, polished, min size),
+    -   ha nem → log + QTimer::singleShot(0, ...) újrapróbálás,
+    -   window->screen()->size() alapján számol vissza pixelt,
+    -   setGeometry(x,y,w,h) + log.
 
 ------------------------------------------------------------------------
 
-🌟 2. ProductTreeManager módosítása
+2. A probléma lényege (Wayland + több monitor)
 
-2.1. addRootProduct()
+A logod tökéletesen mutatja:
+
+    Monitor profile set: 1366x768_96dpi
+    showEvent: ... VGA-1 (1366x768)
+    Window geometry restored: ... (screen=1366x768)
+    Window restored from geometry snapshot file: ...geometry_1366x768_96dpi.ini
+    ...
+    Monitor profile changed: 1366x768_96dpi → 1920x1080_96dpi
+    Window geometry saved: ...
+    Geometry snapshot saved to file: ...geometry_1920x1080_96dpi.ini
+
+Tehát:
+
+1.  A Qt szerint az ablak a bal oldali (VGA‑1, 1366×768) monitoron jön
+    létre.
+2.  A snapshot restore is ennek a profilnak a fájljából történik.
+3.  A WM ezután átmozgatja az ablakot a nagy monitorra (1920×1080).
+4.  A mentés már az új profilba történik.
+5.  A kicsi monitor snapshotja sosem frissül, a nagy monitoré igen.
+6.  A következő induláskor a restore rossz profilból indul.
+
+És ami a csavar:
+
+-   lehet olyan WM, ami nem mozgatja át → ilyenkor a korai restore
+    helyes,
+-   lehet olyan WM, ami átmozgatja → ilyenkor a korai restore rossz
+    monitorprofilból dolgozik.
+
+Ezért kell egy WM‑független, platformfüggetlen, determinisztikus
+stratégia.
+
+------------------------------------------------------------------------
+
+3. Ipari minta: „Final placement after first stable frame”
+
+A nagy rendszerek (Chromium, VSCode, Qt Creator, KDE appok) közös
+mintája:
+
+  A végleges monitorpozíciót csak akkor tekintjük érvényesnek, amikor az
+  ablak már megjelent, és a WM befejezte az első elhelyezési ciklust.
+
+Ez nálad így fordítható le:
+
+1.  Korai restore: induláskor, a Qt által ismert első monitorprofil
+    alapján.
+2.  Megfigyelés: figyelni, hogy a monitorprofil megváltozik‑e az első
+    stabil frame után.
+3.  Döntés:
+    -   ha nem változik → a korai restore a végleges,
+    -   ha változik → a WM áthelyezte → újra kell restore‑olni a
+        végleges profilból.
+4.  Snapshot mentés: csak akkor, ha már végleges monitorprofil van.
+
+Kulcs: nem időzítésre, hanem monitorprofil‑változásra építünk.
+
+------------------------------------------------------------------------
+
+4. Új állapotgép, amit bevezetünk
+
+A MainWindow szintjén:
+
+-   Új mező:
+
+        bool _windowRestoredOnce = false;      // már most is van
+        QString _initialMonitorProfile;        // új
+
+-   Állapotok:
+
+    1.  Initial: még nem restore‑oltunk → konstruktor.
+    2.  EarlyRestored: korai restore lefutott, de nem tudjuk, hogy a WM
+        át fogja‑e mozgatni.
+    3.  FinalRestored: már tudjuk, hogy a monitorprofil végleges (WM
+        vagy mozgatott, vagy nem), és a snapshot is a jó profilból van.
+
+-   Szabályok:
+
+    -   Snapshotot csak FinalRestored állapotban mentünk.
+    -   Ha EarlyRestored állapotban monitorprofil változik → újra
+        restore a végleges profilból → FinalRestored.
+    -   Ha EarlyRestored állapotban nem változik a profil, de jön az
+        első user‑move/resize → tekintjük véglegesnek → FinalRestored.
+
+------------------------------------------------------------------------
+
+5. Konkrét viselkedés WM típusonként
+
+5.1. WM átmozgatja az ablakot (Wayland KWin/Mutter/Sway, XWayland egyes esetek)
+
+-   Konstruktor → korai restore a bal monitor profiljából.
+
+-   showEvent → log, _initialMonitorProfile = monitorProfileFor(this).
+
+-   WM átmozgatja → moveEvent fut, monitorProfileFor(this) ≠
+    _initialMonitorProfile.
+
+-   Ekkor:
+
+    -   felismerjük: WM‑move történt,
+    -   újra hívjuk restoreWindowSnapshot(this) → már az új profil
+        fájljából,
+    -   _windowRestoredOnce = true,
+    -   innentől snapshot menthető.
+
+5.2. WM nem mozgatja az ablakot (X11, minimal Wayland compositor)
+
+-   Konstruktor → korai restore a valós monitorprofilból.
+
+-   showEvent → _initialMonitorProfile = monitorProfileFor(this).
+
+-   Nincs WM‑move → moveEvent első hívásakor
+    current == _initialMonitorProfile.
+
+-   Ekkor:
+
+    -   felismerjük: nem történt WM‑move,
+    -   a korai restore a végleges,
+    -   _windowRestoredOnce = true,
+    -   innentől snapshot menthető.
+
+------------------------------------------------------------------------
+
+6. Pontonként végrehajtható terv
+
+6.1. MainWindow: új mezők
+
+mainwindow.h
+
+    private:
+        ...
+        bool _windowRestoredOnce = false;
+        QString _initialMonitorProfile;   // új: induló monitorprofil
+
+------------------------------------------------------------------------
+
+6.2. MainWindow: konstruktor átalakítása
+
+Most a restore egy singleShot(0)‑ban van, és ott állítod
+_windowRestoredOnce = true‑ra.
+Ezt át kell alakítani úgy, hogy:
+
+-   a korai restore megmarad,
+-   de _windowRestoredOnce még ne legyen true,
+-   és elmentsük az induló monitorprofilt.
+
+Új logika:
+
+    MainWindow::MainWindow(QWidget *parent)
+        : QMainWindow(parent)
+        , ui(new Ui::MainWindow)
+    {
+        ui->setupUi(this);
+        initEventLogWidget();
+
+        QTimer::singleShot(0, this, [this]() {
+            // 0) induló monitorprofil elmentése
+            _initialMonitorProfile = SnapshotManager::instance().monitorProfileFor(this);
+            zInfo(QString("🖥️ Initial monitor profile: %1").arg(_initialMonitorProfile));
+
+            // 1) Window restore snapshotból (per monitor profil)
+            bool restoredFromSnapshot = SnapshotManager::instance().restoreWindowSnapshot(this);
+
+            // 2) Ha nincs snapshot, fallback UiDefaultStore-ból
+            if (!restoredFromSnapshot) {
+                const QString geom = LayoutDefaultStore::instance().windowGeometryPercent();
+                const QSize savedScreen = GeometryHelper::parseScreenSize(
+                    LayoutDefaultStore::instance().screenSizeString());
+                if (!geom.isEmpty()) {
+                    GeometryHelper::restoreWindowGeometry(this, geom, savedScreen);
+                }
+            }
+
+            // ⚠️ Itt MÉG NEM tesszük true-ra:
+            // _windowRestoredOnce = true;
+
+            // 3) MainWindow splitter állapot – fallback percent alapú
+            const QString split = LayoutDefaultStore::instance().mainSplitterPercent();
+            if (!split.isEmpty()) {
+                GeometryHelper::restoreSplitterState(ui->splitter, split);
+            }
+
+            zInfo("✅ UI Settings loaded (percent-based + snapshot-aware)");
+        });
+
+        ...
+    }
+
+------------------------------------------------------------------------
+
+6.3. MainWindow: showEvent maradhat lognak
+
+A showEvent most csak logol — ez jó, maradhat.
+Nem kell ide logika, a döntés a moveEvent‑ben fog történni.
+
+------------------------------------------------------------------------
+
+6.4. MainWindow: moveEvent → WM‑move detektálás + final restore
 
 Most:
 
--   automatikus név: „Új gyökérelem”
--   automatikus barcode: random token + slug
+-   monitorprofilt logolsz,
+-   ha _windowRestoredOnce && isWindowGeometryReady → save snapshot.
 
-Ez helyett:
+Ezt át kell alakítani:
 
-Lépések:
+1.  Első fázis: ha még nem final restore történt (!_windowRestoredOnce):
 
-1.  Dialógus megnyitása
+    -   lekérjük az aktuális monitorprofilt,
+    -   összehasonlítjuk _initialMonitorProfile‑lal,
+    -   ha különbözik → WM‑move → újra restore a végleges profilból,
+    -   ha ugyanaz → WM nem mozgatott → korai restore a végleges.
 
-    ProductNameDialog dlg(_view, "", [&](const QString& name){
-        return ProductRegistry::instance().existsBy([&](const ProductMaster& p){
-            return p.parentId.isNull() && p.name == name;
-        });
-    });
-    if (dlg.exec() != QDialog::Accepted) return;
-    QString name = dlg.value();
+2.  Második fázis: ha már final restore (_windowRestoredOnce == true):
 
-2.  Barcode generálása
+    -   ha GeometryHelper::isWindowGeometryReady(this) →
+        saveWindowSnapshot(this).
 
-    base = slugFromName(name)
-    barcode = ensureUnique(base)
+Új moveEvent:
 
-3.  ProductMaster létrehozása
+    void MainWindow::moveEvent(QMoveEvent* e) {
+        QMainWindow::moveEvent(e);
 
-4.  Registry insert()
+        QString current = SnapshotManager::instance().monitorProfileFor(this);
 
-5.  populate()
+        // 1) WM-move / final placement detektálás
+        if (!_windowRestoredOnce) {
+            if (_initialMonitorProfile.isEmpty()) {
+                // Biztonsági fallback: ha valamiért nem állt be
+                _initialMonitorProfile = current;
+                zWarning(QString("⚠️ Initial monitor profile was empty, set to: %1").arg(current));
+            }
 
-------------------------------------------------------------------------
+            if (current != _initialMonitorProfile) {
+                // 🖥️ WM áthelyezte az ablakot → végleges monitorprofil megérkezett
+                zInfo(QString("🖥️ Monitor profile changed (WM move): %1 → %2")
+                          .arg(_initialMonitorProfile, current));
 
-2.2. addChildProduct()
+                // Újra restore a VÉGLEGES profilból
+                bool restored = SnapshotManager::instance().restoreWindowSnapshot(this);
+                if (!restored) {
+                    zWarning("⚠️ No snapshot for final monitor profile; keeping current geometry");
+                }
 
-Most:
+                _windowRestoredOnce = true;
+                return; // fontos: itt NEM mentünk snapshotot
+            } else {
+                // 🖥️ WM nem mozgatta át → a korai restore a végleges
+                zInfo(QString("🖥️ Monitor profile unchanged (%1) → early restore is final")
+                          .arg(current));
+                _windowRestoredOnce = true;
+                // és megyünk tovább a mentés logikára (user-move esetén)
+            }
+        }
 
--   automatikus név: „szülő + új”
--   automatikus barcode: parentBarcode vagy slug + ensureUnique
+        // 2) Ha már final restore történt → user-move esetén mentünk snapshotot
+        if (_windowRestoredOnce && GeometryHelper::isWindowGeometryReady(this)) {
+            SnapshotManager::instance().saveWindowSnapshot(this);
+        }
+    }
 
-Ez helyett:
-
-Lépések:
-
-1.  Szülő lekérése a tree‑ből
-
-2.  Dialógus megnyitása
-
-    ProductNameDialog dlg(_view, "", [&](const QString& name){
-        return ProductRegistry::instance().existsBy([&](const ProductMaster& p){
-            return p.parentId == parentId && p.name == name;
-        });
-    });
-    if (dlg.exec() != QDialog::Accepted) return;
-    QString name = dlg.value();
-
-3.  Barcode generálása
-
-    base = parent->barcode.isEmpty()
-           ? slugFromName(name)
-           : parent->barcode
-
-    barcode = ensureUnique(base)
-
-4.  ProductMaster létrehozása
-
-5.  Registry insert()
-
-6.  populate()
+A monitorprofil‑logolást (set/changed) most már kiváltja ez a logika, de
+ha szeretnéd, beépíthetjük a fenti logokba.
 
 ------------------------------------------------------------------------
 
-🌟 3. Barcode generálás új workflow
+6.5. MainWindow: resizeEvent / changeEvent
 
-3.1. Root esetén
+Ezek most:
 
-    base = slugFromName(name)
-    barcode = ensureUnique(base)
+    if (_windowRestoredOnce && GeometryHelper::isWindowGeometryReady(this)) {
+        SnapshotManager::instance().saveWindowSnapshot(this);
+    }
 
-3.2. Child esetén
+Ez jó, csak annyi a lényeg, hogy _windowRestoredOnce most már valóban
+azt jelenti, hogy:
 
-    base = parent->barcode.isEmpty()
-           ? slugFromName(name)
-           : parent->barcode
+  „A végleges monitorprofilra már restore‑oltunk (vagy a korai restore
+  volt a végleges).”
 
-    barcode = ensureUnique(base)
-
-3.3. ensureUnique()
-
-A te verziód tökéletes, csak az exists() helyett:
-
-    if (BarcodeRegistry::instance().isBarcodeUnique(base))
-        return base;
+Tehát ezeket nem kell módosítani, csak az új szemantikával együtt
+értelmezni.
 
 ------------------------------------------------------------------------
 
-🌟 4. Barcode átírhatósága
+6.6. SnapshotManager: log finomhangolás (opcionális)
 
-A user továbbra is átírhatja a barcode‑ot a TreeView‑ban.
+A currentMonitorProfile és snapshotFilePathFor logikája jó.
+Egyetlen dolgot érdemes még hozzátenni:
 
-A BarcodeValidator:
+-   amikor restoreWindowSnapshot fut, logolhatjuk a monitorprofilt is:
 
--   ellenőrzi a prefixet (ha kell),
--   ellenőrzi az ütközést,
--   rollbackel, ha hibás.
+    bool SnapshotManager::restoreWindowSnapshot(QWidget* window)
+    {
+        ...
+        const QString profile = currentMonitorProfile(window);
+        ...
+        zInfo(QString("✅ Window restored from geometry snapshot file: %1 (profile=%2)")
+                  .arg(path, profile));
+        return true;
+    }
 
-Ez a dialógustól függetlenül működik.
-
-------------------------------------------------------------------------
-
-🌟 5. ProductRegistry validációk
-
-A ProductRegistry:
-
--   validateDomain() → name + barcode kötelező
--   validateDuplicate() → név + parentId egyedi
--   beforeInsert() → nincs extra logika
--   persist() → CSV mentés
-
-Ez tökéletesen kompatibilis a dialógussal.
+Ez segít auditálni, hogy tényleg a jó profilból restore‑oltunk.
 
 ------------------------------------------------------------------------
 
-🌟 6. ProductRepository (CSV import)
+7. Implementációs / patching terv (konkrét lépések)
 
-A dialógus nem érinti:
+1.  MainWindow mezők bővítése
 
--   a CSV importot,
--   a barcode‑regisztrációt,
--   a parent feloldást.
+    -   mainwindow.h:
 
-Minden változatlanul működik.
+            bool _windowRestoredOnce = false;
+            QString _initialMonitorProfile;
+
+2.  Konstruktor módosítása
+
+    -   A QTimer::singleShot(0, ...) blokkban:
+
+        -   _initialMonitorProfile = SnapshotManager::instance().monitorProfileFor(this);
+        -   _windowRestoredOnce beállítását törölni ebből a blokkól.
+        -   A többi restore/fallback logika marad.
+
+3.  showEvent változatlanul hagyása (csak log).
+
+4.  moveEvent teljes újraírása a fenti algoritmus szerint
+
+    -   WM‑move detektálás: current != _initialMonitorProfile.
+    -   Ha WM‑move → újra restoreWindowSnapshot(this) →
+        _windowRestoredOnce = true.
+    -   Ha nem WM‑move → _windowRestoredOnce = true (korai restore a
+        végleges).
+    -   Snapshot mentés csak akkor, ha
+        _windowRestoredOnce && isWindowGeometryReady.
+
+5.  resizeEvent / changeEvent érintetlenül hagyása
+
+    -   Ezek már most is _windowRestoredOnce‑re támaszkodnak → mostantól
+        ez „final placement” jelző.
+
+6.  SnapshotManager opcionális log finomhangolása
+
+    -   restoreWindowSnapshot logjába beleírni a monitorprofilt is
+        (audit).
+
+7.  Tesztelési forgatókönyvek
+
+    -   Wayland + több monitor, kurzor a nagy monitoron:
+
+        -   Indítás → korai restore kicsi profilból.
+        -   WM átmozgat → moveEvent → profilváltozás → újra restore nagy
+            profilból.
+        -   Mentés már a nagy profilba megy.
+        -   Következő indítás → korai restore már a nagy profilból.
+
+    -   Wayland + több monitor, kurzor a kicsin:
+
+        -   Indítás → korai restore kicsi profilból.
+        -   Nincs WM‑move → profil nem változik → korai restore a
+            végleges.
+        -   Mentés a kicsi profilba megy.
+
+    -   X11 / nem mozgatós WM:
+
+        -   Indítás → korai restore valós profilból.
+        -   Profil nem változik → korai restore a végleges.
+        -   Mentés ugyanabba a profilba.
 
 ------------------------------------------------------------------------
 
-🌟 7. ProductTreePresenter
-
-A toolbar gombjai változatlanok:
-
--   „➕ Új termékcsoport” → addRootProduct()
--   „➕ Új terméktípus” → addChildProduct()
-
-A dialógus a ProductTreeManager‑ben nyílik meg, így a Presenterhez nem
-kell nyúlni.
-
-------------------------------------------------------------------------
-
-🌟 8. BOMWorkbench
-
-A dialógus popup, nem része a layoutnak.
-A Workbenchhez nem kell nyúlni.
-
-------------------------------------------------------------------------
-
-🌟 9. PATCHING TERV (implementációs lépések)
-
-9.1. Új fájlok létrehozása
-
-    products/dialogs/product_name_dialog.h
-    products/dialogs/product_name_dialog.cpp
-
-A ModeNameDialog alapján.
-
-9.2. ProductTreeManager módosítása
-
--   addRootProduct() → dialógus + új barcode workflow
--   addChildProduct() → dialógus + új barcode workflow
-
-9.3. BarcodeGenerator módosítása
-
--   ensureUnique() → exists() helyett isBarcodeUnique()
-
-9.4. ProductTreeView / Presenter / Workbench
-
--   nincs módosítás
-
-9.5. Tesztelés
-
--   root létrehozás
--   child létrehozás
--   duplikált név root alatt
--   duplikált név child alatt
--   barcode automatikus generálása
--   barcode átírás validációval
--   CSV export/import
-
-
-****
-
-products/model/product_master.h
-products/registry/product_registry.h
-products/registry/product_registry.cpp
-
-products/view/product_tree_manager.h
-products/view/product_tree_manager.cpp
-products/view/product_tree_view.h
-products/view/product_tree_view.cpp
-
-products/presenter/product_tree_presenter.h
-products/presenter/product_tree_presenter.cpp
-
-barcodes/helpers/barcode_generator.h
-barcodes/helpers/barcode_generator.cpp
-barcodes/registry/barcode_registry.h
-barcodes/registry/barcode_registry.cpp
-barcodes/validator/barcode_validator.h
-barcodes/validator/barcode_validator.cpp
-
-calcmodes/dialogs/mode_name_dialog.h
-calcmodes/dialogs/mode_name_dialog.cpp
-
-workbench/view/bom_workbench.h
-workbench/view/bom_workbench.cpp
-
-
-products/repository/product_repository.h
-products/repository/product_repository.cpp
-
-barcodes/helpers/barcode_collision_helper.h
-barcodes/helpers/barcode_collision_helper.cpp
-
-common/registry/hierarchy/hierarchy_mixin.h
-common/registry/barcode/barcode_index_mixin.h
-
-common/utils/cursor_aware_placement.h
-common/utils/attention_blinker.h
-
-products/view/product_tree_panel.h
-products/view/product_tree_panel.cpp
-
-
-*****
-
-Zoltán, hozom a **lenyomatot**, amit kértél — egy olyan *stabil, visszatölthető kontextus‑pillanatképet*, ami akkor is megtartja a projekt fókuszát, ha holnap reggel újra kell indítani a gondolkodást.
-Ez nem a rendszerem belső működésének feltárása (azt nem tudom és nem is szabad megosztanom), hanem **egy emberi értelemben vett projekt‑memória**, amit bármikor újra be tudsz dobni, és én ugyaninnen folytatom.
-
-A cél:
-👉 **egy tömör, de teljes kontextus snapshot**,
-👉 **egy token‑gazdaságos, újra betölthető projekt‑állapot**,
-👉 **egy fejlesztési fókusz, ami nem halványul el**.
-
----
-
-# 🌟 **CONTEXT SNAPSHOT (projektállapot-lenyomat)**
-
-## **1) A feladat lényege**
-Egy új **Terméktípus létrehozó dialógus** bevezetése a BOM Workbench bal oldali termékfájába, amely:
-
-- a usertől **bekéri a nevet**,
-- automatikusan generál **barcode‑ot** (hierarchikus számozással),
-- inline validációt végez (üres név, duplikált név),
-- a ProductTreeManager workflow‑jába illeszkedik,
-- kompatibilis a ProductRegistry és BarcodeRegistry invariánsaival,
-- UX‑ben a ModeNameDialog mintáját követi.
-
----
-
-## **2) A jelenlegi rendszer működése**
-- A ProductTreePresenter toolbarján két gomb van:
-  - „Új termékcsoport” → addRootProduct()
-  - „Új terméktípus” → addChildProduct()
-- A ProductTreeManager jelenleg automatikus nevet és barcode‑ot generál.
-- A user ezeket **mindig átírja**, ami UX‑szempontból felesleges.
-- A barcode átírása a TreeView‑ban működik, a BarcodeValidator ellenőrzi.
-
----
-
-## **3) A cél workflow**
-### **Root létrehozás**
-1. Dialógus → név bekérése
-2. slugFromName(name)
-3. ensureUnique(base)
-4. ProductRegistry::insert()
-
-### **Child létrehozás**
-1. Szülő lekérése
-2. Dialógus → név bekérése
-3. base = parent->barcode vagy slugFromName(name)
-4. ensureUnique(base)
-5. ProductRegistry::insert()
-
----
-
-## **4) A dialógus követelményei**
-- QDialog alapú
-- QLineEdit + OK/Cancel
-- Inline validáció
-- DuplicateCheck callback
-- CursorAwarePlacement
-- AttentionBlinker
-- Shake animáció hibánál
-- A barcode NEM része a dialógusnak
-
----
-
-## **5) A barcode generálás új szabályai**
-### **Root:**
-```
-base = slugFromName(name)
-barcode = ensureUnique(base)
-```
-
-### **Child:**
-```
-base = parent->barcode.isEmpty()
-       ? slugFromName(name)
-       : parent->barcode
-
-barcode = ensureUnique(base)
-```
-
-### **ensureUnique(base):**
-- Ha base egyedi → visszaadja
-- Ha nem → számozás:
-  ```
-  base-1
-  base-2
-  base-3
-  ```
-
----
-
-## **6) A validációs rétegek**
-### **ProductRegistry**
-- name kötelező
-- barcode kötelező
-- name + parentId egyedi
-
-### **BarcodeRegistry**
-- ledger modell
-- isBarcodeUnique()
-- barcodesWithPrefix()
-
-### **BarcodeValidator**
-- UI‑validáció barcode átíráskor
-
----
-
-## **7) A fejlesztéshez szükséges fájlok (minimális files.txt)**
-```
-products/model/product_master.h
-products/registry/product_registry.h
-products/registry/product_registry.cpp
-
-products/view/product_tree_manager.h
-products/view/product_tree_manager.cpp
-products/view/product_tree_view.h
-products/view/product_tree_view.cpp
-
-products/presenter/product_tree_presenter.h
-products/presenter/product_tree_presenter.cpp
-
-barcodes/helpers/barcode_generator.h
-barcodes/helpers/barcode_generator.cpp
-barcodes/registry/barcode_registry.h
-barcodes/registry/barcode_registry.cpp
-barcodes/validator/barcode_validator.h
-barcodes/validator/barcode_validator.cpp
-
-calcmodes/dialogs/mode_name_dialog.h
-calcmodes/dialogs/mode_name_dialog.cpp
-
-workbench/view/bom_workbench.h
-workbench/view/bom_workbench.cpp
-```
-
----
-
-## **8) Jó‑ha‑van fájlok**
-```
-products/repository/product_repository.h
-products/repository/product_repository.cpp
-
-common/utils/cursor_aware_placement.h
-common/utils/attention_blinker.h
-
-common/registry/hierarchy/hierarchy_mixin.h
-common/registry/barcode/barcode_index_mixin.h
-```
-
----
-
-# 🌟 **TOKEN SNAPSHOT (a projekt fókusza 10 sorban)**
-
-```
-- Új ProductNameDialog kell, ModeNameDialog mintájára.
-- addRootProduct() és addChildProduct() dialógust nyit, nem generál automatikus nevet.
-- A név alapján generáljuk a barcode-ot: slugFromName() + ensureUnique().
-- Child esetén a base a parent barcode-ja.
-- ensureUnique() számoz: base-1, base-2, base-3.
-- ProductRegistry validál: name kötelező, barcode kötelező, name+parentId egyedi.
-- BarcodeRegistry validál: ledger, isBarcodeUnique(), barcodesWithPrefix().
-- BarcodeValidator továbbra is ellenőrzi a kézi átírást.
-- ProductTreePresenter toolbarja változatlan.
-- BOMWorkbench nem igényel módosítást.
-```
-
----
-
-# 🌟 **Ha holnap újraindulunk, csak ezt a snapshotot dobd be, és ugyaninnen folytatom.**
-
-Ha szeretnéd, a következő lépés lehet:
-
-👉 **ProductNameDialog implementáció (header + cpp)**
-👉 **ProductTreeManager patch**
-👉 **BarcodeGenerator patch**
-
-Csak szólj, melyikkel kezdjem.
+Ha szeretnéd, a következő körben megírhatjuk ezt konkrét diff formában
+(patch‑szerűen, kommentekkel), hogy tényleg csak be kelljen illesztened.

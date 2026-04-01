@@ -49,11 +49,15 @@ public:
 
     void onItemsChanged() override
     {
-        zInfo("BarcodeRegistry::onItemsChanged");
+        if (IS_VERBOSE(BarcodeRegistry)){
+            zInfo("BarcodeRegistry::onItemsChanged");
+        }
         RegistryEngineBase<BarcodeRecord>::onItemsChanged();
     }
 
     QStringList barcodesWithPrefix(const QString& prefix) const;
+
+    bool persistIfDirty();
 
 private:
     // Ledger-specifikus belső hookok
@@ -93,5 +97,10 @@ private:
     BarcodeRegistry()
         : RegistryEngineBase("BarcodeRegistry", "BarcodeRecord")
     {}
+
+    bool _csvDirty = false;
+
+    void markCsvDirty() { _csvDirty = true; }
+
 };
 

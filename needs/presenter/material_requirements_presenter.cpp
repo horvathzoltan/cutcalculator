@@ -92,7 +92,14 @@ void MaterialRequirementsPresenter::refreshOverlayOnly()
 void MaterialRequirementsPresenter::connectRegistry() {
     _needRuleToken =
         NeedRuleRegistry::instance().subscribeItemsChangedToken(
-            [this]() { refreshOverlayOnly(); });
+            [this]() {
+            auto id = _treeManager->currentProductId();
+            auto name = _treeManager->currentProductName();
+            auto barcode = _treeManager->currentProductBarcode();
+            refreshForProduct(id, name, barcode);
+
+            refreshOverlayOnly();
+        });
 
     NeedCalculationDetailRegistry::instance().subscribeItemsChangedToken(
         [this]() { refreshOverlayOnly(); });

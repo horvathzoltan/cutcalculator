@@ -184,6 +184,7 @@ QString BarcodeGenerator::generateToken(int length)
     return makeToken(length);
 }
 
+
 QString BarcodeGenerator::ensureUnique(const QString& base)
 {
     // 1) Ha nincs ilyen barcode → ez lesz az új
@@ -192,10 +193,14 @@ QString BarcodeGenerator::ensureUnique(const QString& base)
 
     // 2) Keresünk postfixeket
     int maxPostfix = 0;
+
+    // A ledger prefix-keresése: minden kód, ami base + "-" kezdetű
     const QStringList existing =
         BarcodeRegistry::instance().barcodesWithPrefix(base);
 
     for (const QString& code : existing) {
+
+        // Csak a base- + szám formátum érdekes
         if (!code.startsWith(base + "-"))
             continue;
 
@@ -208,3 +213,4 @@ QString BarcodeGenerator::ensureUnique(const QString& base)
     // 3) Következő postfix
     return base + "-" + QString::number(maxPostfix + 1);
 }
+

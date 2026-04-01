@@ -41,7 +41,7 @@ int main(int argc, char *argv[])
         LifecycleManager::instance().onAbort(sig);
         if (auto* win = LifecycleManager::instance().mainWindow()) {
             if (GeometryHelper::isWindowGeometryReady(win)) {
-                SnapshotManager::instance().saveWindowSnapshot(win);
+                SnapshotManager::instance().saveSnapshot_MainWindow(win);
             }
         }
     });
@@ -120,7 +120,7 @@ int main(int argc, char *argv[])
     QScreen* scr = QGuiApplication::primaryScreen();
     QObject::connect(scr, &QScreen::geometryChanged, &w, [&w]() {
         if (GeometryHelper::isWindowGeometryReady(&w)) {
-            SnapshotManager::instance().saveWindowSnapshot(&w);
+            SnapshotManager::instance().saveSnapshot_MainWindow(&w);
             zInfo("💾 Screen geometry changed → instant window snapshot saved");
         } else {
             zInfo("⏳ Screen geometry changed, but window not ready → snapshot skipped");
