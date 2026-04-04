@@ -2,6 +2,7 @@
 #include "products/view/product_tree_manager.h"
 #include "common/csv/filecontext.h"
 #include "products/dialogs/product_name_dialog.h"
+#include "products/validation/product_validation.h"
 #include "ui/style/color_helper.h"
 #include "common/logger/event_logger.h"
 #include <QStandardItem>
@@ -13,7 +14,11 @@
 
 /**
  * Konstruktor: létrehozza a modellt és beállítja a QTreeView-hoz.
+ * A név + barcode szerkesztése a ProductNameDialog-on keresztül történik,
+ * amely UI dry-run validációt végez, a végleges regisztráció pedig
+ * a ProductValidation modulban történik.
  */
+
 ProductTreeManager::ProductTreeManager(QTreeView* view, QObject* parent)
     : QObject(parent), _view(view), _model(new QStandardItemModel(view))
 {
@@ -131,100 +136,72 @@ void ProductTreeManager::buildSubtree(QStandardItem* parentItem, const QUuid& pa
     }
 }
 
-// CRUD
 
-// void ProductTreeManager::addRootProduct() {
-//     ProductMaster pm;
-//     pm.id = QUuid::createUuid();
-//     pm.parentId = QUuid(); // gyökér
-//     pm.name = "Új gyökérelem";
-//     pm.barcode = BarcodeGenerator::generate("PROD", pm.name, 6);
-
-//     //ProductRegistry::instance().insert(pm);
-//     if (!ProductRegistry::instance().insert(pm)) {
-//         zWarning("⚠️ Nem sikerült regisztrálni az új gyökérelemet (barcode ütközés?)");
-//         return;
-//     }
-
-//     populate();
-// }
-
-void ProductTreeManager::addRootProduct() {
-    // 1) Dialógus – név bekérése
-    ProductNameDialog dlg(_view,
-                          "",
-                          [&](const QString& name){
-                              return ProductRegistry::instance().existsBy([&](const ProductMaster& p){
-                                  return p.parentId.isNull() && p.name == name;
-                              });
-                          });
+void ProductTreeManager::addRootProduct()
+{
+    // 1) Dialógus – név + barcode bekérése
+    ProductNameDialog dlg(
+        _view,
+        "",          // initialName
+        "",          // initialBarcode
+        QUuid(),     // parentId = root
+        [&](const QString& name, QString& err){
+            return ProductValidation::validateName(name, QUuid(), err);
+        },
+        [&](const QString& code, QString& err){
+            return ProductValidation::validateBarcode_UI_DryRun(code,
+                                                                "Product",
+                                                                QUuid(),   // új elem id-je még nincs
+                                                                "",        // name nem kell dry-runhoz
+                                                                err);
+        }
+        );
 
     if (dlg.exec() != QDialog::Accepted)
         return;
 
+    // 2) Dialógus eredményei
     QString name = dlg.value();
+    QString barcode = dlg.barcodeValue();
 
-    // 2) Barcode generálása
-    QString base = BarcodeGenerator::slugFromName(name);
-    QString barcode = BarcodeGenerator::ensureUnique(base);
+    // 3) Végleges barcode-regisztráció (ledger insert)
+    QString err;
+    QUuid newId = QUuid::createUuid();
 
-    // 3) ProductMaster létrehozása
+    if (!ProductValidation::registerBarcode_UI(barcode,
+                                               "Product",
+                                               newId,
+                                               name,
+                                               err))
+    {
+        zWarning(QString("⚠️ Barcode regisztráció sikertelen: %1").arg(err));
+        return;
+    }
+
+    // 4) ProductMaster létrehozása
     ProductMaster pm;
-    pm.id = QUuid::createUuid();
+    pm.id = newId;
     pm.parentId = QUuid();   // root
     pm.name = name;
     pm.barcode = barcode;
 
-    // 4) Insert
+    // 5) Insert workflow
     if (!ProductRegistry::instance().insert(pm)) {
         zWarning("⚠️ Nem sikerült regisztrálni az új gyökérelemet");
         return;
     }
 
-    // 5) UI frissítés
+    // 6) UI frissítés
     populate();
 }
 
 
-// void ProductTreeManager::addChildProduct() {
-//     auto index = _view->currentIndex();
-//     if (!index.isValid()) return;
 
-//     QString parentIdStr = _model->itemFromIndex(index.sibling(index.row(), 2))->text();
-//     QUuid parentId(parentIdStr);
-
-//     const ProductMaster *parent =
-//         ProductRegistry::instance().findById(parentId);
-
-//     if (!parent) {
-//         zWarning("⚠️ addChildProduct: parent not found, aborting");
-//         return;
-//     }
-
-//     QString base = parent->barcode.isEmpty()
-//                        ? BarcodeGenerator::slugFromName(parent->name)
-//                        : parent->barcode;
-
-
-//     QString parentName = parent->name;
-
-//     ProductMaster pm;
-//     pm.id = QUuid::createUuid();
-//     pm.parentId = parentId;
-//     pm.name = parentName + " - új";
-//     pm.barcode = BarcodeGenerator::ensureUnique(base);
-
-//     if (!ProductRegistry::instance().insert(pm)) {
-//         zWarning("⚠️ Nem sikerült regisztrálni az új gyermeket (barcode ütközés?)");
-//         return;
-//     }
-
-//     populate();
-// }
-
-void ProductTreeManager::addChildProduct() {
+void ProductTreeManager::addChildProduct()
+{
     auto index = _view->currentIndex();
-    if (!index.isValid()) return;
+    if (!index.isValid())
+        return;
 
     QString parentIdStr =
         _model->itemFromIndex(index.sibling(index.row(), 2))->text();
@@ -238,43 +215,62 @@ void ProductTreeManager::addChildProduct() {
         return;
     }
 
-    // 1) Dialógus – név bekérése
-    ProductNameDialog dlg(_view,
-                          "",
-                          [&](const QString& name){
-                              return ProductRegistry::instance().existsBy([&](const ProductMaster& p){
-                                  return p.parentId == parentId && p.name == name;
-                              });
-                          });
+    // 1) Dialógus – név + barcode bekérése
+    ProductNameDialog dlg(
+        _view,
+        "",          // initialName
+        "",          // initialBarcode
+        parentId,    // parentId
+        [&](const QString& name, QString& err){
+            return ProductValidation::validateName(name, parentId, err);
+        },
+        [&](const QString& code, QString& err){
+            return ProductValidation::validateBarcode_UI_DryRun(code,
+                                                                "Product",
+                                                                QUuid(),   // új elem id-je még nincs
+                                                                "",        // name nem kell dry-runhoz
+                                                                err);
+        }
+        );
 
     if (dlg.exec() != QDialog::Accepted)
         return;
 
+    // 2) Dialógus eredményei
     QString name = dlg.value();
+    QString barcode = dlg.barcodeValue();
 
-    // 2) Barcode generálása
-    QString base = parent->barcode.isEmpty()
-                       ? BarcodeGenerator::slugFromName(name)
-                       : parent->barcode;
+    // 3) Végleges barcode-regisztráció (ledger insert)
+    QString err;
+    QUuid newId = QUuid::createUuid();
 
-    QString barcode = BarcodeGenerator::ensureUnique(base);
+    if (!ProductValidation::registerBarcode_UI(barcode,
+                                               "Product",
+                                               newId,
+                                               name,
+                                               err))
+    {
+        zWarning(QString("⚠️ Barcode regisztráció sikertelen: %1").arg(err));
+        return;
+    }
 
-    // 3) ProductMaster létrehozása
+    // 4) ProductMaster létrehozása
     ProductMaster pm;
-    pm.id = QUuid::createUuid();
+    pm.id = newId;
     pm.parentId = parentId;
     pm.name = name;
     pm.barcode = barcode;
 
-    // 4) Insert
+    // 5) Insert workflow
     if (!ProductRegistry::instance().insert(pm)) {
         zWarning("⚠️ Nem sikerült regisztrálni az új gyermeket");
         return;
     }
 
-    // 5) UI frissítés
+    // 6) UI frissítés
     populate();
 }
+
 
 void ProductTreeManager::renameProduct() {
     auto index = _view->currentIndex();
@@ -320,36 +316,49 @@ void ProductTreeManager::onItemChanged(QStandardItem* item) {
             updated.name = item->text();
             zEvent(QString("✏️ Product renamed: %1").arg(item->text()));
         } else if (item->column() == 1) { // barcode
-            QString newCode = item->text();
-
-            // Validálás: nem lehet üres
-            if (newCode.isEmpty()) {
-                zEvent("⚠️ Barcode nem lehet üres");
-                item->setText(pm->barcode); // visszaállítjuk
-                return;
-            }
-            
+            QString newCode = item->text().trimmed();
             QString err;
-            if (!BarcodeValidator::checkAndRegister_UI(newCode,
-                                                      "Product",
-                                                      pm->id,
-                                                      pm->name,
-                                                      err))
+
+            // 1) UI dry-run validáció
+            if (!ProductValidation::validateBarcode_UI_DryRun(newCode,
+                                                              "Product",
+                                                              pm->id,
+                                                              pm->name,
+                                                              err))
             {
                 zEventWARN(err);
-                zWarning(QString("ProductTreeManager: barcode update failed → rollback: %1 → %2")
+                zWarning(QString("ProductTreeManager: barcode dry-run failed → rollback: %1 → %2")
                              .arg(newCode, pm->barcode));
 
                 _rollbackGuard = true;
                 item->setText(pm->barcode);
                 _rollbackGuard = false;
-
                 return;
             }
-            
-            updated.barcode = newCode; // Validator már regisztrálta
+
+            // 2) Végleges regisztráció (ledger insert)
+            if (!ProductValidation::registerBarcode_UI(newCode,
+                                                       "Product",
+                                                       pm->id,
+                                                       pm->name,
+                                                       err))
+            {
+                zEventWARN(err);
+                zWarning(QString("ProductTreeManager: barcode register failed → rollback: %1 → %2")
+                             .arg(newCode, pm->barcode));
+
+                _rollbackGuard = true;
+                item->setText(pm->barcode);
+                _rollbackGuard = false;
+                return;
+            }
+
+            // 3) ProductMaster frissítése
+            updated.barcode = newCode;
             zEvent(QString("✏️ Product barcode updated: %1").arg(newCode));
         }
+
+
 
         // audit-barát update → perzisztál is
         bool ok = ProductRegistry::instance().update(updated);

@@ -1,14 +1,19 @@
-// products/dialogs/product_name_dialog.cpp
 #include "products/dialogs/product_name_dialog.h"
+#include "products/validation/product_validation.h"
 #include <QCursor>
 #include <QStyle>
 #include <QTimer>
 
 ProductNameDialog::ProductNameDialog(QWidget* parent,
-                                     const QString& initialValue,
-                                     std::function<bool(const QString&)> duplicateCheck)
+                                     const QString& initialName,
+                                     const QString& initialBarcode,
+                                     const QUuid& parentId,
+                                     std::function<bool(const QString&, QString&)> nameCheck,
+                                     std::function<bool(const QString&, QString&)> barcodeCheck)
     : QDialog(parent)
-    , _duplicateCheck(std::move(duplicateCheck))
+    , _parentId(parentId)
+    , _nameCheck(std::move(nameCheck))
+    , _barcodeCheck(std::move(barcodeCheck))
 {
     setWindowTitle("Új terméktípus");
     setModal(true);
@@ -16,17 +21,40 @@ ProductNameDialog::ProductNameDialog(QWidget* parent,
 
     auto* layout = new QVBoxLayout(this);
 
+    // A dialógus két mezőt kezel: név + vonalkód.
+    // A validáció callbackeken keresztül történik (UI dry-run).
+
+    // --- NÉV ---
     _label = new QLabel("Add meg a terméktípus nevét:", this);
+
     layout->addWidget(_label);
 
     _edit = new QLineEdit(this);
-    _edit->setText(initialValue);
+    _edit->setText(initialName);
     _edit->selectAll();
     layout->addWidget(_edit);
 
-    connect(_edit, &QLineEdit::textEdited,
-            this, [this]() { onUserFoundDialog(); });
+    connect(_edit, &QLineEdit::textChanged,
+            this, &ProductNameDialog::onNameChanged);
 
+    // --- BARCODE ---
+    auto* barcodeLabel = new QLabel("Vonalkód:", this);
+    layout->addWidget(barcodeLabel);
+
+    _barcodeEdit = new QLineEdit(this);
+    _barcodeEdit->setText(initialBarcode);
+    layout->addWidget(_barcodeEdit);
+
+    connect(_barcodeEdit, &QLineEdit::textChanged,
+            this, &ProductNameDialog::onBarcodeChanged);
+
+    // --- GLOBÁLIS HIBA LABEL ---
+    _globalError = new QLabel(this);
+    _globalError->setStyleSheet("color: red; font-weight: bold;");
+    _globalError->setWordWrap(true);
+    layout->addWidget(_globalError);
+
+    // --- BUTTONS ---
     _buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel,
                                     Qt::Horizontal,
                                     this);
@@ -36,15 +64,11 @@ ProductNameDialog::ProductNameDialog(QWidget* parent,
     connect(_buttons, &QDialogButtonBox::accepted, this, &QDialog::accept);
     connect(_buttons, &QDialogButtonBox::rejected, this, &QDialog::reject);
 
-    connect(_edit, &QLineEdit::textChanged,
-            this, &ProductNameDialog::onTextChanged);
-
-    // Egér alá pozicionálás
+    // --- UX ---
     QTimer::singleShot(0, this, [this]() {
         CursorAwarePlacement::placeNearCursor(this);
     });
 
-    // AttentionBlinker
     _blinker = new AttentionBlinker(this);
     _blinker->attach(this);
     QTimer::singleShot(1200, this, [this]() {
@@ -53,23 +77,48 @@ ProductNameDialog::ProductNameDialog(QWidget* parent,
         }
     });
 
-    // Kezdeti validáció
-    onTextChanged(_edit->text());
+    // --- KEZDETI VALIDÁCIÓ ---
+    updateOkState();
 }
 
-void ProductNameDialog::onTextChanged(const QString& text)
+void ProductNameDialog::onNameChanged(const QString&)
 {
-    const QString t = text.trimmed();
+    updateOkState();
+}
 
-    bool ok = true;
+void ProductNameDialog::onBarcodeChanged(const QString&)
+{
+    updateOkState();
+}
 
-    if (t.isEmpty()) {
-        ok = false;
-    } else if (_duplicateCheck && _duplicateCheck(t)) {
-        ok = false;
+void ProductNameDialog::updateOkState()
+{
+    QString err;
+
+    const QString name = _edit->text().trimmed();
+    const QString code = _barcodeEdit->text().trimmed();
+
+    // 1) Név validáció
+    if (!_nameCheck(name, err)) {
+        if (_globalError->text() != err)
+            _globalError->setText(err);
+        _ok->setEnabled(false);
+        return;
     }
 
-    _ok->setEnabled(ok);
+    // 2) Barcode validáció
+    if (!_barcodeCheck(code, err)) {
+        if (_globalError->text() != err)
+            _globalError->setText(err);
+        _ok->setEnabled(false);
+        return;
+    }
+
+    // 3) Minden OK
+    if (!_globalError->text().isEmpty())
+        _globalError->clear();
+
+    _ok->setEnabled(true);
 }
 
 QString ProductNameDialog::value() const
@@ -77,32 +126,8 @@ QString ProductNameDialog::value() const
     return _edit->text().trimmed();
 }
 
-void ProductNameDialog::removeAttentionStyling()
+QString ProductNameDialog::barcodeValue() const
 {
-    setStyleSheet("");
+    return _barcodeEdit->text().trimmed();
 }
 
-bool ProductNameDialog::event(QEvent* e)
-{
-    if (e->type() == QEvent::Enter) {
-        onUserFoundDialog();
-    }
-    return QDialog::event(e);
-}
-
-void ProductNameDialog::mousePressEvent(QMouseEvent* event)
-{
-    onUserFoundDialog();
-    QDialog::mousePressEvent(event);
-}
-
-void ProductNameDialog::onUserFoundDialog()
-{
-    if (_attentionRemoved)
-        return;
-
-    _attentionRemoved = true;
-    if (_blinker)
-        _blinker->stop();
-    removeAttentionStyling();
-}

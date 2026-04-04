@@ -67,6 +67,7 @@ SOURCES += \
     calcmodes/view/calculation_modes_view.cpp \
     products/dialogs/product_name_dialog.cpp \
     products/presenter/product_tree_presenter.cpp \
+    products/validation/product_validation.cpp \
     products/view/product_tree_panel.cpp \
     test/barcode/barcode_generator_tester.cpp \
     test/barcode/barcode_registry_tester.cpp \
@@ -236,6 +237,7 @@ HEADERS += \
     calcmodes/view/calculation_modes_view.h \
     products/dialogs/product_name_dialog.h \
     products/presenter/product_tree_presenter.h \
+    products/validation/product_validation.h \
     products/view/product_tree_panel.h \
     test/barcode/barcode_generator_tester.h \
     test/barcode/barcode_registry_tester.h \

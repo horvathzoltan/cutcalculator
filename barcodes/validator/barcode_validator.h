@@ -19,14 +19,38 @@ public:
                                      const QString& name,
                                      CsvImporter::FileContext& ctx);
 
+    static bool validate_UI(const QString& code,
+                            const QString& entityType,
+                            const QUuid& id,
+                            const QString& name,
+                            QString& outErrorMessage);
+
     static bool checkAndRegister_UI(const QString& code,
                                     const QString& entityType,
                                     const QUuid& id,
                                     const QString& name,
                                     QString& outErrorMessage);
 
+
 private:
     enum class Mode { CSV, UI };
+
+    static bool validate_impl(const QString& code,
+                              const QString& entityType,
+                              const QUuid& id,
+                              const QString& name,
+                              Mode mode,
+                              CsvImporter::FileContext* ctx,
+                              QString* outErrorMessage,
+                              QString& outNormalized);
+
+    static bool register_impl(const QString& normalizedCode,
+                              const QString& entityType,
+                              const QUuid& id,
+                              const QString& name,
+                              Mode mode,
+                              CsvImporter::FileContext* ctx,
+                              QString* outErrorMessage);
 
     static bool checkAndRegister_impl(const QString& code,
                                       const QString& entityType,
@@ -35,5 +59,7 @@ private:
                                       Mode mode,
                                       CsvImporter::FileContext* ctx,
                                       QString* outErrorMessage);
+
+
 };
 

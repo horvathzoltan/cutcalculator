@@ -297,7 +297,7 @@ Result<RawKit> NeedCalculator::evalFormulaKit(const OrderLine& line,
 
     // 5) material
     {
-        Value v = vars.get("material");
+        Value v = vars.get("mat");
         if (v.type() == Value::Type::Null) {
             // fallback
             auto mat = MaterialRegistry::instance().findById(detail.materialId);

@@ -44,8 +44,9 @@ FormulaContract kittingContract()
     };
 
     c.optionalOutputs = {
-        "material"
+        "mat"
     };
+
 
     return c;
 }
