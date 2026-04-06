@@ -54,7 +54,7 @@ private:
     void removeAttentionStyling();
     void onUserFoundDialog();
 
-protected:
-    bool event(QEvent* e) override;
-    void mousePressEvent(QMouseEvent* event) override;
+//protected:
+    //bool event(QEvent* e) override;
+    //void mousePressEvent(QMouseEvent* event) override;
 };

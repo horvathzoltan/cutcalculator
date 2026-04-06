@@ -20,19 +20,26 @@ public:
     void paint(QPainter* painter, const QStyleOptionViewItem& option,
                const QModelIndex& index) const override
     {
-        QString text = index.data().toString();
+        // 🔧 NINCS syntax highlight, NINCS HTML
+        QStyledItemDelegate::paint(painter, option, index);
 
-        // Syntax highlight
-        text.replace("len:w-", "<span style='color:#0077cc;'>len:w-</span>");
-        text.replace("len:h-", "<span style='color:#0077cc;'>len:h-</span>");
-        text.replace("qty:fixed:", "<span style='color:#cc7700;'>qty:fixed:</span>");
-        text.replace("qty:perOrder:", "<span style='color:#9933cc;'>qty:perOrder:</span>");
-        text.replace("qty:perArea:", "<span style='color:#009977;'>qty:perArea:</span>");
+        // QString text = index.data().toString();
 
-        QStyleOptionViewItem opt(option);
-        initStyleOption(&opt, index);
-        opt.text = text;
-        opt.widget->style()->drawControl(QStyle::CE_ItemViewItem, &opt, painter, opt.widget);
+        // // Syntax highlight
+        // text.replace("len:w-", "<span style='color:#0077cc;'>len:w-</span>");
+        // text.replace("len:h-", "<span style='color:#0077cc;'>len:h-</span>");
+        // text.replace("qty:fixed:", "<span style='color:#cc7700;'>qty:fixed:</span>");
+        // text.replace("qty:perOrder:", "<span style='color:#9933cc;'>qty:perOrder:</span>");
+        // text.replace("qty:perArea:", "<span style='color:#009977;'>qty:perArea:</span>");
+
+        // // 🔧 ÚJ: alapértelmezett szín beállítása
+        // text = QString("<span style='color:black;'>%1</span>").arg(text);
+
+        // QStyleOptionViewItem opt(option);
+        // initStyleOption(&opt, index);
+        // opt.text = text;
+        // opt.widget->style()->drawControl(QStyle::CE_ItemViewItem, &opt, painter, opt.widget);
+
     }
 
     bool helpEvent(QHelpEvent*, QAbstractItemView*, const QStyleOptionViewItem&, const QModelIndex&) override {
@@ -50,6 +57,8 @@ CalculationModeDetailView::CalculationModeDetailView(QWidget* parent)
     setup_table();
     FontUtils::applySafeMonospaceFont(this);
 
+    //_table->setPalette(qApp->palette());
+
     connect(_table, &QTableWidget::itemChanged, this, [this](QTableWidgetItem* item) {
         if (item->column() != 1)
             return;
@@ -59,11 +68,18 @@ CalculationModeDetailView::CalculationModeDetailView(QWidget* parent)
 
         bool empty = formula.trimmed().isEmpty();
 
+        // bool isCutting = true;
+        // if (auto* typeItem = _table->item(row, 2)) {
+        //     QString icon = typeItem->text();
+        //     isCutting = (icon == "⚙️");
+        // }
+
         bool isCutting = true;
         if (auto* typeItem = _table->item(row, 2)) {
-            QString icon = typeItem->text();
-            isCutting = (icon == "⚙️");
+            isCutting = typeItem->data(Qt::UserRole).toBool();
         }
+
+
 
         bool formulaValid = [&]() {
             if (empty)
@@ -75,26 +91,27 @@ CalculationModeDetailView::CalculationModeDetailView(QWidget* parent)
         }();
 
 
-        QColor bg;
-        QString icon;
+        updateRowVisuals(row, true, formulaValid, empty);
+        //QColor bg;
+        // QString icon;
 
-        if (!formulaValid) {
-            bg = ColorConstants::ColorRed;
-            icon = "❗";
-        } else if (empty) {
-            bg = ColorConstants::ColorYellow;
-            icon = "🟡";
-        } else {
-            bg = Qt::NoBrush;
-            icon = "🟢";
-        }
+        // if (!formulaValid) {
+        //     //bg = ColorConstants::ColorRed;
+        //     icon = "❗";
+        // } else if (empty) {
+        //     //bg = ColorConstants::ColorYellow;
+        //     icon = "🟡";
+        // } else {
+        //     //bg = Qt::NoBrush;
+        //     icon = "🟢";
+        // }
 
-        if (auto* typeItem = _table->item(row, 2))
-            typeItem->setText(icon);
+        // if (auto* typeItem = _table->item(row, 2))
+        //     typeItem->setText(icon);
 
-        for (int col = 0; col < _table->columnCount(); ++col)
-            if (auto* it = _table->item(row, col))
-                it->setBackground(bg);
+        // for (int col = 0; col < _table->columnCount(); ++col)
+        //     if (auto* it = _table->item(row, col))
+        //         it->setBackground(bg);
 
         if (_lastFormulaValue != item->text()) {
             _undoStack.push_back(_lastFormulaValue);
@@ -224,13 +241,14 @@ void CalculationModeDetailView::set_details(const QVector<DetailRow>& rows) {
         formItem->setFlags(formItem->flags() | Qt::ItemIsEditable);
 
         auto* typeItem = new QTableWidgetItem(r.isCutting ? "⚙️" : "📦");
+        typeItem->setData(Qt::UserRole, r.isCutting);
 
         matItem->setData(Qt::UserRole, r.id); // store detailId for actions
         _table->setItem(i,0,matItem);
         _table->setItem(i,1,formItem);
         _table->setItem(i,2,typeItem);
 
-        apply_row_visuals(i, r);
+        updateRowVisuals(i, r.materialValid, r.formulaValid, r.formula.trimmed().isEmpty());
 
         QString tip;
         if (!r.materialValid)
@@ -251,58 +269,48 @@ void CalculationModeDetailView::set_details(const QVector<DetailRow>& rows) {
 
 }
 
-void CalculationModeDetailView::apply_row_visuals(int row, const DetailRow& d)
+
+void CalculationModeDetailView::updateRowVisuals(
+    int row,
+    bool materialValid,
+    bool formulaValid,
+    bool empty)
 {
-    QColor bg;
+    QString icon;
     QString tip;
 
-    // Material missing
-    if (!d.materialValid) {
-        bg = ColorConstants::ColorRed;
+    if (!materialValid) {
+        icon = "❌";
         tip = "Material not found in MaterialMaster.";
     }
-    else if (!d.formulaValid) {
-        bg = ColorConstants::ColorRed;
+    else if (!formulaValid) {
+        icon = "❗";
         tip = "Invalid formula.";
     }
-    else if (d.formula.trimmed().isEmpty() || d.formula == "unknown") {
-        bg = ColorConstants::ColorYellow;
+    else if (empty) {
+        icon = "🟡";
         tip = "Formula empty.";
     }
-    /* removed: matrixComplete visual state */
-
-    // All good
     else {
-        bg = Qt::NoBrush;
+        icon = "🟢";
+        tip = "";
     }
 
-    auto* itemFormula = _table->item(row, 2);
-    if (itemFormula) {
+    // ikon
+    if (auto* typeItem = _table->item(row, 2))
+        typeItem->setText(icon);
 
-        if (!d.materialValid) {
-            itemFormula->setText("❌"); // material missing
-        }
-        else if (!d.formulaValid) {
-            itemFormula->setText("❗");
-        }
-        else if (d.formula.trimmed().isEmpty() || d.formula == "unknown") {
-            itemFormula->setText("🟡"); // unknown formula
-        }
-        /* removed: matrixComplete icon */
-        else {
-            itemFormula->setText("🟢");
-        }
-    }
-
-
+    // tooltip minden cellára
     for (int col = 0; col < _table->columnCount(); ++col) {
-        if (auto* item = _table->item(row, col)) {
-            //item->setBackground(bg);
+        if (auto* it = _table->item(row, col)) {
             if (!tip.isEmpty())
-                item->setToolTip(item->toolTip() + "\n" + tip);
+                it->setToolTip(tip);
+            else
+                it->setToolTip({});
         }
     }
 }
+
 
 void CalculationModeDetailView::set_current_calculation(const QUuid& calcId, const QString&) {
     _current_calcId = calcId;

@@ -58,6 +58,6 @@ private:
     QString _lastFormulaValue;
 
     void setup_table();
-    void apply_row_visuals(int row, const DetailRow& r);
+    void updateRowVisuals(int row, bool materialValid, bool formulaValid, bool empty);
     bool eventFilter(QObject* obj, QEvent* ev) override;
 };
