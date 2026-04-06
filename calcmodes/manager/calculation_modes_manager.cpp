@@ -5,6 +5,7 @@
 #include "calcmodes/repository/need_calculation_repository.h"
 #include "calculation/registry/need_calculation_detail_registry.h"
 #include "calculation/repository/need_calculation_detail_repository.h"
+#include "calculation/service/matrix_generator.h"
 
 /* ============================================================
  * 🧩 Konstruktor
@@ -45,45 +46,17 @@ void CalculationModesManager::connectSignals() {
     connect(_view, &CalculationModesView::request_add_mode,
             this, [this](const QUuid& productId, const QString& modeName) {
 
-
-                // 🧪 Duplikációs ellenőrzés: productId + name egyedisége
-                // auto duplicateCheck = [&](const QString& name) {
-                //     return NeedCalculationRegistry::instance().existsBy(
-                //         [&](const NeedCalculation& x) {
-                //             return x.productId == productId && x.name == name;
-                //         }
-                //         );
-                // };
-
-                // 🎨 Dialógus megnyitása
-                // ModeNameDialog dlg(_view, "", duplicateCheck);
-                // if (dlg.exec() != QDialog::Accepted)
-                //     return;
-
-                 //const QString name = dlg.value();
-                // if (name.isEmpty())
-                //     return;
-
-                // // 📦 Új entitás
-                // NeedCalculation c;
-                // c.id = QUuid::createUuid();
-                // c.productId = productId;
-                // c.name = name;
-
-                // if (NeedCalculationRegistry::instance().insert(c)) {
-                //     zEventINFO(QString("➕ New mode added: %1").arg(name));
-                // }
-
                 NeedCalculation nc;
                 nc.id = QUuid::createUuid();
                 nc.productId = productId;
                 nc.name = modeName;
-                //NeedCalculationRegistry::instance().insert(nc);
-                //NeedCalculationRepository::save();
+
                 if (NeedCalculationRegistry::instance().insert(nc)) {
                      zEventINFO(QString("➕ New mode added: %1").arg(modeName));
                 }
 
+                // 🔧 Új mód → hiányzó detail-ek generálása
+                MatrixGenerator::generateForMode(nc.id);
             });
 
     /* ------------------------------

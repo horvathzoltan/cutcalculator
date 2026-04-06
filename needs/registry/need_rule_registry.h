@@ -46,9 +46,10 @@ public:
     bool validateDuplicate(const NeedRule& r) const;
 
     bool beforeInsert(NeedRule&) { return true; }
-    //void afterInsert(const NeedRule& r);
+    void afterInsert(const NeedRule& r);
 
     bool beforeRemove(NeedRule&) { return true; }
+    void afterRemove(const NeedRule& r);
 
     void onInsertLog(const NeedRule& r);
     void onRemoveLog(const NeedRule& r);

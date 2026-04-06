@@ -1,7 +1,9 @@
 #include "matrix_generator.h"
 #include "matrix_validator.h"
 #include "calculation/registry/need_calculation_detail_registry.h"
-#include "common/logger/event_logger.h"
+
+#include <QDateTime>
+//#include "common/logger/event_logger.h"
 
 bool MatrixGenerator::generate(const QVector<MissingDetail>& list)
 {
@@ -33,14 +35,15 @@ bool MatrixGenerator::generate(const QVector<MissingDetail>& list)
         return a.materialId < b.materialId;
     });
     for (const auto& m : sorted) {
-        NeedCalculationDetail d;
-        d.id = QUuid::createUuid();
-        d.needCalculationId = m.modeId;
-        d.materialId = m.materialId;
-        d.formula = ""; // v2: default formula = empty (unknown)
-        d.kind = NeedCalculationDetail::DetailKind::Cutting;
+        // NeedCalculationDetail d;
+        // d.id = QUuid::createUuid();
+        // d.needCalculationId = m.modeId;
+        // d.materialId = m.materialId;
+        // d.formula = ""; // v2: default formula = empty (unknown)
+        // d.kind = NeedCalculationDetail::DetailKind::Cutting;
 
-        NeedCalculationDetailRegistry::instance().insert(d);
+        // NeedCalculationDetailRegistry::instance().insert(d);
+            createDetail(m.modeId, m.materialId);
 
         zInfo(QString("  ➕ Generated detail | product=%1 | mode=%2 | material=%3")
                   .arg(m.productId.toString())
@@ -57,6 +60,20 @@ bool MatrixGenerator::generate(const QVector<MissingDetail>& list)
 
     return true;
 }
+
+void MatrixGenerator::createDetail(const QUuid& modeId, const QUuid& materialId)
+{
+    NeedCalculationDetail d;
+    d.id = QUuid::createUuid();
+    d.needCalculationId = modeId;
+    d.materialId = materialId;
+    d.formula = ""; // default formula
+    d.kind = NeedCalculationDetail::DetailKind::Cutting; // később javítjuk
+
+    NeedCalculationDetailRegistry::instance().insert(d);
+}
+
+
 
 // v2: generate missing details for a product in deterministic order
 bool MatrixGenerator::generateForProduct(const QUuid& productId)

@@ -13,4 +13,5 @@ public:
 
     // v2: generate all missing details for a mode (deterministic)
     static bool generateForMode(const QUuid& modeId);
+    static void createDetail(const QUuid &modeId, const QUuid &materialId);
 };

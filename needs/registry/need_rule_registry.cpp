@@ -6,6 +6,8 @@
 
 #include "calculation/registry/need_calculation_detail_registry.h"
 
+#include <calculation/service/matrix_generator.h>
+
 // --- Lookup API ---
 
 NeedRuleRegistry::NeedRuleRegistry()
@@ -43,23 +45,45 @@ bool NeedRuleRegistry::validateDuplicate(const NeedRule& r) const
 }
 
 
-// void NeedRuleRegistry::afterInsert(const NeedRule& r)
-// {
-//     const auto modes =
-//         NeedCalculationRegistry::instance().findAll([&](const NeedCalculation& nc){
-//             return nc.productId == r.leftId;
-//         });
+void NeedRuleRegistry::afterInsert(const NeedRule& r)
+{
+    const auto modes =
+        NeedCalculationRegistry::instance().findAll([&](const NeedCalculation& nc){
+            return nc.productId == r.leftId;
+        });
 
-//     for (const auto& m : modes) {
-//         NeedCalculationDetail d;
-//         d.id = QUuid::createUuid();
-//         d.needCalculationId = m.id;
-//         d.materialId = r.rightId;
-//         d.formula = "";
-//         d.kind = NeedCalculationDetail::DetailKind::Cutting;
-//         NeedCalculationDetailRegistry::instance().insertWithWorkflow(d);
-//     }
-// }
+    for (const auto& m : modes) {
+        // NeedCalculationDetail d;
+        // d.id = QUuid::createUuid();
+        // d.needCalculationId = m.id;
+        // d.materialId = r.rightId;
+        // d.formula = "";
+        // d.kind = NeedCalculationDetail::DetailKind::Cutting;
+
+        // NeedCalculationDetailRegistry::instance().insert(d);
+        MatrixGenerator::createDetail(m.id, r.rightId);
+    }
+}
+
+void NeedRuleRegistry::afterRemove(const NeedRule& r)
+{
+    // Töröljük az összes detail-t, ami:
+    // - ehhez a materialhoz tartozik
+    // - és olyan módhoz, amelynek productId == r.leftId
+    auto details = NeedCalculationDetailRegistry::instance().findAll(
+        [&](const NeedCalculationDetail& d){
+            const auto* calc =
+                NeedCalculationRegistry::instance().findById(d.needCalculationId);
+            if (!calc)
+                return false;
+            return d.materialId == r.rightId &&
+                   calc->productId == r.leftId;
+        });
+
+    for (const auto& d : details) {
+        NeedCalculationDetailRegistry::instance().remove(d.id);
+    }
+}
 
 
 // --- Log hookok ---
