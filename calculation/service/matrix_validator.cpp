@@ -85,18 +85,46 @@ QVector<MissingDetail> MatrixValidator::validateAll()
 }
 
 // Emberi diagnosztikai log – MissingDetail mezők alapján
+// void MatrixValidator::logHumanReadableDiagnostics()
+// {
+//     QVector<MissingDetail> diag = validateAll();
+//     for (const auto &m : diag) {
+//         zInfo(
+//             QString("❌ Missing detail → Product: %1 , Mode: %2, Material: %3 (%4)")
+//                 .arg(m.productName)
+//                 .arg(m.modeName)
+//                 .arg(m.materialName)
+//                 .arg(m.materialBarcode));
+//     }
+// }
+
 void MatrixValidator::logHumanReadableDiagnostics()
 {
     auto diag = validateAll();
-    for (const auto& m : diag) {
-        zInfo(QString("❌ Missing detail → Product: %1 (%2), Mode: %3, Material: %4 (%5)")
-                  .arg(m.productName)
-                  .arg(m.productId.toString())
-                  .arg(m.modeName)
-                  .arg(m.materialName)
-                  .arg(m.materialBarcode));
+    if (diag.isEmpty()) {
+        zInfo("🟢 MatrixValidator: no missing details.");
+        return;
     }
+
+    QVector<QString> header = {"Product", "Mode", "Material", "Barcode"};
+    QVector<QVector<QString>> rows;
+
+    for (const auto& m : diag) {
+        rows.push_back({
+            m.productName,
+            m.modeName,
+            m.materialName,
+            m.materialBarcode
+        });
+    }
+
+    zInfo(QString("❌ Missing details detected: %1 row(s)").arg(rows.size()));
+
+    auto lines = TableFormatter::format(header, rows);
+    for (const auto& line : lines)
+        zInfo(line);
 }
+
 
 QVector<MissingDetail> MatrixValidator::validateMode(const QUuid& modeId)
 {

@@ -96,6 +96,9 @@ void NeedCalculationRegistry::onUpdateLog(const NeedCalculation& nc)
 {
     zInfo(QString("✏️ NeedCalculation UPDATE: id=%1 name=%2")
               .arg(nc.id.toString(), nc.name));
+
+    // A detail CSV-k új modeName alapján íródnak ki
+    NeedCalculationDetailRegistry::instance().persist();
 }
 
 void NeedCalculationRegistry::onRemoveLog(const NeedCalculation& nc)
@@ -117,3 +120,4 @@ bool NeedCalculationRegistry::beforeInsert(NeedCalculation& nc) {
 bool NeedCalculationRegistry::beforeUpdate(NeedCalculation& nc) {
     nc.name = nc.name.trimmed(); return true;
 }
+

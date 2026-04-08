@@ -135,8 +135,16 @@ void CalculationModesPresenter::refreshOverlayOnly()
 
 void CalculationModesPresenter::connectRegistry()
 {
-    NeedCalculationRegistry::instance().subscribeItemsChangedToken(
+    _modeToken = NeedCalculationRegistry::instance().subscribeItemsChangedToken(
         [this]() {
+            // Ha van aktuális product, frissítsük a listát
+            auto pid = _treeManager->currentProductId();
+            if (!pid.isNull()) {
+                refreshForProduct(pid,
+                                  _treeManager->currentProductName(),
+                                  _treeManager->currentProductBarcode());
+            }
+
             refreshOverlayOnly();
         });
 

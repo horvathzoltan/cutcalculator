@@ -39,6 +39,8 @@ private:
     RepositoryOverlayWidget<NeedCalculationRegistry>* _status = nullptr;
 
     //void initialOverlay();
+    SubscriptionToken _modeToken;
+
     void connectTreeStats();
     void connectRegistry();
 
