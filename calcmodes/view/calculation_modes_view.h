@@ -42,6 +42,10 @@ public:
     void markReady() { _ready = true; }
 
     int rowCount() const;
+
+    void selectMode(const QUuid& id);
+
+
 private:
     bool _ready = false;
 

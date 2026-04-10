@@ -105,6 +105,9 @@ void NeedCalculationRegistry::onRemoveLog(const NeedCalculation& nc)
 {
     zInfo(QString("🗑️ NeedCalculation REMOVE: id=%1 name=%2")
               .arg(nc.id.toString(), nc.name));
+
+    // A detail CSV-k új modeName alapján íródnak ki
+    NeedCalculationDetailRegistry::instance().persist();
 }
 
 

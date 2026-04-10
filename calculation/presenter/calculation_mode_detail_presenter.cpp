@@ -68,6 +68,8 @@ void CalculationModeDetailPresenter::refreshForCalculation(const QUuid& calcId,
 {
     auto rows = _manager->refreshForCalculation(calcId, modeName);
 
+    _view->set_details(rows);          // ← EZ HIÁNYZOTT
+
     refreshOverlayOnly();
 
     int firstProblem = -1;
@@ -84,6 +86,9 @@ void CalculationModeDetailPresenter::refreshForCalculation(const QUuid& calcId,
 void CalculationModeDetailPresenter::onModeSelected(std::optional<QUuid> modeId)
 {
     if (!modeId) {
+        _view->set_details({});          // lista ürítése
+        _view->set_current_calculation(QUuid(), QString()); // opcionális: header reset
+        refreshOverlayOnly();
         return;
     }
     const NeedCalculation* mode =
@@ -92,7 +97,7 @@ void CalculationModeDetailPresenter::onModeSelected(std::optional<QUuid> modeId)
 
     _view->set_current_calculation(*modeId, modeName);
 
-    auto details = NeedCalculationDetailRegistry::instance().findByCalculation(*modeId);
+    //auto details = NeedCalculationDetailRegistry::instance().findByCalculation(*modeId);
     refreshForCalculation(*modeId, mode->name);
 }
 
@@ -103,7 +108,7 @@ void CalculationModeDetailPresenter::refreshOverlayOnly()
 
 void CalculationModeDetailPresenter::connectRegistry()
 {
-    NeedCalculationDetailRegistry::instance().subscribeItemsChangedToken(
+    _detailToken = NeedCalculationDetailRegistry::instance().subscribeItemsChangedToken(
         [this]() {
             QUuid calcId = _view->currentCalculationId();
             if (calcId.isNull()) {

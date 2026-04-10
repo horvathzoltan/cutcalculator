@@ -90,19 +90,22 @@ void MaterialRequirementsPresenter::refreshOverlayOnly()
 
 
 void MaterialRequirementsPresenter::connectRegistry() {
-    _needRuleToken =
+    _needRuleToken_1 =
         NeedRuleRegistry::instance().subscribeItemsChangedToken(
             [this]() {
-            auto id = _treeManager->currentProductId();
-            auto name = _treeManager->currentProductName();
-            auto barcode = _treeManager->currentProductBarcode();
-            refreshForProduct(id, name, barcode);
+                auto id = _treeManager->currentProductId();
+                if(!id.isNull()) {
+                    auto name = _treeManager->currentProductName();
+                    auto barcode = _treeManager->currentProductBarcode();
+                    refreshForProduct(id, name, barcode);
+                }
 
-            refreshOverlayOnly();
-        });
+                refreshOverlayOnly();
+            });
 
-    NeedCalculationDetailRegistry::instance().subscribeItemsChangedToken(
-        [this]() { refreshOverlayOnly(); });
+    // _needRuleToken_2 =
+    //     NeedCalculationDetailRegistry::instance().subscribeItemsChangedToken(
+    //      [this]() { refreshOverlayOnly(); });
 }
 
 

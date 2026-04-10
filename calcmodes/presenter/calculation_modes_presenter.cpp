@@ -37,6 +37,13 @@ CalculationModesPresenter::CalculationModesPresenter(
 
     connect(_view, &CalculationModesView::modeActivated,
             this, &CalculationModesPresenter::on_mode_activated);
+
+    connect(_manager, &CalculationModesManager::modeAdded,
+            this, [this](const QUuid& id) {
+                emit modeSelected(id);
+                _view->selectMode(id);
+            });
+
 }
 
 void CalculationModesPresenter::on_mode_activated(const QUuid& modeId)
@@ -91,13 +98,20 @@ QToolBar* CalculationModesPresenter::buildToolbar(QWidget* parent)
         if (dlg.exec() != QDialog::Accepted)
             return;
         const QString modeName = dlg.value();
+
+        //auto newId = QUuid::createUuid();   // vagy a registry adja vissza
         emit _view->request_add_mode(_treeManager->currentProductId(), modeName);
+
+        //emit modeSelected(newId);           // ← AUTOMATIKUS KIVÁLASZTÁS
     });
 
 
     QObject::connect(removeAct, &QAction::triggered, this, [this]() {
         auto id = _view->currentModeId();
-        if (id) emit _view->request_remove_mode(*id);
+        if (id){
+            emit modeSelected(std::nullopt);   // ← ITT kell üríteni a detail oldalt
+            emit _view->request_remove_mode(*id);
+        }
     });
 
     QObject::connect(renameAct, &QAction::triggered, this, [this]() {
@@ -125,7 +139,7 @@ void CalculationModesPresenter::refreshForProduct(const QUuid& productId,
     auto rows = _manager->refreshForProduct(productId, name, barcode);
     _view->set_modes(rows);
     refreshOverlayOnly();
-    _status->refresh(_view->rowCount());
+    //_status->refresh(_view->rowCount());
 }
 
 void CalculationModesPresenter::refreshOverlayOnly()
@@ -135,18 +149,36 @@ void CalculationModesPresenter::refreshOverlayOnly()
 
 void CalculationModesPresenter::connectRegistry()
 {
-    _modeToken = NeedCalculationRegistry::instance().subscribeItemsChangedToken(
+    _modeToken_1 = NeedCalculationRegistry::instance().subscribeItemsChangedToken(
         [this]() {
             // Ha van aktuális product, frissítsük a listát
             auto pid = _treeManager->currentProductId();
             if (!pid.isNull()) {
+
+                auto before = _view->currentModeId();
+
                 refreshForProduct(pid,
                                   _treeManager->currentProductName(),
                                   _treeManager->currentProductBarcode());
+
+                if (before)
+                    _view->selectMode(*before);
             }
 
             refreshOverlayOnly();
         });
+
+    _modeToken_2 =
+        NeedCalculationDetailRegistry::instance().subscribeItemsChangedToken(
+            [this]() {
+                auto pid = _treeManager->currentProductId();
+                if (!pid.isNull()) {
+                    refreshForProduct(pid,
+                                      _treeManager->currentProductName(),
+                                      _treeManager->currentProductBarcode());
+                }
+                refreshOverlayOnly();
+            });
 
 }
 

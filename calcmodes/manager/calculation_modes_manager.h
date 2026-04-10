@@ -38,6 +38,10 @@ public:
                            const QString& productName,
                            const QString& productBarcode);
 
+signals:
+    void modeAdded(const QUuid& id);
+
+
 private:
     /* ============================================================
      * 🧩 Private members

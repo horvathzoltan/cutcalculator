@@ -3,6 +3,8 @@
 #include "calculation/registry/need_calculation_detail_registry.h"
 
 #include <QDateTime>
+
+#include <materials/registry/material_registry.h>
 //#include "common/logger/event_logger.h"
 
 bool MatrixGenerator::generate(const QVector<MissingDetail>& list)
@@ -68,7 +70,13 @@ void MatrixGenerator::createDetail(const QUuid& modeId, const QUuid& materialId)
     d.needCalculationId = modeId;
     d.materialId = materialId;
     d.formula = ""; // default formula
-    d.kind = NeedCalculationDetail::DetailKind::Cutting; // később javítjuk
+
+    auto* mat = MaterialRegistry::instance().findById(materialId);
+
+    if (mat && mat->cuttingMode == CuttingMode::Piece)
+        d.kind = NeedCalculationDetail::DetailKind::Kitting;
+    else
+        d.kind = NeedCalculationDetail::DetailKind::Cutting;
 
     NeedCalculationDetailRegistry::instance().insert(d);
 }

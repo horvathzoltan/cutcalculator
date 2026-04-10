@@ -51,12 +51,19 @@ void CalculationModesManager::connectSignals() {
                 nc.productId = productId;
                 nc.name = modeName;
 
-                if (NeedCalculationRegistry::instance().insert(nc)) {
-                     zEventINFO(QString("➕ New mode added: %1").arg(modeName));
+                // 1) Insert attempt
+                    if (!NeedCalculationRegistry::instance().insert(nc)) {
+                    zEventWARN("⚠️ Mode insert failed (duplicate name or invalid domain)");
+                    return;   // ← STOP: ne fusson a generator sikertelen insert után
                 }
 
-                // 🔧 Új mód → hiányzó detail-ek generálása
+                // 2) Success path
+                zEventINFO(QString("➕ New mode added: %1").arg(modeName));
+                emit modeAdded(nc.id);
+
+                // 3) Missing details generation (csak sikeres insert után)
                 MatrixGenerator::generateForMode(nc.id);
+
             });
 
     /* ------------------------------

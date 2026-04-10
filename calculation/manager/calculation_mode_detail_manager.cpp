@@ -4,6 +4,8 @@
 
 #include "dsl/formula_analysis.h"
 #include "dsl/formula_contract.h"
+#include "materials/registry/material_registry.h"
+#include "materials/model/cutting_mode.h"
 
 CalculationModeDetailManager::CalculationModeDetailManager(CalculationModeDetailView* view, QObject* parent)
     : QObject(parent), _view(view)
@@ -15,14 +17,20 @@ CalculationModeDetailManager::CalculationModeDetailManager(CalculationModeDetail
 void CalculationModeDetailManager::connectSignals() {
 
     connect(_view, &CalculationModeDetailView::request_update_formula,
-        this, [this](const QUuid& detailId, const QString& newFormula) {
+            this, [this](const QUuid& detailId, const QString& newFormula) {
 
-            const auto* d = NeedCalculationDetailRegistry::instance().findById(detailId);
-            if (!d) return;
+                // 1) Workflow-alapú update
+                if (!NeedCalculationDetailRegistry::instance()
+                         .updateFormula(detailId, newFormula)) {
 
-            auto updated = *d;
-            updated.formula = newFormula;
-    });
+                    zEventWARN(QString("⚠️ Formula update failed (id=%1)")
+                                   .arg(detailId.toString()));
+                    return;
+                }
+
+                // 2) A presenter automatikusan frissít a notifyItemsChanged miatt
+            });
+
 }
 
 /**
@@ -94,7 +102,8 @@ CalculationModeDetailManager::makeRows(const QVector<NeedCalculationDetail>& det
                                 : kittingContract();
 
         const bool formulaValid = analyzeFormula(d.formula, c).ok;
-
+        const auto* mat = MaterialRegistry::instance().findById(d.materialId);
+        CuttingMode mode = mat ? mat->cuttingMode : CuttingMode::Unknown;
 
         rows.push_back({
             d.id,
@@ -105,8 +114,12 @@ CalculationModeDetailManager::makeRows(const QVector<NeedCalculationDetail>& det
             d.formula,
             isCut,
             formulaValid,
-            materialOk
+            materialOk,
+            mode,
+            d.kind
         });
+
+
     }
     return rows;
 }

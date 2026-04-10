@@ -64,62 +64,56 @@ CalculationModeDetailView::CalculationModeDetailView(QWidget* parent)
             return;
 
         int row = item->row();
-        QString formula = item->text();
+        QString formula = item->text().trimmed();
 
-        bool empty = formula.trimmed().isEmpty();
-
-        // bool isCutting = true;
-        // if (auto* typeItem = _table->item(row, 2)) {
-        //     QString icon = typeItem->text();
-        //     isCutting = (icon == "⚙️");
-        // }
+        bool empty = formula.isEmpty();
 
         bool isCutting = true;
-        if (auto* typeItem = _table->item(row, 2)) {
+        if (auto* typeItem = _table->item(row, 3)) {
             isCutting = typeItem->data(Qt::UserRole).toBool();
         }
 
+        // 1) Inline validáció
+        FormulaContract contract = isCutting ? cuttingContract() : kittingContract();
+        FormulaAnalysis analysis = analyzeFormula(formula, contract);
+        bool formulaValid = empty || analysis.ok;
 
-
-        bool formulaValid = [&]() {
-            if (empty)
-                return true;
-
-            FormulaContract contract = isCutting ? cuttingContract() : kittingContract();
-            FormulaAnalysis a = analyzeFormula(formula, contract);
-            return a.ok;
-        }();
-
-
+        // 2) Vizuális visszajelzés
         updateRowVisuals(row, true, formulaValid, empty);
-        //QColor bg;
-        // QString icon;
 
-        // if (!formulaValid) {
-        //     //bg = ColorConstants::ColorRed;
-        //     icon = "❗";
-        // } else if (empty) {
-        //     //bg = ColorConstants::ColorYellow;
-        //     icon = "🟡";
-        // } else {
-        //     //bg = Qt::NoBrush;
-        //     icon = "🟢";
+        // 2) Tooltip a hiba okáról
+        QString tip;
+        if (!formulaValid) {
+            if (!analysis.errors.isEmpty())
+                tip = analysis.errors.join("\n");   // több hiba → több sor
+            else
+                tip = "Invalid formula.";
+        } else if (empty) {
+            tip = "Formula empty.";
+        } else {
+            tip.clear();
+        }
+
+        int cmax = _table->columnCount();
+        auto* it = _table->item(row, 4);
+        if(it){
+            it->setToolTip(tip);
+        }
+
+        // tooltip beállítása
+        // for (int col = 0; col < _table->columnCount(); ++col) {
+        //     if (auto* it = _table->item(row, col))
+        //         it->setToolTip(tip);
         // }
 
-        // if (auto* typeItem = _table->item(row, 2))
-        //     typeItem->setText(icon);
 
-        // for (int col = 0; col < _table->columnCount(); ++col)
-        //     if (auto* it = _table->item(row, col))
-        //         it->setBackground(bg);
-
+        // 4) Undo/Redo stack
         if (_lastFormulaValue != item->text()) {
             _undoStack.push_back(_lastFormulaValue);
             _redoStack.clear();
         }
-
-
     });
+
 
     connect(this, &CalculationModeDetailView::request_open_formula_editor,
             this, [this](const QUuid& id) {
@@ -217,16 +211,19 @@ CalculationModeDetailView::CalculationModeDetailView(QWidget* parent)
 }
 
 void CalculationModeDetailView::setup_table() {
-    _table->setColumnCount(3);
-    _table->setHorizontalHeaderLabels({"Material", "Formula", "Type"});
+    _table->setColumnCount(5);
+    _table->setHorizontalHeaderLabels({"Material", "Formula", "MatMode", "FormType", "State"});
+
     _table->horizontalHeader()->setStretchLastSection(false);
     _table->setSelectionBehavior(QAbstractItemView::SelectRows);
     _table->setSelectionMode(QAbstractItemView::SingleSelection);
     _table->setEditTriggers(QAbstractItemView::NoEditTriggers);
     _table->setAlternatingRowColors(true);
     _table->setColumnWidth(0, 360);
-    _table->setColumnWidth(1, 200);
-    _table->setColumnWidth(2, 80);
+    _table->setColumnWidth(1, 220);
+    _table->setColumnWidth(2, 70);
+    _table->setColumnWidth(3, 80);
+    _table->setColumnWidth(4, 70);
 }
 
 void CalculationModeDetailView::set_details(const QVector<DetailRow>& rows) {
@@ -240,13 +237,30 @@ void CalculationModeDetailView::set_details(const QVector<DetailRow>& rows) {
         formItem->setData(Qt::DisplayRole, r.formula);
         formItem->setFlags(formItem->flags() | Qt::ItemIsEditable);
 
-        auto* typeItem = new QTableWidgetItem(r.isCutting ? "⚙️" : "📦");
-        typeItem->setData(Qt::UserRole, r.isCutting);
+        QString matIcon =
+            (r.matMode == CuttingMode::Length) ? "📏" :
+                (r.matMode == CuttingMode::Piece)  ? "🔩" :
+                (r.matMode == CuttingMode::None)   ? "🚫" : "❓";
+        auto* matModeItem = new QTableWidgetItem(matIcon);
 
-        matItem->setData(Qt::UserRole, r.id); // store detailId for actions
+        QString formIcon =
+            (r.kind == NeedCalculationDetail::DetailKind::Cutting) ? "⚙️" : "📦";
+        auto* formTypeItem = new QTableWidgetItem(formIcon);
+        formTypeItem->setData(Qt::UserRole, r.isCutting);
+
+        QString stateIcon;
+        if (!r.materialValid) stateIcon = "❌";
+        else if (!r.formulaValid) stateIcon = "❗";
+        else if (r.formula.trimmed().isEmpty()) stateIcon = "🟡";
+        else stateIcon = "🟢";
+        auto* stateItem = new QTableWidgetItem(stateIcon);
+
+        matItem->setData(Qt::UserRole, r.id);
         _table->setItem(i,0,matItem);
         _table->setItem(i,1,formItem);
-        _table->setItem(i,2,typeItem);
+        _table->setItem(i,2,matModeItem);
+        _table->setItem(i,3,formTypeItem);
+        _table->setItem(i,4,stateItem);
 
         updateRowVisuals(i, r.materialValid, r.formulaValid, r.formula.trimmed().isEmpty());
 
@@ -260,8 +274,8 @@ void CalculationModeDetailView::set_details(const QVector<DetailRow>& rows) {
         /* removed: matrixComplete tooltip */
 
         if (!tip.isEmpty()) {
-            for (int col = 0; col < _table->columnCount(); ++col)
-                _table->item(i, col)->setToolTip(tip);
+            if (auto* it = _table->item(i, 1)) it->setToolTip(tip);
+            if (auto* it = _table->item(i, 4)) it->setToolTip(tip);
         }
 
     }
@@ -296,19 +310,12 @@ void CalculationModeDetailView::updateRowVisuals(
         tip = "";
     }
 
-    // ikon
-    if (auto* typeItem = _table->item(row, 2))
-        typeItem->setText(icon);
-
-    // tooltip minden cellára
-    for (int col = 0; col < _table->columnCount(); ++col) {
-        if (auto* it = _table->item(row, col)) {
-            if (!tip.isEmpty())
-                it->setToolTip(tip);
-            else
-                it->setToolTip({});
-        }
+    if (auto* stateItem = _table->item(row, 4))
+    {
+        stateItem->setText(icon);
+        stateItem->setToolTip(tip);
     }
+
 }
 
 

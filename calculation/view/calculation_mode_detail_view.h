@@ -3,7 +3,8 @@
 #include <QTableWidget>
 #include <QVBoxLayout>
 #include <QUuid>
-
+#include "materials/model/cutting_mode.h"
+#include "calculation/model/need_calculation_detail.h"
 /**
  * @class CalculationModeDetailView
  * @brief NeedCalculationDetail lista: Material + Formula + TypeIcon (⚙️/📦)
@@ -24,12 +25,13 @@ public:
         QString materialName;
         QString materialBarcode;
         QString formula;
-        bool isCutting = true; // ⚙️ vs 📦
+        bool isCutting = true;
         bool formulaValid = true;
         bool materialValid = true;
-        /* removed: matrixComplete */
-
+        CuttingMode matMode = CuttingMode::Unknown;
+        NeedCalculationDetail::DetailKind kind = NeedCalculationDetail::DetailKind::Cutting;
     };
+
 
     void set_details(const QVector<DetailRow>& rows);
 

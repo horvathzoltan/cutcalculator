@@ -2,6 +2,7 @@
 #include "calcmodes/view/calculation_modes_view.h"
 #include <QHeaderView>
 #include <QTableWidgetItem>
+#include <QTimer>
 #include "common/utils/font_utils.h"
 #include "mode_row_delegate.h"
 
@@ -153,5 +154,20 @@ int CalculationModesView::rowCount() const
     return _table ? _table->rowCount() : 0;
 }
 
+void CalculationModesView::selectMode(const QUuid& id)
+{
+    QTimer::singleShot(0, this, [this, id]() {
+        for (int row = 0; row < _table->rowCount(); ++row) {
+            auto* item = _table->item(row, 0);
+            if (!item)
+                continue;
+            if (item->data(Qt::UserRole).toUuid() == id) {
+                _table->setFocus();
+                _table->selectRow(row);
+                return;
+            }
+        }
+    });
+}
 
 

@@ -29,6 +29,8 @@ public slots:
 
 
 private:
+    SubscriptionToken _detailToken;
+
     CalculationModeDetailView* _view = nullptr;
     CalculationModeDetailManager* _manager = nullptr;
     RepositoryOverlayWidget<NeedCalculationDetailRegistry>* _status = nullptr;

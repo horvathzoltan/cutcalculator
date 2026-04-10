@@ -220,9 +220,10 @@ NeedCalculationDetailRepository::buildFromRow(
 
     // 5) Kind meghatározása (formula alapján)
     NeedCalculationDetail::DetailKind kind =
-        row.formula.startsWith("fixed:")
+        (mat && mat->cuttingMode == CuttingMode::Piece)
             ? NeedCalculationDetail::DetailKind::Kitting
             : NeedCalculationDetail::DetailKind::Cutting;
+
 
     // 6) NeedCalculationDetail összeállítása
     NeedCalculationDetail d;
