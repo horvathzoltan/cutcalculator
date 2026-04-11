@@ -68,13 +68,20 @@ CalculationModeDetailView::CalculationModeDetailView(QWidget* parent)
 
         bool empty = formula.isEmpty();
 
-        bool isCutting = true;
-        if (auto* typeItem = _table->item(row, 3)) {
+        // bool isCutting = true;
+        // if (auto* typeItem = _table->item(row, 3)) {
+        //     isCutting = typeItem->data(Qt::UserRole).toBool();
+        // }
+        bool isCutting = false;
+        if (auto* typeItem = _table->item(row, 3))
+        {
             isCutting = typeItem->data(Qt::UserRole).toBool();
         }
 
         // 1) Inline validáció
         FormulaContract contract = isCutting ? cuttingContract() : kittingContract();
+
+
         FormulaAnalysis analysis = analyzeFormula(formula, contract);
         bool formulaValid = empty || analysis.ok;
 
@@ -95,10 +102,10 @@ CalculationModeDetailView::CalculationModeDetailView(QWidget* parent)
         }
 
         int cmax = _table->columnCount();
-        auto* it = _table->item(row, 4);
-        if(it){
-            it->setToolTip(tip);
-        }
+
+        if (auto* it = _table->item(row, 1)) it->setToolTip(tip);
+        if (auto* it = _table->item(row, 4)) it->setToolTip(tip);
+
 
         // tooltip beállítása
         // for (int col = 0; col < _table->columnCount(); ++col) {
@@ -221,66 +228,18 @@ void CalculationModeDetailView::setup_table() {
     _table->setAlternatingRowColors(true);
     _table->setColumnWidth(0, 360);
     _table->setColumnWidth(1, 220);
-    _table->setColumnWidth(2, 70);
-    _table->setColumnWidth(3, 80);
-    _table->setColumnWidth(4, 70);
+    _table->setColumnWidth(2, 30);
+    _table->setColumnWidth(3, 30);
+    _table->setColumnWidth(4, 30);
 }
 
 void CalculationModeDetailView::set_details(const QVector<DetailRow>& rows) {
     _table->clearContents();
     _table->setRowCount(rows.size());
+
     for (int i=0; i<rows.size(); ++i) {
-        const auto& r = rows[i];
-        auto* matItem = new QTableWidgetItem(QString("%1 (%2)").arg(r.materialName, r.materialBarcode));
-
-        auto* formItem = new QTableWidgetItem(r.formula);
-        formItem->setData(Qt::DisplayRole, r.formula);
-        formItem->setFlags(formItem->flags() | Qt::ItemIsEditable);
-
-        QString matIcon =
-            (r.matMode == CuttingMode::Length) ? "📏" :
-                (r.matMode == CuttingMode::Piece)  ? "🔩" :
-                (r.matMode == CuttingMode::None)   ? "🚫" : "❓";
-        auto* matModeItem = new QTableWidgetItem(matIcon);
-
-        QString formIcon =
-            (r.kind == NeedCalculationDetail::DetailKind::Cutting) ? "⚙️" : "📦";
-        auto* formTypeItem = new QTableWidgetItem(formIcon);
-        formTypeItem->setData(Qt::UserRole, r.isCutting);
-
-        QString stateIcon;
-        if (!r.materialValid) stateIcon = "❌";
-        else if (!r.formulaValid) stateIcon = "❗";
-        else if (r.formula.trimmed().isEmpty()) stateIcon = "🟡";
-        else stateIcon = "🟢";
-        auto* stateItem = new QTableWidgetItem(stateIcon);
-
-        matItem->setData(Qt::UserRole, r.id);
-        _table->setItem(i,0,matItem);
-        _table->setItem(i,1,formItem);
-        _table->setItem(i,2,matModeItem);
-        _table->setItem(i,3,formTypeItem);
-        _table->setItem(i,4,stateItem);
-
-        updateRowVisuals(i, r.materialValid, r.formulaValid, r.formula.trimmed().isEmpty());
-
-        QString tip;
-        if (!r.materialValid)
-            tip = "Material missing";
-        else if (!r.formulaValid)
-            tip = "Invalid formula";
-        else if (r.formula.trimmed().isEmpty())
-            tip = "Formula empty";
-        /* removed: matrixComplete tooltip */
-
-        if (!tip.isEmpty()) {
-            if (auto* it = _table->item(i, 1)) it->setToolTip(tip);
-            if (auto* it = _table->item(i, 4)) it->setToolTip(tip);
-        }
-
+        renderRow(i, rows[i]);
     }
-
-
 }
 
 
@@ -420,3 +379,53 @@ bool CalculationModeDetailView::eventFilter(QObject* obj, QEvent* ev)
     return QWidget::eventFilter(obj, ev);
 }
 
+void CalculationModeDetailView::renderRow(int i, const DetailRow& r)
+{
+    auto* matItem = new QTableWidgetItem(QString("%1 (%2)").arg(r.materialName, r.materialBarcode));
+    matItem->setData(Qt::UserRole, r.id);
+    matItem->setToolTip("");
+
+    auto* formItem = new QTableWidgetItem(r.formula);
+    formItem->setData(Qt::DisplayRole, r.formula);
+    formItem->setFlags(formItem->flags() | Qt::ItemIsEditable);
+
+    QString matIcon =
+        (r.matMode == CuttingMode::Length) ? "📏" :
+            (r.matMode == CuttingMode::Piece)  ? "🔩" :
+            (r.matMode == CuttingMode::None)   ? "🚫" : "❓";
+    auto* matModeItem = new QTableWidgetItem(matIcon);
+    matModeItem->setToolTip(
+        (r.matMode == CuttingMode::Length) ? "Length" :
+            (r.matMode == CuttingMode::Piece)  ? "Piece"  :
+            (r.matMode == CuttingMode::None)   ? "None"   : "Unknown"
+        );
+
+    bool isCutting = r.kind == NeedCalculationDetail::DetailKind::Cutting;
+    QString formIcon = isCutting ? "⚙️" : "📦";
+    auto* formTypeItem = new QTableWidgetItem(formIcon);
+    formTypeItem->setData(Qt::UserRole, isCutting);
+
+    formTypeItem->setToolTip(isCutting ? "Cutting" : "Kitting");
+
+    auto* stateItem = new QTableWidgetItem();
+
+    _table->setItem(i,0,matItem);
+    _table->setItem(i,1,formItem);
+    _table->setItem(i,2,matModeItem);
+    _table->setItem(i,3,formTypeItem);
+    _table->setItem(i,4,stateItem);
+
+    updateRowVisuals(i, r.materialValid, r.formulaValid, r.formula.trimmed().isEmpty());
+
+    QString tip;
+    if (!r.materialValid)
+        tip = "Material missing";
+    else if (!r.formulaValid)
+        tip = "Invalid formula";
+    else if (r.formula.trimmed().isEmpty())
+        tip = "Formula empty";
+
+    if (!tip.isEmpty()) {
+        if (auto* it = _table->item(i, 1)) it->setToolTip(tip);
+    }
+}

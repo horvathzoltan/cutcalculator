@@ -95,11 +95,9 @@ CalculationModeDetailManager::makeRows(const QVector<NeedCalculationDetail>& det
     for (const auto& d : details) {
         auto [name, barcode] = materialLabel(d.materialId);
         const bool materialOk = !name.isEmpty() && name != "(unknown)";
-        const bool isCut = (d.kind == NeedCalculationDetail::DetailKind::Cutting);
 
-        FormulaContract c = (d.kind == NeedCalculationDetail::DetailKind::Cutting)
-                                ? cuttingContract()
-                                : kittingContract();
+        bool isCutting = d.kind == NeedCalculationDetail::DetailKind::Cutting;
+        FormulaContract c = isCutting ? cuttingContract() : kittingContract();
 
         const bool formulaValid = analyzeFormula(d.formula, c).ok;
         const auto* mat = MaterialRegistry::instance().findById(d.materialId);
@@ -112,7 +110,6 @@ CalculationModeDetailManager::makeRows(const QVector<NeedCalculationDetail>& det
             name,
             barcode,
             d.formula,
-            isCut,
             formulaValid,
             materialOk,
             mode,

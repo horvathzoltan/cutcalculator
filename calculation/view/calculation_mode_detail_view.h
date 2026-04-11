@@ -25,7 +25,6 @@ public:
         QString materialName;
         QString materialBarcode;
         QString formula;
-        bool isCutting = true;
         bool formulaValid = true;
         bool materialValid = true;
         CuttingMode matMode = CuttingMode::Unknown;
@@ -62,4 +61,5 @@ private:
     void setup_table();
     void updateRowVisuals(int row, bool materialValid, bool formulaValid, bool empty);
     bool eventFilter(QObject* obj, QEvent* ev) override;
+    void renderRow(int row, const DetailRow& r);
 };
