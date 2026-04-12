@@ -135,7 +135,18 @@ CalculationModeDetailView::CalculationModeDetailView(QWidget* parent)
                 }
 
                 // 2) dialógus megnyitása
-                FormulaEditorDialog dlg(current, this);
+                NeedCalculationDetail::DetailKind kind = NeedCalculationDetail::DetailKind::Cutting;
+                for (int r = 0; r < _table->rowCount(); ++r) {
+                    if (_table->item(r, 0)->data(Qt::UserRole).toUuid() == id) {
+                        int kindVal = _table->item(r, 3)->data(Qt::UserRole).toInt();
+                        kind = static_cast<NeedCalculationDetail::DetailKind>(kindVal);
+
+                        break;
+                    }
+                }
+                FormulaEditorDialog dlg(current, kind, this);
+
+
                 if (dlg.exec() != QDialog::Accepted)
                     return;
 
@@ -143,58 +154,7 @@ CalculationModeDetailView::CalculationModeDetailView(QWidget* parent)
                 emit request_update_formula(id, dlg.formula());
             });
 
-    // connect(_table, &QTableWidget::itemChanged, this, [this](QTableWidgetItem* item) {
-    //     if (item->column() == 1) {
-    //         QUuid id = _table->item(item->row(), 0)->data(Qt::UserRole).toUuid();
-    //         emit request_edit_formula(id, item->text());
-    //     }
-    // });
-
-    // connect(_table, &QTableWidget::itemChanged, this, [this](QTableWidgetItem* item) {
-    //     if (item->column() == 1) {
-
-    //         // 🔧 ÚJ: üres formula → default érték
-    //         // üres formula maradjon üres (domain: empty = valid)
-
-    //         int row = item->row();
-    //         QString formula = item->text();
-
-
-    //         bool formulaValid = NeedCalculationDetailRegistry::isFormulaValid(formula);
-    //         bool empty = formula.trimmed().isEmpty();
-
-    //         QColor bg;
-    //         QString icon;
-
-    //         if (!formulaValid) {
-    //             bg = ColorConstants::ColorRed;
-    //             icon = "❗";
-    //         }
-    //         else if (empty) {
-    //             bg = ColorConstants::ColorYellow;
-    //             icon = "🟡";
-    //         }
-    //         else if (formula == "unknown") {
-    //             bg = Qt::NoBrush;
-    //             icon = "🟢";
-    //         }
-    //         else {
-    //             bg = Qt::NoBrush;
-    //             icon = "🟢";
-    //         }
-
-    //         auto* typeItem = _table->item(row, 2);
-    //         if (typeItem)
-    //             typeItem->setText(icon);
-
-    //         for (int col = 0; col < _table->columnCount(); ++col) {
-    //             if (auto* it = _table->item(row, col))
-    //                 it->setBackground(bg);
-    //         }
-    //     }
-    // });
-
-    _table->installEventFilter(this);
+      _table->installEventFilter(this);
     _table->setItemDelegateForColumn(1, new FormulaSyntaxDelegate(_table));
 
 
@@ -204,17 +164,8 @@ CalculationModeDetailView::CalculationModeDetailView(QWidget* parent)
         }
     });
 
-    // connect(_table, &QTableWidget::itemChanged, this, [this](QTableWidgetItem* item) {
-    //     if (item->column() == 1) {
-    //         _undoStack.push_back(_lastFormulaValue);
-    //         _redoStack.clear();
-    //     }
-    // });
-
     layout->addWidget(_table);
     setLayout(layout);
-
-    //updateOverlay(0, 0);
 }
 
 void CalculationModeDetailView::setup_table() {
@@ -403,7 +354,7 @@ void CalculationModeDetailView::renderRow(int i, const DetailRow& r)
     bool isCutting = r.kind == NeedCalculationDetail::DetailKind::Cutting;
     QString formIcon = isCutting ? "⚙️" : "📦";
     auto* formTypeItem = new QTableWidgetItem(formIcon);
-    formTypeItem->setData(Qt::UserRole, isCutting);
+    formTypeItem->setData(Qt::UserRole, static_cast<int>(r.kind));
 
     formTypeItem->setToolTip(isCutting ? "Cutting" : "Kitting");
 

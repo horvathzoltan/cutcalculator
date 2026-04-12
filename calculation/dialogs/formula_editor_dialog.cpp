@@ -5,16 +5,41 @@
 #include <dsl/formula_analysis.h>
 #include <dsl/formula_contract.h>
 #include <QPushButton>
+#include "dsl/dsl_syntax_highlighter.h"
+#include "dsl/dsl_completer.h"
 
-FormulaEditorDialog::FormulaEditorDialog(const QString& initial, QWidget* parent)
-    : QDialog(parent)
+FormulaEditorDialog::FormulaEditorDialog(const QString& initial, NeedCalculationDetail::DetailKind kind, QWidget* parent)
+    : QDialog(parent), _kind(kind)
 {
     auto* layout = new QVBoxLayout(this);
 
-    _edit = new QLineEdit(initial, this);
+    _edit = new DslTextEdit(this);
+    _edit->setPlainText(initial);
     layout->addWidget(_edit);
 
-    _edit->setPlaceholderText("pl.: len:w-10, qty:fixed:3, qty:perArea:1000");
+    _hl = new DslSyntaxHighlighter(_edit->document());
+
+    QStringList words;
+    if (_kind == NeedCalculationDetail::DetailKind::Cutting) {
+        words << "len:" << "qty:" << "mat:" << "w" << "h" << "qty"
+              << "fixed:" << "perArea:" << "perOrder:";
+    } else {
+        words << "qty:" << "mat:" << "w" << "h" << "qty"
+              << "fixed:" << "perOrder:";
+    }
+
+    auto* comp = new DslCompleter(words, this);
+    _edit->setCompleter(comp);
+
+    _status = new QLabel(this);
+    _status->setText("");
+    layout->addWidget(_status);
+
+    _edit->setPlaceholderText(
+        (_kind == NeedCalculationDetail::DetailKind::Cutting)
+            ? "pl.: len:w-10, qty:fixed:3"
+            : "pl.: qty:fixed:3, qty:perOrder:5"
+        );
 
     auto* buttons = new QDialogButtonBox(
         QDialogButtonBox::Ok | QDialogButtonBox::Cancel, this);
@@ -23,10 +48,27 @@ FormulaEditorDialog::FormulaEditorDialog(const QString& initial, QWidget* parent
     connect(buttons, &QDialogButtonBox::accepted, this, &QDialog::accept);
     connect(buttons, &QDialogButtonBox::rejected, this, &QDialog::reject);
 
-    connect(_edit, &QLineEdit::textChanged, this, [this](const QString& text) {
-        QString t = text.trimmed();
+    connect(_edit, &QPlainTextEdit::textChanged, this, [this]() {
+        QString t = _edit->toPlainText().trimmed();
 
-        FormulaContract contract = cuttingContract();  // vagy később: paraméterezhető
+        if (t.isEmpty()) {
+            // Üres mező → nincs hiba, nincs overlay, nincs gutter
+            _hl->setErrors({});
+            _edit->setErrorMap({});
+            _edit->setInlineErrors({});
+            _edit->setErrorLines({});
+            _status->setText("");
+            auto* buttons = findChild<QDialogButtonBox*>();
+            if (buttons)
+                buttons->button(QDialogButtonBox::Ok)->setEnabled(true);
+            return;
+        }
+
+
+        FormulaContract contract = (_kind == NeedCalculationDetail::DetailKind::Cutting)
+                                       ? cuttingContract()
+                                       : kittingContract();
+
         FormulaAnalysis a = analyzeFormula(t, contract);
 
         bool ok = t.isEmpty() || a.ok;
@@ -38,19 +80,34 @@ FormulaEditorDialog::FormulaEditorDialog(const QString& initial, QWidget* parent
 
         if (!ok) {
             _edit->setStyleSheet("background:#ffcccc;");
-            if (!a.errors.isEmpty())
-                _edit->setToolTip(a.errors.join("\n"));
-            else
-                _edit->setToolTip("Invalid formula.");
+            const QString errText = a.errors.isEmpty()
+                                        ? "Invalid formula."
+                                        : a.errors.join("\n");
+            _edit->setToolTip(errText);
+            if (_status)
+                _status->setText(QString("Hibák: %1").arg(a.errors.size()));
         } else {
             _edit->setStyleSheet("");
             _edit->setToolTip("");
+            if (_status)
+                _status->setText(t.isEmpty() ? "" : "OK");
         }
+
+        if (!a.errors.isEmpty()) {
+            _edit->setErrorLines({0});   // minden hiba az 1. sorban
+        } else {
+            _edit->setErrorLines({});
+        }
+
+        _hl->setErrors(a.errors);
+        _edit->setErrorMap(_hl->errorMap());
+        _edit->setInlineErrors(a.errors);
+
     });
 
 
 }
 
 QString FormulaEditorDialog::formula() const {
-    return _edit->text().trimmed();
+    return _edit->toPlainText().trimmed();
 }

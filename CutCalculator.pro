@@ -26,8 +26,12 @@ SOURCES += \
     calculation/service/kit_aggregator.cpp \
     calculation/service/order_need_builder.cpp \
     calculation/service/worksheet_builder.cpp \
+    dsl/dsl_syntax_highlighter.cpp \
+    dsl/dsl_completer.cpp \
+    dsl/dsl_text_edit.cpp \
     dsl/formula_analysis.cpp \
     dsl/formula_contract.cpp \
+    dsl/line_number_area.cpp \
     expression/ast_builder.cpp \
     expression/eval_result.cpp \
     expression/formula_engine.cpp \
@@ -151,8 +155,12 @@ HEADERS += \
     calculation/service/raw_kit.h \
     calculation/service/worksheet_builder.h \
     common/utils/result.h \
+    dsl/dsl_completer.h \
+    dsl/dsl_syntax_highlighter.h \
+    dsl/dsl_text_edit.h \
     dsl/formula_analysis.h \
     dsl/formula_contract.h \
+    dsl/line_number_area.h \
     expression/ast.h \
     expression/ast_builder.h \
     expression/ast_printer.h \
