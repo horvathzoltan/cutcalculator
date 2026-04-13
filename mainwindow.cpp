@@ -34,19 +34,32 @@ MainWindow::MainWindow(QWidget *parent)
         _initialMonitorProfile = SnapshotManager::instance().monitorProfileFor(this);
         zInfo(QString("🖥️ Initial monitor profile: %1").arg(_initialMonitorProfile));
 
-        const QString geom = LayoutDefaultStore::instance().windowGeometryPercent();
+        // snapshot létezésének ellenőrzése
+        const bool hasSnapshot =
+            SnapshotManager::instance().restoreSnapshot_MainWindow(this);
 
-        const QSize savedScreen = GeometryHelper::parseScreenSize(
-            LayoutDefaultStore::instance().screenSizeString());
-        if (!geom.isEmpty()) {
-            GeometryHelper::restoreWindowGeometry(this, geom, savedScreen);
+        // fallback csak akkor fusson, ha nincs snapshot
+        if (!hasSnapshot) {
+            // fallback window restore csak akkor fusson, ha nincs snapshot
+            if (!hasSnapshot) {
+                const QString geom = LayoutDefaultStore::instance().windowGeometryPercent();
+                const QSize savedScreen =
+                    GeometryHelper::parseScreenSize(LayoutDefaultStore::instance().screenSizeString());
+                if (!geom.isEmpty()) {
+                    GeometryHelper::restoreWindowGeometry(this, geom, savedScreen);
+                }
+            }
+
         }
 
-
-        const QString split = LayoutDefaultStore::instance().mainSplitterPercent();
-        if (!split.isEmpty()) {
-            GeometryHelper::restoreSplitterState(ui->splitter, split);
+        // fallback splitter restore csak akkor fusson, ha nincs snapshot
+        if (!hasSnapshot) {
+            const QString split = LayoutDefaultStore::instance().mainSplitterPercent();
+            if (!split.isEmpty()) {
+                GeometryHelper::restoreSplitterState(ui->splitter, split);
+            }
         }
+
 
         // — Aktív tab (opcionális) —
         int savedTab = SettingsManager::instance().currentTabIndex();
@@ -149,14 +162,21 @@ void MainWindow::checkFinalPlacement()
     }
 
     const bool restored = SnapshotManager::instance().restoreSnapshot_MainWindow(this);
+    _windowRestoredOnce = true;
+
     if (!restored) {
         zWarning("⚠️ No geometry snapshot for final monitor profile; keeping current geometry");
     }
 
-    _windowRestoredOnce = true;
-    emit finalPlacementReached();
+    // final placement után: splitter restore csak egyszer, snapshot alapján
+    const QString split = LayoutDefaultStore::instance().mainSplitterPercent();
+    if (!split.isEmpty()) {
+        GeometryHelper::restoreSplitterState(ui->splitter, split);
+    }
 
+    emit finalPlacementReached();
     SnapshotManager::instance().saveSnapshot_MainWindow(this);
+
 
 }
 

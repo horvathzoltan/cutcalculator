@@ -3,6 +3,8 @@
 #include <QHeaderView>
 #include <cmath>
 
+#include <QDialog>
+#include <QTableView>
 #include <QTimer>
 #include <numeric> // std::accumulate
 
@@ -24,7 +26,7 @@ static bool isGeometryReadyForRestore(QWidget* w) {
     // a valós helyet (klasszikus 0px/15px jelenség).
     const int wWidth  = w->width();
     const int wHeight = w->height();
-    if (wWidth < 50 && wHeight < 50) {
+    if (wWidth < 50 || wHeight < 50) {
         return false;
     }
 
@@ -61,21 +63,8 @@ QString GeometryHelper::saveWindowGeometry(QWidget* window) {
 
     // Guard: ha a window még nem polished vagy nem visible,
     // akkor a geometry valószínűleg nem végleges.
-    if (!window->isVisible() ||
-        !window->testAttribute(Qt::WA_WState_Polished)) {
-
-        const QSize sz = window->size();
-        zWarning(QString("⚠️ Window geometry not stable "
-                           "(visible=%1, polished=%2, size=%3x%4) → save postponed")
-                       .arg(window->isVisible())
-                       .arg(window->testAttribute(Qt::WA_WState_Polished))
-                       .arg(sz.width())
-                       .arg(sz.height()));
-
-        // Deferred save – újrapróbáljuk az event queue-ban
-        QTimer::singleShot(0, window, [window]() {
-            GeometryHelper::saveWindowGeometry(window);
-        });
+    if (!isWindowGeometryReady(window)) {
+        zInfo("⏳ GeometryHelper: saveWindowGeometry skipped (not ready)");
         return {};
     }
 
@@ -134,10 +123,15 @@ void GeometryHelper::restoreWindowGeometry(QWidget* window,
                        .arg(sz.width())
                        .arg(sz.height()));
 
-        QTimer::singleShot(0, window, [window, percentGeometry, savedScreenSize]() {
-            GeometryHelper::restoreWindowGeometry(window, percentGeometry, savedScreenSize);
-        });
+        if (!window->property("_gh_pending_restore").toBool()) {
+            window->setProperty("_gh_pending_restore", true);
+            QTimer::singleShot(0, window, [window, percentGeometry, savedScreenSize]() {
+                window->setProperty("_gh_pending_restore", false);
+                GeometryHelper::restoreWindowGeometry(window, percentGeometry, savedScreenSize);
+            });
+        }
         return;
+
     }
 
     if (!window->screen()) {
@@ -220,20 +214,15 @@ void GeometryHelper::restoreSplitterState(QSplitter* splitter, const QString& pe
     }
 
     // Geometry readiness guard
-    if (!isGeometryReadyForRestore(splitter)) {
-        const QSize sz = splitter->size();
-        zWarning(QString("⚠️ Splitter geometry not ready "
-                           "(visible=%1, polished=%2, size=%3x%4) → restore postponed")
-                       .arg(splitter->isVisible())
-                       .arg(splitter->testAttribute(Qt::WA_WState_Polished))
-                       .arg(sz.width())
-                       .arg(sz.height()));
+    if (splitter->sizes().isEmpty() ||
+        std::accumulate(splitter->sizes().begin(), splitter->sizes().end(), 0) < 50) {
 
         QTimer::singleShot(0, splitter, [splitter, percentState]() {
             GeometryHelper::restoreSplitterState(splitter, percentState);
         });
         return;
     }
+
 
     int totalPixels = (splitter->orientation() == Qt::Vertical)
                           ? splitter->size().height()
@@ -366,29 +355,16 @@ void GeometryHelper::restoreHeaderState(QHeaderView* header, const QString& perc
 
     QWidget* parent = header->parentWidget();
 
-    auto isReady = [&]() -> bool {
-        if (!header->isVisible())
-            return false;
-        if (!header->testAttribute(Qt::WA_WState_Polished))
-            return false;
+    auto* table = qobject_cast<QTableView*>(header->parent());
+    int pw = table ? table->viewport()->width() : header->width();
 
-        int w = parent ? parent->width() : header->width();
-        return w >= 50;
-    };
-
-    if (!isReady()) {
-        int pw = parent ? parent->width() : header->width();
-        zWarning(QString("⚠️ Header geometry not ready "
-                           "(visible=%1, polished=%2, parentWidth=%3) → restore postponed")
-                       .arg(header->isVisible())
-                       .arg(header->testAttribute(Qt::WA_WState_Polished))
-                       .arg(pw));
-
+    if (pw < 50) {
         QTimer::singleShot(0, header, [header, percentState]() {
             GeometryHelper::restoreHeaderState(header, percentState);
         });
         return;
     }
+
 
     int total = 0;
     for (int i = 0; i < header->count(); ++i) {
@@ -439,3 +415,52 @@ void GeometryHelper::restoreHeaderState(QHeaderView* header, const QString& perc
                         pxTokens.join(","),
                         QString::number(total)));
 }
+
+QString GeometryHelper::saveDialogGeometry(QDialog* dlg)
+{
+    if (!dlg || !dlg->screen()) return {};
+
+    const QSize screen = dlg->screen()->size();
+    const QRect g = dlg->geometry();
+
+    auto pct = [&](int v, int base) {
+        return base > 0 ? double(v) / double(base) * 100.0 : 0.0;
+    };
+
+    return QString("%1%,%2%,%3%,%4%")
+        .arg(pct(g.x(), screen.width()), 0, 'f', 1)
+        .arg(pct(g.y(), screen.height()), 0, 'f', 1)
+        .arg(pct(g.width(), screen.width()), 0, 'f', 1)
+        .arg(pct(g.height(), screen.height()), 0, 'f', 1);
+}
+
+void GeometryHelper::restoreDialogGeometry(QDialog* dlg,
+                                           const QString& percentGeometry,
+                                           const QSize& savedScreen)
+{
+    if (!dlg || !dlg->screen()) return;
+
+    const QStringList parts = percentGeometry.split(',', Qt::SkipEmptyParts);
+    if (parts.size() != 4) return;
+
+    const QSize current = dlg->screen()->size();
+
+    auto tok = [&](const QString& t) {
+        QString s = t.trimmed();
+        if (s.endsWith('%')) s.chop(1);
+        return s.toDouble() / 100.0;
+    };
+
+    const double xp = tok(parts[0]);
+    const double yp = tok(parts[1]);
+    const double wp = tok(parts[2]);
+    const double hp = tok(parts[3]);
+
+    const int x = std::lround(xp * current.width());
+    const int y = std::lround(yp * current.height());
+    const int w = std::lround(wp * current.width());
+    const int h = std::lround(hp * current.height());
+
+    dlg->setGeometry(x, y, w, h);
+}
+

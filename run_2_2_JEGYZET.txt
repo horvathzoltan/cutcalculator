@@ -125,4 +125,4 @@ find ~/source/repos/CutCalculator/ \
 ---
 ma módosult fájlok listája
 ---
-./aipack.sh -m 24 ~/source/repos/CutCalculator 1200
+./aipack.sh -m 24 ~/source/repos/CutCalculator 800

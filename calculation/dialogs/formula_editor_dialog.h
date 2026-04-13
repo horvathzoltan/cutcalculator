@@ -23,4 +23,8 @@ private:
 
     NeedCalculationDetail::DetailKind _kind = NeedCalculationDetail::DetailKind::Cutting;
     QLabel* _status = nullptr;
+
+protected:
+    void closeEvent(QCloseEvent* e) override;
+    void showEvent(QShowEvent* e) override;
 };

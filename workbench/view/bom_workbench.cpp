@@ -78,8 +78,6 @@ void BOMWorkbench::showEvent(QShowEvent* event) {
         tryRestore();
     });
 
-    _isFullyShown = true;
-
     if (!this->isWindow()) {
         zInfo("⚠️ BOMWorkbench is NOT a top-level window → closeEvent() will NEVER fire");
     }
@@ -238,6 +236,24 @@ void BOMWorkbench::restoreState()
         }
     }
 
+    if (!snap.needRulesHeader.isEmpty()) {
+        GeometryHelper::restoreHeaderState(
+            _matView->table()->horizontalHeader(),
+            snap.needRulesHeader);
+    }
+
+    if (!snap.modesHeader.isEmpty()) {
+        GeometryHelper::restoreHeaderState(
+            _modesView->table()->horizontalHeader(),
+            snap.modesHeader);
+    }
+
+    if (!snap.detailsHeader.isEmpty()) {
+        GeometryHelper::restoreHeaderState(
+            _detailView->table()->horizontalHeader(),
+            snap.detailsHeader);
+    }
+
     zEventINFO("BOMWorkbench state restored (percent-based + snapshot-aware)");
 }
 
@@ -245,6 +261,7 @@ void BOMWorkbench::restoreState()
 
 void BOMWorkbench::saveState()
 {
+    // 0) Láthatóság + final placement guard
     if (!_isFullyShown) {
         zEventINFO("⏳ Workbench snapshot skipped: Workbench not fully shown yet");
         return;
@@ -255,44 +272,102 @@ void BOMWorkbench::saveState()
         return;
     }
 
+    // 1) Workbench geometry readiness guard – ne mentsünk instabil layoutot
+    if (!GeometryHelper::isWindowGeometryReady(this)) {
+        zEventINFO("⏳ Workbench snapshot skipped: geometry not ready");
+        return;
+    }
+
+    // 2) Splitter readiness guard – ne mentsünk 0px-es / félig kiosztott splittert
+    auto splitterReady = [](QSplitter* s) {
+        if (!s) return false;
+        const QList<int> sizes = s->sizes();
+        if (sizes.isEmpty()) return false;
+        int sum = 0;
+        for (int v : sizes) sum += v;
+        return sum > 50;
+    };
+
+    if (!splitterReady(_leftVerticalSplitter) ||
+        !splitterReady(_splitter) ||
+        !splitterReady(_rightMainSplitter)) {
+
+        zEventINFO("⏳ Workbench snapshot skipped: splitters not ready");
+        return;
+    }
+
     WorkbenchSnapshot snap;
 
-    // 1) Bal vertical splitter – fallback + snapshot
+    // 3) Bal vertical splitter – fallback + snapshot
     if (_leftVerticalSplitter) {
         const QString leftState = GeometryHelper::saveSplitterState(_leftVerticalSplitter);
-        LayoutDefaultStore::instance().setLeftVerticalSplitterPercent(leftState);
-        snap.leftVertical = leftState;
+        if (!leftState.isEmpty()) {
+            LayoutDefaultStore::instance().setLeftVerticalSplitterPercent(leftState);
+            snap.leftVertical = leftState;
+        }
     }
 
-    // 2) Fő splitter
+    // 4) Fő splitter
     if (_splitter) {
         const QString splitState = GeometryHelper::saveSplitterState(_splitter);
-        LayoutDefaultStore::instance().setProductTypesSplitterPercent(splitState);
-        snap.productTypes = splitState;
+        if (!splitState.isEmpty()) {
+            LayoutDefaultStore::instance().setProductTypesSplitterPercent(splitState);
+            snap.productTypes = splitState;
+        }
     }
 
-    // 3) Jobb main splitter
+    // 5) Jobb main splitter
     if (_rightMainSplitter) {
         const QString rightState = GeometryHelper::saveSplitterState(_rightMainSplitter);
-        LayoutDefaultStore::instance().setRightVerticalSplitterPercent(rightState);
-        snap.rightVertical = rightState;
+        if (!rightState.isEmpty()) {
+            LayoutDefaultStore::instance().setRightVerticalSplitterPercent(rightState);
+            snap.rightVertical = rightState;
+        }
     }
 
-    // 4) Tree header
+    // 6) Tree header
     if (_treeView && _treeView->header()) {
         const QString headerState = GeometryHelper::saveHeaderState(_treeView->header());
-        LayoutDefaultStore::instance().setProductTreeHeaderPercent(headerState);
-        snap.treeHeader = headerState;
+        if (!headerState.isEmpty()) {
+            LayoutDefaultStore::instance().setProductTreeHeaderPercent(headerState);
+            snap.treeHeader = headerState;
+        }
     }
 
-    // Fallback settings flush – settings.ini-ben mindig naprakész baseline
+    // 7) NeedRules / Modes / Details headerek
+    if (_matView && _matView->table()) {
+        const QString needState =
+            GeometryHelper::saveHeaderState(_matView->table()->horizontalHeader());
+        if (!needState.isEmpty()) {
+            snap.needRulesHeader = needState;
+        }
+    }
+
+    if (_modesView && _modesView->table()) {
+        const QString modesState =
+            GeometryHelper::saveHeaderState(_modesView->table()->horizontalHeader());
+        if (!modesState.isEmpty()) {
+            snap.modesHeader = modesState;
+        }
+    }
+
+    if (_detailView && _detailView->table()) {
+        const QString detailsState =
+            GeometryHelper::saveHeaderState(_detailView->table()->horizontalHeader());
+        if (!detailsState.isEmpty()) {
+            snap.detailsHeader = detailsState;
+        }
+    }
+
+    // 8) Fallback settings flush – settings.ini-ben mindig naprakész baseline
     LayoutDefaultStore::instance().flush();
 
-    // Monitor-profilos snapshot mentése (per monitor layout)
+    // 9) Monitor-profilos snapshot mentése (per monitor layout)
     SnapshotManager::instance().saveSnapshot_BOMWorkbench(snap, "bom_workbench");
 
-    zEventINFO("BOMWorkbench state saved (percent-based + snapshot-aware)");
+    zEventINFO("BOMWorkbench state saved (percent-based + snapshot-aware, guarded)");
 }
+
 
 QToolBar* BOMWorkbench::buildMaterialToolbar(QWidget* parent, MaterialRequirementsView* view)
 {

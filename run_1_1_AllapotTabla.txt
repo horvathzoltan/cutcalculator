@@ -1,9 +1,4 @@
-Zoltán, itt is van a teljes csomag, szépen, tisztán, domain‑alapú
-csoportosítással, a tesztekkel a legvégén, minden szabályt betartva.
-A ⭐ NAPI FÓKUSZ blokk érintetlen, a táblázat formailag hibátlan, és
-minden státuszváltozás, új sor, megjegyzésfrissítés átvezetve.
-
-Lássuk.
+Zoltán, akkor most egy “gondolkozós” napzáró jön: a táblázat marad, de a modell közben élesedett.
 
 ------------------------------------------------------------------------
 
@@ -149,49 +144,53 @@ A sorok tematikusan csoportosítva, a tesztek a legvégén.
 
 📊 Idővonalas roadmap (FRISSÍTVE)
 
--   OrderNeedBuilder + WorksheetBuilder elkészült
--   Aggregátorok visszakapcsolva
--   NeedCalculator debug pipeline stabil
--   OrderNeedBuilderTester lefut
--   CSV pipeline stabil
--   Preview–OrderDialog integráció előkészítve
+-   OrderNeedBuilder + WorksheetBuilder elkészült (korábbi mérföldkő – stabil alap a formulákhoz)
+-   Aggregátorok visszakapcsolva, NeedCalculator debug pipeline stabil
+-   Holnaptól: NeedCalculationDetail formulák felvitele a három toronyba
+-   Cutting + qty minta bevezetése (pl. 2 lábas roletta, napháló)
+-   Új domain‑szabály: cutting formula mellett is explicit qty kezelése
+-   Preview–OrderDialog integráció továbbra is a következő nagy UI‑fókusz
 
 ------------------------------------------------------------------------
 
 ✨ Röviden – stratégiai összefoglaló
 
-A Calculation és Worksheet pipeline teljesen stabil,
-a debug pipeline végleges,
-az aggregátorok visszakapcsolva,
-az OrderNeedBuilder és WorksheetBuilder elkészült.
+Ma nem modul‑szinten haladtunk, hanem domain‑szinten pontosítottunk:
+ráfordultunk arra, hogy a cutting feladatoknál a qty ne “mellékes”
+legyen, hanem elsőrangú paraméter.
 
-A következő fókusz a UI integráció, különösen a PreviewView és
-OrderDialog összekötése.
+Ez azt jelenti, hogy a vágási logika nem csak “kért_hossz × n” típusú
+mintákat kezel, hanem olyan eseteket is, ahol ugyanazt a kért_hossz
+anyagot több példányban (pl. qty = 2 láb) kell legyártani – kerf‑tudatos
+szabállyal.
+
+Stratégiailag ez kicsi implementáció, de nagy modellnyereség: a
+NeedCalculationDetail formulák holnaptól már úgy születnek, hogy a
+cutting + qty kombináció natív minta, nem utólagos hack.
 
 ------------------------------------------------------------------------
 
 📌 Mai eredmények – részletes taktikai napzáró
 
--   OrderNeedBuilder + WorksheetBuilder implementálva
--   WorksheetNeed aggregáció validálva
--   OrderNeedBuilderTester sikeresen lefut
--   NeedCalculator debug pipeline stabil
--   Aggregátorok visszakapcsolva
--   CSV pipeline stabil
--   Preview–OrderDialog integráció előkészítve
--   Állapottábla frissítve (domain‑alapú rendezés)
--   Roadmap frissítve
+-   Cutting domain pontosítása: qty mint elsőrangú paraméter vágási feladatnál
+-   Konkrét use case rögzítve: 2 lábas roletta / napháló (bal + jobb oldal)
+-   Modell‑döntés: nem “kétszeres magasságot” vágunk, hanem két darab
+    kért_hossz = magasság anyagot, kerf‑tudatosan
+-   NeedCalculationDetail tervezési irány: külön minta a “multi‑qty cutting”
+-   Holnapi formula‑felvitel előkészítve (minták, edge case‑ek fejben tisztázva)
+-   Állapottábla modul‑szinten változatlan – a haladás ma a domain‑logikában történt
 
 ------------------------------------------------------------------------
 
 🎯 Prioritási sorrend – fókuszpont lista
 
-1.  OrderItemNeed builder
-2.  Aggregátor edge-case tesztek
-3.  OrderNeed builder továbbfejlesztése
-4.  Order → NeedCalculator → Aggregátor integrációs teszt
-5.  PreviewView + OrderDialog összekötése
-6.  PreviewView aggregált nézet
+1.  Cutting + qty minta formalizálása NeedCalculationDetail szinten
+    (pl. “2 × kért_hossz = magasság” pattern)
+2.  Holnapi formula‑felvitel: 3–5 NeedCalculationDetail per kiválasztott mód
+3.  Edge case‑ek átgondolása: kerf, maradékanyag, több láb, aszimmetrikus oldalak
+4.  OrderLine.qty és a cutting formulák kapcsolatának tiszta dokumentálása
+5.  Order → NeedCalculator → Aggregátor integrációs teszt tervezése a cutting + qty esetre
+6.  Későbbi lépésként: PreviewView‑ban a “qty‑s cutting” vizuális megjelenítése
 
 ------------------------------------------------------------------------
 
@@ -199,27 +198,27 @@ OrderDialog összekötése.
 
 Sprint fókusz (Q1)
 
--   OrderItemNeed builder
--   OrderNeed builder
--   Aggregátor edge-case tesztek
--   Integrációs tesztek
--   UI összekötés
+-   NeedCalculationDetail formulák felvitele a három toronyba
+-   Cutting + qty minták (2 lábas roletta, napháló, stb.)
+-   OrderNeed / WorksheetNeed pipeline stabilizálása a vágási esetekre
+-   Integrációs tesztek: Order → NeedCalculator → Aggregátor
+-   UI összekötés (PreviewView + OrderDialog) – ha a számítási minták már stabilak
 
 Holnap fókusz
 
-1.  OrderItemNeed builder – core logika
-2.  Aggregátor edge-case tesztek előkészítése
-3.  OrderNeed builder keretrendszer felállítása
+1.  NeedCalculationDetail formulák felvitele – első körben a cutting + qty mintával
+2.  A “2 láb = 2 × magasság” konkrét formula(ák) megírása, kerf‑tudatosan
+3.  Legalább 1–2 olyan formula, ahol a qty nem triviális (nem csak 1), hanem a domainből következik
+    (pl. bal/jobb oldal, több rögzítési pont)
+
+(A “nagy dolog megcsinálni?” kérdésre a válasz: implementációban kicsi,
+modellben fontos – jó, hogy most jött elő, így a formulák már erre
+születnek, nem utólag toldozzuk.)
 
 ------------------------------------------------------------------------
 
 ✔ Git commit subject (≤55 karakter)
 
-Domain-based status table reorg; tests moved last
-
-(54 karakter)
-
-------------------------------------------------------------------------
-
-Ha szeretnéd, készítek egy diff‑nézetet is a régi és az új táblázat
-között.
+***
+Cutting + qty pattern domain‑döntés, holnaptól formulák
+***

@@ -76,6 +76,16 @@ void LayoutDefaultStore::setProductTreeHeaderPercent(const QString& s)
     SettingsManager::instance().setProductTreeHeaderPercent(s);
 }
 
+QString LayoutDefaultStore::formulaEditorGeometryPercent() const
+{
+    return SettingsManager::instance().formulaEditorGeometryPercent();
+}
+
+void LayoutDefaultStore::setFormulaEditorGeometryPercent(const QString& s)
+{
+    SettingsManager::instance().setFormulaEditorGeometryPercent(s);
+}
+
 void LayoutDefaultStore::flush()
 {
     SettingsManager::instance().save();

@@ -121,6 +121,18 @@ CalculationModeDetailView::CalculationModeDetailView(QWidget* parent)
         }
     });
 
+    connect(_table, &QTableWidget::cellDoubleClicked,
+            this, [this](int row, int column) {
+
+                Q_UNUSED(column);
+
+                // A sorhoz tartozó detail ID
+                QUuid id = _table->item(row, 0)->data(Qt::UserRole).toUuid();
+
+                // Ugyanaz, mint a Szerkesztés gomb
+                emit request_open_formula_editor(id);
+            });
+
 
     connect(this, &CalculationModeDetailView::request_open_formula_editor,
             this, [this](const QUuid& id) {

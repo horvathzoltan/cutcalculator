@@ -85,6 +85,9 @@ public:
     //void updateOverlay(int repoCount, int visibleRows);
 
     int rowCount() const;
+
+    QTableWidget* table() const { return _table; }
+
 signals:
     /**
      * @brief Jelzés: új kapcsolat hozzáadása kérve (toolbarból, plusz gombból).

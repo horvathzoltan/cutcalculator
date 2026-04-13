@@ -103,6 +103,12 @@ private:
     void tryRestore();
 
 private slots:
-    void onFinalPlacementReached() { _canSaveSnapshots = true; _canRestore = true; tryRestore(); }
+    void onFinalPlacementReached() {
+        _canSaveSnapshots = true;
+        _canRestore = true;
+
+        // final placement után restoreState futtatása
+        tryRestore();
+    }
 
 };

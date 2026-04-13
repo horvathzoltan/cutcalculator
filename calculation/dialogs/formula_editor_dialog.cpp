@@ -111,3 +111,27 @@ FormulaEditorDialog::FormulaEditorDialog(const QString& initial, NeedCalculation
 QString FormulaEditorDialog::formula() const {
     return _edit->toPlainText().trimmed();
 }
+
+void FormulaEditorDialog::closeEvent(QCloseEvent* e)
+{
+    const QString geom = GeometryHelper::saveDialogGeometry(this);
+    LayoutDefaultStore::instance().setFormulaEditorGeometryPercent(geom);
+    QDialog::closeEvent(e);
+}
+
+void FormulaEditorDialog::showEvent(QShowEvent* e)
+{
+    QDialog::showEvent(e);
+
+    const QString geom =
+        LayoutDefaultStore::instance().formulaEditorGeometryPercent();
+
+    if (!geom.isEmpty()) {
+        const QSize savedScreen =
+            GeometryHelper::parseScreenSize(
+                LayoutDefaultStore::instance().screenSizeString());
+
+        GeometryHelper::restoreDialogGeometry(this, geom, savedScreen);
+    }
+}
+

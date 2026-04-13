@@ -46,6 +46,9 @@ public:
     QString productTreeHeaderPercent() const;
     void setProductTreeHeaderPercent(const QString& s);
 
+    QString formulaEditorGeometryPercent() const;
+    void setFormulaEditorGeometryPercent(const QString& s);
+
     /// Explicit mentés settings.ini-be
     void flush();
 

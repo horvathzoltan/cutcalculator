@@ -45,6 +45,7 @@ public:
 
     void selectMode(const QUuid& id);
 
+    QTableWidget* table() const { return _table; }
 
 private:
     bool _ready = false;

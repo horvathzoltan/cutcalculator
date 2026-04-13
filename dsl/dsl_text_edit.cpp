@@ -125,7 +125,10 @@ void DslTextEdit::lineNumberAreaPaintEvent(QPaintEvent* event) {
                 painter.setPen(Qt::red);
                 int radius = 4;
                 int cx = 4;
-                int cy = top + fontMetrics().ascent();
+
+                // Pixelpontos baseline-igazítás
+                int cy = top + fontMetrics().ascent() - radius + 1;
+
                 painter.drawEllipse(QPoint(cx, cy), radius, radius);
             }
         }
@@ -218,11 +221,19 @@ void DslTextEdit::paintEvent(QPaintEvent* e)
 
     QString msg = "// " + _inlineErrors.join("; ");
 
-    // Sor pozíció
+    // Sor pozíció (ugyanaz a blokk, mint a bogyónál)
     QTextCursor c(document());
     c.movePosition(QTextCursor::EndOfLine);
-    QRect r = cursorRect(c);
-    int y = r.bottom();
+    QTextBlock block = c.block();
+
+    int blockNumber = block.blockNumber();
+    QTextBlock first = firstVisibleBlock();
+
+    // A blokk top koordinátája
+    int top = (int) blockBoundingGeometry(block).translated(contentOffset()).top();
+
+    // Baseline (ugyanaz, mint a bogyónál)
+    int baseline = top + fontMetrics().ascent();
 
     // Jobbra igazítás
     int right = viewport()->width() - 6;
@@ -230,7 +241,8 @@ void DslTextEdit::paintEvent(QPaintEvent* e)
     int msgWidth = fm.horizontalAdvance(msg);
     int x = right - msgWidth;
 
-    p.drawText(x, y, msg);
+    // Rajzolás
+    p.drawText(x, baseline, msg);
 
 }
 

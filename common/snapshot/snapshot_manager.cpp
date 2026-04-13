@@ -49,7 +49,6 @@ QString SnapshotManager::currentMonitorProfile(QWidget* window) const
 
 void SnapshotManager::saveSnapshot_MainWindow(QWidget* window)
 {
-
     if (!window) {
         zWarning("⚠️ Window snapshot save skipped: null window");
         return;
@@ -62,8 +61,13 @@ void SnapshotManager::saveSnapshot_MainWindow(QWidget* window)
 
     if (!g_throttleTimer.isValid()) {
         g_throttleTimer.start();
-    } else if (g_throttleTimer.elapsed() < 300) {
+    } else if (g_throttleTimer.elapsed() < 500) {
         zInfo("⏳ Window snapshot skipped: throttle (too frequent)");
+        return;
+    }
+
+    if (!GeometryHelper::isWindowGeometryReady(window)) {
+        zInfo("⏳ Window snapshot skipped: geometry not ready");
         return;
     }
 
@@ -72,21 +76,17 @@ void SnapshotManager::saveSnapshot_MainWindow(QWidget* window)
                                            FileAccess::Write,
                                            currentMonitorProfile(window));
 
-    // Percent-based geometry mentés
     const QString geom = GeometryHelper::saveWindowGeometry(window);
     if (geom.isEmpty()) {
-        // GeometryHelper már logolta, miért üres
         return;
     }
 
-    // Geometry unchanged guard
     if (geom == g_lastSavedGeometry) {
         zInfo("⏳ Window snapshot skipped: geometry unchanged");
         return;
     }
     g_lastSavedGeometry = geom;
 
-    // Screen méret audit célra
     QString screenStr;
     if (window->screen()) {
         screenStr = GeometryHelper::serializeScreenSize(window->screen()->size());
@@ -97,12 +97,11 @@ void SnapshotManager::saveSnapshot_MainWindow(QWidget* window)
     snap.setValue("Window/screen",   screenStr);
     snap.sync();
 
-
-    // Throttle timer restart – mostantól 300 ms-ig nem mentünk újra
     g_throttleTimer.restart();
 
     zInfo(QString("💾 Window snapshot saved: %1").arg(path));
 }
+
 
 bool SnapshotManager::restoreSnapshot_MainWindow(QWidget* window)
 {
@@ -146,6 +145,8 @@ bool SnapshotManager::restoreSnapshot_MainWindow(QWidget* window)
     // Guard-os, delayed restoreWindowGeometry – a GeometryHelper kezeli a timingot.
     GeometryHelper::restoreWindowGeometry(window, geom, savedScreen);
 
+    g_throttleTimer.invalidate();   // restore után új throttle ciklus indul
+
     zInfo(QString("✅ Window snapshot restored: %1").arg(path));
     return true;
 }
@@ -175,7 +176,11 @@ SnapshotManager::restoreSnapshot_BOMWorkbench(const QString& workbenchName)
     result.leftVertical  = snap.value("Workbench/left_vertical").toString();
     result.productTypes  = snap.value("Workbench/product_types").toString();
     result.rightVertical = snap.value("Workbench/right_vertical").toString();
-    result.treeHeader    = snap.value("Workbench/tree_header").toString();
+    result.treeHeader       = snap.value("Workbench/tree_header").toString();
+    result.needRulesHeader  = snap.value("Workbench/need_rules_header").toString();
+    result.modesHeader      = snap.value("Workbench/modes_header").toString();
+    result.detailsHeader    = snap.value("Workbench/details_header").toString();
+
 
     zInfo(QString("ℹ️ Workbench snapshot restored: %1").arg(path));
     return result;
@@ -199,6 +204,11 @@ void SnapshotManager::saveSnapshot_BOMWorkbench(const WorkbenchSnapshot& s,
     snap.setValue("Workbench/product_types",  s.productTypes);
     snap.setValue("Workbench/right_vertical", s.rightVertical);
     snap.setValue("Workbench/tree_header",    s.treeHeader);
+    snap.setValue("Workbench/need_rules_header",  s.needRulesHeader);
+    snap.setValue("Workbench/modes_header",       s.modesHeader);
+    snap.setValue("Workbench/details_header",     s.detailsHeader);
+    snap.sync();
+
     snap.sync();
 
     zInfo(QString("💾 Workbench snapshot saved: %1").arg(path));
