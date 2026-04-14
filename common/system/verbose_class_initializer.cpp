@@ -3,6 +3,8 @@
 #include "calculation/model/need_calculation_detail.h"
 #include "common/system/verbose_manager.h"
 #include "verbose_class_initializer.h"
+#include "common/utils/geometry_helper.h"
+#include "window_stability_monitor.h"
 
 // 🔍 Minden regisztrált osztály includeolva – így a fordító validálja a típusneveket
 #include "connections/connection_entity.h"
@@ -39,6 +41,8 @@ void registerAllVerbose() {
         VERBOSE_OFF<RegistryEngineBase<NeedCalculation>>(),
         VERBOSE_OFF<RegistryEngineBase<NeedCalculationDetail>>(),
         VERBOSE_OFF<RegistryEngineBase<ConnectionEntity<ProductMaster, MaterialMaster>>>(),
+        VERBOSE_ON<WindowStabilityMonitor>(),
+        VERBOSE_ON<GeometryHelper>()
     };
 
     // 🔁 Egyetlen ciklus — tiszta, clazy‑barát

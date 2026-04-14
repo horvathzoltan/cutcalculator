@@ -43,6 +43,9 @@ class SettingsManager {
 
         static inline const auto ProductTreeHeaderPercent = "product_tree_header_percent";
 
+        static inline const auto FormulaEditorGeometryPercent = "formula_editor_geometry_percent";
+        static inline const auto CalcDetailHeaderPercent = "calc_detail_header_percent";
+
     };
 
 
@@ -135,8 +138,25 @@ public:
     void setRightVerticalSplitterPercent(const QString& s) {
         _store.setValue_persistent(Keys::RightVerticalSplitterPercent, s);
     }
+
     QString rightVerticalSplitterPercent() const {
         return _store.value(Keys::RightVerticalSplitterPercent).toString();
+    }
+
+    void setFormulaEditorGeometryPercent(const QString& s) {
+        _store.setValue_persistent(Keys::FormulaEditorGeometryPercent, s);
+    }
+
+    QString formulaEditorGeometryPercent() const {
+        return _store.value(Keys::FormulaEditorGeometryPercent).toString();
+    }
+
+    void setCalcDetailHeaderPercent(const QString& s) {
+        _store.setValue_persistent(Keys::CalcDetailHeaderPercent, s);
+    }
+
+    QString calcDetailHeaderPercent() const {
+        return _store.value(Keys::CalcDetailHeaderPercent).toString();
     }
 
 private:

@@ -8,6 +8,8 @@
 #include "common/utils/font_utils.h"
 #include <calculation/registry/need_calculation_detail_registry.h>
 #include <QStyledItemDelegate>
+#include <common/layout/layout_default_store.h>
+#include <common/utils/geometry_helper.h>
 
 #include "dsl/formula_analysis.h"
 #include "dsl/formula_contract.h"
@@ -189,11 +191,11 @@ void CalculationModeDetailView::setup_table() {
     _table->setSelectionMode(QAbstractItemView::SingleSelection);
     _table->setEditTriggers(QAbstractItemView::NoEditTriggers);
     _table->setAlternatingRowColors(true);
-    _table->setColumnWidth(0, 360);
-    _table->setColumnWidth(1, 220);
-    _table->setColumnWidth(2, 30);
-    _table->setColumnWidth(3, 30);
-    _table->setColumnWidth(4, 30);
+    // _table->setColumnWidth(0, 360);
+    // _table->setColumnWidth(1, 220);
+    // _table->setColumnWidth(2, 30);
+    // _table->setColumnWidth(3, 30);
+    // _table->setColumnWidth(4, 30);
 }
 
 void CalculationModeDetailView::set_details(const QVector<DetailRow>& rows) {
@@ -392,3 +394,55 @@ void CalculationModeDetailView::renderRow(int i, const DetailRow& r)
         if (auto* it = _table->item(i, 1)) it->setToolTip(tip);
     }
 }
+
+void CalculationModeDetailView::showEvent(QShowEvent* e)
+{
+    QWidget::showEvent(e);
+    // header restore handled by BOMWorkbench; no fallback restore here
+
+    // const QString pct =
+    //     LayoutDefaultStore::instance().calcDetailHeaderPercent();
+
+    // if (!pct.isEmpty()) {
+    //     GeometryHelper::restoreHeaderState(_table->horizontalHeader(), pct);
+    // }
+}
+
+void CalculationModeDetailView::restoreHeader()
+{
+    const QString pct =
+        LayoutDefaultStore::instance().calcDetailHeaderPercent();
+
+    zInfo(QString("🟩 [DetailView] Restoring header pct = '%1'").arg(pct));
+
+    if (!pct.isEmpty()) {
+        GeometryHelper::restoreHeaderState(_table->horizontalHeader(), pct);
+
+        // restore után azonnal kiolvassuk a tényleges szélességeket
+        QList<int> widths;
+        for (int i = 0; i < _table->columnCount(); ++i)
+            widths << _table->columnWidth(i);
+
+        QStringList ws;
+        for (int w : widths)
+            ws << QString::number(w);
+
+        zInfo(QString("🟩 [DetailView] After restore widths = %1").arg(ws.join(",")));
+
+    }
+}
+
+
+// void CalculationModeDetailView::closeEvent(QCloseEvent* e)
+// {
+//     const QString pct =
+//         GeometryHelper::saveHeaderState(_table->horizontalHeader());
+
+//     zInfo(QString("🟦 [DetailView] Saving header pct = '%1'").arg(pct));
+
+//     LayoutDefaultStore::instance().setCalcDetailHeaderPercent(pct);
+//     LayoutDefaultStore::instance().flush();
+
+//     QWidget::closeEvent(e);
+// }
+

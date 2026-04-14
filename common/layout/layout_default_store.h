@@ -1,7 +1,7 @@
 #pragma once
 
 #include <QString>
-#include "common/settings/settings_manager.h"
+//#include "common/settings/settings_manager.h"
 
 /**
  * @class LayoutDefaultStore
@@ -52,6 +52,8 @@ public:
     /// Explicit mentés settings.ini-be
     void flush();
 
+    QString calcDetailHeaderPercent() const;
+    void setCalcDetailHeaderPercent(const QString &s);
 private:
     LayoutDefaultStore() = default;
 };

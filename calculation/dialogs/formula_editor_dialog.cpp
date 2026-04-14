@@ -7,6 +7,8 @@
 #include <QPushButton>
 #include "dsl/dsl_syntax_highlighter.h"
 #include "dsl/dsl_completer.h"
+#include "common/utils/geometry_helper.h"
+#include "common/layout/layout_default_store.h"
 
 FormulaEditorDialog::FormulaEditorDialog(const QString& initial, NeedCalculationDetail::DetailKind kind, QWidget* parent)
     : QDialog(parent), _kind(kind)

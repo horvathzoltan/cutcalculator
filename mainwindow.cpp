@@ -20,6 +20,8 @@
 #include "common/layout/layout_default_store.h"
 #include "common/snapshot/snapshot_manager.h"
 
+#include <common/system/window_stability_monitor.h>
+
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -28,64 +30,58 @@ MainWindow::MainWindow(QWidget *parent)
     ui->setupUi(this);
     initEventLogWidget();
 
-    // — Ablak geometria visszaállítása —
-    // ablakméret - az esemény időzítve (Qt event queue-ban)
-    QTimer::singleShot(0, this, [this]() {
-        _initialMonitorProfile = SnapshotManager::instance().monitorProfileFor(this);
-        zInfo(QString("🖥️ Initial monitor profile: %1").arg(_initialMonitorProfile));
+    WindowStabilityMonitor::instance().attachTo(this);
 
-        // snapshot létezésének ellenőrzése
-        const bool hasSnapshot =
-            SnapshotManager::instance().restoreSnapshot_MainWindow(this);
-
-        // fallback csak akkor fusson, ha nincs snapshot
-        if (!hasSnapshot) {
-            // fallback window restore csak akkor fusson, ha nincs snapshot
-            if (!hasSnapshot) {
-                const QString geom = LayoutDefaultStore::instance().windowGeometryPercent();
-                const QSize savedScreen =
-                    GeometryHelper::parseScreenSize(LayoutDefaultStore::instance().screenSizeString());
-                if (!geom.isEmpty()) {
-                    GeometryHelper::restoreWindowGeometry(this, geom, savedScreen);
-                }
-            }
-
-        }
-
-        // fallback splitter restore csak akkor fusson, ha nincs snapshot
-        if (!hasSnapshot) {
-            const QString split = LayoutDefaultStore::instance().mainSplitterPercent();
-            if (!split.isEmpty()) {
-                GeometryHelper::restoreSplitterState(ui->splitter, split);
-            }
-        }
+    connect(&WindowStabilityMonitor::instance(), &WindowStabilityMonitor::windowStable,
+            this, &MainWindow::onWindowStable);
 
 
-        // — Aktív tab (opcionális) —
-        int savedTab = SettingsManager::instance().currentTabIndex();
-        int tabMax = ui->tabWidget->count();
-        if (savedTab >= 0 && savedTab < tabMax) {
-            ui->tabWidget->setCurrentIndex(savedTab);
-            zInfo("✅ Tab index restored (delayed): " + QString::number(savedTab)+" of "+QString::number(tabMax)+" tabs");
-        } else{
-            zInfo("⚠️ Tab index cannot restored (delayed): " + QString::number(savedTab)+" of "+QString::number(tabMax)+" tabs");
-        }
-
-        zInfo("✅ UI Settings loaded (percent-based + snapshot-aware, early restore)");
-    });
-
-
-
-    // 1) Materials tab  inicializálása és feltöltése
+    // 1. Materials tab  inicializálása és feltöltése
     initMaterialsTab();
-
-    // BOM Workbench tab
-    {
-        auto* bomTab = new BOMWorkbench(ui->tabWidget);
-        ui->tabWidget->addTab(bomTab, tr("BOM Workbench"));
-    }
+    // 2. BOM Workbench tab
+    initBOMWorkbenchTab();
 
     zEvent("✅ MainWindow inited");
+}
+
+void MainWindow::onWindowStable()
+{
+    // 1) Snapshot restore – ha van
+    const bool restored =
+        SnapshotManager::instance().restoreSnapshot_MainWindow(this);
+
+    if (!restored) {
+        // 2) fallback percent restore
+        const QString geom = LayoutDefaultStore::instance().windowGeometryPercent();
+        const QSize savedScreen =
+            GeometryHelper::parseScreenSize(LayoutDefaultStore::instance().screenSizeString());
+        if (!geom.isEmpty())
+            GeometryHelper::restoreWindowGeometry(this, geom, savedScreen);
+
+        const QString split = LayoutDefaultStore::instance().mainSplitterPercent();
+        if (!split.isEmpty())
+            GeometryHelper::restoreSplitterState(ui->splitter, split);
+    }
+
+    // 3) BOMWorkbench és társai
+    emit finalPlacementReached();
+
+    // 3/b) Aktív tab visszaállítása — RESTORE ONLY
+    int savedTab = SettingsManager::instance().currentTabIndex();
+    int tabMax = ui->tabWidget->count();
+
+    if (savedTab >= 0 && savedTab < tabMax) {
+        ui->tabWidget->setCurrentIndex(savedTab);
+        zInfo(QString("🔄 Active tab restored: %1 / %2").arg(savedTab).arg(tabMax));
+    } else {
+        zWarning(QString("⚠️ Active tab index invalid → NOT overwriting saved value: %1 / %2")
+                     .arg(savedTab).arg(tabMax));
+        // ❗ NINCS fallback 0
+        // ❗ NINCS visszaírás
+    }
+
+    // 4) snapshot mentés stabil geometriáról
+    SnapshotManager::instance().saveSnapshot_MainWindow(this);
 }
 
 MainWindow::~MainWindow()
@@ -94,30 +90,6 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
-void MainWindow::showEvent(QShowEvent* e) {
-    QMainWindow::showEvent(e);
-
-    static bool logged = false;
-    if (!logged) {
-        logged = true;
-
-        QScreen* s = this->screen();
-        if (s) {
-            zInfo(QString("🪟 showEvent: window is now visible on screen %1 (%2x%3, %4dpi)")
-                      .arg(s->name())
-                      .arg(s->size().width())
-                      .arg(s->size().height())
-                      .arg(int(std::lround(s->logicalDotsPerInch()))));
-        } else {
-            zInfo("🪟 showEvent: window is visible, but screen() is null");
-        }
-    }
-
-    _lastSeenProfile = SnapshotManager::instance().monitorProfileFor(this);
-    QTimer::singleShot(200, this, &MainWindow::checkFinalPlacement);
-}
-
-
 void MainWindow::resizeEvent(QResizeEvent* e) {
     QMainWindow::resizeEvent(e);
     if (_windowRestoredOnce && GeometryHelper::isWindowGeometryReady(this)) {
@@ -125,61 +97,19 @@ void MainWindow::resizeEvent(QResizeEvent* e) {
     }
 }
 
-// void MainWindow::moveEvent(QMoveEvent* e) {
-//     QMainWindow::moveEvent(e);
-//     if (_windowRestoredOnce && GeometryHelper::isWindowGeometryReady(this)) {
-//         SnapshotManager::instance().saveSnapshot_MainWindow(this);
-//     }
-// }
 void MainWindow::moveEvent(QMoveEvent* e) {
     QMainWindow::moveEvent(e);
 
     _lastSeenProfile = SnapshotManager::instance().monitorProfileFor(this);
 
-    if (!_windowRestoredOnce) {
-        QTimer::singleShot(200, this, &MainWindow::checkFinalPlacement);
-    }
+    // if (!_windowRestoredOnce) {
+    //     QTimer::singleShot(200, this, &MainWindow::checkFinalPlacement);
+    // }
 
     if (_windowRestoredOnce && GeometryHelper::isWindowGeometryReady(this)) {
         SnapshotManager::instance().saveSnapshot_MainWindow(this);
     }
 }
-
-
-void MainWindow::checkFinalPlacement()
-{
-    if (_windowRestoredOnce) {
-        return;
-    }
-
-    const QString current = SnapshotManager::instance().monitorProfileFor(this);
-
-    if (current != _initialMonitorProfile) {
-        zInfo(QString("🖥️ Monitor profile stabilized: %1 → %2")
-                  .arg(_initialMonitorProfile, current));
-    } else {
-        zInfo(QString("🖥️ Monitor profile stabilized without change (%1)").arg(current));
-    }
-
-    const bool restored = SnapshotManager::instance().restoreSnapshot_MainWindow(this);
-    _windowRestoredOnce = true;
-
-    if (!restored) {
-        zWarning("⚠️ No geometry snapshot for final monitor profile; keeping current geometry");
-    }
-
-    // final placement után: splitter restore csak egyszer, snapshot alapján
-    const QString split = LayoutDefaultStore::instance().mainSplitterPercent();
-    if (!split.isEmpty()) {
-        GeometryHelper::restoreSplitterState(ui->splitter, split);
-    }
-
-    emit finalPlacementReached();
-    SnapshotManager::instance().saveSnapshot_MainWindow(this);
-
-
-}
-
 
 void MainWindow::changeEvent(QEvent* e) {
     if (e->type() == QEvent::WindowStateChange) {
@@ -208,11 +138,20 @@ void MainWindow::closeEvent(QCloseEvent* event)
     BOMWorkbenchSaveState();
 
     // Aktív tab mentése – ez továbbra is klasszikus setting
-    SettingsManager::instance().setCurrentTabIndex(ui->tabWidget->currentIndex());
+    //SettingsManager::instance().setCurrentTabIndex(ui->tabWidget->currentIndex());
+    int idx = ui->tabWidget->currentIndex();
+    int max = ui->tabWidget->count();
+
+    if (idx >= 0 && idx < max) {
+        SettingsManager::instance().setCurrentTabIndex(idx);
+        zInfo(QString("💾 Saved active tab index: %1").arg(idx));
+    } else {
+        zWarning(QString("⚠️ NOT saving tab index → invalid at close time: %1 / %2")
+                     .arg(idx).arg(max));
+    }
 
     // Fallback settings flush
     LayoutDefaultStore::instance().flush();
-
     event->accept();
 }
 
@@ -242,18 +181,6 @@ void MainWindow::initEventLogWidget() {
     _logAdapter->appendLines(recent);
 }
 
-// bool MainWindow::event(QEvent* e)
-// {
-//     // 🎯 Ha ez egy LambdaEvent, akkor futtatjuk a benne levő lambdát
-//     if (e->type() == QEvent::User) {
-//         auto* lambdaEvent = static_cast<LambdaEvent*>(e);
-//         lambdaEvent->execute();
-//         return true; // jelezzük, hogy kezeltük
-//     }
-//     // 🔄 Egyéb események átadása az alapkezelésnek
-//     return QMainWindow::event(e); // minden más esemény átadva az alapnak
-// }
-
 void MainWindow::initMaterialsTab() {
     // Keressünk egy tabot, vagy hozzunk létre egyet programból
     // Feltételezzük, hogy a Designerben van egy QTabWidget: ui->tabWidget
@@ -276,3 +203,8 @@ void MainWindow::initMaterialsTab() {
     _materialsManager->populateAll();
 }
 
+void MainWindow::initBOMWorkbenchTab()
+{
+    auto* bomTab = new BOMWorkbench(ui->tabWidget);
+    ui->tabWidget->addTab(bomTab, tr("BOM Workbench"));
+}

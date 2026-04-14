@@ -1,5 +1,7 @@
 #include "common/layout/layout_default_store.h"
 
+#include <common/settings/settings_manager.h>
+
 LayoutDefaultStore& LayoutDefaultStore::instance()
 {
     static LayoutDefaultStore inst;
@@ -85,6 +87,15 @@ void LayoutDefaultStore::setFormulaEditorGeometryPercent(const QString& s)
 {
     SettingsManager::instance().setFormulaEditorGeometryPercent(s);
 }
+
+QString LayoutDefaultStore::calcDetailHeaderPercent() const {
+    return SettingsManager::instance().calcDetailHeaderPercent();
+}
+
+void LayoutDefaultStore::setCalcDetailHeaderPercent(const QString& s) {
+    SettingsManager::instance().setCalcDetailHeaderPercent(s);
+}
+
 
 void LayoutDefaultStore::flush()
 {

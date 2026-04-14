@@ -38,6 +38,7 @@ public:
     void reset();
 
     int rowCount() const;
+    void restoreHeader();
 
 signals:
     void request_open_formula_editor(const QUuid& detailId);
@@ -47,6 +48,11 @@ public slots:
     void set_current_calculation(const QUuid& calcId, const QString& modeName);
     void scrollToRow(int row);
     QTableWidget* table() const { return _table; }
+
+
+protected:
+    void showEvent(QShowEvent* e) override;
+    //void closeEvent(QCloseEvent* e) override;
 
 private:
     QTableWidget* _table = nullptr;

@@ -34,31 +34,28 @@ private:
     void resizeEvent(QResizeEvent *e) override;
     void moveEvent(QMoveEvent* e) override;
     void changeEvent(QEvent* e) override;
-    void showEvent(QShowEvent* e) override;
-    //bool event(QEvent *e) override;
 
 /*material*/
     MaterialTableWidget* _materialsTable = nullptr;
     MaterialTableManager* _materialsManager = nullptr;
 
-    void initMaterialsTab();   // viewer init
-    //void loadMaterials();      // repository → registry
+    void initMaterialsTab();   // material viewer init
+    void initBOMWorkbenchTab(); // bom workbench init
+
 /*product*/
     QTreeView* _productTreeView = nullptr;
     ProductTreeManager* _productTreeManager = nullptr;
-
-    //void initProductTypesTab();   // új tab létrehozása + fa
-    //void loadProductDefinitions(); // CSV → registry
 
     bool _windowRestoredOnce = false;
     QString _initialMonitorProfile;   // induló monitorprofil (early restore-hoz)
     QString _lastSeenProfile;         // final placement stabilizációhoz
 
     void BOMWorkbenchSaveState();
-
-     void checkFinalPlacement();
 signals:
     void finalPlacementReached();
+
+private slots:
+    void onWindowStable();
 
 };
 #endif // MAINWINDOW_H

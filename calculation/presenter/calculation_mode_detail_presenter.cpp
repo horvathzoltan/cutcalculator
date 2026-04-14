@@ -5,6 +5,8 @@
 
 #include <calculation/service/matrix_validator.h>
 
+#include <QTimer>
+
 CalculationModeDetailPresenter::CalculationModeDetailPresenter(
     CalculationModeDetailView* view,
     CalculationModeDetailManager* manager,
@@ -69,6 +71,9 @@ void CalculationModeDetailPresenter::refreshForCalculation(const QUuid& calcId,
     auto rows = _manager->refreshForCalculation(calcId, modeName);
 
     _view->set_details(rows);          // ← EZ HIÁNYZOTT
+    QTimer::singleShot(0, _view, [this]() {
+        _view->restoreHeader();
+    });
 
     refreshOverlayOnly();
 
@@ -81,6 +86,8 @@ void CalculationModeDetailPresenter::refreshForCalculation(const QUuid& calcId,
         }
     }
     emit requestScrollToRow(firstProblem >= 0 ? firstProblem : 0);
+
+    //_view->restoreHeader();
 }
 
 void CalculationModeDetailPresenter::onModeSelected(std::optional<QUuid> modeId)

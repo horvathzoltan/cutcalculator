@@ -26,6 +26,7 @@ SOURCES += \
     calculation/service/kit_aggregator.cpp \
     calculation/service/order_need_builder.cpp \
     calculation/service/worksheet_builder.cpp \
+    common/system/window_stability_monitor.cpp \
     dsl/dsl_syntax_highlighter.cpp \
     dsl/dsl_completer.cpp \
     dsl/dsl_text_edit.cpp \
@@ -154,6 +155,7 @@ HEADERS += \
     calculation/service/raw_cut.h \
     calculation/service/raw_kit.h \
     calculation/service/worksheet_builder.h \
+    common/system/window_stability_monitor.h \
     common/utils/result.h \
     dsl/dsl_completer.h \
     dsl/dsl_syntax_highlighter.h \
