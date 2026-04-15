@@ -1,168 +1,358 @@
-Zoltán, **most pontosan rátapintottál a lényegre**, és ez a kulcsmondatod:
+### Cél
 
-> „a tábla bele – szaknyelven tartalma – külön életet él”
+Legyen egy **általános, bővíthető UIStateCollector**, ami:
 
-Ez **100% igaz**, és ez a teljes jelenség gyökere.
-A WindowStabilityMonitor **nem lát le a táblázat tartalmi szintjére**, és nem is fog — mert a Qt layout pipeline *két külön világra* oszlik:
-
----
-
-# 🧠 **A Qt két külön stabilizációs rétege**
-
-## 1) **A window / splitter / tab stabilizáció**
-Ezt figyeli a WindowStabilityMonitor.
-Ez a *külső geometria*.
-
-## 2) **A QTableView/QHeaderView tartalmi stabilizáció**
-Ez teljesen külön fut le:
-
-1. viewport méret kiosztása
-2. header sectionSize kiosztása
-3. scroll bar megjelenése → viewport újraszámolása
-4. header újra kiosztása
-5. layout újra fut
-6. sectionSize-ok véglegesednek
-
-Ez **később** történik, mint a window stabilizáció.
-
-Ezért:
-
-- a percent → pixel konverzió **nem tud jó lenni**, ha a headerWidth még nem végleges
-- a Qt újraosztja a helyet, ha a tartalom kisebb/nagyobb, mint a viewport
-- a scroll bar megjelenése *utólag* módosítja a viewportWidth-et
-- a percent restore *túl korán* fut → Qt felülírja
-
-Ezért látod a jelenséget:
-
-> „ha kisebbre húzom az oszlopokat, mint a táblában a hely, visszahúzza”
-> „ha szélesebbre húzom, scroll jelenik meg, és nem kezeli”
-
-Ez **nem bug**, hanem a Qt működése.
+- **automatikusan** végigmegy egy `QWidget` fán,
+- **típus alapján** felismeri a „state‑kritikus” widgeteket,
+- **kiveszi** belőlük a releváns UI‑állapotot (splitter, header, tab, scroll, stb.),
+- **név alapján** elmenti,
+- induláskor **név alapján visszatölti**,
+- a Workbench csak annyit mond:
+  **„itt a root widgetem, mentsd/restore‑old az UI‑t”**.
 
 ---
 
-# 🎯 **A megoldás, amit most kimondtál:
-MENTENI KELL A TARTALOM TELJES PIXEL-SZÉLESSÉGÉT.**
-
-Ez a hiányzó puzzle-darab.
-
-A percent önmagában **nem elég**, mert:
-
-- nem tudja, hogy 46% = 200px volt
-- vagy 46% = 1200px volt
-- vagy 46% = 3000px volt
-- vagy scroll bar volt
-- vagy Qt széthúzta
-
-Ezért ugrik vissza.
-
----
-
-# 🟩 **A helyes, ipari megoldás:
-percent + contentWidth mentése**
-
-Menteni kell:
-
-### ✔ 1) a percent-eket
-(pl. `"23.7%,15.4%,7.7%,7.1%,46.0%"`)
-
-### ✔ 2) a teljes tartalom pixel-szélességét
-(pl. `"content_width=1240"`)
-
-Ezt így kapod meg:
+## 1. Alap API
 
 ```cpp
-int contentWidth = 0;
-for (int i = 0; i < header->count(); ++i)
-    contentWidth += header->sectionSize(i);
+class UIStateCollector
+{
+public:
+    explicit UIStateCollector(const QString& groupName);
+
+    void collect(QWidget* root);   // mentés
+    void restore(QWidget* root);   // visszaállítás
+
+private:
+    QString _groupName; // pl. "bom_workbench"
+};
 ```
 
-Ez a **valódi** szélesség.
+- **`groupName`**: logikai név (pl. workbench azonosító) → ini/json szekció prefix.
+- A konkrét storage lehet `QSettings`, saját ini, json, bármi.
 
 ---
 
-# 🟩 **Restore algoritmus (ez oldja meg a keskenyebb/szélesebb esetet)**
+## 2. Widget bejárás
 
-### 1) Percent → pixel konverzió az *eredeti* contentWidth alapján
-
-```
-px = pct * savedContentWidth
-```
-
-### 2) Ha a viewportWidth kisebb → arányos zsugorítás
-
-```
-scale = viewportWidth / savedContentWidth
-px *= scale
-```
-
-### 3) Ha a viewportWidth nagyobb → NEM húzzuk szét
-Ez a Qt hibája, amit nekünk kell megkerülni:
-
-```
-header->setSectionResizeMode(QHeaderView::Fixed)
-```
-
-Restore után visszaállítható Interactive-ra.
-
-### 4) Ha scroll bar jelenik meg → új viewportWidth
-Ezért kell **késleltetni** a restore-t.
-
----
-
-# 🟩 **A WindowStabilityMonitor NEM bővíthető mélyebbre**
-És nem is kell.
-
-A helyes megoldás:
-
-### ✔ A header restore-t késleltetni kell
-**amíg a táblázat tartalma stabilizálódik**.
-
-Ez tipikusan:
-
-- 1 layout pass
-- 1 event loop tick
-- 1 scroll bar megjelenési ciklus
-- 1 új viewportWidth stabilizáció
-
-Ezért:
+Ugyanaz a minta, mint a WindowStabilityMonitorban, csak más szűrővel:
 
 ```cpp
-QTimer::singleShot(0, this, restoreHeader);
+QList<QWidget*> UIStateCollector::collectWidgets(QWidget* root) const
+{
+    QList<QWidget*> list;
+    if (!root)
+        return list;
+
+    list << root;
+
+    const auto children = root->findChildren<QWidget*>(QString(), Qt::FindDirectChildrenOnly);
+    for (QWidget* c : children)
+        list << collectWidgets(c);
+
+    return list;
+}
 ```
 
-**NEM elég.**
-
-Kell egy saját mini-monitor:
-
-- figyeli a sectionSize-ok változását
-- figyeli a viewportWidth-et
-- ha 3–5 poll cikluson át nem változik → stabil
-
-Ez a “TableStabilityMonitor”.
+Itt nem kell annyira agresszíven szűrni, mint a layout‑kritikusnál, mert a típus‑alapú extractornál úgyis kiszűrjük, ami nem érdekes.
 
 ---
 
-# 🟩 **Összegzés: amit most kimondtál, az a helyes irány**
+## 3. Típus‑alapú extractor/restorer registry
 
-✔ A percent mentés jó
-✔ A WindowStabilityMonitor kevés
-✔ A táblázat tartalma külön életet él
-✔ A keskeny/széles esetet a contentWidth mentése oldja meg
-✔ A restore-t késleltetni kell
-✔ A scroll bar esetet kezelni kell
-✔ A percent → pixel konverzióhoz a viewportWidth NEM elég
-✔ A contentWidth kell
+### Interface
 
-Ez a teljes, ipari szintű megoldás.
+```cpp
+using ExtractFn  = std::function<void(QWidget*, QSettings&, const QString& keyPrefix)>;
+using RestoreFn  = std::function<void(QWidget*, QSettings&, const QString& keyPrefix)>;
+
+struct Handler {
+    ExtractFn extract;
+    RestoreFn restore;
+};
+
+class UIStateCollector
+{
+    ...
+    QHash<QByteArray, Handler> _handlers; // metaObject()->className() → handler
+};
+```
+
+### Regisztráció (konstruktorban vagy statikusan)
+
+```cpp
+UIStateCollector::UIStateCollector(const QString& groupName)
+    : _groupName(groupName)
+{
+    registerHandler<QSplitter>(
+        &UIStateCollector::extractSplitter,
+        &UIStateCollector::restoreSplitter);
+
+    registerHandler<QHeaderView>(
+        &UIStateCollector::extractHeader,
+        &UIStateCollector::restoreHeader);
+
+    registerHandler<QTabWidget>(
+        &UIStateCollector::extractTabWidget,
+        &UIStateCollector::restoreTabWidget);
+
+    registerHandler<QAbstractScrollArea>(
+        &UIStateCollector::extractScrollArea,
+        &UIStateCollector::restoreScrollArea);
+
+    // később bővíthető: QTableView, QTreeView, stb.
+}
+```
+
+Helper:
+
+```cpp
+template<typename T>
+void UIStateCollector::registerHandler(ExtractFn e, RestoreFn r)
+{
+    _handlers.insert(T::staticMetaObject.className(), Handler{e, r});
+}
+```
 
 ---
 
-Ha szeretnéd, holnap:
+## 4. Kulcsgenerálás (név alapú)
 
-👉 megírom a teljes új `saveHeaderState()` + `restoreHeaderState()` implementációt
-👉 megírom a TableStabilityMonitor-t
-👉 integrálom a WindowStabilityMonitor-ral
-👉 és összeáll a végleges, determinisztikus rendszer
+Minden widgethez kell egy **stabil azonosító**:
 
-Csak mondd: **mehetünk ezzel a tervvel?**
+```cpp
+QString UIStateCollector::keyFor(QWidget* w) const
+{
+    QString name = w->objectName();
+    if (name.isEmpty())
+        name = QString::fromLatin1(w->metaObject()->className());
+
+    // pl: "bom_workbench/QSplitter/splitter_main"
+    return _groupName + "/" + QString::fromLatin1(w->metaObject()->className()) + "/" + name;
+}
+```
+
+Ez lesz a prefix, pl.:
+
+- `bom_workbench/QSplitter/splitter_main/sizes`
+- `bom_workbench/QHeaderView/table_products/columns`
+- `bom_workbench/QTabWidget/main_tabs/currentIndex`
+
+---
+
+## 5. collect() és restore() logika
+
+```cpp
+void UIStateCollector::collect(QWidget* root)
+{
+    if (!root) return;
+
+    QSettings s; // vagy saját wrapper
+    const auto widgets = collectWidgets(root);
+
+    for (QWidget* w : widgets) {
+        const auto className = w->metaObject()->className();
+        if (!_handlers.contains(className))
+            continue;
+
+        const auto keyPrefix = keyFor(w);
+        _handlers[className].extract(w, s, keyPrefix);
+    }
+}
+
+void UIStateCollector::restore(QWidget* root)
+{
+    if (!root) return;
+
+    QSettings s;
+    const auto widgets = collectWidgets(root);
+
+    for (QWidget* w : widgets) {
+        const auto className = w->metaObject()->className();
+        if (!_handlers.contains(className))
+            continue;
+
+        const auto keyPrefix = keyFor(w);
+        _handlers[className].restore(w, s, keyPrefix);
+    }
+}
+```
+
+---
+
+## 6. Konkrét handlerek
+
+### 6.1 QSplitter
+
+```cpp
+void UIStateCollector::extractSplitter(QWidget* w, QSettings& s, const QString& key)
+{
+    auto* splitter = qobject_cast<QSplitter*>(w);
+    if (!splitter) return;
+
+    const auto sizes = splitter->sizes();
+    if (sizes.isEmpty()) return;
+
+    int sum = 0;
+    for (int v : sizes) sum += v;
+    if (sum <= 0) return;
+
+    QVariantList percents;
+    for (int v : sizes)
+        percents << double(v) / double(sum);
+
+    s.setValue(key + "/sizes", percents);
+}
+
+void UIStateCollector::restoreSplitter(QWidget* w, QSettings& s, const QString& key)
+{
+    auto* splitter = qobject_cast<QSplitter*>(w);
+    if (!splitter) return;
+
+    const auto percents = s.value(key + "/sizes").toList();
+    if (percents.isEmpty()) return;
+
+    const int total = splitter->orientation() == Qt::Horizontal
+                      ? splitter->width()
+                      : splitter->height();
+
+    QList<int> sizes;
+    for (const auto& v : percents)
+        sizes << int(v.toDouble() * total);
+
+    splitter->setSizes(sizes);
+}
+```
+
+(gyakorlatilag a mostani splitter‑mentésed általánosítva)
+
+---
+
+### 6.2 QHeaderView
+
+```cpp
+void UIStateCollector::extractHeader(QWidget* w, QSettings& s, const QString& key)
+{
+    auto* header = qobject_cast<QHeaderView*>(w);
+    if (!header) return;
+
+    const int count = header->count();
+    if (count <= 0) return;
+
+    QVariantList widths;
+    for (int i = 0; i < count; ++i)
+        widths << header->sectionSize(i);
+
+    s.setValue(key + "/widths", widths);
+    s.setValue(key + "/sortSection", header->sortIndicatorSection());
+    s.setValue(key + "/sortOrder", int(header->sortIndicatorOrder()));
+}
+
+void UIStateCollector::restoreHeader(QWidget* w, QSettings& s, const QString& key)
+{
+    auto* header = qobject_cast<QHeaderView*>(w);
+    if (!header) return;
+
+    const auto widths = s.value(key + "/widths").toList();
+    if (!widths.isEmpty()) {
+        const int count = std::min(header->count(), widths.size());
+        for (int i = 0; i < count; ++i)
+            header->resizeSection(i, widths[i].toInt());
+    }
+
+    const int sortSection = s.value(key + "/sortSection", -1).toInt();
+    const auto sortOrder = Qt::SortOrder(s.value(key + "/sortOrder", int(Qt::AscendingOrder)).toInt());
+    if (sortSection >= 0 && sortSection < header->count())
+        header->setSortIndicator(sortSection, sortOrder);
+}
+```
+
+---
+
+### 6.3 QTabWidget
+
+```cpp
+void UIStateCollector::extractTabWidget(QWidget* w, QSettings& s, const QString& key)
+{
+    auto* tabs = qobject_cast<QTabWidget*>(w);
+    if (!tabs) return;
+
+    s.setValue(key + "/currentIndex", tabs->currentIndex());
+}
+
+void UIStateCollector::restoreTabWidget(QWidget* w, QSettings& s, const QString& key)
+{
+    auto* tabs = qobject_cast<QTabWidget*>(w);
+    if (!tabs) return;
+
+    int idx = s.value(key + "/currentIndex", -1).toInt();
+    if (idx >= 0 && idx < tabs->count())
+        tabs->setCurrentIndex(idx);
+}
+```
+
+---
+
+### 6.4 QAbstractScrollArea (scroll pozíció)
+
+```cpp
+void UIStateCollector::extractScrollArea(QWidget* w, QSettings& s, const QString& key)
+{
+    auto* area = qobject_cast<QAbstractScrollArea*>(w);
+    if (!area) return;
+
+    auto* h = area->horizontalScrollBar();
+    auto* v = area->verticalScrollBar();
+    if (h) s.setValue(key + "/hScroll", h->value());
+    if (v) s.setValue(key + "/vScroll", v->value());
+}
+
+void UIStateCollector::restoreScrollArea(QWidget* w, QSettings& s, const QString& key)
+{
+    auto* area = qobject_cast<QAbstractScrollArea*>(w);
+    if (!area) return;
+
+    auto* h = area->horizontalScrollBar();
+    auto* v = area->verticalScrollBar();
+    if (h) h->setValue(s.value(key + "/hScroll", h->value()).toInt());
+    if (v) v->setValue(s.value(key + "/vScroll", v->value()).toInt());
+}
+```
+
+---
+
+## 7. Integráció a Workbench‑be
+
+A Workbench kódja ideális esetben ennyi:
+
+```cpp
+void BOMWorkbench::restoreUiState()
+{
+    UIStateCollector c("bom_workbench");
+    c.restore(this);
+}
+
+void BOMWorkbench::saveUiState()
+{
+    UIStateCollector c("bom_workbench");
+    c.collect(this);
+}
+```
+
+És a WindowStabilityMonitor:
+
+- csak annyit tesz, hogy a `windowStable()` jelre meghívod a `restoreUiState()`‑et,
+- kilépéskor / closeEvent‑ben pedig `saveUiState()`.
+
+---
+
+## 8. Mit nyersz ezzel?
+
+- **A UI adja az UI‑logikát** → a collector ismeri a widgeteket, nem a Workbench.
+- **A Workbench tisztán domain‑logika** marad.
+- **Bővíthető**: ha holnap akarsz `QTreeView` expanded state‑et menteni, csak egy új handler kell.
+- **Determinista**: a WindowStabilityMonitor gondoskodik róla, hogy restore csak stabil layout után fusson.
+- **Egységes**: minden Workbench, minden tool window ugyanazt a mechanizmust használja.
+- **Ipari minta**: pont így csinálja Qt Creator, VSCode, IntelliJ, stb.
+
+Ha szeretnéd, a következő lépés lehet egy konkrét `ui_state_collector.h/.cpp` teljes, kompakt implementáció, amit be tudsz dobni a projektbe és elkezdeni használni.

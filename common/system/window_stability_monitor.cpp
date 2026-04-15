@@ -4,6 +4,14 @@
 #include <QScreen>
 #include <QTabWidget>
 #include <QSplitter>
+#include <QMenuBar>
+#include <QToolBar>
+#include <QStatusBar>
+#include <QAbstractButton>
+#include <QLabel>
+#include <QComboBox>
+#include <QScrollBar>
+#include <QLineEdit>
 
 #include "common/system/verbose_manager.h"
 #include "common/utils/geometry_helper.h"
@@ -25,15 +33,19 @@ WindowStabilityMonitor::WindowStabilityMonitor(QObject* parent)
 
 void WindowStabilityMonitor::attachTo(QWidget* window)
 {
+    _lastWidgetState.clear();
+
     _window = window;
     _stableCount = 0;
     _lastProfile.clear();
     _lastDpi = 0.0;
     _lastGeometry = QRect();
     _lastTabsGeometry = QRect();
-    _tabsStable = false;
-    _splitterStable = false;
     _lastSplitterSizes.clear();
+    _tabsStableCount = 0;
+    _splitterStableCount = 0;
+    _childrenStableCount = 0;
+    _recentInstabilityCount = 0;
 
     if (_window && _window->screen()) {
         _lastProfile = SnapshotManager::instance().monitorProfileFor(_window);
@@ -132,8 +144,9 @@ void WindowStabilityMonitor::poll()
     bool unstable = false;
     bool dpiChanged = false;
     bool profileChanged = false;
-    bool geomChanged = false;
 
+    QRect tabsGeom;
+    QList<int> splitterSizes;
 
     // --- DPI változás ---
     if (QScreen* s = _window->screen()) {
@@ -169,67 +182,95 @@ void WindowStabilityMonitor::poll()
                   .arg(geom.x()).arg(geom.y())
                   .arg(geom.width()).arg(geom.height()));
         unstable = true;
-        geomChanged = true;
+        //geomChanged = true;
     }
-
-    _lastGeometry = geom;
 
     // --- TabWidget geometry változás ---
     if (auto* tabs = _window->findChild<QTabWidget*>()) {
-        QRect tg = tabs->geometry();
-        if (!_tabsStable && !_lastTabsGeometry.isNull() && tg != _lastTabsGeometry) {
+        tabsGeom = tabs->geometry();
+
+        if (!_lastTabsGeometry.isNull() && tabsGeom != _lastTabsGeometry) {
             zInfo(QString("↩️ Instability: tabWidget geometry changed (%1x%2) → (%3x%4)")
                       .arg(_lastTabsGeometry.width()).arg(_lastTabsGeometry.height())
-                      .arg(tg.width()).arg(tg.height()));
+                      .arg(tabsGeom.width()).arg(tabsGeom.height()));
             unstable = true;
         }
-        _lastTabsGeometry = tg;
-        if (!_tabsStable && !tg.isNull() && !unstable) {
-            _tabsStable = true;
+
+        if (!tabsGeom.isNull() && !unstable) {
+            if (tabsGeom == _lastTabsGeometry)
+                _tabsStableCount++;
+            else
+                _tabsStableCount = 0;
         }
     }
-
 
     // --- Splitter méret változás ---
     if (auto* splitter = _window->findChild<QSplitter*>("splitter")) {
-        const auto sizes = splitter->sizes();
+        splitterSizes = splitter->sizes();
         int sum = 0;
-        for (int s : sizes) sum += s;
+        for (int s : splitterSizes) sum += s;
 
-        if (!_splitterStable && !_lastSplitterSizes.isEmpty() && sizes != _lastSplitterSizes && sum >= 50) {
+        if (!_lastSplitterSizes.isEmpty() && splitterSizes != _lastSplitterSizes && sum >= 50) {
             zInfo(QString("↩️ Instability: splitter sizes changed %1 → %2")
                       .arg(QString::fromLatin1(QByteArray::number(_lastSplitterSizes.first())))
-                      .arg(QString::fromLatin1(QByteArray::number(sizes.first()))));
+                      .arg(QString::fromLatin1(QByteArray::number(splitterSizes.first()))));
             unstable = true;
         }
-        _lastSplitterSizes = sizes;
 
-        if (!_splitterStable && sum >= 50 && !unstable) {
-            _splitterStable = true;
+        if (sum >= 50 && !unstable) {
+            if (splitterSizes == _lastSplitterSizes)
+                _splitterStableCount++;
+            else
+                _splitterStableCount = 0;
         }
     }
+
 
 
     // --- Ha bármelyik instabil volt, nullázzuk ---
     if (unstable) {
         _stableCount = 0;
+        _recentInstabilityCount++;
+        if (_recentInstabilityCount > 10)
+            _recentInstabilityCount = 10;
+    } else {
+        if (_recentInstabilityCount > 0)
+            _recentInstabilityCount--;
     }
 
-    // --- Stabilitási feltételek ellenőrzése ---
-    if (isStableOnce()) {
-        _stableCount++;
+    QList<QWidget*> widgets = collectWidgets(_window);
+    int widgetCount = widgets.size();
 
-        int threshold = 4;
-        if (dpiChanged || profileChanged) {
-            threshold = 6;
-        } else if (geomChanged) {
-            threshold = 5;
-        } else {
-            threshold = 3;
+    bool childrenStable = areWidgetsStable(widgets);
+    if (childrenStable)
+        _childrenStableCount++;
+    else
+        _childrenStableCount = 0;
+
+    // --- Stabilitási feltételek ellenőrzése ---
+    if (isStableOnce() &&
+        _tabsStableCount >= 2 &&
+        _splitterStableCount >= 2 &&
+        _childrenStableCount >= 2) {
+
+        // --- Sanity-check: ha az elmúlt 2 ciklusban volt instabilitás, halasszuk ---
+        if (_recentInstabilityCount > 0) {
+            _stableCount = 0;
+            return;
         }
 
+        _stableCount++;
+
+        int threshold = computeAdaptiveThreshold(widgetCount,
+                                                 dpiChanged || profileChanged,
+                                                 _recentInstabilityCount);
+
         if (IS_VERBOSE_THIS()){
-            zInfo(QString("✔️ Stable cycle %1/%2").arg(_stableCount).arg(threshold));
+            zInfo(QString("✔️ Stable cycle %1/%2 (widgets=%3, recentInst=%4)")
+                      .arg(_stableCount)
+                      .arg(threshold)
+                      .arg(widgetCount)
+                      .arg(_recentInstabilityCount));
         }
 
         if (_stableCount >= threshold) {
@@ -245,6 +286,127 @@ void WindowStabilityMonitor::poll()
         }
         _stableCount = 0;
     }
+    // --- Snapshot frissítése a következő ciklushoz ---
+    _lastGeometry = geom;
+    if (!tabsGeom.isNull())
+        _lastTabsGeometry = tabsGeom;
+    if (!splitterSizes.isEmpty())
+        _lastSplitterSizes = splitterSizes;
+
 
 }
+
+bool WindowStabilityMonitor::areWidgetsStable(const QList<QWidget*>& widgets)
+{
+    bool stable = true;
+
+    for (QWidget* w : widgets) {
+        WidgetSnapshot snap;
+        snap.geometry = w->geometry();
+        snap.size = w->size();
+        snap.minSize = w->minimumSize();
+
+        if (!_lastWidgetState.contains(w)) {
+            stable = false;
+        } else {
+            const WidgetSnapshot& prev = _lastWidgetState[w];
+
+            if (snap.geometry != prev.geometry ||
+                snap.size != prev.size ||
+                snap.minSize != prev.minSize) {
+
+                stable = false;
+            }
+        }
+
+        _lastWidgetState[w] = snap;
+
+    }
+
+    return stable;
+}
+
+
+QList<QWidget*> WindowStabilityMonitor::collectWidgets(QWidget* root) const
+{
+    QList<QWidget*> list;
+    if (!root)
+        return list;
+
+    if (isLayoutCritical(root))
+        list << root;
+
+    const auto children = root->findChildren<QWidget*>(QString(), Qt::FindDirectChildrenOnly);
+    for (QWidget* c : children) {
+        if (isLayoutCritical(c))
+            list << collectWidgets(c);
+    }
+
+    return list;
+}
+
+bool WindowStabilityMonitor::isLayoutCritical(QWidget* w)
+{
+    if (!w)
+        return false;
+
+    // Láthatatlan widget nem számít
+    if (!w->isVisible())
+        return false;
+
+    // Qt belső widgetek kizárása
+    if (w->objectName().startsWith("qt_"))
+        return false;
+
+    // Dekorációk kizárása
+    if (qobject_cast<QMenuBar*>(w)) return false;
+    if (qobject_cast<QToolBar*>(w)) return false;
+    if (qobject_cast<QStatusBar*>(w)) return false;
+    if (qobject_cast<QScrollBar*>(w)) return false;
+    if (qobject_cast<QTabBar*>(w)) return false;
+
+    // Gombok, címkék, egyszerű kontrollok kizárása
+    if (qobject_cast<QAbstractButton*>(w)) return false;
+    if (qobject_cast<QLabel*>(w)) return false;
+    if (qobject_cast<QLineEdit*>(w)) return false;
+    if (qobject_cast<QComboBox*>(w)) return false;
+
+    // Layout nélküli widgetek kizárása
+    if (!w->layout() &&
+        !qobject_cast<QAbstractScrollArea*>(w) &&
+        !qobject_cast<QSplitter*>(w))
+        return false;
+
+    // Ha idáig eljutott → layout‑kritikus
+    return true;
+}
+
+int WindowStabilityMonitor::computeAdaptiveThreshold(int widgetCount,
+                                                     bool dpiChanged,
+                                                     int recentInstability)
+{
+    int base = 2;
+
+    int complexity = 0;
+    if (widgetCount > 100) complexity = 3;
+    else if (widgetCount > 50) complexity = 2;
+    else if (widgetCount > 20) complexity = 1;
+
+    int instabilityPenalty = 0;
+    if (recentInstability > 8) instabilityPenalty = 3;
+    else if (recentInstability > 5) instabilityPenalty = 2;
+    else if (recentInstability > 3) instabilityPenalty = 1;
+
+    int dpiPenalty = dpiChanged ? 2 : 0;
+
+    int componentPenalty = 0;
+    if (_tabsStableCount < 2)      componentPenalty++;
+    if (_splitterStableCount < 2)  componentPenalty++;
+    if (_childrenStableCount < 2)  componentPenalty++;
+
+    return base + complexity + instabilityPenalty + dpiPenalty + componentPenalty;
+}
+
+
+
 
