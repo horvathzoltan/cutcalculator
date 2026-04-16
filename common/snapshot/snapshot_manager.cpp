@@ -218,3 +218,46 @@ QString SnapshotManager::monitorProfileFor(QWidget* w) const
 {
     return currentMonitorProfile(w);
 }
+
+QVariantMap SnapshotManager::loadUIState(const QString& groupName) const
+{
+    QVariantMap result;
+
+    const QString path =
+        FileNameHelper::instance().pathFor(FileKind::UIState_SnapshotFile,
+                                           FileAccess::Read,
+                                           groupName);
+    if (path.isEmpty() || !QFile::exists(path)) {
+        return result;
+    }
+
+    QSettings snap(path, QSettings::IniFormat);
+    snap.beginGroup("UIState");
+    const QStringList keys = snap.allKeys();
+    for (const QString& k : keys) {
+        result.insert(k, snap.value(k));
+    }
+    snap.endGroup();
+
+    return result;
+}
+
+void SnapshotManager::saveUIState(const QString& groupName,
+                                  const QVariantMap& map) const
+{
+    const QString path =
+        FileNameHelper::instance().pathFor(FileKind::UIState_SnapshotFile,
+                                           FileAccess::Write,
+                                           groupName);
+    if (path.isEmpty()) {
+        return;
+    }
+
+    QSettings snap(path, QSettings::IniFormat);
+    snap.beginGroup("UIState");
+    for (auto it = map.begin(); it != map.end(); ++it) {
+        snap.setValue(it.key(), it.value());
+    }
+    snap.endGroup();
+    snap.sync();
+}

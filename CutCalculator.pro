@@ -27,6 +27,9 @@ SOURCES += \
     calculation/service/order_need_builder.cpp \
     calculation/service/worksheet_builder.cpp \
     common/system/window_stability_monitor.cpp \
+    common/ui_state/state_collector.cpp \
+    common/ui_state/state_handlers.cpp \
+    common/ui_state/state_settings.cpp \
     dsl/dsl_syntax_highlighter.cpp \
     dsl/dsl_completer.cpp \
     dsl/dsl_text_edit.cpp \
@@ -156,6 +159,9 @@ HEADERS += \
     calculation/service/raw_kit.h \
     calculation/service/worksheet_builder.h \
     common/system/window_stability_monitor.h \
+    common/ui_state/state_collector.h \
+    common/ui_state/state_handlers.h \
+    common/ui_state/state_settings.h \
     common/utils/result.h \
     dsl/dsl_completer.h \
     dsl/dsl_syntax_highlighter.h \

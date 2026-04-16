@@ -42,7 +42,13 @@ public:
     WorkbenchSnapshot restoreSnapshot_BOMWorkbench(const QString& workbenchName);
 
     void saveSnapshot_BOMWorkbench(const WorkbenchSnapshot& s,
-                               const QString& workbenchName);
+                                   const QString& workbenchName);
+
+    /// UIStateCollector monitorprofilos UI-state betöltése
+    QVariantMap loadUIState(const QString& groupName) const;
+
+    /// UIStateCollector monitorprofilos UI-state mentése
+    void saveUIState(const QString& groupName, const QVariantMap& map) const;
 
     /// Monitor profil (pl. "1920x1080_96dpi") lekérdezése UI widgethez.
     QString monitorProfileFor(QWidget* w) const;

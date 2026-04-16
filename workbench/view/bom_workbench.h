@@ -46,6 +46,13 @@ public:
     /// Elmenti a splitter és a fa header állapotát a SettingsManager-be.
     void saveState();
 
+    /// UIStateCollector alapú visszaállítás
+    void restoreUiState();
+
+    /// UIStateCollector alapú mentés
+    void saveUiState();
+
+
 private:
     // UI váz
     QVBoxLayout* _layout = nullptr;
@@ -108,7 +115,7 @@ private slots:
         _canRestore = true;
 
         // final placement után restoreState futtatása
-        tryRestore();
+        restoreUiState();
     }
 
 };

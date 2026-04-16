@@ -32,6 +32,7 @@ public:
 
 signals:
     void windowStable();   // egyszer, amikor tényleg stabil
+    void uiReadyForRestore(); // UIStateCollector restore trigger
 
 private:
     explicit WindowStabilityMonitor(QObject* parent = nullptr);

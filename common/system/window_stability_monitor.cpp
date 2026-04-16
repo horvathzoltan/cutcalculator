@@ -277,6 +277,7 @@ void WindowStabilityMonitor::poll()
             zInfo("🎉 Window is fully stable → emitting windowStable()");
             _timer.stop();
             emit windowStable();
+            emit uiReadyForRestore();
         }
     } else {
         if (!unstable) {

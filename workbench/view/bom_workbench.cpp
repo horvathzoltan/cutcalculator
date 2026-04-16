@@ -9,6 +9,7 @@
 
 #include "common/logger/event_logger.h"
 
+#include "common/ui_state/state_collector.h"
 #include "needs/manager/material_requirements_manager.h"
 #include "needs/view/material_requirements_view.h"
 
@@ -392,5 +393,18 @@ void BOMWorkbench::tryRestore()
     if (!_isFullyShown || !_canRestore)
         return;
 
-    restoreState();
+    restoreUiState();
 }
+
+void BOMWorkbench::restoreUiState()
+{
+    UIStateCollector c("bom_workbench");
+    c.restore(this);
+}
+
+void BOMWorkbench::saveUiState()
+{
+    UIStateCollector c("bom_workbench");
+    c.collect(this);
+}
+
