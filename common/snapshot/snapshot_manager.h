@@ -2,11 +2,10 @@
 
 #include <QString>
 #include <QSize>
+#include <QWidget>
 
-#include "common/settings/settings_manager.h"      // WorkbenchSnapshot típus
-#include "common/utils/geometry_helper.h"
-#include "common/utils/filename_helper.h"
-#include "workbench_snapshot.h"
+// #include "common/utils/geometry_helper.h"
+// #include "common/utils/filename_helper.h"
 
 /**
  * @class SnapshotManager
@@ -39,10 +38,10 @@ public:
     /// BOMWorkbench snapshot betöltése (splitters + header percent stringek).
     /// BOMWorkbench snapshot mentése.
 
-    WorkbenchSnapshot restoreSnapshot_BOMWorkbench(const QString& workbenchName);
+    //WorkbenchSnapshot restoreSnapshot_BOMWorkbench(const QString& workbenchName);
 
-    void saveSnapshot_BOMWorkbench(const WorkbenchSnapshot& s,
-                                   const QString& workbenchName);
+    // void saveSnapshot_BOMWorkbench(const WorkbenchSnapshot& s,
+    //                                const QString& workbenchName);
 
     /// UIStateCollector monitorprofilos UI-state betöltése
     QVariantMap loadUIState(const QString& groupName) const;

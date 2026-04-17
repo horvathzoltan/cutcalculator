@@ -163,7 +163,7 @@ void MainWindow::BOMWorkbenchSaveState(){
     if(!bom) return;
     if(bom->isWindow()) return; // van sajátja majd menti magának ahogy megtanulta
 
-    bom->saveState();
+    bom->saveUiState();
 }
 
 void MainWindow::initEventLogWidget() {

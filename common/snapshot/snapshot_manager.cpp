@@ -6,9 +6,12 @@
 #include <QSettings>
 #include <QElapsedTimer>
 
-#include "common/logger/event_logger.h"   // zEventINFO/WARN
+//#include "common/logger/event_logger.h"   // zEventINFO/WARN
 
-#include "workbench_snapshot.h"
+//#include "workbench_snapshot.h"
+
+#include <common/utils/filename_helper.h>
+#include <common/utils/geometry_helper.h>
 
 // --- Window snapshot throttle state ---
 static bool g_isRestoring = false;
@@ -153,66 +156,66 @@ bool SnapshotManager::restoreSnapshot_MainWindow(QWidget* window)
 
 /* BOMWorkbench snapshot */
 
-WorkbenchSnapshot
-SnapshotManager::restoreSnapshot_BOMWorkbench(const QString& workbenchName)
-{
-    WorkbenchSnapshot result;
+// WorkbenchSnapshot
+// SnapshotManager::restoreSnapshot_BOMWorkbench(const QString& workbenchName)
+// {
+//     WorkbenchSnapshot result;
 
-    const QString path =
-        FileNameHelper::instance().pathFor(FileKind::BOM_Workbench_SnapshotFile,
-                                           FileAccess::Read,
-                                           workbenchName);
-    if (path.isEmpty()) {
-        zWarning("⚠️ Workbench snapshot: path is empty");
-        return result;
-    }
+//     const QString path =
+//         FileNameHelper::instance().pathFor(FileKind::BOM_Workbench_SnapshotFile,
+//                                            FileAccess::Read,
+//                                            workbenchName);
+//     if (path.isEmpty()) {
+//         zWarning("⚠️ Workbench snapshot: path is empty");
+//         return result;
+//     }
 
-    if (!QFile::exists(path)) {
-        zWarning(QString("ℹ️ No Workbench snapshot found at: %1").arg(path));
-        return result;
-    }
+//     if (!QFile::exists(path)) {
+//         zWarning(QString("ℹ️ No Workbench snapshot found at: %1").arg(path));
+//         return result;
+//     }
 
-    QSettings snap(path, QSettings::IniFormat);
-    result.leftVertical  = snap.value("Workbench/left_vertical").toString();
-    result.productTypes  = snap.value("Workbench/product_types").toString();
-    result.rightVertical = snap.value("Workbench/right_vertical").toString();
-    result.treeHeader       = snap.value("Workbench/tree_header").toString();
-    result.needRulesHeader  = snap.value("Workbench/need_rules_header").toString();
-    result.modesHeader      = snap.value("Workbench/modes_header").toString();
-    result.detailsHeader    = snap.value("Workbench/details_header").toString();
+//     QSettings snap(path, QSettings::IniFormat);
+//     result.leftVertical  = snap.value("Workbench/left_vertical").toString();
+//     result.productTypes  = snap.value("Workbench/product_types").toString();
+//     result.rightVertical = snap.value("Workbench/right_vertical").toString();
+//     result.treeHeader       = snap.value("Workbench/tree_header").toString();
+//     result.needRulesHeader  = snap.value("Workbench/need_rules_header").toString();
+//     result.modesHeader      = snap.value("Workbench/modes_header").toString();
+//     result.detailsHeader    = snap.value("Workbench/details_header").toString();
 
 
-    zInfo(QString("ℹ️ Workbench snapshot restored: %1").arg(path));
-    return result;
-}
+//     zInfo(QString("ℹ️ Workbench snapshot restored: %1").arg(path));
+//     return result;
+// }
 
-void SnapshotManager::saveSnapshot_BOMWorkbench(const WorkbenchSnapshot& s,
-                                            const QString& workbenchName)
-{
-    const QString path =
-        FileNameHelper::instance().pathFor(FileKind::BOM_Workbench_SnapshotFile,
-                                           FileAccess::Write,
-                                           workbenchName);
+// void SnapshotManager::saveSnapshot_BOMWorkbench(const WorkbenchSnapshot& s,
+//                                             const QString& workbenchName)
+// {
+//     const QString path =
+//         FileNameHelper::instance().pathFor(FileKind::BOM_Workbench_SnapshotFile,
+//                                            FileAccess::Write,
+//                                            workbenchName);
 
-    if (path.isEmpty()) {
-        zWarning("⚠️ Workbench snapshot save skipped: snapshot path is empty");
-        return;
-    }
+//     if (path.isEmpty()) {
+//         zWarning("⚠️ Workbench snapshot save skipped: snapshot path is empty");
+//         return;
+//     }
 
-    QSettings snap(path, QSettings::IniFormat);
-    snap.setValue("Workbench/left_vertical",  s.leftVertical);
-    snap.setValue("Workbench/product_types",  s.productTypes);
-    snap.setValue("Workbench/right_vertical", s.rightVertical);
-    snap.setValue("Workbench/tree_header",    s.treeHeader);
-    snap.setValue("Workbench/need_rules_header",  s.needRulesHeader);
-    snap.setValue("Workbench/modes_header",       s.modesHeader);
-    snap.setValue("Workbench/details_header",     s.detailsHeader);
-    snap.sync();
+//     QSettings snap(path, QSettings::IniFormat);
+//     snap.setValue("Workbench/left_vertical",  s.leftVertical);
+//     snap.setValue("Workbench/product_types",  s.productTypes);
+//     snap.setValue("Workbench/right_vertical", s.rightVertical);
+//     snap.setValue("Workbench/tree_header",    s.treeHeader);
+//     snap.setValue("Workbench/need_rules_header",  s.needRulesHeader);
+//     snap.setValue("Workbench/modes_header",       s.modesHeader);
+//     snap.setValue("Workbench/details_header",     s.detailsHeader);
+//     snap.sync();
 
-    snap.sync();
+//     snap.sync();
 
-    zInfo(QString("💾 Workbench snapshot saved: %1").arg(path));
-}
+//     zInfo(QString("💾 Workbench snapshot saved: %1").arg(path));
+// }
 
 QString SnapshotManager::monitorProfileFor(QWidget* w) const
 {

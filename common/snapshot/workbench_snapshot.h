@@ -1,16 +1,16 @@
 #pragma once
 
-#include <QString>
+// #include <QString>
 
 
-struct WorkbenchSnapshot {
-    QString leftVertical;
-    QString productTypes;  // _splitter
-    QString rightVertical;
+// struct WorkbenchSnapshot {
+//     QString leftVertical;
+//     QString productTypes;  // _splitter
+//     QString rightVertical;
 
-    QString treeHeader;
-    QString needRulesHeader;
-    QString modesHeader;
-    QString detailsHeader;
+//     QString treeHeader;
+//     QString needRulesHeader;
+//     QString modesHeader;
+//     QString detailsHeader;
 
-};
+// };

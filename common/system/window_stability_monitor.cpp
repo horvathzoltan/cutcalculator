@@ -13,6 +13,7 @@
 #include <QScrollBar>
 #include <QLineEdit>
 
+#include "common/logger/logger.h"
 #include "common/system/verbose_manager.h"
 #include "common/utils/geometry_helper.h"
 #include "common/snapshot/snapshot_manager.h"
@@ -207,8 +208,11 @@ void WindowStabilityMonitor::poll()
     // --- Splitter méret változás ---
     if (auto* splitter = _window->findChild<QSplitter*>("splitter")) {
         splitterSizes = splitter->sizes();
+
         int sum = 0;
-        for (int s : splitterSizes) sum += s;
+        for (int i = 0; i < splitterSizes.size(); ++i) {
+            sum += splitterSizes[i];
+        }
 
         if (!_lastSplitterSizes.isEmpty() && splitterSizes != _lastSplitterSizes && sum >= 50) {
             zInfo(QString("↩️ Instability: splitter sizes changed %1 → %2")

@@ -26,7 +26,8 @@ enum class FileKind {
     SettingsIni,
     CacheDir,
     MainWindow_SnapshotFile,
-    BOM_Workbench_SnapshotFile
+    BOM_Workbench_SnapshotFile,
+    UIState_SnapshotFile
 };
 
 enum class FileAccess {

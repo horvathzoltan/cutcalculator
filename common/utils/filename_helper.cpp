@@ -103,7 +103,8 @@ static const QMap<FileKind, FileKindInfo> FILE_INFO = {
     { FileKind::SettingsIni, { "settings.ini", FileBehavior::Config } },
     { FileKind::CacheDir,           { "%1_cache", FileBehavior::Config } },
     { FileKind::MainWindow_SnapshotFile, { "ui_snapshots/geometry_%1.ini", FileBehavior::Config } },
-    { FileKind::BOM_Workbench_SnapshotFile, { "ui_snapshots/bom_workbench/%1.ini", FileBehavior::Config } }
+    //{ FileKind::BOM_Workbench_SnapshotFile, { "ui_snapshots/bom_workbench/%1.ini", FileBehavior::Config } },
+    { FileKind::UIState_SnapshotFile, { "ui_snapshots/ui_state_%1.ini", FileBehavior::Config } }
 
 };
 

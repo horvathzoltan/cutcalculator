@@ -1,174 +1,182 @@
-Zoltán, rendben — **mostantól ebben a formátumban fogok patcheket adni**, pontosan a saját „ÚJ PATCH‑PROMPT (RUGALMAS STRICT MODE)” szabályaid szerint.
+Zoltán, **igen — mindhárom pont kell**, és nem csak „kell”, hanem **együttesen adják ki azt a teljes, auditálható, jövőálló UI‑state architektúrát**, amit az előbb felvázoltunk.
 
-Ahhoz azonban, hogy **elkezdjük a PATCH SESSION‑t**, előbb **kell egyetlen, végleges, lineáris patch‑terv**, amelyet majd lépésről lépésre, snippetenként fogunk végrehajtani.
+A három komponens egymásra épül:
 
-Ezért most **összeállítottam a végleges, egyetlen, lineáris, PATCH 1 → PATCH 7 tervet**, amelyet a következő üzenetben már a te formátumod szerint fogok snippetekre bontani.
+1) **2‑fázisú discovery + extract** → ez biztosítja, hogy *minden* layout‑kritikus widget bekerüljön a fájlba
+2) **templated handler registry** → ez biztosítja, hogy a mentés/visszaállítás moduláris, bővíthető legyen
+3) **BOMWorkbench objectName patch** → ez biztosítja, hogy a kulcsok determinisztikusak legyenek
 
----
+Ha bármelyik hiányzik → a rendszer nem lesz teljes.
 
-# ⭐ **VÉGLEGES, LINEÁRIS PATCH‑TERV (PATCH 1 → PATCH 7)**
-*(Ez az a terv, amelyet majd snippetenként fogunk végrehajtani a te formátumod szerint.)*
-
----
-
-# **PATCH 1 — FileNameHelper bugfix + tisztítás**
-**Cél:** A SnapshotManager UIState API‑ja hibás FileKind‑ra hivatkozik → javítjuk.
-
-1.1 `FileKind` enum bővítése: `UIState_SnapshotFile`
-1.2 `FILE_INFO` bővítése: `ui_snapshots/ui_state_%1.ini`
-1.3 Régi `BOM_Workbench_SnapshotFile` törlése
+Most összerakom neked **a végleges, pontonként végrehajtható, teljes körű tervet**, amelynek a végén ott lesz a **patching/implementációs terv** is.
 
 ---
 
-# **PATCH 2 — SnapshotManager megtisztítása**
-**Cél:** A régi WorkbenchSnapshot API teljes kivezetése.
+# ⭐ **VÉGLEGES, TELJES KÖRŰ MEGOLDÁSI TERV**
 
-2.1 Headerből törölni:
-- `#include "workbench_snapshot.h"`
-- `restoreSnapshot_BOMWorkbench()`
-- `saveSnapshot_BOMWorkbench()`
+## **1. LÉPÉS — Widget‑név audit (objectName patch)**
+**Cél:** minden layout‑kritikus widgetnek legyen neve → determinisztikus kulcsok.
 
-2.2 CPP‑ből törölni a teljes implementációs blokkot.
+### Teendők:
+- BOMWorkbench minden fontos widgetje kapjon objectName‑et:
+  - splitter(ek)
+  - tabwidget
+  - tableview/tablewidget
+  - header
+  - scrollarea
+  - container widgetek
+- Ha egy widgetnek nincs neve → UIStateCollector warningot ír:
+  ```
+  ⚠️ UIStateCollector: unnamed layout‑critical widget → skipping name, using fallback
+  ```
 
----
-
-# **PATCH 3 — workbench_snapshot.h törlése**
-**Cél:** A régi snapshot formátum teljes kivezetése.
-
-- A fájl teljes törlése
-- A `.pro` fájlból is törölni
-
----
-
-# **PATCH 4 — BOMWorkbench header tisztítása**
-**Cél:** A régi snapshot API eltávolítása a Workbenchből.
-
-- Törölni: `restoreState()`, `saveState()`
+### Eredmény:
+- minden widgetnek lesz kulcsa
+- a kulcsok stabilak
+- a snapshot fájl olvasható
 
 ---
 
-# **PATCH 5 — BOMWorkbench CPP tisztítása**
-**Cél:** A régi percent‑based snapshot logika eltávolítása.
+## **2. LÉPÉS — 2‑fázisú UIStateCollector (discovery + extract)**
+**Cél:** a UIStateCollector ne csak azt mentse, amit tud, hanem *mindent, amit kellene*.
 
-5.1 Törölni a teljes `restoreState()` metódust
-5.2 Törölni a teljes `saveState()` metódust
-5.3 Törölni a fölös include‑okat:
-- `layout_default_store.h`
-- `snapshot_manager.h`
+### Fázis 1 — Discovery
+- bejárja a widgetfát
+- minden layout‑kritikus widgetet felismer (`isLayoutCritical`)
+- minden widgethez létrehoz egy kulcsot
+- ha nincs handler → érték: `"unsaved"`
+- ha nincs objectName → `"unnamed_<class>_<ptr>"`
 
----
+### Fázis 2 — Extract
+- ha van handler → menti a valódi adatot
+- ha nincs handler → `"unsaved"` marad
 
-# **PATCH 6 — Projekt tisztítása**
-**Cél:** A régi snapshot rendszer maradványainak eltávolítása.
-
-- `.pro` fájlból törölni: `workbench_snapshot.h`
-- `.pro` fájlból törölni: `BOM_Workbench_SnapshotFile` enum használatát (ha van)
-
----
-
-# **PATCH 7 — Ellenőrzés (nem kódmódosítás)**
-**Cél:** Biztosítani, hogy az új UIStateCollector restore jó helyen fut.
-
-- WindowStabilityMonitor → OK
-- Workbench restore → `restoreUiState()`
-- Mentés → `saveUiState()`
+### Eredmény:
+- a snapshot fájl **teljes UI‑state térképet tartalmaz**
+- minden widget látszik
+- semmi nem marad ki
+- a hiányzó implementációk azonnal látszanak
 
 ---
 
-# ⭐ **Készen állunk a PATCH SESSION indítására**
+## **3. LÉPÉS — Templated handler registry**
+**Cél:** moduláris, bővíthető, típus‑alapú handler rendszer.
 
-Mostantól a folyamat így működik:
+### Teendők:
+- bevezetjük:
 
-1. **Te megadod: „PATCH X kérem”**
-2. Én:
-   - ellenőrzöm, hogy minden szükséges fájl be van‑e küldve
-   - ha hiányzik: bekérem
-   - ha megvan: elkészítem a snippetet **pontosan a te formátumod szerint**
-     - HELYMEGHATÁROZÁS
-     - RÉGI → ÚJ diff
-     - vagy „A megadott blokkot teljes egészében el kell távolítani.”
-
----
-
-# ⭐ Indíthatjuk a PATCH SESSION‑t
-Mondd ki:
-
-👉 **„Kérem a PATCH 1‑et”**
-
-és indul a snippet‑gyártás a te szabályaid szerint.
-
-
-
-
-Zoltán, **PATCH SESSION elindítva** a te RUGALMAS STRICT MODE szabályaid szerint.
-A PATCH 1‑hez **minden szükséges fájl megérkezett**, így indulhat a snippet‑gyártás.
-
----
-
-# ⭐ **PATCH 1 — FileNameHelper bugfix + tisztítás**
-**Cél:** A SnapshotManager UIState API‑ja hibás FileKind‑ra hivatkozik → hozzáadjuk a hiányzó enum értéket és a FILE_INFO bejegyzést, valamint eltávolítjuk a régi WorkbenchSnapshot fájlnevet.
-
----
-
-# 🔧 **PATCH 1 / SNIPPET #1 — FileKind enum bővítése**
-**Fájl:** `common/utils/filename_helper.h`
-**Hely:** `enum class FileKind` blokk
-**Cél:** Új enum érték hozzáadása: `UIState_SnapshotFile`
-
-### RÉGI:
 ```cpp
-    MainWindow_SnapshotFile,
-    BOM_Workbench_SnapshotFile
+template<typename T>
+void registerHandler(ExtractFn e, RestoreFn r);
 ```
 
-### ÚJ:
-```cpp
-    MainWindow_SnapshotFile,
-    BOM_Workbench_SnapshotFile,
-    UIState_SnapshotFile
+- a registry kulcsa: `T::staticMetaObject.className()`
+- a UIStateCollector futásidőben nézi:
+  - ha van handler → extract/restore
+  - ha nincs → `"unsaved"`
+
+### Eredmény:
+- új widgettípusok támogatása 1 sor regisztráció
+- nincs hardcode
+- nincs switch/cast pokol
+- a rendszer automatikusan bővíthető
+
+---
+
+## **4. LÉPÉS — Header mentés új formátumban (név‑alapú, százalékos)**
+**Cél:** DPI‑független, platformfüggetlen, sorrendfüggetlen header restore.
+
+### Formátum:
+
+```
+bom_workbench/mat_header/viewportWidthPx=742
+bom_workbench/mat_header/widthPercent_Name=20
+bom_workbench/mat_header/widthPercent_Quantity=30
+...
 ```
 
+### Eredmény:
+- emberi olvasható
+- diff‑barát
+- stabil
+- bővíthető
+
 ---
 
-# 🔧 **PATCH 1 / SNIPPET #2 — FILE_INFO bővítése**
-**Fájl:** `common/utils/filename_helper.cpp`
-**Hely:** `static const QMap<FileKind, FileKindInfo> FILE_INFO = { ... }`
-**Cél:** Új bejegyzés hozzáadása az UIState fájlhoz
+## **5. LÉPÉS — Minden widget szerepeljen a fájlban (akkor is, ha unsaved)**
+**Cél:** teljes lefedettség, auditálhatóság.
 
-### ÚJ BLOKK (nincs RÉGI, mert új bejegyzés):
-```cpp
-{ FileKind::UIState_SnapshotFile, { "ui_snapshots/ui_state_%1.ini", FileBehavior::Config } },
+### Példa snapshot:
+
+```
+bom_workbench/main_splitter/sizes=72.1%,27.9%
+bom_workbench/mat_header/widthPercent_Name=20
+bom_workbench/mat_table/scrollPos=120
+
+bom_workbench/mat_toolbar/state=unsaved
+bom_workbench/mat_container/state=unsaved
+bom_workbench/unnamed_QWidget_0x7ffd123456/state=unsaved
 ```
 
----
-
-# 🔧 **PATCH 1 / SNIPPET #3 — Régi WorkbenchSnapshot fájlnevek törlése**
-**Fájl:** `common/utils/filename_helper.cpp`
-**Hely:** FILE_INFO táblázat
-**Cél:** A régi WorkbenchSnapshot fájlnevet eltávolítjuk
-
-### RÉGI:
-```cpp
-{ FileKind::BOM_Workbench_SnapshotFile, { "ui_snapshots/bom_workbench/%1.ini", FileBehavior::Config } }
-```
-
-### ÚJ:
-*(A megadott blokkot teljes egészében el kell távolítani.)*
+### Eredmény:
+- minden widget látszik
+- minden hiányosság látszik
+- semmi nem marad ki
+- a jövőbeli fejlesztésekhez tökéletes roadmap
 
 ---
 
-# ⭐ PATCH 1 KÉSZ
-A FileNameHelper most már:
+# ⭐ **6. LÉPÉS — Végrehajtható implementációs / patching terv**
 
-- **tudja kezelni az UIState fájlokat**,
-- **nem tartalmazza a régi WorkbenchSnapshot fájlnevet**,
-- **összhangban van a SnapshotManager új UIState API‑jával**.
+Ez lesz a **PATCH PLAN**, amit lépésről lépésre végrehajtunk.
 
 ---
 
-# 👉 Következő lépés
-Mondd ki:
+# ⭐ **PATCH PLAN (végrehajtható)**
 
-**„Kérem a PATCH 2‑t”**
+## **PATCH 1 — objectName audit**
+- BOMWorkbench minden layout‑kritikus widgetje kap objectName‑et
+- UIStateCollector warningot ír, ha hiányzik
 
-és folytatjuk a SnapshotManager tisztításával.
+## **PATCH 2 — UIStateCollector: discovery fázis**
+- bejárja a widgetfát
+- minden layout‑kritikus widgethez kulcsot generál
+- ha nincs handler → `"unsaved"`
+- ha nincs objectName → `"unnamed_<class>_<ptr>"`
+
+## **PATCH 3 — UIStateCollector: extract fázis**
+- ha van handler → ment
+- ha nincs → `"unsaved"` marad
+
+## **PATCH 4 — templated handler registry**
+- bevezetjük a `registerHandler<T>()` sablont
+- a registry kulcsa: `T::staticMetaObject.className()`
+- a UIStateCollector futásidőben választja ki a handlert
+
+## **PATCH 5 — Header handler új formátummal**
+- widthPercent_<ColumnName>=XX
+- viewportWidthPx mentése
+- restore: százalék → pixel számítás
+
+## **PATCH 6 — ScrollArea, Splitter, TabWidget handler frissítés**
+- új kulcsformátum
+- százalékos splitter mentés
+- tab index mentés
+
+## **PATCH 7 — Snapshot fájl generálás teljes lefedettséggel**
+- minden widget szerepel
+- unsaved jelölések
+- unnamed jelölések
+- auditálható struktúra
+
+---
+
+# ⭐ **Készen állok a patch‑ek generálására**
+
+Ha szeretnéd, indítjuk a patch sessiont:
+
+👉 **kérem a PATCH 1‑et: objectName audit**
+
+vagy mondhatod:
+
+👉 **indítsuk a teljes patch sorozatot PATCH 1‑től PATCH 7‑ig**

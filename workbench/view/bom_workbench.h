@@ -41,10 +41,10 @@ public:
     explicit BOMWorkbench(QWidget* parent = nullptr);
 
     /// Visszaállítja a splitter és a fa header állapotát a SettingsManager-ből.
-    void restoreState();
+    //void restoreState();
 
     /// Elmenti a splitter és a fa header állapotát a SettingsManager-be.
-    void saveState();
+    //void saveState();
 
     /// UIStateCollector alapú visszaállítás
     void restoreUiState();

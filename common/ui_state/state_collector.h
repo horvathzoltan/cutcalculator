@@ -5,6 +5,11 @@
 #include <QSettings>
 #include <functional>
 
+#include <QSplitter>
+#include <QHeaderView>
+#include <QTabWidget>
+#include <QAbstractScrollArea>
+
 class UIStateCollector
 {
 public:
