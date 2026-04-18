@@ -1,9 +1,21 @@
 #include "common/ui_state/state_collector.h"
 #include "common/ui_state/state_handlers.h"
 #include "common/ui_state/state_settings.h"
+#include "common/logger/logger.h"
+#include "layout_critical_helper.h"
 
 #include <QMetaObject>
 #include <QMetaClassInfo>
+#include <QMenuBar>
+#include <QToolBar>
+#include <QStatusBar>
+#include <QScrollBar>
+#include <QTabBar>
+#include <QAbstractButton>
+#include <QLabel>
+#include <QLineEdit>
+#include <QComboBox>
+
 
 UIStateCollector::UIStateCollector(const QString& groupName)
     : _groupName(groupName)
@@ -31,61 +43,93 @@ void UIStateCollector::collect(QWidget* root)
     if (!root) return;
 
     StateSettings s(_groupName);
-    const auto widgets = collectWidgets(root);
+    const auto widgets = LayoutCriticalHelper::collect(root);
 
+    // 1. Minden widget kap alap audit-információt
     for (QWidget* w : widgets) {
-        const QByteArray className = w->metaObject()->className();
-        if (!_handlers.contains(className))
-            continue;
-
         const QString key = keyFor(w);
-        _handlers[className].extract(w, s.map(), key);
+        s.map().insert(key + "/state", QStringLiteral("unsaved"));
+        s.map().insert(key + "/class",
+                       QString::fromLatin1(w->metaObject()->className()));
+        s.map().insert(key + "/objectName", w->objectName());
+    }
+
+    // 2. Handleres extract + handler-hiány jelölése
+    for (QWidget* w : widgets) {
+        const QString key = keyFor(w);
+
+        const Handler* h = findHandler(w->metaObject());
+        if (!h) {
+            zWarning().noquote()
+            << "⚠️ UIStateCollector: no handler for"
+            << w->metaObject()->className()
+            << "(objectName=" << w->objectName() << ")";
+
+            s.map().insert(key + "/handler", QStringLiteral("missing"));
+            continue;
+        }
+
+        h->extract(w, s.map(), key);
     }
 
     s.save();
-
 }
+
 
 void UIStateCollector::restore(QWidget* root)
 {
     if (!root) return;
 
     StateSettings s(_groupName);
-    const auto widgets = collectWidgets(root);
+    const auto widgets = LayoutCriticalHelper::collect(root);
 
     for (QWidget* w : widgets) {
-        const QByteArray className = w->metaObject()->className();
-        if (!_handlers.contains(className))
+        const Handler* h = findHandler(w->metaObject());
+        if (!h) {
+            zWarning().noquote()
+            << "⚠️ UIStateCollector: no handler for"
+            << w->metaObject()->className()
+            << "(objectName=" << w->objectName() << ")";
             continue;
+        }
 
         const QString key = keyFor(w);
-        _handlers[className].restore(w, s.map(), key);
+        h->restore(w, s.map(), key);
     }
 
 }
 
-QList<QWidget*> UIStateCollector::collectWidgets(QWidget* root) const
-{
-    QList<QWidget*> list;
-    if (!root)
-        return list;
-
-    list << root;
-
-    const auto children = root->findChildren<QWidget*>(QString(), Qt::FindDirectChildrenOnly);
-    for (QWidget* c : children)
-        list << collectWidgets(c);
-
-    return list;
-}
 
 QString UIStateCollector::keyFor(QWidget* w) const
 {
     QString name = w->objectName();
-    if (name.isEmpty())
-        name = QString::fromLatin1(w->metaObject()->className());
+    if (name.isEmpty()) {
+        const QByteArray className = w->metaObject()->className();
+        QString ptr = QString("0x%1").arg(reinterpret_cast<quintptr>(w), 0, 16);
 
-    return _groupName + "/" +
-           QString::fromLatin1(w->metaObject()->className()) +
-           "/" + name;
+        name = QStringLiteral("unnamed_%1_%2")
+                   .arg(QString::fromLatin1(className))
+                   .arg(ptr);
+
+        zWarning().noquote()
+            << "⚠️ UIStateCollector: unnamed layout-critical widget → using fallback key"
+            << className
+            << ptr;
+    }
+
+    return _groupName + "/" + name;
+}
+
+
+const UIStateCollector::Handler* UIStateCollector::findHandler(const QMetaObject* mo) const
+{
+    while (mo) {
+        const QByteArray className = mo->className();
+        auto it = _handlers.constFind(className);
+        if (it != _handlers.constEnd())
+            return &(*it);
+
+        mo = mo->superClass();
+    }
+    return nullptr;
 }

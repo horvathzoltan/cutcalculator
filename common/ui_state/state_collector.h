@@ -31,7 +31,6 @@ private:
 
     QHash<QByteArray, Handler> _handlers;
 
-    QList<QWidget*> collectWidgets(QWidget* root) const;
     QString keyFor(QWidget* w) const;
 
     template<typename T>
@@ -39,4 +38,6 @@ private:
     {
         _handlers.insert(T::staticMetaObject.className(), Handler{e, r});
     }
+
+    const Handler* findHandler(const QMetaObject* mo) const;
 };

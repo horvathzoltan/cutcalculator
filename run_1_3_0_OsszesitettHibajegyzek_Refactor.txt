@@ -1,182 +1,232 @@
-Zoltán, **igen — mindhárom pont kell**, és nem csak „kell”, hanem **együttesen adják ki azt a teljes, auditálható, jövőálló UI‑state architektúrát**, amit az előbb felvázoltunk.
+Zoltán, akkor most összerakom **a teljes, audit‑szintű hibajegyzéket + módosítási igénylistát + szükséges fájlok listáját + végrehajtható patch‑tervet**, pontosan abban a szerkezetben, ahogy kérted.
 
-A három komponens egymásra épül:
-
-1) **2‑fázisú discovery + extract** → ez biztosítja, hogy *minden* layout‑kritikus widget bekerüljön a fájlba
-2) **templated handler registry** → ez biztosítja, hogy a mentés/visszaállítás moduláris, bővíthető legyen
-3) **BOMWorkbench objectName patch** → ez biztosítja, hogy a kulcsok determinisztikusak legyenek
-
-Ha bármelyik hiányzik → a rendszer nem lesz teljes.
-
-Most összerakom neked **a végleges, pontonként végrehajtható, teljes körű tervet**, amelynek a végén ott lesz a **patching/implementációs terv** is.
+A cél: **átlátható, lineáris, végrehajtható roadmap**, amely lefedi a BOMWorkbench UI‑state problémáit.
 
 ---
 
-# ⭐ **VÉGLEGES, TELJES KÖRŰ MEGOLDÁSI TERV**
+# ⭐ **1. Feltárt hibák és módosítási igények (magyarázattal)**
 
-## **1. LÉPÉS — Widget‑név audit (objectName patch)**
-**Cél:** minden layout‑kritikus widgetnek legyen neve → determinisztikus kulcsok.
+## **1.1. A legtöbb layout‑kritikus widget névtelen → fallback kulcs → restore lehetetlen**
+A snapshotban ilyenek vannak:
 
-### Teendők:
-- BOMWorkbench minden fontos widgetje kapjon objectName‑et:
-  - splitter(ek)
-  - tabwidget
-  - tableview/tablewidget
-  - header
-  - scrollarea
-  - container widgetek
-- Ha egy widgetnek nincs neve → UIStateCollector warningot ír:
-  ```
-  ⚠️ UIStateCollector: unnamed layout‑critical widget → skipping name, using fallback
-  ```
+```
+unnamed_QHeaderView_0x555555c0b860
+unnamed_QTableWidget_0x555555d7d700
+unnamed_BOMWorkbench_0x555555b17380
+```
 
-### Eredmény:
-- minden widgetnek lesz kulcsa
-- a kulcsok stabilak
-- a snapshot fájl olvasható
+A fallback kulcs pointert tartalmaz → minden futáskor más →
+**restore során SOHA nem található meg**.
 
----
+### Következmény:
+- header szélességek nem állnak vissza
+- scroll pozíciók nem állnak vissza
+- sortOrder nem áll vissza
+- minden default marad
 
-## **2. LÉPÉS — 2‑fázisú UIStateCollector (discovery + extract)**
-**Cél:** a UIStateCollector ne csak azt mentse, amit tud, hanem *mindent, amit kellene*.
-
-### Fázis 1 — Discovery
-- bejárja a widgetfát
-- minden layout‑kritikus widgetet felismer (`isLayoutCritical`)
-- minden widgethez létrehoz egy kulcsot
-- ha nincs handler → érték: `"unsaved"`
-- ha nincs objectName → `"unnamed_<class>_<ptr>"`
-
-### Fázis 2 — Extract
-- ha van handler → menti a valódi adatot
-- ha nincs handler → `"unsaved"` marad
-
-### Eredmény:
-- a snapshot fájl **teljes UI‑state térképet tartalmaz**
-- minden widget látszik
-- semmi nem marad ki
-- a hiányzó implementációk azonnal látszanak
+### Megoldás:
+- **objectName kötelező** minden visszaállítandó widgetre
+  (header, table, splitter, scrollarea)
 
 ---
 
-## **3. LÉPÉS — Templated handler registry**
-**Cél:** moduláris, bővíthető, típus‑alapú handler rendszer.
+## **1.2. A header és a tábla külön kulcsot kap → ez helyes, de mindkettőnek stabil név kell**
+A header NEM a tábla alatt jelenik meg, hanem külön:
 
-### Teendők:
-- bevezetjük:
+```
+bom_workbench/bom_mat_header/widthPercent_Formula=...
+bom_workbench/bom_mat_table/scrollPosX=0
+```
+
+Ez helyes, mert:
+
+- a header önálló widget
+- a handler közvetlenül a headeren dolgozik
+
+### Hiba:
+A header névtelen → fallback kulcs → restore lehetetlen.
+
+### Megoldás:
+- minden header kapjon objectName‑et
+
+---
+
+## **1.3. A tábla scroll pozíciót ment → ezért a tábla is kapjon objectName‑et**
+A snapshotban:
+
+```
+scrollPosX=0
+scrollPosY=0
+```
+
+Ez a `QAbstractScrollArea` handlerből jön.
+
+### Hiba:
+A tábla névtelen → fallback kulcs → scroll restore lehetetlen.
+
+### Megoldás:
+- minden QTableWidget kapjon objectName‑et
+
+---
+
+## **1.4. A container widgetek (bom_mat_container, bom_modes_container, stb.) feleslegesen jelennek meg**
+Ezek:
+
+- QWidgets
+- nincs handler
+- nincs állapotuk
+- nem kell őket restore‑olni
+
+### Hiba:
+Nem hiba, csak zaj.
+
+### Megoldás:
+- **nem kell elnevezni őket**
+- **nem kell handler**
+- **nem kell restore**
+
+---
+
+## **1.5. A BOMWorkbench maga is megjelenik fallback kulccsal**
+Ez:
+
+```
+unnamed_BOMWorkbench_0x555555b17380
+```
+
+### Hiba:
+Nem hiba, csak audit információ.
+
+### Megoldás:
+- **nem kell elnevezni**
+- **nem kell handler**
+- **nem kell restore**
+
+---
+
+## **1.6. A snapshot olvashatósága gyenge → nem látszik, hol van egy névtelen widget**
+Ez fejlesztői probléma, nem runtime hiba.
+
+### Megoldás:
+- audit‑only mező: `/auditPath`
+- nem vesz részt restore‑ban
+- csak emberi olvasásra
+
+---
+
+# ⭐ **2. Módosítási igények (összefoglalva)**
+
+1. **objectName kötelező**:
+   - minden QHeaderView
+   - minden QTableWidget
+   - minden QAbstractScrollArea (ha nem a tábla)
+   - minden splitter (ez már megvan)
+
+2. **auditPath mező bevezetése**:
+   - csak olvasásra
+   - nem restore‑ra
+
+3. **container widgetek NEM kapnak objectName‑et**:
+   - bom_mat_container
+   - bom_modes_container
+   - bom_right_panel
+   - bom_left_panel
+   - stb.
+
+4. **BOMWorkbench NEM kap objectName‑et**
+   (nem UI‑state elem)
+
+5. **handler készlet változatlan**
+   (nem kell új handler)
+
+---
+
+# ⭐ **3. Minimális, de teljes fájllista (files.txt)**
+A fejlesztéshez szükséges fájlok — csak azok, amelyek:
+
+- a UI‑state rendszert érintik
+- a BOMWorkbench UI‑t építik
+- a táblákat és headereket létrehozzák
+
+```
+common/ui_state/state_collector.h
+common/ui_state/state_collector.cpp
+common/ui_state/state_handlers.h
+common/ui_state/state_handlers.cpp
+common/ui_state/state_settings.h
+common/ui_state/state_settings.cpp
+common/ui_state/layout_critical_helper.h
+common/ui_state/layout_critical_helper.cpp
+
+workbench/view/bom_workbench.h
+workbench/view/bom_workbench.cpp
+
+needs/view/material_requirements_view.h
+needs/view/material_requirements_view.cpp
+
+calcmodes/view/calculation_modes_view.h
+calcmodes/view/calculation_modes_view.cpp
+
+calculation/view/calculation_mode_detail_view.h
+calculation/view/calculation_mode_detail_view.cpp
+
+products/view/product_tree_view.h
+products/view/product_tree_view.cpp
+```
+
+Ez a **minimális, de teljes** lista.
+
+---
+
+# ⭐ **4. Patch terv (végrehajtható, lineáris)**
+
+## **PATCH 1 — objectName audit (kritikus)**
+1. BOMWorkbench.cpp:
+   - `_matView->table()->setObjectName("bom_mat_table");`
+   - `_modesView->table()->setObjectName("bom_modes_table");`
+   - `_detailView->table()->setObjectName("bom_detail_table");`
+   - `_treeView->setObjectName("bom_product_tree");`
+
+2. Header elnevezések:
+   - `_matView->table()->horizontalHeader()->setObjectName("bom_mat_header");`
+   - `_modesView->table()->horizontalHeader()->setObjectName("bom_modes_header");`
+   - `_detailView->table()->horizontalHeader()->setObjectName("bom_detail_header");`
+   - `_treeView->header()->setObjectName("bom_tree_header");`
+
+3. Semmi mást nem nevezünk el.
+
+---
+
+## **PATCH 2 — auditPath mező bevezetése**
+1. `state_collector.cpp` discovery fázisában:
 
 ```cpp
-template<typename T>
-void registerHandler(ExtractFn e, RestoreFn r);
+s.map().insert(key + "/auditPath", computeAuditPath(w));
 ```
 
-- a registry kulcsa: `T::staticMetaObject.className()`
-- a UIStateCollector futásidőben nézi:
-  - ha van handler → extract/restore
-  - ha nincs → `"unsaved"`
-
-### Eredmény:
-- új widgettípusok támogatása 1 sor regisztráció
-- nincs hardcode
-- nincs switch/cast pokol
-- a rendszer automatikusan bővíthető
+2. `computeAuditPath()` implementálása.
 
 ---
 
-## **4. LÉPÉS — Header mentés új formátumban (név‑alapú, százalékos)**
-**Cél:** DPI‑független, platformfüggetlen, sorrendfüggetlen header restore.
-
-### Formátum:
-
-```
-bom_workbench/mat_header/viewportWidthPx=742
-bom_workbench/mat_header/widthPercent_Name=20
-bom_workbench/mat_header/widthPercent_Quantity=30
-...
-```
-
-### Eredmény:
-- emberi olvasható
-- diff‑barát
-- stabil
-- bővíthető
+## **PATCH 3 — snapshot tisztítás (opcionális)**
+- a container widgetek snapshotját figyelmen kívül hagyhatjuk restore‑kor
+  (nem kötelező, csak zajcsökkentés)
 
 ---
 
-## **5. LÉPÉS — Minden widget szerepeljen a fájlban (akkor is, ha unsaved)**
-**Cél:** teljes lefedettség, auditálhatóság.
-
-### Példa snapshot:
-
-```
-bom_workbench/main_splitter/sizes=72.1%,27.9%
-bom_workbench/mat_header/widthPercent_Name=20
-bom_workbench/mat_table/scrollPos=120
-
-bom_workbench/mat_toolbar/state=unsaved
-bom_workbench/mat_container/state=unsaved
-bom_workbench/unnamed_QWidget_0x7ffd123456/state=unsaved
-```
-
-### Eredmény:
-- minden widget látszik
-- minden hiányosság látszik
-- semmi nem marad ki
-- a jövőbeli fejlesztésekhez tökéletes roadmap
+## **PATCH 4 — teljes restore teszt**
+1. BOMWorkbench indítása
+2. ablak átméretezése
+3. oszlopszélességek módosítása
+4. scroll pozíciók módosítása
+5. kilépés
+6. újraindítás
+7. ellenőrzés
 
 ---
 
-# ⭐ **6. LÉPÉS — Végrehajtható implementációs / patching terv**
+# ⭐ **5. Készen állok a diff‑patch generálására**
 
-Ez lesz a **PATCH PLAN**, amit lépésről lépésre végrehajtunk.
+Ha szeretnéd, megcsinálom a teljes, kész **PATCH 1–2 diffet**, amit csak be kell illesztened.
 
----
-
-# ⭐ **PATCH PLAN (végrehajtható)**
-
-## **PATCH 1 — objectName audit**
-- BOMWorkbench minden layout‑kritikus widgetje kap objectName‑et
-- UIStateCollector warningot ír, ha hiányzik
-
-## **PATCH 2 — UIStateCollector: discovery fázis**
-- bejárja a widgetfát
-- minden layout‑kritikus widgethez kulcsot generál
-- ha nincs handler → `"unsaved"`
-- ha nincs objectName → `"unnamed_<class>_<ptr>"`
-
-## **PATCH 3 — UIStateCollector: extract fázis**
-- ha van handler → ment
-- ha nincs → `"unsaved"` marad
-
-## **PATCH 4 — templated handler registry**
-- bevezetjük a `registerHandler<T>()` sablont
-- a registry kulcsa: `T::staticMetaObject.className()`
-- a UIStateCollector futásidőben választja ki a handlert
-
-## **PATCH 5 — Header handler új formátummal**
-- widthPercent_<ColumnName>=XX
-- viewportWidthPx mentése
-- restore: százalék → pixel számítás
-
-## **PATCH 6 — ScrollArea, Splitter, TabWidget handler frissítés**
-- új kulcsformátum
-- százalékos splitter mentés
-- tab index mentés
-
-## **PATCH 7 — Snapshot fájl generálás teljes lefedettséggel**
-- minden widget szerepel
-- unsaved jelölések
-- unnamed jelölések
-- auditálható struktúra
-
----
-
-# ⭐ **Készen állok a patch‑ek generálására**
-
-Ha szeretnéd, indítjuk a patch sessiont:
-
-👉 **kérem a PATCH 1‑et: objectName audit**
-
-vagy mondhatod:
-
-👉 **indítsuk a teljes patch sorozatot PATCH 1‑től PATCH 7‑ig**
+👉 **kérem a PATCH 1–2 diffet**

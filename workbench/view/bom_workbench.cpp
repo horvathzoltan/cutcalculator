@@ -39,6 +39,8 @@ BOMWorkbench::BOMWorkbench(QWidget* parent)
 */
     // Splitter
     _splitter = new QSplitter(Qt::Horizontal, this);
+    _splitter->setObjectName("bom_main_splitter");
+
     _layout->addWidget(_splitter);
 
     // Bal panel: terméktípus-fa
@@ -87,15 +89,21 @@ void BOMWorkbench::showEvent(QShowEvent* event) {
 
 void BOMWorkbench::buildLeftPanel() {
     auto* leftWidget = new QWidget(_splitter);
+    leftWidget->setObjectName("bom_left_panel");
     auto* leftLayout = new QVBoxLayout(leftWidget);
+    leftLayout->setObjectName("bom_left_panel_layout");
 
     _treeView = new ProductTreeView(leftWidget);
+    _treeView->setObjectName("bom_product_tree");
+
     _treeManager = new ProductTreeManager(_treeView, this);
     _treePresenter = new ProductTreePresenter(_treeView, _treeManager, this);//_treePanel
-
     _treeManager->populate();
 
-    leftLayout->addWidget(_treePresenter->buildToolbar(leftWidget));
+    auto* treeToolbar = _treePresenter->buildToolbar(leftWidget);
+    treeToolbar->setObjectName("bom_product_tree_toolbar");
+    leftLayout->addWidget(treeToolbar);
+
     leftLayout->addWidget(_treeView);
     leftWidget->setLayout(leftLayout);
     _splitter->addWidget(leftWidget);
@@ -104,18 +112,24 @@ void BOMWorkbench::buildLeftPanel() {
 void BOMWorkbench::buildRightPanel() {
     // fő horizontal splitter: bal vertical + jobb details
     _rightMainSplitter = new QSplitter(Qt::Horizontal, _splitter);
+    _rightMainSplitter->setObjectName("bom_right_main_splitter");
 
     // bal vertical splitter: NeedRules + Modes
     _leftVerticalSplitter = new QSplitter(Qt::Vertical, _rightMainSplitter);
+    _leftVerticalSplitter->setObjectName("bom_left_vertical_splitter");
 
     // NeedRules view + manager
     _matView = new MaterialRequirementsView(_leftVerticalSplitter);
+    _matView->setObjectName("bom_mat_view");
+
     _matManager = new MaterialRequirementsManager(_matView, this);
     _matPresenter = new MaterialRequirementsPresenter(_matView, _matManager, _treeManager, this);
     _matToolbar = buildMaterialToolbar(_leftVerticalSplitter, _matView);
 
     // Modes view + manager
     _modesView = new CalculationModesView(_leftVerticalSplitter);
+    _modesView->setObjectName("bom_modes_view");
+
     _modesManager = new CalculationModesManager(_modesView, this);
     _modesPresenter = new CalculationModesPresenter(_modesView, _modesManager, _treeManager, this);
     _modesToolbar = buildModesToolbar(_leftVerticalSplitter, _modesView);
@@ -124,6 +138,8 @@ void BOMWorkbench::buildRightPanel() {
 
     // bal vertical splitter feltöltése két külön containerrel
     auto* matContainer = new QWidget(_leftVerticalSplitter);
+    matContainer->setObjectName("bom_mat_container");
+
     auto* matLayout = new QVBoxLayout(matContainer);
     matLayout->setContentsMargins(0,0,0,0);
     matLayout->addWidget(_matToolbar);
@@ -132,6 +148,8 @@ void BOMWorkbench::buildRightPanel() {
 
     auto* modesContainer = new QWidget(_leftVerticalSplitter);
     auto* modesLayout = new QVBoxLayout(modesContainer);
+    modesContainer->setObjectName("bom_modes_container");
+
     modesLayout->setContentsMargins(0,0,0,0);
     modesLayout->addWidget(_modesToolbar);
     modesLayout->addWidget(_modesView);
@@ -142,6 +160,8 @@ void BOMWorkbench::buildRightPanel() {
 
     // jobb oldal: Details view + manager
     _detailView = new CalculationModeDetailView(_rightMainSplitter);
+    _detailView->setObjectName("bom_detail_view");
+
     _detailManager = new CalculationModeDetailManager(_detailView, this);
     _detailPresenter = new CalculationModeDetailPresenter(_detailView, _detailManager, this);
     _detailsToolbar = buildDetailsToolbar(_rightMainSplitter, _detailView);
@@ -149,6 +169,8 @@ void BOMWorkbench::buildRightPanel() {
     _detailPresenter->refreshOverlayOnly();
 
     auto* rightContainer = new QWidget(_rightMainSplitter);
+    rightContainer->setObjectName("bom_right_panel");
+
     auto* rightLayout = new QVBoxLayout(rightContainer);
     rightLayout->setContentsMargins(0,0,0,0);
     rightLayout->addWidget(_detailsToolbar);
@@ -373,7 +395,9 @@ void BOMWorkbench::buildRightPanel() {
 QToolBar* BOMWorkbench::buildMaterialToolbar(QWidget* parent, MaterialRequirementsView* view)
 {
     Q_UNUSED(view);
-    return _matPresenter->buildToolbar(parent);
+    auto* tb = _matPresenter->buildToolbar(parent);
+    tb->setObjectName("bom_mat_toolbar");
+    return tb;
 }
 
 QToolBar* BOMWorkbench::buildModesToolbar(QWidget* parent, CalculationModesView* view)

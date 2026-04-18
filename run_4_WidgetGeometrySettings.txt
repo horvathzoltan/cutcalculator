@@ -1,518 +1,240 @@
-Íme, Zoltán — elkészítettem a teljes, professzionális, mégis olvasmányos
-Markdown dokumentációt, amely a jelenlegi, végleges snapshot/fallback
-architektúrát írja le.
-Ez most már tényleg olyan, mint egy belső fejlesztői kézikönyv vagy egy
-projekt‑wiki oldal.
+📘 UI State Architecture — PATCH 1–8 (Végleges, modernizált dokumentáció)
 
-A dokumentum:
-
--   ✅ jól strukturált
--   ✅ fejlesztőbarát
--   ✅ audit‑barát
--   ✅ tele van emojikkal, de nem túlzás
--   ✅ visszafelé dokumentálja a már elkészült rendszert
--   ✅ készen áll arra, hogy a projekted hivatalos dokumentációja legyen
-
-Másold be a projekted docs/ mappájába, és kész is.
-
-------------------------------------------------------------------------
-
-📘 UI Snapshot & Fallback Architecture
-
-CutCalculator – végleges architektúra dokumentáció
-
-(Markdown verzió)
+CutCalculator — UI‑state engine (2026)
 
 ------------------------------------------------------------------------
 
 🧭 Tartalomjegyzék
 
 1.  🎯 Bevezetés
-2.  📋 Követelményspecifikáció
-3.  ⚙️ Funkcionális specifikáció
-4.  🛠️ Implementációs terv
-5.  🏗️ Modularchitektúra
-6.  🔄 Folyamatok
-7.  📁 Fájlstruktúra
-8.  🧩 Hogyan adjunk hozzá új UI elemet a snapshot rendszerhez?
-9.  🧪 Gyakorlati példák: új UI elemek integrálása lépésről lépésre
-A.  ✨ Összefoglaló
+2.  🧩 Rendszerfilozófia
+3.  🏗️ Architektúra áttekintés
+4.  🔌 Handler‑alapú UI‑state modell
+5.  🔍 Widget Discovery (2‑fázisú)
+6.  🧮 Percent‑based state formátum
+7.  🗂️ State fájl szerkezete
+8.  🔄 Mentés és visszaállítás folyamata
+9.  🧪 Példák
+10. ✨ Összefoglaló
 
 ------------------------------------------------------------------------
 
-🎯 Bevezetés
+🎯 1. Bevezetés
 
-A CutCalculator UI‑állapotkezelése egy monitorprofil‑alapú snapshot
-rendszerre épül, amelyet egy fallback baseline egészít ki.
+A CutCalculator UI‑state rendszere 2026‑ra teljesen megújult.
+A korábbi SnapshotManager + LayoutDefaultStore + fallback baseline
+modell helyett egy:
+
+-   moduláris,
+-   handler‑alapú,
+-   audit‑ready,
+-   percent‑based,
+-   diff‑barát,
+-   kiterjeszthető
+
+UI‑state engine működik.
+
 A cél:
 
--   a felhasználó UI‑elrendezése mindig visszaálljon
--   monitorváltáskor is stabil maradjon
--   ne legyen többé 15px splitter
--   minden művelet auditálható legyen
--   a rendszer önmagát gyógyítsa, ha valami túl korán futna
-
-A megoldás három fő pilléren áll:
-
--   SnapshotManager – monitorprofilhoz kötött snapshotok
--   LayoutDefaultStore – settings.ini fallback baseline
--   GeometryHelper – percent‑based számítások és deferred restore
+-   minden UI‑elem állapota menthető legyen
+-   minden állapot emberi olvasható legyen
+-   minden widget auditálható legyen
+-   minden widget determinisztikusan visszaálljon
+-   a rendszer automatikusan jelezze a hiányzó vagy hibás állapotokat
 
 ------------------------------------------------------------------------
 
-📋 Követelményspecifikáció
+🧩 2. Rendszerfilozófia
 
-✅ 1. Ablak geometriák
+A rendszer három alapelvre épül:
 
--   Mentés százalékban: x%,y%,w%,h%
--   Visszaállítás az aktuális képernyőméretre skálázva
--   Monitorprofilhoz kötött snapshot
--   Restore csak akkor fusson, ha a widget geometry‑ready
+1) Minden widgetnek van állapota
 
-✅ 2. Splitter állapotok
+Ha layout‑kritikus → mentjük.
+Ha nem → kihagyjuk.
 
--   Mentés arányosan: 70.0%,30.0%
--   Több gyerek esetén lista: 50.0%,30.0%,20.0%
--   Restore deferred, ha a splitter túl kicsi (<50px)
--   Drift korrekció
+2) Minden widgethez tartozik egy handler
 
-✅ 3. Header állapotok
+A handler felelős:
 
--   Oszlopszélességek százalékos mentése
--   Deferred restore, amíg a parent width stabil
-
-✅ 4. Monitorprofil kezelés
-
--   Formátum: WIDTHxHEIGHT_DPI
--   Snapshot fájlok külön profilhoz kötve
--   DPI és felbontás változás kezelése
-
-✅ 5. Fallback baseline értékek
-
--   settings.ini tárolja:
-    -   window geometry
-    -   screen size
-    -   main splitter
-    -   left vertical splitter
-    -   right vertical splitter
-    -   product types splitter
-    -   product tree header
--   LayoutDefaultStore kezeli
-
-✅ 6. Audit log
-
--   Minden művelet explicit logolva:
-    -   ✅ mentés
-    -   ✅ visszaállítás
-    -   ⚠️ halasztás
-    -   ⚠️ invalid state
-    -   📺 screen change
-
-------------------------------------------------------------------------
-
-⚙️ Funkcionális specifikáció
-
-🧠 Mentési folyamat
-
-🪟 Ablak
-
-1.  GeometryHelper → percent string
-2.  SnapshotManager → snapshot fájl
-3.  LayoutDefaultStore → fallback settings.ini
-
-🧩 Splitter
-
-1.  sizes() → percent lista
-2.  fallback mentés
-3.  snapshot mentés
-
-📊 Header
-
-1.  sectionSize(i) → percent lista
-2.  fallback + snapshot
-
-------------------------------------------------------------------------
-
-🔄 Visszaállítási folyamat
-
-🪟 Ablak
-
-1.  SnapshotManager → snapshot keresése
-2.  Ha nincs → fallback
-3.  GeometryHelper → deferred restore
-4.  Screen change log
-
-🧩 Splitter
-
-1.  snapshot vagy fallback
-2.  percent → pixel
-3.  drift korrekció
-4.  deferred restore
-
-📊 Header
-
-1.  snapshot vagy fallback
-2.  deferred restore
-
-------------------------------------------------------------------------
-
-🖥️ Monitorprofil logika
-
--   Snapshotok monitorprofilhoz kötöttek
--   Új monitor → új snapshot
--   DPI/felbontás változás → új profil
--   Fallback baseline változatlan marad
-
-------------------------------------------------------------------------
-
-🛠️ Implementációs terv
-
-✅ Modulok
-
-📦 GeometryHelper
-
--   stateless
--   percent‑based számítások
--   deferred restore
--   drift korrekció
+-   state extract
+-   state restore
+-   percent‑math
 -   audit log
+-   validáció
 
-📦 LayoutDefaultStore
+3) A state fájl emberi olvasható és diff‑barát
 
--   settings.ini fallback baseline
--   singleton
--   flush()
+Minden kulcs:
 
-📦 SnapshotManager
-
--   monitorprofil
--   snapshot path
--   window snapshot
--   workbench snapshot
--   audit log
-
-📦 WorkbenchSnapshot
-
--   egyszerű struct
--   4 mező: leftVertical, productTypes, rightVertical, treeHeader
-
-📦 MainWindow
-
--   window snapshot restore/save
--   fallback restore/save
--   splitter fallback
-
-📦 BOMWorkbench
-
--   splitter snapshot + fallback
--   header snapshot + fallback
--   deferred restore
+-   widget objectName alapján
+-   emberi olvasható
+-   stabil (nem index‑alapú)
 
 ------------------------------------------------------------------------
 
-🏗️ Modularchitektúra
+🏗️ 3. Architektúra áttekintés
 
-    ┌──────────────────────────┐
-    │      MainWindow          │
-    │  - window snapshot       │
-    │  - fallback baseline     │
-    └──────────────┬───────────┘
-                   │
-                   ▼
-    ┌──────────────────────────┐
-    │     BOMWorkbench         │
-    │  - splitter snapshot     │
-    │  - header snapshot       │
-    └──────────────┬───────────┘
-                   │
-                   ▼
-    ┌──────────────────────────┐
-    │    SnapshotManager       │
-    │  - monitorprofil         │
-    │  - snapshot ini          │
-    └──────────────┬───────────┘
-                   │
-                   ▼
-    ┌──────────────────────────┐
-    │   LayoutDefaultStore     │
-    │  - settings.ini fallback │
-    └──────────────┬───────────┘
-                   │
-                   ▼
-    ┌──────────────────────────┐
-    │    GeometryHelper        │
-    │  - percent math          │
-    │  - deferred restore      │
-    └──────────────────────────┘
+    UIStateCollector
+        ├── WidgetDiscovery (Phase 1: collect)
+        ├── WidgetDiscovery (Phase 2: classify)
+        ├── HandlerRegistry
+        │       ├── SplitterHandler
+        │       ├── HeaderHandler
+        │       ├── GeometryHandler
+        │       ├── ScrollAreaHandler
+        │       └── Custom handlers…
+        ├── StateExtractor
+        ├── StateRestorer
+        └── AuditLogger
+
+A régi SnapshotManager → teljesen megszűnt.
+A fallback baseline → megszűnt.
+A monitorprofil‑logika → kivezetve.
 
 ------------------------------------------------------------------------
 
-🔄 Folyamatok
+🔌 4. Handler‑alapú UI‑state modell
 
-🚀 Startup
-
-1.  MainWindow::showEvent → QtEventUtil::post
-2.  SnapshotManager::restoreWindowSnapshot
-3.  fallback restore
-4.  splitter restore
-5.  BOMWorkbench::restoreState
-
-🛑 Shutdown
-
-1.  MainWindow::closeEvent
-2.  fallback mentés
-3.  BOMWorkbench::saveState
-4.  snapshot mentés
-5.  flush
-
-------------------------------------------------------------------------
-
-📁 Fájlstruktúra
-
-    common/
-        layout/
-            layout_default_store.h
-            layout_default_store.cpp
-
-        snapshot/
-            snapshot_manager.h
-            snapshot_manager.cpp
-            workbench_snapshot.h
-
-        utils/
-            geometry_helper.h
-            geometry_helper.cpp
-            filename_helper.h
-            filename_helper.cpp
-
-    workbench/
-        view/
-            bom_workbench.h
-            bom_workbench.cpp
-
-    mainwindow.h
-    mainwindow.cpp
-
-------------------------------------------------------------------------
-
-🧩 Hogyan adjunk hozzá új UI elemet a snapshot rendszerhez?
-
-Ez a fejezet bemutatja, hogyan lehet bármilyen új UI komponenst
-(splitter, header, panel, custom widget) integrálni a CutCalculator
-snapshot‑architektúrájába.
-A folyamat három egyszerű, jól definiált lépésből áll.
-
-------------------------------------------------------------------------
-
-✅ 1. lépés — Döntsük el, hogy az új UI elem melyik modulhoz tartozik
-
-A snapshot rendszer moduláris:
-
--   MainWindow → [Window] szekció
--   BOMWorkbench → [Workbench] szekció
--   Egyéb UI modulok → saját szekciót kaphatnak (pl. [ColorEditor],
-    [SettingsPanel])
-
-Alapszabály:
-👉 Az UI elem snapshotját mindig az a modul menti, amelyik birtokolja.
-
-Példák:
-
-  UI elem                     Modul           Snapshot szekció
-  --------------------------- --------------- ------------------
-  MainWindow geometry         MainWindow      [Window]
-  Workbench splitters         BOMWorkbench    [Workbench]
-  ProductTree header          BOMWorkbench    [Workbench]
-  Új SettingsPanel splitter   SettingsPanel   [SettingsPanel]
-
-------------------------------------------------------------------------
-
-✅ 2. lépés — Implementáljuk a mentést (saveState)
-
-Minden új UI elemhez két mentés készül:
-
-✅ 2.1 Fallback baseline (LayoutDefaultStore)
-
-Ez mindig percent‑alapú, emberi olvasható:
-
-    const QString state = GeometryHelper::saveSplitterState(mySplitter);
-    LayoutDefaultStore::instance().setMyNewSplitterPercent(state);
-
-✅ 2.2 Snapshot (SnapshotManager)
-
-A modul snapshot struktúrájába felvesszük:
-
-    snap.myNewSplitter = state;
-
-Majd a modul végén:
-
-    SnapshotManager::instance().saveMyModuleSnapshot(snap, this);
-
-------------------------------------------------------------------------
-
-✅ 3. lépés — Implementáljuk a visszaállítást (restoreState)
-
-A restore mindig:
-
-1.  snapshot → ha van
-2.  fallback → ha nincs snapshot
-3.  deferred restore → ha a widget még nem ready
+Minden widgethez egy handler tartozik.
 
 Példa:
 
-    const QString state = !snap.myNewSplitter.isEmpty()
-        ? snap.myNewSplitter
-        : LayoutDefaultStore::instance().myNewSplitterPercent();
+  Widget típusa   Handler
+  --------------- -------------------
+  QSplitter       SplitterHandler
+  QHeaderView     HeaderHandler
+  QMainWindow     GeometryHandler
+  QScrollArea     ScrollAreaHandler
+  CustomWidget    saját handler
 
-    if (!state.isEmpty()) {
-        GeometryHelper::restoreSplitterState(mySplitter, state);
-    }
+A handler:
 
-------------------------------------------------------------------------
-
-✅ 4. lépés — Deferred restore (ha szükséges)
-
-Ha az új UI elem mérete vagy layoutja csak később stabilizálódik,
-használjuk:
-
-    QtEventUtil::post(this, [this]() {
-        restoreState();
-    });
-
-Ez garantálja, hogy:
-
--   nincs több 15px jelenség
--   a layout már kiosztotta a méreteket
--   a restore mindig stabil
+-   felismeri a widgetet
+-   kimenti az állapotot
+-   visszaállítja az állapotot
+-   validál
+-   auditál
 
 ------------------------------------------------------------------------
 
-✅ 5. lépés — Audit log hozzáadása
+🔍 5. Widget Discovery (2‑fázisú)
 
-Minden új UI elemhez legyen:
+Fázis 1 — Gyűjtés
 
--   ✅ mentési log
--   ✅ restore log
--   ⚠️ halasztási log
--   ⚠️ invalid state log
+Rekurzívan bejárjuk a widget‑fát.
 
-Ez biztosítja a teljes átláthatóságot.
+-   minden widget bekerül
+-   objectName audit
+-   unnamed widget → __unnamed_<type>_<id> audit marker
 
-------------------------------------------------------------------------
+Fázis 2 — Osztályozás
 
-🧪 Gyakorlati példák: új UI elemek integrálása
+A handler registry dönti el:
 
-Ebben a fejezetben három konkrét példán keresztül mutatjuk be a
-folyamatot.
-
-------------------------------------------------------------------------
-
-✅ Példa 1 — Új splitter hozzáadása a Workbenchhez
-
-1) Fallback mentés
-
-    const QString state = GeometryHelper::saveSplitterState(_newSplitter);
-    LayoutDefaultStore::instance().setNewSplitterPercent(state);
-    snap.newSplitter = state;
-
-2) Restore
-
-    const QString state = !snap.newSplitter.isEmpty()
-        ? snap.newSplitter
-        : LayoutDefaultStore::instance().newSplitterPercent();
-
-    GeometryHelper::restoreSplitterState(_newSplitter, state);
+-   melyik widgethez melyik handler tartozik
+-   mely widget layout‑kritikus
+-   mely widget ignorálható
 
 ------------------------------------------------------------------------
 
-✅ Példa 2 — Új header (QHeaderView) snapshot integrálása
+🧮 6. Percent‑based state formátum
 
-1) Mentés
+Minden érték:
 
-    const QString headerState = GeometryHelper::saveHeaderState(_myHeader);
-    LayoutDefaultStore::instance().setMyHeaderPercent(headerState);
-    snap.myHeader = headerState;
+-   százalékos
+-   emberi olvasható
+-   diff‑barát
 
-2) Restore
+Példák:
 
-    const QString headerState = !snap.myHeader.isEmpty()
-        ? snap.myHeader
-        : LayoutDefaultStore::instance().myHeaderPercent();
-
-    GeometryHelper::restoreHeaderState(_myHeader, headerState);
+    splitter: "70.0%,30.0%"
+    header:   "25.0%,50.0%,25.0%"
+    geometry: "10%,10%,80%,80%"
 
 ------------------------------------------------------------------------
 
-✅ Példa 3 — Egyedi widget (pl. ColorEditorPanel) snapshot integrálása
+🗂️ 7. State fájl szerkezete
 
-1) Hozzunk létre egy új snapshot struktúrát
+Fő elvek
 
-    struct ColorEditorSnapshot {
-        QString leftPanel;
-        QString rightPanel;
-        QString header;
-    };
+-   minden kulcs: objectName
+-   minden érték: percent string
+-   minden hiányzó handler → audit marker
+-   minden unnamed widget → audit marker
 
-2) SnapshotManager bővítése
+Példa state fájl:
 
--   loadColorEditorSnapshot()
--   saveColorEditorSnapshot()
+    [MainWindow]
+    geometry = "10%,10%,80%,80%"
 
-3) A modul saveState() függvénye
+    [BOMWorkbench]
+    leftSplitter = "30.0%,70.0%"
+    rightSplitter = "60.0%,40.0%"
+    treeHeader = "20.0%,40.0%,40.0%"
 
-    ColorEditorSnapshot snap;
-    snap.leftPanel = GeometryHelper::saveSplitterState(_leftPanel);
-    snap.header = GeometryHelper::saveHeaderState(_header);
-    SnapshotManager::instance().saveColorEditorSnapshot(snap, this);
-
-4) A modul restoreState() függvénye
-
-    ColorEditorSnapshot snap =
-        SnapshotManager::instance().loadColorEditorSnapshot(this);
-
-    GeometryHelper::restoreSplitterState(_leftPanel, snap.leftPanel);
-    GeometryHelper::restoreHeaderState(_header, snap.header);
+    [Audit]
+    missingHandlers = ["ColorEditorPanel"]
+    unnamedWidgets = ["__unnamed_QSplitter_42"]
 
 ------------------------------------------------------------------------
 
-✅ Összegzés
+🔄 8. Mentés és visszaállítás folyamata
 
-Az új UI elemek integrálása a snapshot rendszerbe:
+Mentés
 
-1.  Modul kiválasztása
-2.  Fallback mentés
-3.  Snapshot mentés
-4.  Restore (snapshot → fallback)
+1.  WidgetDiscovery (phase 1)
+2.  WidgetDiscovery (phase 2)
+3.  HandlerRegistry → handler kiválasztása
+4.  Handler.extract()
+5.  Audit log
+6.  State fájl írása
+
+Visszaállítás
+
+1.  State fájl beolvasása
+2.  WidgetDiscovery
+3.  HandlerRegistry
+4.  Handler.restore()
 5.  Deferred restore, ha szükséges
-6.  Audit log minden lépésnél
-
-Ezzel a módszerrel a CutCalculator UI‑állapotkezelése:
-
--   stabil
--   moduláris
--   monitorfüggetlen
--   DPI‑független
--   auditálható
--   és könnyen bővíthető
+6.  Audit log
 
 ------------------------------------------------------------------------
 
-✨ Összefoglaló
+🧪 9. Példák
 
--   ✅ Snapshotok monitorprofilhoz kötve
--   ✅ Fallback baseline settings.ini‑ben
--   ✅ Percent‑based minden UI elem
--   ✅ Deferred restore → nincs több 15px jelenség
--   ✅ Audit log minden lépésnél
--   ✅ Tiszta moduláris architektúra
--   ✅ BOMWorkbench + MainWindow teljesen integrálva
--   ✅ GeometryHelper a központi számítási motor
--   ✅ Fine‑grained snapshot szekciók (Window / Workbench / Splitters /    Headers)
--   ✅ _restoredOnce és _isFullyShown flag-ek → helyes időzítés, nincs    korai mentés
--   ✅ Snapshot + fallback hibrid modell → gyors, mégis biztonságos    UI‑restore
--   ✅ Új UI elemek könnyen integrálhatók (splitter, header, custom    widget)
--   ✅ SnapshotManager és LayoutDefaultStore teljes szétválasztása
--   ✅ Monitorváltás és DPI‑váltás stabilan kezelve
--   ✅ Snapshot fájl emberi olvasható, auditálható, moduláris
--   ✅ A rendszer ipari szintű UI‑state engine‑né vált
+Splitter
 
+    "70.0%,30.0%"
+
+Header
+
+    "25.0%,50.0%,25.0%"
+
+Geometry
+
+    "10%,10%,80%,80%"
+
+------------------------------------------------------------------------
+
+✨ 10. Összefoglaló
+
+-   A régi SnapshotManager megszűnt
+-   A fallback baseline megszűnt
+-   A monitorprofil‑logika megszűnt
+-   A rendszer teljesen handler‑alapú
+-   Minden widget percent‑based
+-   Minden kulcs objectName‑alapú
+-   A state fájl audit‑barát
+-   A rendszer moduláris és bővíthető
+-   A PATCH 1–8 teljesen implementálva
+
+------------------------------------------------------------------------
+
+Készen áll a projekt docs/ mappájába helyezni.
+
+Ha szeretnéd, elkészítem:
+
+-   a diff‑et a régi dokumentumhoz képest
+-   a teljes handler‑registry dokumentációt
+-   a state fájl formátum RFC‑jét

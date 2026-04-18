@@ -115,7 +115,8 @@ private slots:
         _canRestore = true;
 
         // final placement után restoreState futtatása
-        restoreUiState();
+        //restoreUiState();
+        tryRestore();
     }
 
 };

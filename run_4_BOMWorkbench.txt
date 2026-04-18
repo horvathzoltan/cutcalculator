@@ -88,21 +88,20 @@ Files and structure
     -   needs/view/material_requirements_view.h/.cpp
     -   needs/manager/material_requirements_manager.h/.cpp
 -   Needscalculation (új könyvtár):
-    -   needscalculation/model/need_calculation.h
-    -   needscalculation/model/need_calculation_detail.h
-    -   needscalculation/registry/need_calculation_registry.h/.cpp
-    -   needscalculation/registry/need_calculation_detail_registry.h/.cpp
-    -   needscalculation/repository/need_calculation_repository.h/.cpp
-    -   needscalculation/repository/need_calculation_detail_repository.h/.cpp
-    -   needscalculation/view/calculation_modes_view.h/.cpp
-    -   needscalculation/view/calculation_mode_detail_view.h/.cpp
-    -   needscalculation/manager/calculation_modes_manager.h/.cpp
-    -   needscalculation/manager/calculation_mode_detail_manager.h/.cpp
-    -   needscalculation/service/need_calculator.h/.cpp — CutRequest
+        - calcmodes/view/calculation_modes_view.*
+        - calcmodes/manager/calculation_modes_manager.*
+        - calcmodes/repository/need_calculation_repository.*
+        - calculation/view/calculation_mode_detail_view.*
+        - calculation/manager/calculation_mode_detail_manager.*
+        - calculation/registry/need_calculation_detail_registry.*
         ⚙️ + KitRequest 📦 generálás.
 
-  Sources: a QMake/CMake listákba a needscalculation könyvtár új
-  fájljait vedd fel; a meglévő needs fájlok maradnak változatlanul.
+MatrixValidator & Overlay integration (v3)
+    - Presenter dönti el az overlay állapotát
+    - új állapot: Incomplete (🔵)
+    - overlay továbbra is repo/view policy
+    - sor‑szintű ikonok NEM overlay ikonok
+    - navigáció: Presenter automatikusan a legelső hibás sorra ugrik
 
 Step-by-step tasks
 
@@ -151,7 +150,17 @@ Step-by-step tasks
         -   NeedRule: ➕/🗑.
         -   NeedCalculation: ➕/🗑/✏️.
         -   NeedCalculationDetail: ➕/🗑/✏️ (formula).
-    -   State: restore/save splitter arányok és oszlopszélességek
+        State: minden splitter és header állapotát a UIStateCollector kezeli
+
+        percent‑based mentés
+
+        objectName‑alapú widget‑azonosítás
+
+        handler registry (splitter/header)
+
+        snapshot → fallback → deferred restore pipeline
+
+        audit log minden restore/save műveletnél
         SettingsManager-rel.
 7.  Icons and tooltips:
     -   Resource: :/icons/gear.png → ⚙️, :/icons/box.png → 📦 (vagy

@@ -2,16 +2,16 @@
 
 #include <QObject>
 #include <QPointer>
-#include <QTimer>
-#include <QRect>
-#include <QList>
-#include <QRegion>
-#include <QHash>
+ #include <QTimer>
+// #include <QRect>
+// #include <QList>
+// #include <QRegion>
+// #include <QHash>
 #include <QWidget>
 
-class QWidget;
-class QTabWidget;
-class QSplitter;
+// class QWidget;
+// class QTabWidget;
+// class QSplitter;
 
 class WindowStabilityMonitor : public QObject
 {
@@ -54,8 +54,6 @@ private:
     void poll();
     bool isStableOnce() const;
     bool areWidgetsStable(const QList<QWidget*>& widgets);
-    QList<QWidget *> collectWidgets(QWidget *root) const;
 
-    static bool isLayoutCritical(QWidget* w);
     int computeAdaptiveThreshold(int widgetCount, bool dpiChanged, int recentInstability);
 };

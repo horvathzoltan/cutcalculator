@@ -1,22 +1,24 @@
 #include "window_stability_monitor.h"
 
-#include <QWidget>
-#include <QScreen>
-#include <QTabWidget>
-#include <QSplitter>
-#include <QMenuBar>
-#include <QToolBar>
-#include <QStatusBar>
-#include <QAbstractButton>
-#include <QLabel>
-#include <QComboBox>
-#include <QScrollBar>
-#include <QLineEdit>
+// #include <QWidget>
+// #include <QScreen>
+// #include <QTabWidget>
+// #include <QSplitter>
+// #include <QMenuBar>
+// #include <QToolBar>
+// #include <QStatusBar>
+// #include <QAbstractButton>
+// #include <QLabel>
+// #include <QComboBox>
+// #include <QScrollBar>
+// #include <QLineEdit>
 
 #include "common/logger/logger.h"
 #include "common/system/verbose_manager.h"
 #include "common/utils/geometry_helper.h"
 #include "common/snapshot/snapshot_manager.h"
+
+#include <common/ui_state/layout_critical_helper.h>
 
 WindowStabilityMonitor& WindowStabilityMonitor::instance()
 {
@@ -242,7 +244,7 @@ void WindowStabilityMonitor::poll()
             _recentInstabilityCount--;
     }
 
-    QList<QWidget*> widgets = collectWidgets(_window);
+    QList<QWidget*> widgets = LayoutCriticalHelper::collect(_window);
     int widgetCount = widgets.size();
 
     bool childrenStable = areWidgetsStable(widgets);
@@ -332,59 +334,8 @@ bool WindowStabilityMonitor::areWidgetsStable(const QList<QWidget*>& widgets)
 }
 
 
-QList<QWidget*> WindowStabilityMonitor::collectWidgets(QWidget* root) const
-{
-    QList<QWidget*> list;
-    if (!root)
-        return list;
 
-    if (isLayoutCritical(root))
-        list << root;
 
-    const auto children = root->findChildren<QWidget*>(QString(), Qt::FindDirectChildrenOnly);
-    for (QWidget* c : children) {
-        if (isLayoutCritical(c))
-            list << collectWidgets(c);
-    }
-
-    return list;
-}
-
-bool WindowStabilityMonitor::isLayoutCritical(QWidget* w)
-{
-    if (!w)
-        return false;
-
-    // Láthatatlan widget nem számít
-    if (!w->isVisible())
-        return false;
-
-    // Qt belső widgetek kizárása
-    if (w->objectName().startsWith("qt_"))
-        return false;
-
-    // Dekorációk kizárása
-    if (qobject_cast<QMenuBar*>(w)) return false;
-    if (qobject_cast<QToolBar*>(w)) return false;
-    if (qobject_cast<QStatusBar*>(w)) return false;
-    if (qobject_cast<QScrollBar*>(w)) return false;
-    if (qobject_cast<QTabBar*>(w)) return false;
-
-    // Gombok, címkék, egyszerű kontrollok kizárása
-    if (qobject_cast<QAbstractButton*>(w)) return false;
-    if (qobject_cast<QLabel*>(w)) return false;
-    if (qobject_cast<QLineEdit*>(w)) return false;
-    if (qobject_cast<QComboBox*>(w)) return false;
-
-    // Layout nélküli widgetek kizárása
-    if (!w->layout() &&
-        !qobject_cast<QAbstractScrollArea*>(w) &&
-        !qobject_cast<QSplitter*>(w))
-        return false;
-
-    // Ha idáig eljutott → layout‑kritikus
-    return true;
-}
 
 int WindowStabilityMonitor::computeAdaptiveThreshold(int widgetCount,
                                                      bool dpiChanged,

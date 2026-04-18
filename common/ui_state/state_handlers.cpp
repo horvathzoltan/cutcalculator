@@ -1,4 +1,5 @@
 #include "common/ui_state/state_handlers.h"
+#include "common/logger/logger.h"
 
 #include <QSplitter>
 #include <QHeaderView>
@@ -14,6 +15,12 @@ namespace StateHandlers
 // -----------------------------
 void extractSplitter(QWidget* w, QVariantMap& m, const QString& key)
 {
+    if (!w) {
+        zWarning() << "⚠️ extract: null widget for key" << key;
+        return;
+    }
+
+
     auto* splitter = qobject_cast<QSplitter*>(w);
     if (!splitter) return;
 
@@ -33,6 +40,7 @@ void extractSplitter(QWidget* w, QVariantMap& m, const QString& key)
 
 void restoreSplitter(QWidget* w, QVariantMap& m, const QString& key)
 {
+
     auto* splitter = qobject_cast<QSplitter*>(w);
     if (!splitter) return;
 
@@ -57,20 +65,44 @@ void restoreSplitter(QWidget* w, QVariantMap& m, const QString& key)
 // -----------------------------
 void extractHeader(QWidget* w, QVariantMap& m, const QString& key)
 {
+    if (!w) {
+        zWarning() << "⚠️ extract: null widget for key" << key;
+        return;
+    }
+
     auto* header = qobject_cast<QHeaderView*>(w);
     if (!header) return;
+
+    QAbstractItemModel* model = header->model();
+    if (!model) return;
 
     const int count = header->count();
     if (count <= 0) return;
 
-    QVariantList widths;
-    for (int i = 0; i < count; ++i)
-        widths << header->sectionSize(i);
+    const int viewportWidth = header->viewport()->width();
+    m[key + "/viewportWidthPx"] = viewportWidth;
 
-    m[key + "/widths"] = widths;
-    m[key + "/sortSection"] = header->sortIndicatorSection();
-    m[key + "/sortOrder"] = int(header->sortIndicatorOrder());
+    for (int section = 0; section < count; ++section) {
+        const QString colName =
+            model->headerData(section, Qt::Horizontal).toString();
 
+        if (colName.isEmpty())
+            continue;
+
+        const int px = header->sectionSize(section);
+        const double pct = viewportWidth > 0
+                               ? (100.0 * px / double(viewportWidth))
+                               : 0.0;
+
+        m[key + "/widthPercent_" + colName] = pct;
+    }
+
+    m[key + "/sortColumnName"] =
+        model->headerData(header->sortIndicatorSection(),
+                          Qt::Horizontal).toString();
+
+    m[key + "/sortOrder"] =
+        int(header->sortIndicatorOrder());
 }
 
 void restoreHeader(QWidget* w, QVariantMap& m, const QString& key)
@@ -78,18 +110,47 @@ void restoreHeader(QWidget* w, QVariantMap& m, const QString& key)
     auto* header = qobject_cast<QHeaderView*>(w);
     if (!header) return;
 
-    const auto widths = m.value(key + "/widths").toList();
+    QAbstractItemModel* model = header->model();
+    if (!model) return;
 
-    if (!widths.isEmpty()) {
-        const int count = std::min<int>(header->count(), int(widths.size()));
-        for (int i = 0; i < count; ++i)
-            header->resizeSection(i, widths[i].toInt());
+    const int viewportWidth =
+        m.value(key + "/viewportWidthPx", header->viewport()->width()).toInt();
+
+    const int count = header->count();
+    for (int section = 0; section < count; ++section) {
+
+        const QString colName =
+            model->headerData(section, Qt::Horizontal).toString();
+
+        if (colName.isEmpty())
+            continue;
+
+        const QString pctKey = key + "/widthPercent_" + colName;
+        if (!m.contains(pctKey))
+            continue;
+
+        const double pct = m.value(pctKey).toDouble();
+        const int px = int((pct / 100.0) * viewportWidth);
+
+        header->resizeSection(section, px);
     }
 
-    const int sortSection = m.value(key + "/sortSection", -1).toInt();
-    const auto sortOrder = Qt::SortOrder(m.value(key + "/sortOrder", int(Qt::AscendingOrder)).toInt());
-    if (sortSection >= 0 && sortSection < header->count())
-        header->setSortIndicator(sortSection, sortOrder);
+    const QString sortColName =
+        m.value(key + "/sortColumnName").toString();
+
+    if (!sortColName.isEmpty()) {
+        for (int section = 0; section < count; ++section) {
+            const QString colName =
+                model->headerData(section, Qt::Horizontal).toString();
+            if (colName == sortColName) {
+                const auto sortOrder =
+                    Qt::SortOrder(m.value(key + "/sortOrder",
+                                          int(Qt::AscendingOrder)).toInt());
+                header->setSortIndicator(section, sortOrder);
+                break;
+            }
+        }
+    }
 }
 
 
@@ -98,6 +159,11 @@ void restoreHeader(QWidget* w, QVariantMap& m, const QString& key)
 // -----------------------------
 void extractTabWidget(QWidget* w, QVariantMap& m, const QString& key)
 {
+    if (!w) {
+        zWarning() << "⚠️ extract: null widget for key" << key;
+        return;
+    }
+
     auto* tabs = qobject_cast<QTabWidget*>(w);
     if (!tabs) return;
 
@@ -120,14 +186,19 @@ void restoreTabWidget(QWidget* w, QVariantMap& m, const QString& key)
 // -----------------------------
 void extractScrollArea(QWidget* w, QVariantMap& m, const QString& key)
 {
+    if (!w) {
+        zWarning() << "⚠️ extract: null widget for key" << key;
+        return;
+    }
+
     auto* area = qobject_cast<QAbstractScrollArea*>(w);
     if (!area) return;
 
     if (auto* h = area->horizontalScrollBar())
-        m[key + "/hScroll"] = h->value();
+        m[key + "/scrollPosX"] = h->value();
 
     if (auto* v = area->verticalScrollBar())
-        m[key + "/vScroll"] = v->value();
+        m[key + "/scrollPosY"] = v->value();
 }
 
 void restoreScrollArea(QWidget* w, QVariantMap& m, const QString& key)
@@ -136,10 +207,10 @@ void restoreScrollArea(QWidget* w, QVariantMap& m, const QString& key)
     if (!area) return;
 
     if (auto* h = area->horizontalScrollBar())
-        h->setValue(m.value(key + "/hScroll", h->value()).toInt());
+        h->setValue(m.value(key + "/scrollPosX", h->value()).toInt());
 
     if (auto* v = area->verticalScrollBar())
-        v->setValue(m.value(key + "/vScroll", v->value()).toInt());
+        v->setValue(m.value(key + "/scrollPosY", v->value()).toInt());
 }
 
 } // namespace StateHandlers
