@@ -37,7 +37,7 @@ WorksheetNeed WorksheetBuilder::fromOrderNeed(const OrderNeed& orderNeed)
             for (const RawKit& rk : itemNeed.kitItems) {
                 KitItem ki;
                 ki.materialBarcode = rk.materialBarcode;
-                ki.quantity        = rk.qty;
+                ki.quantity        = rk.kitting_qty;
                 ki.ownerName       = line.ownerName;
                 ki.colorName       = line.colorName;
                 ki.fullWidth       = line.width_mm;

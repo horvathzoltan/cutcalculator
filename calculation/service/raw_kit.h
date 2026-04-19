@@ -4,5 +4,5 @@
 
 struct RawKit {
     QString materialBarcode;
-    int qty;
+    int kitting_qty = 1;
 };

@@ -14,9 +14,9 @@ OrderNeed OrderNeedBuilder::build(const Order& order, bool debug)
         OrderItemNeed oin;
         oin.orderItemId = item.orderItemId;
         oin.line = item.line;
-        oin.itemNeeds.reserve(item.qty);
+        oin.itemNeeds.reserve(item.order_qty);
 
-        for (int i = 0; i < item.qty; ++i) {
+        for (int i = 0; i < item.order_qty; ++i) {
             ItemNeed n = NeedCalculator::calculate(item.line, item.modeName, debug);
             oin.itemNeeds.append(n);
         }

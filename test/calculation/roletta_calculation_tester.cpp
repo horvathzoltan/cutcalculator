@@ -146,7 +146,7 @@ void RolettaCalculationTester::test_rugos_roletta(const TestRolettaBuilder::Ids&
     const RawKit* bottom_cap_kit =
         find_kit_by_barcode(need, QStringLiteral("ROL-P-ENDCAP"));
     Q_ASSERT(bottom_cap_kit != nullptr);
-    Q_ASSERT(bottom_cap_kit->qty == 2);
+    Q_ASSERT(bottom_cap_kit->kitting_qty == 2);
 
     // Rugós rolettánál RRG rugó legyen, TRG ne
     const RawKit* spring_rugos =

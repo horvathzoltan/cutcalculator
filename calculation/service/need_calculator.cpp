@@ -50,8 +50,17 @@ ItemNeed NeedCalculator::calculate(const OrderLine& line, const QString& modeNam
                           .arg(d.id.toString(), r.error));
                 continue;
             }
-
+            // megtöbbszörözzük a levágott anyagot pl. jobb/bal oldali lefutó
+            // for (int k = 0; k < r.value.qty; ++k)
             i.cutItems.append(r.value);
+
+            // auto piecesRes = explodePieces(line, r.value);
+            // if (!piecesRes.ok)
+            //     continue;
+            // for (const Piece& p : piecesRes.value)
+            //     i.cutItems.append(p);
+
+
         } else if (d.kind == NeedCalculationDetail::DetailKind::Kitting){
             Result<RawKit> r = evalFormulaKit(line, d, debug);
 
@@ -61,6 +70,7 @@ ItemNeed NeedCalculator::calculate(const OrderLine& line, const QString& modeNam
                 continue;
             }
 
+            // a kit darabszámát már a formula határozza meg, nem kell megismételni
             i.kitItems.append(r.value);
         }
     }
@@ -222,15 +232,15 @@ Result<RawCut> NeedCalculator::evalFormulaCut(const OrderLine& line,
         raw.requiredLength = (int)v.number();
     }
 
-    // 5) qty
-    // {
-    //     Value v = vars.get("qty");
-    //     if (v.type == Value::Type::Null)
-    //         return Result<RawCut>::failure("qty not set");
-    //     raw.qty = (int)v.toDouble();
-    // }
+    // 5) qty (opcionális)
+    {
+        Value v = vars.get("qty");
+        if (v.type() == Value::Type::Null)
+            raw.cutting_qty = 1;
+        else
+            raw.cutting_qty = (int)v.number();
+    }
 
-    // 6) material
     // 6) material
     {
         Value v = vars.get("mat");
@@ -292,7 +302,7 @@ Result<RawKit> NeedCalculator::evalFormulaKit(const OrderLine& line,
         Value v = vars.get("qty");
         if (v.type() == Value::Type::Null)
             return Result<RawKit>::failure("qty not set");
-        raw.qty = (int)v.number();
+        raw.kitting_qty = (int)v.number();
     }
 
     // 5) material
@@ -314,22 +324,18 @@ Result<RawKit> NeedCalculator::evalFormulaKit(const OrderLine& line,
      return Result<RawKit>::success(raw);
 }
 
-// p9 – implementáljuk később
 // Result<QVector<Piece>>
 // NeedCalculator::explodePieces(const OrderLine& line, const RawCut& raw)
 // {
 //     QVector<Piece> out;
 
-//     // Cutting esetén a darabszám = rendelési sor darabszáma
-//     int count = line.qty;
+//     int count = raw.qty;
 //     out.reserve(count);
 
 //     QString barcode = raw.materialBarcode;
 
 //     for (int i = 1; i <= count; ++i) {
 //         Piece p;
-//         //p.materialId      = raw.materialId;
-//         //p.materialBarcode = raw.materialBarcode;
 //         p.materialBarcode = barcode;
 //         p.requiredLength  = raw.requiredLength;
 //         p.handlerSide     = line.handlerSide;
@@ -346,6 +352,7 @@ Result<RawKit> NeedCalculator::evalFormulaKit(const OrderLine& line,
 // }
 
 
+
 void NeedCalculator::fillVariables(const OrderLine& line)
 {
     auto& vars = VariableRepository::instance();
@@ -353,6 +360,7 @@ void NeedCalculator::fillVariables(const OrderLine& line)
 
     vars.set("w",        Value::numberValue(line.width_mm));
     vars.set("h",        Value::numberValue(line.height_mm));
+    // qty-t nem töltjük itt, a formula hozza létre
     //vars.set("qty",      Value::numberValue(line.qty));
     vars.set("handler",  Value::stringValue(line.handlerSide));
     vars.set("owner",    Value::stringValue(line.ownerName));

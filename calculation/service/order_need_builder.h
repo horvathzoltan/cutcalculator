@@ -11,7 +11,7 @@
 struct OrderItem {
     QUuid orderItemId;
     OrderLine line;
-    int qty = 1;
+    int order_qty = 1;
     QString modeName;
 };
 

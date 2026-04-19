@@ -31,7 +31,7 @@ bool OrderNeedBuilderTester::run()
     it1.line.externalId  = "X1";
     it1.line.ownerName   = "Teszt Elek";
     it1.line.colorName   = "Fehér";
-    it1.qty = 2;
+    it1.order_qty = 2;
     it1.modeName = "Manufacturing";
 
     order.items.append(it1);
@@ -46,7 +46,7 @@ bool OrderNeedBuilderTester::run()
     it2.line.externalId  = "X2";
     it2.line.ownerName   = "Teszt Elek";
     it2.line.colorName   = "Fehér";
-    it2.qty = 1;
+    it2.order_qty = 1;
     it2.modeName = "Manufacturing";
 
     order.items.append(it2);

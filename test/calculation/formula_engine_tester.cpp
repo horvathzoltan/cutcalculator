@@ -379,7 +379,7 @@ void FormulaEngineTester::testNeedCalculatorChooseTrue()
     Q_ASSERT(need.kitItems[0].materialBarcode == ids.M1_barcode);
 
     // qty = 1 → egy példányra qty = 1
-    Q_ASSERT(need.kitItems[0].qty == 1);
+    Q_ASSERT(need.kitItems[0].kitting_qty == 1);
 
     zInfo("✓ testNeedCalculatorChooseTrue OK");
 }
@@ -434,7 +434,7 @@ void FormulaEngineTester::testNeedCalculatorChooseFalse()
     Q_ASSERT(need.kitItems[0].materialBarcode == ids.M2_barcode);
 
     // qty = 1 → egy példányra qty = 1
-    Q_ASSERT(need.kitItems[0].qty == 1);
+    Q_ASSERT(need.kitItems[0].kitting_qty == 1);
 
     zInfo("✓ testNeedCalculatorChooseFalse OK");
 }

@@ -166,7 +166,7 @@ void NeedCalculatorPipelineTester::testQtyDsl()
     Q_ASSERT(need.kitItems.size() == 1);
 
     // qty = 3 → egy példányra 3 db kell
-    Q_ASSERT(need.kitItems[0].qty == 3);
+    Q_ASSERT(need.kitItems[0].kitting_qty == 3);
 
     // materialBarcode is helyes
     Q_ASSERT(need.kitItems[0].materialBarcode == ids.M1_barcode);
@@ -344,7 +344,7 @@ void NeedCalculatorPipelineTester::testKitting()
     Q_ASSERT(need.kitItems.size() == 1);
 
     // qty = 2 → egy példányra 2 db kell
-    Q_ASSERT(need.kitItems[0].qty == 2);
+    Q_ASSERT(need.kitItems[0].kitting_qty == 2);
 
     // materialBarcode is helyes
     Q_ASSERT(need.kitItems[0].materialBarcode == ids.M1_barcode);

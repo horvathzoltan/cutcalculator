@@ -1,221 +1,170 @@
+Rendben, Zoltán — itt a multi‑qty cutting PATCH TERV, pontonként,
+végrehajtható, audit‑barát, a te RUGALMAS STRICT MODE stílusodhoz
+igazítva.
+Ez még nem kód, hanem a patch terv, amit majd snippetekre bontunk, ha
+kéred.
 
-# ⭐ **1. Feltárt hibák és módosítási igények (magyarázattal)**
+------------------------------------------------------------------------
 
-## **1.1. A legtöbb layout‑kritikus widget névtelen → fallback kulcs → restore lehetetlen**
-A snapshotban ilyenek vannak:
+🔧 MULTI‑QTY CUTTING — PATCH TERV
 
-```
-unnamed_QHeaderView_0x555555c0b860
-unnamed_QTableWidget_0x555555d7d700
-unnamed_BOMWorkbench_0x555555b17380
-```
+(A cél: a cutting formulák ne csak egyetlen darabot írjanak le, hanem
+natívan kezeljék a több darabos vágást — pl. 2 lábas roletta.)
 
-A fallback kulcs pointert tartalmaz → minden futáskor más →
-**restore során SOHA nem található meg**.
+A terv 7 lépésből áll, mindegyik önálló, auditálható patch.
 
-### Következmény:
-- header szélességek nem állnak vissza
-- scroll pozíciók nem állnak vissza
-- sortOrder nem áll vissza
-- minden default marad
+------------------------------------------------------------------------
 
-### Megoldás:
-- **objectName kötelező** minden visszaállítandó widgetre
-  (header, table, splitter, scrollarea)
+PATCH 1 — RawCut bővítése qty mezővel
 
----
+Cél: a DSL‑ből érkező eredmény ne csak egy darabot írjon le.
 
-## **1.2. A header és a tábla külön kulcsot kap → ez helyes, de mindkettőnek stabil név kell**
-A header NEM a tábla alatt jelenik meg, hanem külön:
+Teendők
 
-```
-bom_workbench/bom_mat_header/widthPercent_Formula=...
-bom_workbench/bom_mat_table/scrollPosX=0
-```
+-   struct RawCut → új mező: int qty = 1;
+-   A régi viselkedés változatlan marad (ha a formula nem ad qty‑t → 1).
 
-Ez helyes, mert:
+Hatás
 
-- a header önálló widget
-- a handler közvetlenül a headeren dolgozik
+-   A NeedCalculator képes lesz több darabot reprezentálni.
 
-### Hiba:
-A header névtelen → fallback kulcs → restore lehetetlen.
+------------------------------------------------------------------------
 
-### Megoldás:
-- minden header kapjon objectName‑et
+PATCH 2 — DSL támogatás qty‑re Cutting esetén
 
----
+Cél: a cutting DSL‑ben lehessen qty‑t megadni (pl. qty = 2).
 
-## **1.3. A tábla scroll pozíciót ment → ezért a tábla is kapjon objectName‑et**
-A snapshotban:
+Teendők
 
-```
-scrollPosX=0
-scrollPosY=0
-```
+-   evalFormulaCut():
+    -   jelenleg a qty blokk ki van kommentezve → visszahozni.
+    -   ha nincs qty változó → default = 1.
+-   fillVariables():
+    -   cutting esetén is töltsük be a qty változót (line.qty vagy 1).
 
-Ez a `QAbstractScrollArea` handlerből jön.
+Hatás
 
-### Hiba:
-A tábla névtelen → fallback kulcs → scroll restore lehetetlen.
+-   A formula képes lesz több darabot előírni.
 
-### Megoldás:
-- minden QTableWidget kapjon objectName‑et
+------------------------------------------------------------------------
 
----
+PATCH 3 — NeedCalculator::calculate → RawCut többszörözése
 
-## **1.4. A container widgetek (bom_mat_container, bom_modes_container, stb.) feleslegesen jelennek meg**
-Ezek:
+Cél: a RawCut (ami most már qty‑t tartalmaz) ne egyetlen elemként
+kerüljön a listába.
 
-- QWidgets
-- nincs handler
-- nincs állapotuk
-- nem kell őket restore‑olni
+Teendők
 
-### Hiba:
-Nem hiba, csak zaj.
+-   Ahol most ez van:
 
-### Megoldás:
-- **nem kell elnevezni őket**
-- **nem kell handler**
-- **nem kell restore**
+    i.cutItems.append(r.value);
 
----
+-   Ezt módosítani:
 
-## **1.5. A BOMWorkbench maga is megjelenik fallback kulccsal**
-Ez:
+    for (int k = 0; k < raw.qty; ++k)
+        i.cutItems.append(raw);
 
-```
-unnamed_BOMWorkbench_0x555555b17380
-```
+Hatás
 
-### Hiba:
-Nem hiba, csak audit információ.
+-   A cutting eredményben ténylegesen több darab jelenik meg.
 
-### Megoldás:
-- **nem kell elnevezni**
-- **nem kell handler**
-- **nem kell restore**
+------------------------------------------------------------------------
 
----
+PATCH 4 — Piece / explodePieces visszakapcsolása (opcionális)
 
-## **1.6. A snapshot olvashatósága gyenge → nem látszik, hol van egy névtelen widget**
-Ez fejlesztői probléma, nem runtime hiba.
+Cél: ha később a CutAggregator‑t akarjuk használni, a Piece lista is
+qty‑t kezeljen.
 
-### Megoldás:
-- audit‑only mező: `/auditPath`
-- nem vesz részt restore‑ban
-- csak emberi olvasásra
+Teendők
 
----
+-   explodePieces() visszakapcsolása (jelenleg kommentben).
+-   A RawCut.qty alapján több Piece generálása.
 
-# ⭐ **2. Módosítási igények (összefoglalva)**
+Hatás
 
-1. **objectName kötelező**:
-   - minden QHeaderView
-   - minden QTableWidget
-   - minden QAbstractScrollArea (ha nem a tábla)
-   - minden splitter (ez már megvan)
+-   A CutAggregator aggregált listát tud készíteni multi‑qty esetben is.
 
-2. **auditPath mező bevezetése**:
-   - csak olvasásra
-   - nem restore‑ra
+------------------------------------------------------------------------
 
-3. **container widgetek NEM kapnak objectName‑et**:
-   - bom_mat_container
-   - bom_modes_container
-   - bom_right_panel
-   - bom_left_panel
-   - stb.
+PATCH 5 — CutAggregator auditálása qty‑s esetekre
 
-4. **BOMWorkbench NEM kap objectName‑et**
-   (nem UI‑state elem)
+Cél: a CutAggregator helyesen aggregálja a több darabot.
 
-5. **handler készlet változatlan**
-   (nem kell új handler)
+Teendők
 
----
+-   Teszt: ha 2 darab ugyanaz a barcode + length + handlerSide →
+    quantity = 2.
+-   Ha különböző handlerSide → külön sor.
 
-# ⭐ **3. Minimális, de teljes fájllista (files.txt)**
-A fejlesztéshez szükséges fájlok — csak azok, amelyek:
+Hatás
 
-- a UI‑state rendszert érintik
-- a BOMWorkbench UI‑t építik
-- a táblákat és headereket létrehozzák
+-   A multi‑qty cutting aggregált listája helyes lesz.
 
-```
-common/ui_state/state_collector.h
-common/ui_state/state_collector.cpp
-common/ui_state/state_handlers.h
-common/ui_state/state_handlers.cpp
-common/ui_state/state_settings.h
-common/ui_state/state_settings.cpp
-common/ui_state/layout_critical_helper.h
-common/ui_state/layout_critical_helper.cpp
+------------------------------------------------------------------------
 
-workbench/view/bom_workbench.h
-workbench/view/bom_workbench.cpp
+PATCH 6 — OrderNeedBuilder auditálása
 
-needs/view/material_requirements_view.h
-needs/view/material_requirements_view.cpp
+Cél: a rendelési qty és a cutting qty ne keveredjen.
 
-calcmodes/view/calculation_modes_view.h
-calcmodes/view/calculation_modes_view.cpp
+Teendők
 
-calculation/view/calculation_mode_detail_view.h
-calculation/view/calculation_mode_detail_view.cpp
+-   Ellenőrizni, hogy:
+    -   OrderLine.qty → példányszám
+    -   RawCut.qty → egy példányon belüli darabszám
+-   A kettő szorzata legyen a végső darabszám.
 
-products/view/product_tree_view.h
-products/view/product_tree_view.cpp
-```
+Hatás
 
-Ez a **minimális, de teljes** lista.
+-   A domain logika tiszta marad.
 
----
+------------------------------------------------------------------------
 
-# ⭐ **4. Patch terv (végrehajtható, lineáris)**
+PATCH 7 — Tesztek: multi‑qty cutting
 
-## **PATCH 1 — objectName audit (kritikus)**
-1. BOMWorkbench.cpp:
-   - `_matView->table()->setObjectName("bom_mat_table");`
-   - `_modesView->table()->setObjectName("bom_modes_table");`
-   - `_detailView->table()->setObjectName("bom_detail_table");`
-   - `_treeView->setObjectName("bom_product_tree");`
+Cél: bizonyítani, hogy a rendszer működik.
 
-2. Header elnevezések:
-   - `_matView->table()->horizontalHeader()->setObjectName("bom_mat_header");`
-   - `_modesView->table()->horizontalHeader()->setObjectName("bom_modes_header");`
-   - `_detailView->table()->horizontalHeader()->setObjectName("bom_detail_header");`
-   - `_treeView->header()->setObjectName("bom_tree_header");`
+Teszt esetek
 
-3. Semmi mást nem nevezünk el.
+1.  2 lábas roletta
+    -   formula: qty = 2; len = h
+    -   elvárt: két RawCut ugyanazzal a hosszal.
+2.  Aszimmetrikus oldalak
+    -   handlerSide = L/R → külön aggregált sorok.
+3.  Kerf‑tudatos formula
+    -   pl. len = h - 5
+    -   qty = 2 → két darab ugyanazzal a korrigált hosszal.
 
----
+Hatás
 
-## **PATCH 2 — auditPath mező bevezetése**
-1. `state_collector.cpp` discovery fázisában:
+-   A multi‑qty cutting működése bizonyított.
 
-```cpp
-s.map().insert(key + "/auditPath", computeAuditPath(w));
-```
+------------------------------------------------------------------------
 
-2. `computeAuditPath()` implementálása.
+🧩 Összegzés — mit old meg a patch?
 
----
+  -----------------------------------------------------------------------
+  Probléma                          Megoldás
+  --------------------------------- -------------------------------------
+  Cutting DSL csak 1 darabot tud    RawCut.qty + DSL qty támogatás
 
-## **PATCH 3 — snapshot tisztítás (opcionális)**
-- a container widgetek snapshotját figyelmen kívül hagyhatjuk restore‑kor
-  (nem kötelező, csak zajcsökkentés)
+  NeedCalculator csak 1 darabot ad  Többszörözés qty alapján
+  vissza
 
----
+  Aggregátor nem tud qty‑t          Piece szintű szorzás + aggregálás
 
-## **PATCH 4 — teljes restore teszt**
-1. BOMWorkbench indítása
-2. ablak átméretezése
-3. oszlopszélességek módosítása
-4. scroll pozíciók módosítása
-5. kilépés
-6. újraindítás
-7. ellenőrzés
+  Domain logika nem kezeli a 2      OrderNeedBuilder + tesztek
+  lábas esetet
+  -----------------------------------------------------------------------
 
----
+------------------------------------------------------------------------
+
+👉 Következő lépés
+
+Ha kéred, indítjuk PATCH 1‑et snippetekkel, a RUGALMAS STRICT MODE
+szerint.
+
+Válassz:
+
+-   PATCH 1 indítása
+-   Előbb szeretném átbeszélni a qty logikát
+-   Mutasd meg, hol kell majd tesztet írni
