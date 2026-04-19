@@ -13,6 +13,7 @@
 #include <QScrollBar>
 #include <QLineEdit>
 #include <QAbstractScrollArea>
+#include <QHeaderView>
 
 bool LayoutCriticalHelper::isLayoutCritical(QWidget* w)
 {
@@ -26,6 +27,11 @@ bool LayoutCriticalHelper::isLayoutCritical(QWidget* w)
     // Qt belső widgetek kizárása
     if (w->objectName().startsWith("qt_"))
         return false;
+
+    // Névtelen QHeaderView kizárása (Qt belső header)
+    if (qobject_cast<QHeaderView*>(w) && w->objectName().isEmpty())
+        return false;
+
 
     // Dekorációk kizárása
     if (qobject_cast<QMenuBar*>(w)) return false;
@@ -46,8 +52,17 @@ bool LayoutCriticalHelper::isLayoutCritical(QWidget* w)
         !qobject_cast<QSplitter*>(w))
         return false;
 
+    // Általános container kizárása: QWidget + van layoutja + nem speciális widget
+    if (w->layout() &&
+        !qobject_cast<QAbstractScrollArea*>(w) &&
+        !qobject_cast<QSplitter*>(w) &&
+        !qobject_cast<QTabWidget*>(w) &&
+        !qobject_cast<QHeaderView*>(w))
+        return false;
+
     // Ha idáig eljutott → layout‑kritikus
     return true;
+
 }
 
 

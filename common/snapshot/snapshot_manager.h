@@ -52,6 +52,8 @@ public:
     /// Monitor profil (pl. "1920x1080_96dpi") lekérdezése UI widgethez.
     QString monitorProfileFor(QWidget* w) const;
 
+    void clearUIState(const QString& groupName) const;
+
 private:
     SnapshotManager() = default;
 

@@ -43,15 +43,22 @@ void UIStateCollector::collect(QWidget* root)
     if (!root) return;
 
     StateSettings s(_groupName);
+
+
+    // TELJES SNAPSHOT TÖRLÉSE — PATCH 10
+    s.clearUIState();   // teljes snapshot törlése
+
     const auto widgets = LayoutCriticalHelper::collect(root);
 
     // 1. Minden widget kap alap audit-információt
     for (QWidget* w : widgets) {
         const QString key = keyFor(w);
-        s.map().insert(key + "/state", QStringLiteral("unsaved"));
+        s.map().insert(key + "/objectName", w->objectName());
         s.map().insert(key + "/class",
                        QString::fromLatin1(w->metaObject()->className()));
-        s.map().insert(key + "/objectName", w->objectName());
+        s.map().insert(key + "/auditPath", computeAuditPath(w));
+        s.map().insert(key + "/state", QStringLiteral("unsaved"));
+
     }
 
     // 2. Handleres extract + handler-hiány jelölése
@@ -65,14 +72,34 @@ void UIStateCollector::collect(QWidget* root)
             << w->metaObject()->className()
             << "(objectName=" << w->objectName() << ")";
 
-            s.map().insert(key + "/handler", QStringLiteral("missing"));
+            if (!qobject_cast<QAbstractScrollArea*>(w) &&
+                !qobject_cast<QSplitter*>(w) &&
+                !qobject_cast<QHeaderView*>(w) &&
+                !qobject_cast<QTabWidget*>(w)) {
+                s.map().insert(key + "/handler", QStringLiteral("missing"));
+            }
             continue;
         }
+
 
         h->extract(w, s.map(), key);
     }
 
     s.save();
+}
+
+QString UIStateCollector::computeAuditPath(QWidget* w)
+{
+    QStringList parts;
+    QWidget* p = w;
+    while (p) {
+        QString name = p->objectName();
+        if (name.isEmpty())
+            name = QString("unnamed_%1").arg(p->metaObject()->className());
+        parts.prepend(name);
+        p = p->parentWidget();
+    }
+    return parts.join("/");
 }
 
 

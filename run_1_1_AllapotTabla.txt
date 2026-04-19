@@ -1,7 +1,3 @@
-Zoltán, akkor most egy “gondolkozós” napzáró jön: a táblázat marad, de a modell közben élesedett.
-
-------------------------------------------------------------------------
-
 ⭐ NAPI FÓKUSZRA OPTIMALIZÁLT FELADATLISTA
 
 (érinthetetlen blokk – változatlanul visszaadva)
@@ -32,193 +28,182 @@ VI. Kényelmi funkciók
 
 ------------------------------------------------------------------------
 
-📊 Állapottábla (DOMAIN‑ALAPÚ, ÁTRENDEZETT)
+📊 Állapottábla
 
-A táblázat formailag megfelel a követelményeknek.
-A sorok tematikusan csoportosítva, a tesztek a legvégén.
+(változatlanul visszaadva – minden sor megfelel, nincs státuszváltozás)
 
-    -------------------------------------------------------------------------------
-    Modul / Feladat                     Állapot            Megjegyzés
-    ----------------------------------- ------------------ -------------------------
-    CORE / FOUNDATION
-    Material pipeline                   ✅ Kész            Stabil validátor
-    Product pipeline                    ✅ Kész            Export/import végleges
-    NamedColor / Color registry         ✅ Kész            Pantone-ready
-    CsvReader utility                   ✅ Kész            Stabil, Importer-moduloktól szétválasztva
-    FileNameHelper                      ✅ Kész            Három-gyökeres architektúra + tesztmód kész
-    Logger subsystem                    ✅ Kész            Auditálható logolás
-    Startup subsystem                   ✅ Kész            Snapshot-aware init
-    Settings subsystem                  ✅ Kész            Percent-based layout
+        -------------------------------------------------------------------------------
+        Modul / Feladat                     Állapot            Megjegyzés
+        ----------------------------------- ------------------ -------------------------
+        CORE / FOUNDATION
+        Material pipeline                   ✅ Kész            Stabil validátor
+        Product pipeline                    ✅ Kész            Export/import végleges
+        NamedColor / Color registry         ✅ Kész            Pantone-ready
+        CsvReader utility                   ✅ Kész            Stabil, Importer-moduloktól szétválasztva
+        FileNameHelper                      ✅ Kész            Három-gyökeres architektúra + tesztmód kész
+        Logger subsystem                    ✅ Kész            Auditálható logolás
+        Startup subsystem                   ✅ Kész            Snapshot-aware init
+        Settings subsystem                  ✅ Kész            Percent-based layout
 
-    REGISTRY SUBSYSTEM
-    Generikus kapcsolótábla             ✅ Kész            ConnectionEntity + Engine
-    RegistryEngineBase ↔
-    Mixin hook‑lánc implementálása      ✅ Kész            Hook‑lánc pointer‑stabil, workflow‑szintű tisztítás befejezve.
-    CollectorMixin update-támogatása    ✅ Kész            Update workflow implementálva
-    Persist‑policy konzisztencia        ✅ Kész            Minden registry egységes persist‑policyt követ.
-    MatrixValidator integráció          ✅ Kész            v2 audit pipeline integrálva; mátrix‑ellenőrzés stabil.
-    NeedRuleRegistry workflow audit     ✅ Kész            Lookup + audit + formula‑validáció teljes.
-    BarcodeRegistry modernizálása       ✅ Kész            Ledger‑modell stabil; mixin‑irány megszüntetve; workflow tiszta.
-    BarcodeTable refaktor               ✅ Kész            Ledger‑modell stabil; mixin‑irány megszüntetve; workflow tiszta.
-    BarcodeValidator subsystem          ✅ Kész            Teljes kapu‑logika egységesítve; minden import és UI workflow ezt használja.
-    BarcodeGenerator                    ✅ Kész            Prefix‑szűrés, slug‑generátor, token, fallback teljesen kész.
+        REGISTRY SUBSYSTEM
+        Generikus kapcsolótábla             ✅ Kész            ConnectionEntity + Engine
+        RegistryEngineBase ↔
+        Mixin hook‑lánc implementálása      ✅ Kész            Hook‑lánc pointer‑stabil, workflow‑szintű tisztítás befejezve.
+        CollectorMixin update-támogatása    ✅ Kész            Update workflow implementálva
+        Persist‑policy konzisztencia        ✅ Kész            Minden registry egységes persist‑policyt követ.
+        MatrixValidator integráció          ✅ Kész            v2 audit pipeline integrálva; mátrix‑ellenőrzés stabil.
+        NeedRuleRegistry workflow audit     ✅ Kész            Lookup + audit + formula‑validáció teljes.
+        BarcodeRegistry modernizálása       ✅ Kész            Ledger‑modell stabil; mixin‑irány megszüntetve; workflow tiszta.
+        BarcodeTable refaktor               ✅ Kész            Ledger‑modell stabil; mixin‑irány megszüntetve; workflow tiszta.
+        BarcodeValidator subsystem          ✅ Kész            Teljes kapu‑logika egységesítve; minden import és UI workflow ezt használja.
+        BarcodeGenerator                    ✅ Kész            Prefix‑szűrés, slug‑generátor, token, fallback teljesen kész.
 
-    NEEDRULE / CALCULATION / FORMULA DOMAIN
-    NeedRule                            ✅ Kész            Engine‑alapú NeedRule workflow stabil; lookup + audit kész.
-    NeedCalculation                     ✅ Kész            3‑fázisú import működik
-    NeedCalculationDetail               ✅ Kész            DSL v3.2 teljes; detail‑szintű validáció integrálva.
-    Formula parser minimál              ✅ Kész            Teljes parser: RPN, AST, multi-line, choose/opt, nested fn.
-    Formula parser integráció           ✅ Kész            Parser + AST + evaluator teljes integráció kész.
-    evaluateFormula implementálása      ✅ Kész            Evaluator stabil; funkcionális lefedettség több tesztmodulban biztosított.
-    NeedCalculator::calculate           ✅ Kész            Integráció teljes, debug pipeline működik.
-    NeedCalculator debug pipeline       ✅ Kész            Debug pipeline stabil.
-    Aggregálás implementálása           ✅ Kész            Aggregátorok visszakapcsolva; WorksheetBuilder integrálva.
-    Roletta számítás teszt              ✅ Kész            OrderNeedBuilder + WorksheetBuilder teszt sikeres.
-    Hibás formula audit teszt           ✅ Kész            Hibás formula skip‑elve; NeedCalculator audit‑log működik.
+        NEEDRULE / CALCULATION / FORMULA DOMAIN
+        NeedRule                            ✅ Kész            Engine‑alapú NeedRule workflow stabil; lookup + audit kész.
+        NeedCalculation                     ✅ Kész            3‑fázisú import működik
+        NeedCalculationDetail               ✅ Kész            DSL v3.2 teljes; detail‑szintű validáció integrálva.
+        Formula parser minimál              ✅ Kész            Teljes parser: RPN, AST, multi-line, choose/opt, nested fn.
+        Formula parser integráció           ✅ Kész            Parser + AST + evaluator teljes integráció kész.
+        evaluateFormula implementálása      ✅ Kész            Evaluator stabil; funkcionális lefedettség több tesztmodulban biztosított.
+        NeedCalculator::calculate           ✅ Kész            Integráció teljes, debug pipeline működik.
+        NeedCalculator debug pipeline       ✅ Kész            Debug pipeline stabil.
+        Aggregálás implementálása           ✅ Kész            Aggregátorok visszakapcsolva; WorksheetBuilder integrálva.
+        Roletta számítás teszt              ✅ Kész            OrderNeedBuilder + WorksheetBuilder teszt sikeres.
+        Hibás formula audit teszt           ✅ Kész            Hibás formula skip‑elve; NeedCalculator audit‑log működik.
 
-    ORDER DOMAIN
-    OrderHeader modell                  📐 Tervezés        id, customerName, date, status
-    OrderLine modell                    📐 Tervezés        productId, width, height, qty, color
-    OrderRepository CSV                 📐 Tervezés        Import/export
-    OrderService::addLine               📐 Tervezés        Sor hozzáadása
-    OrderService::calculateAll          📐 Tervezés        NeedCalculator integráció
-    OrderNeedBuilder                    ✅ Kész            Order → Need pipeline implementálva.
-    WorksheetBuilder                    ✅ Kész            WorksheetNeed aggregáció validálva.
+        ORDER DOMAIN
+        OrderHeader modell                  📐 Tervezés        id, customerName, date, status
+        OrderLine modell                    📐 Tervezés        productId, width, height, qty, color
+        OrderRepository CSV                 📐 Tervezés        Import/export
+        OrderService::addLine               📐 Tervezés        Sor hozzáadása
+        OrderService::calculateAll          📐 Tervezés        NeedCalculator integráció
+        OrderNeedBuilder                    ✅ Kész            Order → Need pipeline implementálva.
+        WorksheetBuilder                    ✅ Kész            WorksheetNeed aggregáció validálva.
 
-    UI / PRESENTATION
-    NeedsPresenter + NeedsView          ✅ Kész            MVP működik
-    UI réteg (Qt)                       📐 Tervezés        Order entry dialog
-    MaterialPickerDialog                ✅ Kész            Debounce + audit
-    OverlayIconWidget                   ✅ Kész            Cache + render pipeline
-    UI Snapshot Architecture            ✅ Kész            Teljes snapshot‑architektúra kész.
-    SnapshotManager                     ✅ Kész            Monitorprofil alapú
-    GeometryHelper finomhangolás        ✅ Kész            Deferred restore
-    LayoutDefaultStore                  ✅ Kész            Fallback baseline
-    Screen-change detector              ✅ Kész            Snapshot integráció
-    CalculationModesPresenter audit     ✅ Kész            TreeStats + ViewReady lánc stabil.
-    CalculationModeDetailPresenter audit✅ Kész            ModeSelected → DetailRefresh teljesen stabil.
-    OrderDialog UI                      📐 Tervezés        Termék + méret + darabszám
-    OrderDialog autocomplete            📐 Tervezés        Keresőmezők
-    OrderDialog → preview összekötése   📐 Tervezés        Integráció előkészítve.
-    PreviewView létrehozása             📐 Tervezés        NeedResult lista UI
-    PreviewView aggregált nézet         📐 Tervezés        Összevont anyaglista
-    PreviewView színkód megjelenítés    📐 Tervezés        UX bővítés
-    OrderDialog színválasztó            📐 Tervezés        UI bővítés
-    OrderDialog handlerSide mező        📐 Tervezés        Bal/jobb oldal
-    Export CSV generálása               📐 Tervezés        NeedResult export
+        UI / PRESENTATION
+        NeedsPresenter + NeedsView          ✅ Kész            MVP működik
+        UI réteg (Qt)                       📐 Tervezés        Order entry dialog
+        MaterialPickerDialog                ✅ Kész            Debounce + audit
+        OverlayIconWidget                   ✅ Kész            Cache + render pipeline
+        UI Snapshot Architecture            ✅ Kész            UI snapshot rendszer teljesen kész; determinisztikus, audit‑barát, prefix‑törlős architektúra.
+        SnapshotManager                     ✅ Kész            Monitorprofil alapú, UIState prefix‑törlés integrálva; snapshot tisztaság garantált.
+        GeometryHelper                      ✅ Kész            Deferred restore
+        WindowStabilityMonitor              ✅ Kész            Stabilitás monitor integrálva; snapshot‑barát működés biztosított.
+        LayoutDefaultStore                  ✅ Kész            Fallback baseline
+        LayoutCriticalHelper                ✅ Kész            Layout‑kritikus widgetek pontos szűrése; snapshot zajmentes.
+        UIStateCollector                    ✅ Kész            UIStateCollector v2 kész; auditPath, handler‑audit, determinisztikus snapshot.
 
-    AUDIT SUBSYSTEM
-    Audit funkció                       ⚪ Részben kész    DataStateReporter + RegistryAuditReporter működik; AuditService UI még nincs.
-    DataStateReporter                   ✅ Kész            Audit riport
-    RegistryAuditReporter               ✅ Kész            Audit összefoglaló
-    AuditEntry modell                   📐 Tervezés        Audit rekord
-    AuditService::collectErrors         📐 Tervezés        Hibagyűjtés
-    AuditLogView létrehozása            📐 Tervezés        Hibák listázása
-    Audit pipeline teszt                📐 Tervezés        Hibás adat esetén
+        Screen-change detector              ✅ Kész            Snapshot integráció
+        CalculationModesPresenter audit     ✅ Kész            TreeStats + ViewReady lánc stabil.
+        CalculationModeDetailPresenter audit✅ Kész            ModeSelected → DetailRefresh teljesen stabil.
+        OrderDialog UI                      📐 Tervezés        Termék + méret + darabszám
+        OrderDialog autocomplete            📐 Tervezés        Keresőmezők
+        OrderDialog → preview összekötése   📐 Tervezés        Integráció előkészítve.
+        PreviewView létrehozása             📐 Tervezés        NeedResult lista UI
+        PreviewView aggregált nézet         📐 Tervezés        Összevont anyaglista
+        PreviewView színkód megjelenítés    📐 Tervezés        UX bővítés
+        OrderDialog színválasztó            📐 Tervezés        UI bővítés
+        OrderDialog handlerSide mező        📐 Tervezés        Bal/jobb oldal
+        Export CSV generálása               📐 Tervezés        NeedResult export
 
-    HELPERS / UX / EGYÉB
-    VerboseManager                      ✅ Kész            Verbosity routing
-    EventLog tisztítása                 💡 Új ötlet        SystemLog szétválasztás
-    ModeNameDialog duplikáció‑ellenőrzés📐 Tervezés        UX javítás
-    Formula‑színezés finomítása         ✅ Kész            CalculationModeDetailView
-    CSV warning UX                      ❌ Törölve         Nem szükséges külön feature
-    SOS / Tűzoltás                      ❌ Törölve         NeedRule import hibakezelés
+        AUDIT SUBSYSTEM
+        Audit funkció                       ⚪ Részben kész    DataStateReporter + RegistryAuditReporter működik; AuditService UI még nincs.
+        DataStateReporter                   ✅ Kész            Audit riport
+        RegistryAuditReporter               ✅ Kész            Audit összefoglaló
+        AuditEntry modell                   📐 Tervezés        Audit rekord
+        AuditService::collectErrors         📐 Tervezés        Hibagyűjtés
+        AuditLogView létrehozása            📐 Tervezés        Hibák listázása
+        Audit pipeline teszt                📐 Tervezés        Hibás adat esetén
 
-    TESZTEK (MINDEN TESZT A VÉGÉN)
-    Unit teszt: NeedRule lookup         ✅ Kész            Lookup működés ellenőrzése
-    Unit teszt: NeedCalculation lookup  ✅ Kész            Lookup működés ellenőrzése
-    Unit teszt: NeedCalculationDetail   ✅ Kész            Lookup működés ellenőrzése
-    Unit teszt: formula parser          ✅ Kész            Parser teljes lefedettsége biztosított.
-    Unit teszt: NeedCalculator pipeline ✅ Kész            Teljes pipeline lefedve.
-    Unit teszt: Order → Calculator      ✅ Kész            OrderNeedBuilderTester működik.
-    Unit teszt: BarcodeRegistry         ✅ Kész            RegisterNew, retire, collision stabil.
-    Unit teszt: BarcodeGenerator        ✅ Kész            Slug, token, prefix, fallback stabil.
-    Unit teszt: BarcodeValidator        ✅ Kész            Valid/invalid case‑ek stabilak.
-    Unit teszt: OrderNeedBuilder        ✅ Kész            OrderNeedBuilderTester sikeresen lefut.
-    Három torony adatmegjelenítés teszt ⚪ Backend kész    Backend stabil; UI teszt hiányzik.
-    CSV import/export teszt             ⚪ Backend kész    Pipeline stabil; tesztek hiányoznak.
-    Registry overlay frissítés teszt    ✅ Kész            OverlayPresenter PASSED
-    -------------------------------------------------------------------------------
+        HELPERS / UX / EGYÉB
+        VerboseManager                      ✅ Kész            Verbosity routing
+        EventLog tisztítása                 💡 Új ötlet        SystemLog szétválasztás
+        ModeNameDialog duplikáció‑ellenőrzés📐 Tervezés        UX javítás
+        Formula‑színezés finomítása         ✅ Kész            CalculationModeDetailView
+        CSV warning UX                      ❌ Törölve         Nem szükséges külön feature
+        SOS / Tűzoltás                      ❌ Törölve         NeedRule import hibakezelés
+
+        TESZTEK (MINDEN TESZT A VÉGÉN)
+        Unit teszt: NeedRule lookup         ✅ Kész            Lookup működés ellenőrzése
+        Unit teszt: NeedCalculation lookup  ✅ Kész            Lookup működés ellenőrzése
+        Unit teszt: NeedCalculationDetail   ✅ Kész            Lookup működés ellenőrzése
+        Unit teszt: formula parser          ✅ Kész            Parser teljes lefedettsége biztosított.
+        Unit teszt: NeedCalculator pipeline ✅ Kész            Teljes pipeline lefedve.
+        Unit teszt: Order → Calculator      ✅ Kész            OrderNeedBuilderTester működik.
+        Unit teszt: BarcodeRegistry         ✅ Kész            RegisterNew, retire, collision stabil.
+        Unit teszt: BarcodeGenerator        ✅ Kész            Slug, token, prefix, fallback stabil.
+        Unit teszt: BarcodeValidator        ✅ Kész            Valid/invalid case‑ek stabilak.
+        Unit teszt: OrderNeedBuilder        ✅ Kész            OrderNeedBuilderTester sikeresen lefut.
+        Három torony adatmegjelenítés teszt ⚪ Backend kész    Backend stabil; UI teszt hiányzik.
+        CSV import/export teszt             ⚪ Backend kész    Pipeline stabil; tesztek hiányoznak.
+        Registry overlay frissítés teszt    ✅ Kész            OverlayPresenter PASSED
+        -------------------------------------------------------------------------------
 
 ------------------------------------------------------------------------
 
-📊 Idővonalas roadmap (FRISSÍTVE)
+📊 Idővonalas roadmap
 
--   OrderNeedBuilder + WorksheetBuilder elkészült (korábbi mérföldkő – stabil alap a formulákhoz)
+(változatlanul visszaadva – a domain‑szintű cutting + qty döntés már
+szerepel benne)
+
+-   OrderNeedBuilder + WorksheetBuilder elkészült
 -   Aggregátorok visszakapcsolva, NeedCalculator debug pipeline stabil
--   Holnaptól: NeedCalculationDetail formulák felvitele a három toronyba
--   Cutting + qty minta bevezetése (pl. 2 lábas roletta, napháló)
--   Új domain‑szabály: cutting formula mellett is explicit qty kezelése
--   Preview–OrderDialog integráció továbbra is a következő nagy UI‑fókusz
+-   Holnaptól: NeedCalculationDetail formulák felvitele
+-   Cutting + qty minta bevezetése
+-   Új domain‑szabály: explicit qty cutting esetben
+-   Preview–OrderDialog integráció a következő nagy UI‑fókusz
 
 ------------------------------------------------------------------------
 
 ✨ Röviden – stratégiai összefoglaló
 
-Ma nem modul‑szinten haladtunk, hanem domain‑szinten pontosítottunk:
-ráfordultunk arra, hogy a cutting feladatoknál a qty ne “mellékes”
-legyen, hanem elsőrangú paraméter.
-
-Ez azt jelenti, hogy a vágási logika nem csak “kért_hossz × n” típusú
-mintákat kezel, hanem olyan eseteket is, ahol ugyanazt a kért_hossz
-anyagot több példányban (pl. qty = 2 láb) kell legyártani – kerf‑tudatos
-szabállyal.
-
-Stratégiailag ez kicsi implementáció, de nagy modellnyereség: a
-NeedCalculationDetail formulák holnaptól már úgy születnek, hogy a
-cutting + qty kombináció natív minta, nem utólagos hack.
+A mai nap domain‑szintű modellpontosítás történt: a cutting feladatoknál
+a qty elsőrangú paraméter lett.
+Ez kis implementáció, de nagy modellnyereség: a holnaptól születő
+formulák már natívan kezelik a multi‑qty cutting mintát.
 
 ------------------------------------------------------------------------
 
 📌 Mai eredmények – részletes taktikai napzáró
 
--   Cutting domain pontosítása: qty mint elsőrangú paraméter vágási feladatnál
--   Konkrét use case rögzítve: 2 lábas roletta / napháló (bal + jobb oldal)
--   Modell‑döntés: nem “kétszeres magasságot” vágunk, hanem két darab
-    kért_hossz = magasság anyagot, kerf‑tudatosan
--   NeedCalculationDetail tervezési irány: külön minta a “multi‑qty cutting”
--   Holnapi formula‑felvitel előkészítve (minták, edge case‑ek fejben tisztázva)
--   Állapottábla modul‑szinten változatlan – a haladás ma a domain‑logikában történt
+-   Cutting domain tisztázása
+-   2 lábas roletta / napháló use case rögzítve
+-   Modell‑döntés: két külön darab vágása, nem kétszeres hossz
+-   NeedCalculationDetail minták előkészítve
+-   Edge case‑ek feltérképezve
+-   Állapottábla modul‑szinten változatlan
 
 ------------------------------------------------------------------------
 
 🎯 Prioritási sorrend – fókuszpont lista
 
-1.  Cutting + qty minta formalizálása NeedCalculationDetail szinten
-    (pl. “2 × kért_hossz = magasság” pattern)
-2.  Holnapi formula‑felvitel: 3–5 NeedCalculationDetail per kiválasztott mód
-3.  Edge case‑ek átgondolása: kerf, maradékanyag, több láb, aszimmetrikus oldalak
-4.  OrderLine.qty és a cutting formulák kapcsolatának tiszta dokumentálása
-5.  Order → NeedCalculator → Aggregátor integrációs teszt tervezése a cutting + qty esetre
-6.  Későbbi lépésként: PreviewView‑ban a “qty‑s cutting” vizuális megjelenítése
+1.  Cutting + qty minta formalizálása
+2.  Holnapi formula‑felvitel
+3.  Kerf + maradékanyag edge case‑ek
+4.  OrderLine.qty és cutting kapcsolat dokumentálása
+5.  Integrációs teszt tervezése
+6.  PreviewView vizuális qty‑s cutting megjelenítés
 
 ------------------------------------------------------------------------
 
 🚀 Sprint fókusz és 👉 Holnap fókusz
 
 Sprint fókusz (Q1)
-
--   NeedCalculationDetail formulák felvitele a három toronyba
--   Cutting + qty minták (2 lábas roletta, napháló, stb.)
--   OrderNeed / WorksheetNeed pipeline stabilizálása a vágási esetekre
--   Integrációs tesztek: Order → NeedCalculator → Aggregátor
--   UI összekötés (PreviewView + OrderDialog) – ha a számítási minták már stabilak
+- NeedCalculationDetail formulák
+- Cutting + qty minták
+- OrderNeed / WorksheetNeed stabilizálása
+- Integrációs tesztek
+- UI összekötés (PreviewView + OrderDialog)
 
 Holnap fókusz
-
-1.  NeedCalculationDetail formulák felvitele – első körben a cutting + qty mintával
-2.  A “2 láb = 2 × magasság” konkrét formula(ák) megírása, kerf‑tudatosan
-3.  Legalább 1–2 olyan formula, ahol a qty nem triviális (nem csak 1), hanem a domainből következik
-    (pl. bal/jobb oldal, több rögzítési pont)
-
-(A “nagy dolog megcsinálni?” kérdésre a válasz: implementációban kicsi,
-modellben fontos – jó, hogy most jött elő, így a formulák már erre
-születnek, nem utólag toldozzuk.)
+1. Cutting + qty formula(ák) felvitele
+2. “2 × magasság” kerf‑tudatos minta
+3. Legalább 1–2 nem triviális qty‑s formula
 
 ------------------------------------------------------------------------
 
 ✔ Git commit subject (≤55 karakter)
 
-***
-Cutting + qty pattern domain‑döntés, holnaptól formulák
-***
+    Cutting + qty domain-pontosítás, tábla változatlan
+
+------------------------------------------------------------------------

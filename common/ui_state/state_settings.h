@@ -12,6 +12,8 @@ public:
     QString prefix() const;
     void save() const;
 
+    void clearUIState();
+
 private:
     QString _groupName;
     QVariantMap _map;

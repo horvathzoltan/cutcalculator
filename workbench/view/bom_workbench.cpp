@@ -95,6 +95,8 @@ void BOMWorkbench::buildLeftPanel() {
 
     _treeView = new ProductTreeView(leftWidget);
     _treeView->setObjectName("bom_product_tree");
+    _treeView->header()->setObjectName("bom_tree_header");
+
 
     _treeManager = new ProductTreeManager(_treeView, this);
     _treePresenter = new ProductTreePresenter(_treeView, _treeManager, this);//_treePanel
@@ -121,6 +123,9 @@ void BOMWorkbench::buildRightPanel() {
     // NeedRules view + manager
     _matView = new MaterialRequirementsView(_leftVerticalSplitter);
     _matView->setObjectName("bom_mat_view");
+    _matView->table()->setObjectName("bom_mat_table");
+    _matView->table()->horizontalHeader()->setObjectName("bom_mat_header");
+
 
     _matManager = new MaterialRequirementsManager(_matView, this);
     _matPresenter = new MaterialRequirementsPresenter(_matView, _matManager, _treeManager, this);
@@ -129,6 +134,9 @@ void BOMWorkbench::buildRightPanel() {
     // Modes view + manager
     _modesView = new CalculationModesView(_leftVerticalSplitter);
     _modesView->setObjectName("bom_modes_view");
+    _modesView->table()->setObjectName("bom_modes_table");
+    _modesView->table()->horizontalHeader()->setObjectName("bom_modes_header");
+
 
     _modesManager = new CalculationModesManager(_modesView, this);
     _modesPresenter = new CalculationModesPresenter(_modesView, _modesManager, _treeManager, this);
@@ -161,6 +169,9 @@ void BOMWorkbench::buildRightPanel() {
     // jobb oldal: Details view + manager
     _detailView = new CalculationModeDetailView(_rightMainSplitter);
     _detailView->setObjectName("bom_detail_view");
+    _detailView->table()->setObjectName("bom_detail_table");
+    _detailView->table()->horizontalHeader()->setObjectName("bom_detail_header");
+
 
     _detailManager = new CalculationModeDetailManager(_detailView, this);
     _detailPresenter = new CalculationModeDetailPresenter(_detailView, _detailManager, this);

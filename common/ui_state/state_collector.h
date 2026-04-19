@@ -40,4 +40,5 @@ private:
     }
 
     const Handler* findHandler(const QMetaObject* mo) const;
+    static QString computeAuditPath(QWidget *w);
 };

@@ -1,8 +1,3 @@
-Zoltán, akkor most összerakom **a teljes, audit‑szintű hibajegyzéket + módosítási igénylistát + szükséges fájlok listáját + végrehajtható patch‑tervet**, pontosan abban a szerkezetben, ahogy kérted.
-
-A cél: **átlátható, lineáris, végrehajtható roadmap**, amely lefedi a BOMWorkbench UI‑state problémáit.
-
----
 
 # ⭐ **1. Feltárt hibák és módosítási igények (magyarázattal)**
 
@@ -224,9 +219,3 @@ s.map().insert(key + "/auditPath", computeAuditPath(w));
 7. ellenőrzés
 
 ---
-
-# ⭐ **5. Készen állok a diff‑patch generálására**
-
-Ha szeretnéd, megcsinálom a teljes, kész **PATCH 1–2 diffet**, amit csak be kell illesztened.
-
-👉 **kérem a PATCH 1–2 diffet**

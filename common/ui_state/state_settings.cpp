@@ -26,3 +26,12 @@ void StateSettings::save() const
 {
     SnapshotManager::instance().saveUIState(_groupName, _map);
 }
+
+void StateSettings::clearUIState()
+{
+    SnapshotManager::instance().clearUIState(_groupName);
+    _map.clear();
+}
+
+
+

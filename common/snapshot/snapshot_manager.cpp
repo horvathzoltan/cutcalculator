@@ -245,6 +245,33 @@ QVariantMap SnapshotManager::loadUIState(const QString& groupName) const
     return result;
 }
 
+void SnapshotManager::clearUIState(const QString& groupName) const
+{
+    const QString path =
+        FileNameHelper::instance().pathFor(FileKind::UIState_SnapshotFile,
+                                           FileAccess::Write,
+                                           groupName);
+    if (path.isEmpty()) {
+        return;
+    }
+
+    QSettings snap(path, QSettings::IniFormat);
+    snap.beginGroup("UIState");
+
+    const QString prefix = groupName + "/";   // <-- FONTOS!
+    const QStringList keys = snap.allKeys();
+
+    for (const QString& k : keys) {
+        if (k.startsWith(prefix))
+            snap.remove(k);
+    }
+
+    snap.endGroup();
+    snap.sync();
+}
+
+
+
 void SnapshotManager::saveUIState(const QString& groupName,
                                   const QVariantMap& map) const
 {
