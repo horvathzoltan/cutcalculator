@@ -1,19 +1,3 @@
-Zoltán, átnéztem a két roadmap‑változatot soronként, és elkészítettem a
-véglegesített, teljes, konzisztens ROADMAP v1.1‑et, amely:
-
--   nem hagy ki semmit a régi roadmapből,
--   beépíti az új roadmap minden pontosítását,
--   kiegészíti a hiányzó elemeket (Worksheet pipeline,
-    WorkOrderRepository, 0. fázis, napi bontás),
--   patch‑orientált, tehát minden lépésből generálható implementációs
-    terv,
--   kontextus‑kímélő, tehát a későbbi files.txt generálás is egyszerű
-    lesz.
-
-Ez most a projekt hivatalos roadmapje.
-
-------------------------------------------------------------------------
-
 ⭐ FEJLESZTÉSI ROADMAP v1.1
 
 OrderHeader + OrderLine + OrderNeed + Worksheet + WorkOrder teljes
@@ -257,17 +241,344 @@ Több Order → egy munkalap → egy aggregált gyártási lista.
 
 ------------------------------------------------------------------------
 
-⭐ A roadmap v1.1 készen áll
+⭐ FÁZIS 1 – Order domain (model + repo + service + query + cache skeleton)
 
-Ez a verzió:
+→ Csak a kontextus + a domainhez szükséges minták
+→ NINCS benne semmilyen jövőbeli Order fájl
 
--   teljes,
--   konzisztens,
--   nem hagy ki semmit,
--   patch‑orientált,
--   és a projekt teljes fejlesztési ciklusát lefedi.
+📁 files_phase_1_order_domain.txt
 
-Ha szeretnéd, most generálom a következő lépést:
+    # KONTEKSTUS – meglévő domain minták (háromfázisú import, CRUD workflow)
 
--   LÉPÉS 1 – OrderHeader + OrderLine modellek patch‑terve
--   files.txt generálása a LÉPÉS 1‑hez
+    products/model/product_master.h
+    products/registry/product_registry.h
+    products/repository/product_repository.cpp
+    products/repository/product_repository.h
+
+    materials/model/material_master.h
+    materials/registry/material_registry.h
+    materials/repository/material_repository.cpp
+    materials/repository/material_repository.h
+
+    # NeedRule / CalculationMode – workflow minták (CRUD, registry, repository)
+
+    needs/model/need_rule.h
+    needs/registry/need_rule_registry.cpp
+    needs/registry/need_rule_registry.h
+    needs/repository/need_rule_repository.cpp
+    needs/repository/need_rule_repository.h
+
+    calcmodes/model/need_calculation.h
+    calcmodes/registry/need_calculation_registry.cpp
+    calcmodes/registry/need_calculation_registry.h
+    calcmodes/repository/need_calculation_repository.cpp
+    calcmodes/repository/need_calculation_repository.h
+
+    calculation/model/need_calculation_detail.h
+    calculation/registry/need_calculation_detail_registry.cpp
+    calculation/registry/need_calculation_detail_registry.h
+    calculation/repository/need_calculation_detail_repository.cpp
+    calculation/repository/need_calculation_detail_repository.h
+
+    # INFRA – háromfázisú import és registry workflow minták
+
+    common/csv/csvimporter.h
+    common/csv/filecontext.h
+    common/csv/filecontext.cpp
+    common/csv/rowerror.h
+
+    common/registry/base/registry_engine_base.h
+    common/registry/mixins/crud_workflow_mixin.h
+    common/registry/mixins/bulk_load_mixin.h
+    common/registry/mixins/test_support_mixin.h
+    common/registry/feature/register_me.h
+
+    # TESZTINFRA – szükséges a saját Order tesztekhez
+
+    test/common/test_module_base.h
+    test/common/test_data_builder.cpp
+    test/common/test_data_builder.h
+    test/common/test_file_helper.cpp
+    test/common/test_file_helper.h
+
+------------------------------------------------------------------------
+
+⭐ FÁZIS 2 – OrderWorkbench UI
+
+→ Csak a UI kontextus + BOMWorkbench minták
+→ NINCS benne semmilyen jövőbeli Order UI fájl
+
+📁 files_phase_2_order_workbench.txt
+
+    # REFERENCIA UI – BOMWorkbench (layout, splitter, state restore)
+
+    workbench/view/bom_workbench.h
+    workbench/view/bom_workbench.cpp
+
+    # UI INFRA – state collector, overlay, geometry
+
+    common/ui_state/state_collector.cpp
+    common/ui_state/state_collector.h
+    common/ui_state/state_handlers.cpp
+    common/ui_state/state_handlers.h
+    common/ui_state/state_settings.cpp
+    common/ui_state/state_settings.h
+
+    common/utils/geometry_helper.cpp
+    common/utils/geometry_helper.h
+
+    ui/helpers/overlay_status_helper.cpp
+    ui/helpers/overlay_status_helper.h
+
+    # PRODUCT UI – product választóhoz szükséges
+
+    products/view/product_tree_view.cpp
+    products/view/product_tree_view.h
+    products/view/product_tree_manager.cpp
+    products/view/product_tree_manager.h
+    products/view/product_tree_panel.cpp
+    products/view/product_tree_panel.h
+
+    # MATERIAL UI – color badge, picker minták
+
+    materials/view/color_badge.cpp
+    materials/view/color_badge.h
+    needs/view/material_picker_dialog.cpp
+    needs/view/material_picker_dialog.h
+
+------------------------------------------------------------------------
+
+⭐ FÁZIS 3 – Order → Need → Worksheet integráció
+
+→ Csak a pipeline + tesztek + Order domain konverzió forrása
+→ NINCS benne semmilyen jövőbeli Order fájl
+
+📁 files_phase_3_order_need_integration.txt
+
+    # PIPELINE – Order → Need → Worksheet
+
+    calculation/service/order_need_builder.cpp
+    calculation/service/order_need_builder.h
+
+    calculation/service/worksheet_builder.cpp
+    calculation/service/worksheet_builder.h
+
+    calculation/service/need_calculator.cpp
+    calculation/service/need_calculator.h
+
+    calculation/service/raw_cut.h
+    calculation/service/raw_kit.h
+    calculation/service/piece.h
+
+    calculation/service/cut_aggregator.cpp
+    calculation/service/cut_aggregator.h
+    calculation/service/kit_aggregator.cpp
+    calculation/service/kit_aggregator.h
+
+    # NEED RULE + CALCULATION DEFINÍCIÓK
+
+    needs/model/need_rule.h
+    needs/registry/need_rule_registry.cpp
+    needs/registry/need_rule_registry.h
+    needs/repository/need_rule_repository.cpp
+    needs/repository/need_rule_repository.h
+
+    calcmodes/model/need_calculation.h
+    calcmodes/registry/need_calculation_registry.cpp
+    calcmodes/registry/need_calculation_registry.h
+    calcmodes/repository/need_calculation_repository.cpp
+    calcmodes/repository/need_calculation_repository.h
+
+    calculation/model/need_calculation_detail.h
+    calculation/registry/need_calculation_detail_registry.cpp
+    calculation/registry/need_calculation_detail_registry.h
+    calculation/repository/need_calculation_detail_repository.cpp
+    calculation/repository/need_calculation_detail_repository.h
+
+    # PRODUCT + MATERIAL – pipeline kontextus
+
+    products/model/product_master.h
+    products/registry/product_registry.h
+    products/repository/product_repository.cpp
+    products/repository/product_repository.h
+
+    materials/model/material_master.h
+    materials/registry/material_registry.h
+    materials/repository/material_repository.cpp
+    materials/repository/material_repository.h
+
+    # TESZTEK – pipeline referenciák
+
+    test/calculation/order_need_builder_tester.cpp
+    test/calculation/order_need_builder_tester.h
+
+    test/calculation/roletta_calculation_tester.cpp
+    test/calculation/roletta_calculation_tester.h
+
+    test/calculation/test_roletta_builder.cpp
+    test/calculation/test_roletta_builder.h
+    test/calculation/test_roletta_builder_tester.cpp
+
+------------------------------------------------------------------------
+
+⭐ FÁZIS 4 – WorkOrder domain
+
+→ Csak a WorkOrderNeedBuilder kontextusa
+→ NINCS benne semmilyen jövőbeli WorkOrder fájl
+
+📁 files_phase_4_workorder_domain.txt
+
+    # ORDER + WORKSHEET PIPELINE – WorkOrderNeedBuilder alapja
+
+    calculation/service/order_need_builder.cpp
+    calculation/service/order_need_builder.h
+
+    calculation/service/worksheet_builder.cpp
+    calculation/service/worksheet_builder.h
+
+    calculation/service/cut_aggregator.cpp
+    calculation/service/cut_aggregator.h
+    calculation/service/kit_aggregator.cpp
+    calculation/service/kit_aggregator.h
+
+    calculation/service/need_calculator.cpp
+    calculation/service/need_calculator.h
+
+    # PRODUCT + MATERIAL – kontextus
+
+    products/model/product_master.h
+    products/registry/product_registry.h
+
+    materials/model/material_master.h
+    materials/registry/material_registry.h
+
+    # TESZTEK – aggregált lista referenciák
+
+    test/calculation/need_calculator_pipeline_tester.cpp
+    test/calculation/test_roletta_builder.cpp
+    test/calculation/test_roletta_builder.h
+    test/calculation/test_roletta_builder_tester.cpp
+
+------------------------------------------------------------------------
+
+⭐ FÁZIS 5 – WorkOrderWorkbench UI
+
+→ Csak a UI kontextus + BOMWorkbench minták
+→ NINCS benne semmilyen jövőbeli WorkOrder UI fájl
+
+📁 files_phase_5_workorder_workbench.txt
+
+    # REFERENCIA UI – BOMWorkbench
+
+    workbench/view/bom_workbench.h
+    workbench/view/bom_workbench.cpp
+
+    # ORDER UI – WorkOrder UI integrációhoz szükséges
+
+    orders/view/order_workbench.h
+    orders/view/order_workbench.cpp
+    orders/view/order_dialog.h
+    orders/view/order_dialog.cpp
+
+    # UI INFRA – state, overlay, geometry
+
+    common/ui_state/state_collector.cpp
+    common/ui_state/state_collector.h
+    common/ui_state/state_handlers.cpp
+    common/ui_state/state_handlers.h
+    common/ui_state/state_settings.cpp
+    common/ui_state/state_settings.h
+
+    common/utils/geometry_helper.cpp
+    common/utils/geometry_helper.h
+
+    ui/helpers/overlay_status_helper.cpp
+    ui/helpers/overlay_status_helper.h
+
+------------------------------------------------------------------------
+
+⭐ FÁZIS 6 – StringCache + autocomplete
+
+→ Csak a StringCache kontextus + UI célpontok
+→ NINCS benne semmilyen jövőbeli fájl
+
+📁 files_phase_6_stringcache_autocomplete.txt
+
+    # STRINGCACHE – kontextus minták (Product/Material)
+
+    products/repository/product_repository.cpp
+    products/repository/product_repository.h
+
+    materials/repository/material_repository.cpp
+    materials/repository/material_repository.h
+
+    # ORDER UI – autocomplete célpontok
+
+    orders/view/order_workbench.h
+    orders/view/order_workbench.cpp
+    orders/view/order_dialog.h
+    orders/view/order_dialog.cpp
+
+    # UI INFRA – overlay, state
+
+    ui/helpers/overlay_status_helper.cpp
+    ui/helpers/overlay_status_helper.h
+
+    common/ui_state/state_collector.cpp
+    common/ui_state/state_collector.h
+
+------------------------------------------------------------------------
+
+⭐ FÁZIS 7 – Tesztelés + finomhangolás
+
+→ Csak a meglévő tesztinfra + pipeline tesztek
+→ NINCS benne semmilyen jövőbeli tesztfájl
+
+📁 files_phase_7_testing_hardening.txt
+
+    # TESZTINFRA
+
+    test/test_manager.cpp
+    test/test_manager.h
+
+    test/common/test_module_base.h
+    test/common/test_data_builder.cpp
+    test/common/test_data_builder.h
+    test/common/test_file_helper.cpp
+    test/common/test_file_helper.h
+
+    # PIPELINE TESZTEK
+
+    test/calculation/order_need_builder_tester.cpp
+    test/calculation/order_need_builder_tester.h
+
+    test/calculation/roletta_calculation_tester.cpp
+    test/calculation/roletta_calculation_tester.h
+
+    test/calculation/test_roletta_builder.cpp
+    test/calculation/test_roletta_builder.h
+    test/calculation/test_roletta_builder_tester.cpp
+
+    test/calculation/need_calculator_pipeline_tester.cpp
+
+    # REGISTRY TESZTEK
+
+    test/product/product_registry_tester.cpp
+    test/material/material_registry_tester.cpp
+    test/need/need_rule_registry_tester.cpp
+    test/calcmode/need_calculation_registry_tester.cpp
+
+    # OVERLAY / VALIDATOR TESZTEK
+
+    test/overlay/material_requirements_overlay_tester.cpp
+    test/overlay/matrix_validator_tester.cpp
+    test/overlay/overlay_presenter_tester.cpp
+
+    # INFRA TESZTEK
+
+    test/settings_manager_tester.cpp
+    test/filenamehelper/filenamehelper_tests.cpp
+    test/eventlogger/event_logger_tester.cpp
+
+------------------------------------------------------------------------
+
