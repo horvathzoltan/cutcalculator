@@ -1,8 +1,7 @@
-⭐ FUNKCIONÁLIS SPECIFIKÁCIÓ
+⭐ FUNKCIONÁLIS SPECIFIKÁCIÓ (v1.2 – kód‑szinkronizált, pontosított)
 
-Gyártási rendeléskezelő és anyagigény‑képző rendszer (v1.0)
-
-(NeedCalculator + Order + WorkOrder + ItemNeed jövőmodell)
+Gyártási rendeléskezelő és anyagigény‑képző rendszer
+(NeedCalculator + Order + Worksheet + WorkOrder jövőmodell)
 
 ------------------------------------------------------------------------
 
@@ -11,31 +10,40 @@ Gyártási rendeléskezelő és anyagigény‑képző rendszer (v1.0)
 A rendszer feladata:
 
 -   ügyfél megrendeléseinek kezelése (Order),
--   megrendelésen belüli tételek kezelése (OrderLine),
--   ezekből anyagigény számítása (NeedCalculator),
--   több megrendelésből munkalap összeállítása (WorkOrder),
--   a munkalaphoz tartozó összesített anyagigény előállítása
-    (WorkOrderNeed),
--   a gyártás számára vágási és kitting listák generálása.
+-   megrendelésen belüli tételek kezelése (OrderLine / OrderItem),
+-   tételenkénti anyagigény számítása (NeedCalculator → ItemNeed),
+-   egy megrendelés teljes anyagigényének előállítása (OrderNeedBuilder
+    → OrderNeed),
+-   egy megrendelésből gyártási lista (vágás + kitting) előállítása
+    (WorksheetBuilder → WorksheetNeed),
+-   több megrendelésből munkalap összeállítása (WorkOrder – jövőmodell),
+-   munkalaphoz tartozó aggregált anyagigény előállítása (WorkOrderNeed
+    – jövőmodell),
+-   a gyártás számára vágási és kitting listák generálása
+    (CutAggregator, KitAggregator).
 
 A rendszernek támogatnia kell:
 
--   több order → egy munkalap,
--   több orderline → több ItemNeed,
--   qty szorzást,
--   aggregálást (azonos anyagok összevonása),
--   auditálhatóságot,
--   visszakereshetőséget.
+-   több order → egy munkalap (WorkOrder),
+-   egy orderen belül több tétel (OrderItem / OrderLine),
+-   qty szorzást (Order szinten, nem a NeedCalculator‑ban),
+-   aggregálást (azonos anyagok összevonása vágásnál és kittingnél),
+-   auditálhatóságot (OrderNeed, WorksheetNeed, WorkOrderNeed
+    struktúrák),
+-   visszakereshetőséget (externalId, ownerName, productId, stb.).
 
 ------------------------------------------------------------------------
 
-2. Fő entitások és szerepük
+2. Fő entitások és rétegek
 
-A rendszer három rétegben működik:
+A rendszer három logikai rétegben működik:
 
-1.  Order szint – ügyfélmegrendelések és tételek
-2.  Need szint – anyagigény számítása és reprezentációja
-3.  WorkOrder szint – gyártási munkalapok és aggregált igények
+1.  Order szint – ügyfélmegrendelések és tételek (Order, OrderItem /
+    OrderLine)
+2.  Need szint – anyagigény számítása és reprezentációja (ItemNeed,
+    OrderNeed)
+3.  Gyártási lista / WorkOrder szint – aggregált gyártási igények
+    (WorksheetNeed, később WorkOrderNeed)
 
 Mindhárom réteg külön felelősséget visz, és együtt alkotják a gyártási
 pipeline‑t.
@@ -44,279 +52,455 @@ pipeline‑t.
 
 ⭐ 2.1. ORDER SZINT
 
-(Megrendelések és tételek funkcionális specifikációja)
+2.1.1. Order – ügyfélmegrendelés (jövőbeli domain modell)
 
-Order – ügyfélmegrendelés
+Cél: egy ügyfél által leadott megrendelés reprezentációja.
 
-Egy Order egy ügyfél által leadott megrendelést reprezentál.
+Attribútumok (tervezett orders/model/order.h):
 
-Attribútumok
+-   id: QUuid
+-   orderNumber: QString (pl. “2026‑0001”)
+-   customerName: QString
+-   orderDate: QDate
+-   lines: QVector (vagy QVector – lásd alább)
 
--   id : QUuid
--   orderNumber : QString (pl. „2026‑0001”)
--   customerName : QString
--   orderDate : QDate
--   lines : QVector<OrderLine>
+Viselkedés:
 
-Viselkedés
+-   egy Order több OrderLine / OrderItem elemet tartalmaz,
+-   egy OrderLine egy terméket és annak paramétereit írja le,
+-   az Order szint nem számol anyagigényt, csak adatot hordoz.
 
--   egy Order több OrderLine‑t tartalmaz,
--   egy OrderLine egy terméket és annak paramétereit írja le.
+Fontos pontosítás:
+A calculation/service/order_need_builder.h fájlban található
+Order/OrderItem nem perzisztens domain, hanem számítási pipeline input
+DTO.
+A perzisztens Order domain a orders/model/order.h lesz.
 
 ------------------------------------------------------------------------
 
-OrderLine – megrendelési tétel
+2.1.2. OrderLine – megrendelési tétel (NeedCalculator input)
 
-Egy OrderLine egy konkrét termék egy vagy több példányát írja le.
+A NeedCalculator jelenlegi OrderLine típusa:
 
-Attribútumok
+    struct OrderLine {
+        QUuid productId;
+        int width_mm = 0;
+        int height_mm = 0;
+        QString handlerSide;
+        QString externalId;
+        QString ownerName;
+        QString colorName;
+    };
 
--   id : QUuid
--   productId : QUuid
--   width_mm : int
--   height_mm : int
--   qty : int
--   handlerSide : QString
--   externalId : QString
--   ownerName : QString
--   colorName : QString
+Attribútumok:
 
-Viselkedés
+-   productId: QUuid – terméktípus (ProductMaster.id)
+-   width_mm, height_mm: méretek mm‑ben
+-   handlerSide: “L” / “R” / üres
+-   externalId: külső azonosító (pl. ügyfél tételszám: “1243”)
+-   ownerName: megrendelő neve (pl. “Teszt Elek”)
+-   colorName: szín megnevezése (pl. “Fehér”)
 
--   egy OrderLine‑ból qty darab fizikai termék készül,
--   a NeedCalculator egy darabra számol anyagigényt.
+Viselkedés:
+
+-   egy OrderLine egy darab fizikai termék paramétereit írja le,
+-   a NeedCalculator mindig 1 db ItemNeed‑et számol,
+-   a darabszám (qty) nem része ennek a struktúrának.
+
+------------------------------------------------------------------------
+
+2.1.3. OrderItem – Order + qty + mód (jelenlegi builder input)
+
+A calculation/service/order_need_builder.h jelenlegi modellje:
+
+    struct OrderItem {
+        QUuid orderItemId;
+        OrderLine line;
+        int order_qty = 1;
+        QString modeName;
+    };
+
+Attribútumok:
+
+-   orderItemId – tétel azonosító
+-   line – OrderLine - a termék paraméterei
+-   order_qty – hány darab készül ebből a tételből
+-   modeName – számítási mód neve (pl. “Manufacturing”)
+
+Viselkedés:
+
+-   egy OrderItem egy logikai rendelési sor (OrderLine + qty + mode),
+-   a qty szorzás az OrderNeedBuilder‑ben történik.
 
 ------------------------------------------------------------------------
 
 ⭐ 2.2. NEED SZINT
 
-(Anyagigény számítása és reprezentációja)
+2.2.1. NeedCalculation / NeedCalculationDetail
 
-NeedCalculation / NeedCalculationDetail
+Már létező domain:
 
-Ezek már léteznek:
+-   NeedCalculation – termékhez tartozó számítási mód
+-   NeedCalculationDetail – formula egy anyagra (Cutting / Kitting)
 
--   termékhez tartozó számítási módok,
--   minden módhoz több formula (Cutting / Kitting).
-
-------------------------------------------------------------------------
-
-ItemNeed – egy darab termék anyagigénye
-
-A NeedCalculator eredménye egy darabra.
-
-Attribútumok
-
--   orderLineId : QUuid
--   cuts : QVector<RawCut>
--   kits : QVector<RawKit>
-
-Viselkedés
-
--   nem aggregált,
--   nem szorzott,
--   egyetlen fizikai példány anyagigénye.
+Ezeket használja a NeedCalculator a DSL futtatásához.
 
 ------------------------------------------------------------------------
 
-OrderItemNeed – egy OrderLine összes példánya
+2.2.2. ItemNeed – egy darab termék anyagigénye
 
-Attribútumok
+Jelenlegi definíció (need_calculator.h):
 
--   orderLineId : QUuid
--   qty : int
--   instances : QVector<ItemNeed>
-    (opcionális: példányonkénti externalRef generáláshoz)
+    struct ItemNeed {
+        QVector<RawCut> cutItems;
+        QVector<RawKit> kitItems;
+    };
 
-Viselkedés
+Attribútumok:
 
--   NeedCalculator::calculate(line) → ItemNeed (1 db)
--   OrderItemNeedBuilder:
-    -   megszorozza qty‑vel,
-    -   példányonként externalRef‑et generálhat.
+-   cutItems: QVector – vágási tételek (nem aggregált),
+-   kitItems: QVector – kitting tételek (nem aggregált).
 
-------------------------------------------------------------------------
+Viselkedés:
 
-OrderNeed – egy teljes Order anyagigénye
+-   egy ItemNeed egy darab fizikai termék anyagigényét írja le,
+-   nem aggregált, nem szorzott,
+-   a NeedCalculator::calculate(line, modeName) mindig 1 db ItemNeed‑et
+    ad vissza.
 
-Attribútumok
-
--   orderId : QUuid
--   orderItemNeeds : QVector<OrderItemNeed>
-
-Viselkedés
-
--   egy Order összes tételének anyagigénye,
--   még nem aggregált.
+A korábbi specifikációban szereplő orderLineId itt nincs benne – a
+kapcsolatot az OrderItemNeed szint hordozza.
 
 ------------------------------------------------------------------------
 
-⭐ 2.3. WORKORDER SZINT
+2.2.3. OrderItemNeed – egy rendelési tétel összes példánya
 
-(Munkalapok és aggregált gyártási igények)
+Jelenlegi definíció (need_calculator.h):
 
-WorkOrder – gyártási munkalap
+    struct OrderItemNeed {
+        QUuid orderItemId;
+        OrderLine line;
+        QVector<ItemNeed> itemNeeds;
+    };
 
-A gyártásba kiadott megrendelések csoportja.
+Attribútumok:
 
-Attribútumok
+-   orderItemId: QUuid – hivatkozás az OrderItem‑re,
+-   line: OrderLine – a tétel metaadatai (productId, méretek, owner,
+    stb.),
+-   itemNeeds: QVector – minden fizikai példány külön ItemNeed‑ként.
 
--   id : QUuid
--   workOrderNumber : QString (pl. „2026‑0001”)
--   date : QDate
--   orderIds : QVector<QUuid>
+Viselkedés:
 
-Viselkedés
-
--   több Order tartozhat egy WorkOrder‑höz,
--   a gyártás mindig WorkOrder szinten dolgozik.
+-   az OrderNeedBuilder:
+    -   meghívja NeedCalculator::calculate(line, modeName)‑et,
+    -   az eredményt order_qty‑szer ismétli,
+    -   minden példányt külön ItemNeed elemként tárol az itemNeeds
+        vektorban.
+-   NeedCalculator → 1 db ItemNeed,
+-   OrderNeedBuilder → ismétli order_qty alkalommal,
+-   az itemNeeds.size() adja a darabszámot.
 
 ------------------------------------------------------------------------
 
-WorkOrderNeed – munkalap teljes anyagigénye
+2.2.4. OrderNeed – egy teljes Order anyagigénye
 
-Attribútumok
+    struct OrderNeed {
+        QUuid orderId;
+        QVector<OrderItemNeed> orderItemNeeds;
+    };
 
--   workOrderId : QUuid
--   orderNeeds : QVector<OrderNeed>
--   aggregatedCuts : QVector<CutAggregatedItem>
--   aggregatedKits : QVector<KitAggregatedItem>
+------------------------------------------------------------------------
 
-Viselkedés
+⭐ 2.3. GYÁRTÁSI LISTA / WORKSHEET / WORKORDER SZINT
 
--   összegyűjti az összes OrderNeed‑et,
--   aggregálja az anyagokat (azonos barcode + méret + tulajdonságok).
+2.3.1. WorksheetNeed – aggregált vágási és kitting lista
+
+Jelenlegi definíció (calculation/service/worksheet_builder.h):
+
+    struct WorksheetNeed {
+        QUuid worksheetId;
+        QVector<CutAggregatedItem> cuts;
+        QVector<KitAggregatedItem> kits;
+    };
+
+Attribútumok:
+
+-   worksheetId: QUuid – jelenleg az OrderNeed.orderId‑vel azonosítva,
+-   cuts: QVector – aggregált vágási lista,
+-   kits: QVector – aggregált kitting lista.
+
+Viselkedés:
+
+-   a WorksheetBuilder::fromOrderNeed(orderNeed):
+    -   végigmegy az összes OrderItemNeed‑en,
+    -   minden ItemNeed‑ből Piece és KitItem listát épít,
+    -   majd CutAggregator::aggregate és KitAggregator::aggregate
+        segítségével aggregál.
+
+Ez a struktúra gyakorlatilag a WorkOrderNeed egy Orderre szűkített
+változata. Később több OrderNeed összefűzésével épülhet a WorkOrderNeed.
+
+Pontosítás – aggregálási kulcsok (kód szerint)
+
+CutAggregator kulcsa:
+
+    materialBarcode + requiredLength + handlerSide
+
+KitAggregator kulcsa:
+
+    materialBarcode
+
+Tehát:
+
+-   vágásnál: barcode + hossz + handlerSide,
+-   kittingnél: csak barcode.
+
+Nem része a kulcsnak: ownerName, colorName, fullWidth, fullHeight.
+
+Pontosítás – WorksheetNeed és OrderNeed kapcsolata
+
+A jelenlegi implementációban:
+
+    ws.worksheetId = orderNeed.orderId;
+
+Ez azt jelenti, hogy a WorksheetNeed 1:1 kapcsolatban áll egy Orderrel,
+és nem külön entitás:
+a WorksheetNeed gyakorlatilag az OrderNeed „gyártási nézete”.
+
+A WorkOrder / WorkOrderNeed bevezetése után a WorksheetNeed szerepe
+változni fog,
+és a worksheetId nem az Order azonosítója lesz, hanem egy önálló
+WorkOrder‑szintű azonosító.
+
+------------------------------------------------------------------------
+
+------------------------------------------------------------------------
+
+2.3.2. WorkOrder – gyártási munkalap (jövőmodell)
+
+Attribútumok:
+
+-   id
+-   workOrderNumber
+-   date
+-   orderIds
+
+------------------------------------------------------------------------
+
+2.3.3. WorkOrderNeed – munkalap teljes anyagigénye (jövőmodell)
+
+Attribútumok:
+
+-   workOrderId
+-   orderNeeds
+-   aggregatedCuts
+-   aggregatedKits
 
 ------------------------------------------------------------------------
 
 3. Folyamatok (end‑to‑end)
 
-3.1. Order létrehozása
-
-1.  Felhasználó rögzíti az Order metaadatokat.
-2.  Hozzáad OrderLine tételeket.
-3.  Minden OrderLine tartalmazza a qty‑t.
+1.  Felhasználó rögzíti az Order metaadatokat (orderNumber,
+    customerName, orderDate).
+2.  Hozzáad OrderLine / OrderItem tételeket:
+    -   productId, méretek, handlerSide, externalId, ownerName,
+        colorName,
+    -   qty (OrderItem.order_qty).
+3.  Az Order mentésre kerül (jövőbeli
+    orders/repository/order_repository).
 
 ------------------------------------------------------------------------
 
-3.2. OrderNeed előállítása
+3.2. OrderNeed előállítása (jelenlegi kód)
 
-1.  OrderNeedBuilder::build(order, modeName)
-2.  Minden OrderLine‑ra:
-    -   ItemNeed perOne = NeedCalculator::calculate(line)
-    -   OrderItemNeed.qty = line.qty
-    -   OrderItemNeed.instances = perOne * qty
+Jelenlegi implementáció (OrderNeedBuilder::build):
+
+    OrderNeed OrderNeedBuilder::build(const Order& order, bool debug)
+    {
+        OrderNeed out;
+        out.orderId = order.orderId;
+
+        for (const auto& item : order.items) {
+
+            OrderItemNeed oin;
+            oin.orderItemId = item.orderItemId;
+            oin.line = item.line;
+            oin.itemNeeds.reserve(item.order_qty);
+
+            for (int i = 0; i < item.order_qty; ++i) {
+                ItemNeed n = NeedCalculator::calculate(item.line, item.modeName, debug);
+                oin.itemNeeds.append(n);
+            }
+
+            out.orderItemNeeds.append(oin);
+        }
+
+        return out;
+    }
+
+Lépések:
+
+1.  OrderNeedBuilder::build(order, debug) meghívása.
+2.  Minden OrderItem‑re:
+    -   ItemNeed perOne = NeedCalculator::calculate(line, modeName,
+        debug),
+    -   perOne ismétlése order_qty‑szer,
+    -   minden példány külön ItemNeed az OrderItemNeed.itemNeeds
+        vektorban.
 3.  OrderNeed összeállítása.
 
 ------------------------------------------------------------------------
 
-3.3. WorkOrder létrehozása
+3.3. WorksheetNeed előállítása (jelenlegi kód)
+
+Jelenlegi implementáció (WorksheetBuilder::fromOrderNeed):
+
+-   OrderNeed → Piece / KitItem lista → aggregálás.
+
+Lépések:
+
+1.  WorksheetNeed ws; ws.worksheetId = orderNeed.orderId;
+2.  Minden OrderItemNeed / ItemNeed:
+    -   RawCut → Piece (materialBarcode, requiredLength, handlerSide,
+        externalRef, ownerName, colorName, fullWidth, fullHeight),
+    -   RawKit → KitItem (materialBarcode, quantity, ownerName,
+        colorName, fullWidth, fullHeight).
+3.  ws.cuts = CutAggregator::aggregate(pieces);
+4.  ws.kits = KitAggregator::aggregate(kits);
+
+Eredmény: egy Order teljes, aggregált gyártási listája.
+
+Pontosítás – externalRef jelenlegi viselkedése
+
+A kódban:
+
+    p.externalRef = line.externalId;
+
+Nincs példány‑szintű sorszámozás (X1.1, X1.2).
+Ha ez üzleti igény lesz, külön v2 kiterjesztésként vezethető be.
+
+3.4. WorkOrder létrehozása
+
+3.4. WorkOrder létrehozása (jövőmodell)
 
 1.  Felhasználó kiválaszt több Order‑t.
-2.  Rendszer generál egy workOrderNumber‑t:
-    -   YYYY‑XXXX formátumban.
-3.  WorkOrder mentése.
+2.  Rendszer generál egy workOrderNumber‑t (lásd 5. fejezet).
+3.  WorkOrder mentése (workorder/service/work_order_number_generator,
+    workorder/repository).
 
-------------------------------------------------------------------------
+3.5. WorkOrderNeed előállítása
 
-3.4. WorkOrderNeed előállítása
-
-1.  WorkOrderNeedBuilder::build(workOrder)
-2.  Betölti az összes Order‑t.
-3.  Minden Order‑re meghívja az OrderNeedBuilder‑t.
+1.  WorkOrderNeedBuilder::build(workOrder, modeName, debug).
+2.  Betölti az összes Order‑t a workOrder.orderIds alapján.
+3.  Minden Order‑re meghívja az OrderNeedBuilder::build‑et.
 4.  Összefűzi az összes OrderNeed‑et.
-5.  Átadja az aggregátoroknak:
-    -   CutAggregator::aggregate
-    -   KitAggregator::aggregate
-6.  Eredmény: teljes gyártási lista.
+5.  Az összes Piece / KitItem listát aggregálja:
+    -   CutAggregator::aggregate,
+    -   KitAggregator::aggregate.
+6.  Eredmény: teljes gyártási lista WorkOrder szinten.
 
 ------------------------------------------------------------------------
 
 4. Számítási logika (NeedCalculator)
 
-A NeedCalculator:
+A NeedCalculator jelenlegi viselkedése:
 
--   feltölti a DSL változókat (w, h, color, stb.),
+-   feltölti a DSL változókat (w, h, handler, owner, color, externalId,
+    product),
 -   futtatja a FormulaEngine‑t,
--   kiolvassa a  len, mat, qty változókat,
--   visszaad egy ItemNeed‑et.
+-   kiolvassa a len, qty, mat változókat,
+-   visszaad egy ItemNeed‑et, amely RawCut és RawKit elemeket tartalmaz.
 
-A qty szorzás nem itt történik, hanem a builderben.
+Fontos:
+
+-   a qty szorzás nem itt történik, hanem:
+    -   vágásnál: RawCut.cutting_qty mezőben jelenik meg (formula dönt),
+    -   kittingnél: RawKit.kitting_qty mezőben,
+    -   a rendelési darabszám (order_qty) szorzása az
+        OrderNeedBuilder‑ben történik.
+
+Pontosítás – RawCut / RawKit qty mezők
+
+-   Cutting: qty opcionális
+    -   ha nincs qty → cutting_qty = 1
+    -   ha van qty → formula tölti
+-   Kitting: qty kötelező
+    -   ha nincs qty → hiba
 
 ------------------------------------------------------------------------
 
-⭐ 5. Munkalapszám generálás (ÚJ, véglegesített specifikáció)
+⭐ 5. Munkalapszám generálás (WorkOrderNumberGenerator)
 
-Formátum
+Formátum:
 
     YYYY-XXXX
 
 ahol:
 
--   YYYY = év (pl. 2026)
--   XXXX = év elejétől folyamatosan növekvő sorszám (0001–9999)
+-   YYYY = év (pl. 2026),
+-   XXXX = év elejétől folyamatosan növekvő sorszám (0001–9999).
 
-Példák
+Szabályok:
 
--   2026-0001
--   2026-0002
--   2026-1245
+1.  A sorszám minden évben újraindul.
+2.  Éven belül monoton növekvő.
+3.  Lexikografikusan rendezhető.
+4.  Könnyen kereshető.
+5.  Nem tartalmaz konkrét dátumot.
+6.  Gyártási gyakorlatban bevált modell.
 
-Szabályok
+Pontosítás – perzisztencia forrás
 
-✔ 1. A sorszám minden évben újraindul
-✔ 2. Éven belül monoton növekvő
-✔ 3. Lexikografikusan rendezhető
-✔ 4. Könnyen kereshető
-✔ 5. Nem tartalmaz dátumot
-✔ 6. Gyártási gyakorlatban bevált modell
+A WorkOrderNumberGenerator az aktuális év utolsó sorszámát
+egy perzisztens tárolóból (pl. workorder tábla vagy külön számláló
+tábla)
+olvassa ki, és atomikusan növeli.
 
 ------------------------------------------------------------------------
 
-6. Implementációs terv (egy az egyben kódolható)
+6. Implementációs terv
 
-6.1. Új osztályok
+6.1. Már létező elemek
 
--   Order
--   OrderLine
--   OrderNeed
--   OrderItemNeed
--   OrderNeedBuilder
--   WorkOrder
--   WorkOrderNeed
--   WorkOrderNeedBuilder
--   WorkOrderNumberGenerator
+-   NeedCalculator (+ registryk, repositoryk)
+-   OrderNeedBuilder (technikai Order / OrderItem struktúrával)
+-   WorksheetBuilder + CutAggregator + KitAggregator
+-   OrderNeedBuilderTester, RolettaCalculationTester, TestRolettaBuilder
 
-6.2. NeedCalculator változatlan marad
+6.2. Megtervezendő / implementálandó elemek
 
-(csak a qty‑t nem ő szorozza)
-
-6.3. Builder réteg
-
-OrderNeedBuilder
-
-    class OrderNeedBuilder {
-    public:
-        static OrderNeed build(const Order& order, const QString& modeName, bool debug = false);
-    };
-
-WorkOrderNeedBuilder
-
-    class WorkOrderNeedBuilder {
-    public:
-        static WorkOrderNeed build(const WorkOrder& wo, const QString& modeName, bool debug = false);
-    };
+-   Order domain:
+    -   orders/model/order.h
+    -   orders/model/order_line.h (vagy OrderItem)
+    -   orders/model/order_header.h
+    -   orders/repository/order_repository.*
+    -   orders/service/order_service.*
+    -   orders/view/order_workbench., order_dialog.
+    -   orders/query/order_query.*
+    -   orders/cache/string_cache.* (név / város autocompletion,
+        string‑táblás cache)
+-   WorkOrder domain:
+    -   workorder/model/work_order.h
+    -   workorder/model/work_order_need.h
+    -   workorder/service/work_order_need_builder.*
+    -   workorder/service/work_order_number_generator.*
 
 ------------------------------------------------------------------------
 
 7. Miért jó ez a modell?
 
--   tiszta rétegek,
--   a NeedCalculator egyszerű marad,
--   a builder réteg felel a qty‑ért és aggregálásért,
--   a WorkOrder domain végre megjelenik,
--   a gyártási folyamat leképezhető,
--   minden entitás egyértelműen definiált.
+-   Tiszta rétegek: Order → Need → Worksheet / WorkOrder.
+-   NeedCalculator egyszerű marad: csak egy darabra számol, nem
+    foglalkozik qty‑vel.
+-   Builder réteg felel a qty‑ért és aggregálásért: OrderNeedBuilder,
+    WorksheetBuilder, WorkOrderNeedBuilder.
+-   WorkOrder domain megjelenik: gyártási valóság leképezhető (több
+    order egy munkalapon).
+-   Auditálhatóság: OrderNeed / WorksheetNeed / WorkOrderNeed struktúrák
+    végigkövethetővé teszik az utat.
+-   UI/OrderWorkbench később ráültethető: a mostani pipeline már stabil,
+    erre lehet egy OrderWorkbench UI‑t tervezni (order fej + tételek,
+    keresés/szűrés, később query builder).
 
 ------------------------------------------------------------------------
-

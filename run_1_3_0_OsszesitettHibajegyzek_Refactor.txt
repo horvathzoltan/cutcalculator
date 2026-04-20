@@ -1,170 +1,273 @@
-Rendben, Zoltán — itt a multi‑qty cutting PATCH TERV, pontonként,
-végrehajtható, audit‑barát, a te RUGALMAS STRICT MODE stílusodhoz
-igazítva.
-Ez még nem kód, hanem a patch terv, amit majd snippetekre bontunk, ha
-kéred.
+Zoltán, átnéztem a két roadmap‑változatot soronként, és elkészítettem a
+véglegesített, teljes, konzisztens ROADMAP v1.1‑et, amely:
+
+-   nem hagy ki semmit a régi roadmapből,
+-   beépíti az új roadmap minden pontosítását,
+-   kiegészíti a hiányzó elemeket (Worksheet pipeline,
+    WorkOrderRepository, 0. fázis, napi bontás),
+-   patch‑orientált, tehát minden lépésből generálható implementációs
+    terv,
+-   kontextus‑kímélő, tehát a későbbi files.txt generálás is egyszerű
+    lesz.
+
+Ez most a projekt hivatalos roadmapje.
 
 ------------------------------------------------------------------------
 
-🔧 MULTI‑QTY CUTTING — PATCH TERV
+⭐ FEJLESZTÉSI ROADMAP v1.1
 
-(A cél: a cutting formulák ne csak egyetlen darabot írjanak le, hanem
-natívan kezeljék a több darabos vágást — pl. 2 lábas roletta.)
-
-A terv 7 lépésből áll, mindegyik önálló, auditálható patch.
-
-------------------------------------------------------------------------
-
-PATCH 1 — RawCut bővítése qty mezővel
-
-Cél: a DSL‑ből érkező eredmény ne csak egy darabot írjon le.
-
-Teendők
-
--   struct RawCut → új mező: int qty = 1;
--   A régi viselkedés változatlan marad (ha a formula nem ad qty‑t → 1).
-
-Hatás
-
--   A NeedCalculator képes lesz több darabot reprezentálni.
+OrderHeader + OrderLine + OrderNeed + Worksheet + WorkOrder teljes
+rendszerhez
+→ lépésről lépésre végrehajtható
+→ minden lépéshez allépések
+→ minden lépésből patch‑terv generálható
 
 ------------------------------------------------------------------------
 
-PATCH 2 — DSL támogatás qty‑re Cutting esetén
+⭐ 0. FÁZIS — Alap stabilizálás (kész)
 
-Cél: a cutting DSL‑ben lehessen qty‑t megadni (pl. qty = 2).
+0.1. Calculation pipeline dokumentálása
 
-Teendők
+→ v1.2 specifikáció elkészült
 
--   evalFormulaCut():
-    -   jelenleg a qty blokk ki van kommentezve → visszahozni.
-    -   ha nincs qty változó → default = 1.
--   fillVariables():
-    -   cutting esetén is töltsük be a qty változót (line.qty vagy 1).
+0.2. Kódstruktúra feltérképezése
 
-Hatás
+→ teljes projekt áttekintve
 
--   A formula képes lesz több darabot előírni.
+0.3. Roadmap véglegesítése
 
-------------------------------------------------------------------------
+→ MOST, ez a dokumentum
 
-PATCH 3 — NeedCalculator::calculate → RawCut többszörözése
-
-Cél: a RawCut (ami most már qty‑t tartalmaz) ne egyetlen elemként
-kerüljön a listába.
-
-Teendők
-
--   Ahol most ez van:
-
-    i.cutItems.append(r.value);
-
--   Ezt módosítani:
-
-    for (int k = 0; k < raw.qty; ++k)
-        i.cutItems.append(raw);
-
-Hatás
-
--   A cutting eredményben ténylegesen több darab jelenik meg.
+Eredmény: indulhat a fejlesztés.
 
 ------------------------------------------------------------------------
 
-PATCH 4 — Piece / explodePieces visszakapcsolása (opcionális)
+⭐ 1. FÁZIS — Order domain bevezetése (2–3 nap)
 
-Cél: ha később a CutAggregator‑t akarjuk használni, a Piece lista is
-qty‑t kezeljen.
+A legnagyobb falat, de szépen szeletelhető.
 
-Teendők
+1.1. OrderHeader + OrderLine + OrderItem + Order domain modellek
 
--   explodePieces() visszakapcsolása (jelenleg kommentben).
--   A RawCut.qty alapján több Piece generálása.
+Fájlok: - orders/model/order_header.h - orders/model/order_line.h -
+orders/model/order_item.h - orders/model/order.h
 
-Hatás
+Mezők: - OrderHeader: customerName, orderDate, defaultColor,
+defaultHandlerSide, defaultExternalPrefix, note, status
+- OrderLine: productId, width, height, qty, overrides (color, handler,
+externalId)
+- OrderItem: id + OrderLine + qty
+- Order: id + header + lines
 
--   A CutAggregator aggregált listát tud készíteni multi‑qty esetben is.
-
-------------------------------------------------------------------------
-
-PATCH 5 — CutAggregator auditálása qty‑s esetekre
-
-Cél: a CutAggregator helyesen aggregálja a több darabot.
-
-Teendők
-
--   Teszt: ha 2 darab ugyanaz a barcode + length + handlerSide →
-    quantity = 2.
--   Ha különböző handlerSide → külön sor.
-
-Hatás
-
--   A multi‑qty cutting aggregált listája helyes lesz.
+Al‑lépések: - 1.1.a – OrderHeader struct
+- 1.1.b – OrderLine struct
+- 1.1.c – OrderItem + Order összerakása
+- 1.1.d – UUID generálás, validációk
 
 ------------------------------------------------------------------------
 
-PATCH 6 — OrderNeedBuilder auditálása
+1.2. OrderRepository (CSV vagy DB)
 
-Cél: a rendelési qty és a cutting qty ne keveredjen.
+Háromfázisú import/export: - Convert → Validate → Build → Assemble
 
-Teendők
-
--   Ellenőrizni, hogy:
-    -   OrderLine.qty → példányszám
-    -   RawCut.qty → egy példányon belüli darabszám
--   A kettő szorzata legyen a végső darabszám.
-
-Hatás
-
--   A domain logika tiszta marad.
+Al‑lépések: - 1.2.a – Row → Convert
+- 1.2.b – Validate
+- 1.2.c – Build
+- 1.2.d – Assemble
 
 ------------------------------------------------------------------------
 
-PATCH 7 — Tesztek: multi‑qty cutting
+1.3. OrderService
 
-Cél: bizonyítani, hogy a rendszer működik.
-
-Teszt esetek
-
-1.  2 lábas roletta
-    -   formula: qty = 2; len = h
-    -   elvárt: két RawCut ugyanazzal a hosszal.
-2.  Aszimmetrikus oldalak
-    -   handlerSide = L/R → külön aggregált sorok.
-3.  Kerf‑tudatos formula
-    -   pl. len = h - 5
-    -   qty = 2 → két darab ugyanazzal a korrigált hosszal.
-
-Hatás
-
--   A multi‑qty cutting működése bizonyított.
+-   CRUD workflow
+-   Default értékek örökítése
+-   ExternalId prefix kezelése
+-   OrderHeader + OrderLine konzisztencia ellenőrzés
 
 ------------------------------------------------------------------------
 
-🧩 Összegzés — mit old meg a patch?
+1.4. OrderQuery
 
-  -----------------------------------------------------------------------
-  Probléma                          Megoldás
-  --------------------------------- -------------------------------------
-  Cutting DSL csak 1 darabot tud    RawCut.qty + DSL qty támogatás
-
-  NeedCalculator csak 1 darabot ad  Többszörözés qty alapján
-  vissza
-
-  Aggregátor nem tud qty‑t          Piece szintű szorzás + aggregálás
-
-  Domain logika nem kezeli a 2      OrderNeedBuilder + tesztek
-  lábas esetet
-  -----------------------------------------------------------------------
+-   keresés név, dátum, státusz, externalId alapján
 
 ------------------------------------------------------------------------
 
-👉 Következő lépés
+1.5. StringCache (autocomplete)
 
-Ha kéred, indítjuk PATCH 1‑et snippetekkel, a RUGALMAS STRICT MODE
-szerint.
+-   customerName
+-   city
+-   externalId prefix
+-   colorName
+-   handlerSide
 
-Válassz:
+------------------------------------------------------------------------
 
--   PATCH 1 indítása
--   Előbb szeretném átbeszélni a qty logikát
--   Mutasd meg, hol kell majd tesztet írni
+1.6. OrderWorkbench UI (v1 skeleton)
+
+-   OrderHeaderPanel
+-   OrderLineTable
+-   Save/Load
+-   alap layout (BOMWorkbench mintájára)
+
+Eredmény:
+Van egy működő Order domain + UI, még NeedCalculator integráció nélkül.
+
+------------------------------------------------------------------------
+
+⭐ 2. FÁZIS — Order → Calculation pipeline integráció (1–2 nap)
+
+2.1. Domain Order → technikai Order konverzió
+
+-   OrderHeader + OrderLine → OrderNeedBuilder::OrderItem
+-   default értékek örökítése
+-   externalId prefix + sorszám generálás
+
+Al‑lépések: - 2.1.a – OrderHeader + OrderLine → OrderItem konverzió
+- 2.1.b – öröklés (color, handler, externalId)
+- 2.1.c – externalId példányosítás: X1 → X1.1, X1.2, X1.3…
+
+------------------------------------------------------------------------
+
+2.2. OrderNeedBuilder módosítása
+
+-   új Order struktúra támogatása
+-   externalRef generálás (ha nem WorksheetBuilderben csináljuk)
+
+------------------------------------------------------------------------
+
+2.3. Tesztek
+
+-   RolettaCalculationTester továbbra is fusson
+-   új Order tesztek (öröklés, externalId, qty)
+
+Eredmény:
+A perzisztens Orderből már tudunk OrderNeed‑et generálni.
+
+------------------------------------------------------------------------
+
+⭐ 3. FÁZIS — Worksheet pipeline stabilizálása (1 nap)
+
+Ez a rész hiányzott az új roadmapből, most visszakerült.
+
+3.1. WorksheetNeed pontosítása
+
+-   WorksheetNeed = OrderNeed „gyártási nézete”
+-   worksheetId = orderId (átmeneti, WorkOrderNeed után változik)
+
+3.2. WorksheetBuilder frissítése
+
+-   externalRef generálás stratégia véglegesítése
+    -   OrderNeedBuilder vagy WorksheetBuilder?
+-   aggregálási kulcsok dokumentálása
+    -   Cutting: barcode + length + handlerSide
+    -   Kitting: barcode
+
+3.3. Worksheet UI (később)
+
+Eredmény:
+Egy Orderből teljes gyártási lista készül.
+
+------------------------------------------------------------------------
+
+⭐ 4. FÁZIS — WorkOrder domain (2 nap)
+
+A régi roadmapben szerepelt, az újban hiányzott a repository – most
+visszakerült.
+
+4.1. WorkOrder model
+
+-   id
+-   workOrderNumber
+-   date
+-   orderIds
+
+4.2. WorkOrderRepository
+
+-   load/save
+-   háromfázisú import/export
+
+4.3. WorkOrderNumberGenerator
+
+-   YYYY‑XXXX
+-   perzisztens számláló
+-   atomic increment
+
+4.4. WorkOrderNeedBuilder
+
+-   több OrderNeed összefűzése
+-   aggregálás WorkOrder szinten
+
+Eredmény:
+Több Order → egy munkalap → egy aggregált gyártási lista.
+
+------------------------------------------------------------------------
+
+⭐ 5. FÁZIS — WorkOrderWorkbench UI (1–2 nap)
+
+5.1. WorkOrderWorkbench
+
+-   Order listából kiválasztás
+-   munkalapszám generálás
+-   mentés
+
+5.2. WorkOrderNeed preview
+
+-   aggregált vágási lista
+-   aggregált kitting lista
+
+------------------------------------------------------------------------
+
+⭐ 6. FÁZIS — Autocomplete + string cache (1 nap)
+
+6.1. StringCache
+
+-   customerName
+-   city
+-   externalId prefix
+
+6.2. UI integráció
+
+-   OrderHeaderPanel autocomplete mezők
+
+------------------------------------------------------------------------
+
+⭐ 7. FÁZIS — Tesztelés + finomhangolás (folyamatos)
+
+-   Unit tesztek
+-   Integration tesztek
+-   UI smoke tesztek
+-   Performance tesztek (aggregálás)
+
+------------------------------------------------------------------------
+
+⭐ ÖSSZEFOGLALÓ — NAPI LÉPÉSEKRE BONTVA
+
+  Nap     Fázis                              Eredmény
+  ------- ---------------------------------- ---------------------------
+  1       OrderHeader + OrderLine modellek   Domain alapok
+  2       OrderRepository                    Betölthető/menthető Order
+  3       OrderService + Query               CRUD + keresés
+  4       OrderWorkbench skeleton            UI alap
+  5       Order → Calculation integráció     OrderNeed működik
+  6       Worksheet pipeline                 Gyártási lista működik
+  7       WorkOrder model + repo             Munkalap domain
+  8       WorkOrderNeedBuilder               Aggregált gyártási lista
+  9       WorkOrder UI                       Munkalap UI
+  10      Autocomplete                       Gyors adatbevitel
+  11–12   Tesztelés                          Stabil rendszer
+
+------------------------------------------------------------------------
+
+⭐ A roadmap v1.1 készen áll
+
+Ez a verzió:
+
+-   teljes,
+-   konzisztens,
+-   nem hagy ki semmit,
+-   patch‑orientált,
+-   és a projekt teljes fejlesztési ciklusát lefedi.
+
+Ha szeretnéd, most generálom a következő lépést:
+
+-   LÉPÉS 1 – OrderHeader + OrderLine modellek patch‑terve
+-   files.txt generálása a LÉPÉS 1‑hez
