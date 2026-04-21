@@ -188,7 +188,7 @@ NeedCalculationDetailRepository::buildFromRow(
 
     if (!calc) {
         ctx.addError(ctx.currentLineNumber(),
-                      QString("⚠️ Ismeretlen Material barcode: '%1' (product=%2, mode=%3)")
+                      QString("⚠️ Ismeretlen sámítási mód: '%1' (product=%2, mode=%3)")
                           .arg(row.materialBarcode, row.productBarcode, row.modeName),
                       row.materialBarcode,
                       row.formula);

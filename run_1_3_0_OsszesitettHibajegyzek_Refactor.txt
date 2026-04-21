@@ -248,58 +248,58 @@ Több Order → egy munkalap → egy aggregált gyártási lista.
 
 📁 files_phase_1_order_domain.txt
 
-    # KONTEKSTUS – meglévő domain minták (háromfázisú import, CRUD workflow)
+# KONTEKSTUS – meglévő domain minták (háromfázisú import, CRUD workflow)
 
-    products/model/product_master.h
-    products/registry/product_registry.h
-    products/repository/product_repository.cpp
-    products/repository/product_repository.h
+products/model/product_master.h
+products/registry/product_registry.h
+products/repository/product_repository.cpp
+products/repository/product_repository.h
 
-    materials/model/material_master.h
-    materials/registry/material_registry.h
-    materials/repository/material_repository.cpp
-    materials/repository/material_repository.h
+materials/model/material_master.h
+materials/registry/material_registry.h
+materials/repository/material_repository.cpp
+materials/repository/material_repository.h
 
-    # NeedRule / CalculationMode – workflow minták (CRUD, registry, repository)
+# NeedRule / CalculationMode – workflow minták (CRUD, registry, repository)
 
-    needs/model/need_rule.h
-    needs/registry/need_rule_registry.cpp
-    needs/registry/need_rule_registry.h
-    needs/repository/need_rule_repository.cpp
-    needs/repository/need_rule_repository.h
+needs/model/need_rule.h
+needs/registry/need_rule_registry.cpp
+needs/registry/need_rule_registry.h
+needs/repository/need_rule_repository.cpp
+needs/repository/need_rule_repository.h
 
-    calcmodes/model/need_calculation.h
-    calcmodes/registry/need_calculation_registry.cpp
-    calcmodes/registry/need_calculation_registry.h
-    calcmodes/repository/need_calculation_repository.cpp
-    calcmodes/repository/need_calculation_repository.h
+calcmodes/model/need_calculation.h
+calcmodes/registry/need_calculation_registry.cpp
+calcmodes/registry/need_calculation_registry.h
+calcmodes/repository/need_calculation_repository.cpp
+calcmodes/repository/need_calculation_repository.h
 
-    calculation/model/need_calculation_detail.h
-    calculation/registry/need_calculation_detail_registry.cpp
-    calculation/registry/need_calculation_detail_registry.h
-    calculation/repository/need_calculation_detail_repository.cpp
-    calculation/repository/need_calculation_detail_repository.h
+calculation/model/need_calculation_detail.h
+calculation/registry/need_calculation_detail_registry.cpp
+calculation/registry/need_calculation_detail_registry.h
+calculation/repository/need_calculation_detail_repository.cpp
+calculation/repository/need_calculation_detail_repository.h
 
-    # INFRA – háromfázisú import és registry workflow minták
+# INFRA – háromfázisú import és registry workflow minták
 
-    common/csv/csvimporter.h
-    common/csv/filecontext.h
-    common/csv/filecontext.cpp
-    common/csv/rowerror.h
+common/csv/csvimporter.h
+common/csv/filecontext.h
+common/csv/filecontext.cpp
+common/csv/rowerror.h
 
-    common/registry/base/registry_engine_base.h
-    common/registry/mixins/crud_workflow_mixin.h
-    common/registry/mixins/bulk_load_mixin.h
-    common/registry/mixins/test_support_mixin.h
-    common/registry/feature/register_me.h
+common/registry/base/registry_engine_base.h
+common/registry/mixins/crud_workflow_mixin.h
+common/registry/mixins/bulk_load_mixin.h
+common/registry/mixins/test_support_mixin.h
+common/registry/feature/register_me.h
 
-    # TESZTINFRA – szükséges a saját Order tesztekhez
+# TESZTINFRA – szükséges a saját Order tesztekhez
 
-    test/common/test_module_base.h
-    test/common/test_data_builder.cpp
-    test/common/test_data_builder.h
-    test/common/test_file_helper.cpp
-    test/common/test_file_helper.h
+test/common/test_module_base.h
+test/common/test_data_builder.cpp
+test/common/test_data_builder.h
+test/common/test_file_helper.cpp
+test/common/test_file_helper.h
 
 ------------------------------------------------------------------------
 
@@ -582,3 +582,749 @@ Több Order → egy munkalap → egy aggregált gyártási lista.
 
 ------------------------------------------------------------------------
 
+*
+Order modul – üzleti entitások, registryk és repositoryk tervezési kontextusa
+*
+Order modul - üzleti entitások, registryk és repositoryk tervezési kontextusa
+*
+
+1. Kiindulópont: az Order modul szerepe a rendszerben
+Az Order modul nem egyszerű „dokumentum”, hanem üzleti entitás, amely a rendszer működésének egyik központi eleme. A rendelés:
+    • saját életciklussal rendelkezik,
+    • üzleti logikát hordoz,
+    • más modulok hivatkoznak rá (NeedCalculator, Worksheet, WorkOrder),
+    • a felhasználó által szerkeszthető,
+    • perzisztens adattárolást igényel.
+Ez a szerep teljesen analóg a Product, Material, NeedCalculation és más üzleti entitások szerepével.
+Ezért az Order modulnak is ugyanazt az egységes adatkezelési infrastruktúrát kell megkapnia, mint a többi üzleti entitásnak.
+
+2. A rendszerben már meglévő minták
+A CutCalculator architektúrája egységesen kezeli az üzleti entitásokat:
+    • minden entitásnak van registry-je,
+    • minden entitásnak van repository-ja,
+    • minden entitás CRUD műveletei a CrudWorkflowMixin-en futnak,
+    • minden entitás CSV-ből töltődik és CSV-be mentődik,
+    • minden entitás validációja, logolása, perzisztálása egységes.
+2.1. Példák a meglévő modulokból
+    • ProductMaster → ProductRegistry + ProductRepository
+    • MaterialMaster → MaterialRegistry + MaterialRepository
+    • NeedCalculation → NeedCalculationRegistry + NeedCalculationRepository
+    • NeedCalculationDetail → NeedCalculationDetailRegistry + NeedCalculationDetailRepository
+    • NeedRule → NeedRuleRegistry + NeedRuleRepository
+Ezek mind üzleti entitások, és mindegyik mögött teljes infrastruktúra áll.
+
+3. Az Order modul entitásai
+Az Order modul három különálló üzleti entitásból áll:
+3.1. Order
+A rendelés maga, mint üzleti objektum:
+    • saját ID,
+    • saját életciklus,
+    • saját perzisztencia,
+    • saját validáció,
+    • saját workflow.
+3.2. OrderHeader
+A rendelés metaadatai:
+    • megrendelő neve,
+    • dátumok,
+    • alapértelmezett értékek,
+    • státusz.
+Ez önálló üzleti entitás, nem puszta struktúra.
+3.3. OrderItem
+A rendelés tételei:
+    • productId,
+    • méretek,
+    • qty,
+    • externalId,
+    • modeName.
+Ez is önálló üzleti entitás, amelyre más modulok (NeedCalculator) közvetlenül támaszkodnak.
+
+4. Miért nem elegendő a beágyazott modell?
+A jelenlegi modell:
+Order {
+    OrderHeader header;
+    QVector<OrderItem> items;
+}
+Ez dokumentum-szerű, nem entitás-szerű.
+Hátrányai:
+    • nem lehet rá CRUD workflow-t futtatni,
+    • nem lehet külön validálni a header-t és az itemeket,
+    • nem lehet külön perzisztálni,
+    • nem lehet rá registry-t építeni,
+    • nem lehet rá lookupot csinálni,
+    • nem illeszkedik a rendszer egységes architektúrájába.
+
+5. A helyes modell: ID-alapú kapcsolatok
+A rendszer többi modulja is így működik:
+    • NeedCalculationDetail → NeedCalculationId + MaterialId
+    • NeedRule → leftId + rightId
+    • ProductMaster → parentId
+Ugyanez alkalmazható az Order modulra is.
+5.1. Order
+Order {
+    QUuid id;
+    QUuid headerId;
+    QVector<QUuid> itemIds;
+}
+5.2. OrderHeader
+OrderHeader {
+    QUuid id;
+    QString customerName;
+    ...
+}
+5.3. OrderItem
+OrderItem {
+    QUuid id;
+    QUuid orderId;
+    QUuid productId;
+    QString externalId;
+    ...
+}
+Ez egységes, stabil, skálázható.
+
+6. ExternalId mint OrderItem kulcs
+Az OrderItem nem rendelkezik barcode-dal, de van:
+    • externalId, amely egyedi a rendelésen belül,
+    • ember által megadott,
+    • stabil,
+    • jól kereshető.
+Ez tökéletesen alkalmas:
+    • CSV kulcsnak,
+    • registry lookup kulcsnak,
+    • UI azonosítónak.
+
+7. OrderHeader ID
+Az OrderHeader jelenleg nem rendelkezik ID-val.
+A megoldás:
+    • kapjon GUID-ot, vagy
+    • kapjon emberi kulcsot (orderNumber), vagy
+    • akár barcode-ot (a rendszerben ez bevált minta).
+
+8. A végső architektúra
+A rendszer többi moduljához igazodva az Order modul így épül fel:
+8.1. Registry-k
+    • OrderRegistry
+    • OrderHeaderRegistry
+    • OrderItemRegistry
+Mindegyik:
+    • RegistryEngineBase
+    • CrudWorkflowMixin
+    • BulkLoadMixin
+    • RegisterMe
+    • TestSupportMixin
+8.2. Repository-k
+    • OrderRepository
+    • OrderHeaderRepository
+    • OrderItemRepository
+Mindegyik:
+    • háromfázisú import/export,
+    • CSV alapú perzisztencia,
+    • validáció,
+    • hibakezelés.
+8.3. Service
+    • OrderService
+        ◦ összerakja az entitásokat,
+        ◦ örökít default értékeket,
+        ◦ generál externalId-t,
+        ◦ validál,
+        ◦ hívja a registry-ket és repository-kat.
+
+9. Összegzés
+Az Order modul nem dokumentum, hanem három üzleti entitásból álló alrendszer. A rendszer architektúrája szerint minden üzleti entitásnak:
+    • saját registry,
+    • saját repository,
+    • saját CRUD workflow,
+    • saját CSV perzisztencia jár.
+Az Order modul egységes, stabil, skálázható adatkezelést kap, ha:
+    • Order, OrderHeader és OrderItem külön entitásként kezeljük,
+    • mindegyik ID-alapú kapcsolatokkal működik,
+    • mindegyik mögött teljes registry + repository infrastruktúra áll.
+Ez a megközelítés:
+    • illeszkedik a rendszer többi moduljához,
+    • egyszerűsíti a UI-t,
+    • egyszerűsíti a tesztelést,
+    • egységesíti az adatkezelést,
+    • jövőállóvá teszi a modult.
+
+10. Következő lépés
+A dokumentum alapján készen állunk a konkrét tervezésre:
+    • OrderRegistry API
+    • OrderHeaderRegistry API
+    • OrderItemRegistry API
+    • repository-k háromfázisú importja
+    • OrderService workflow
+A következő lépés: a registry-k és repository-k részletes specifikációja.
+
+***
+***
+***
+
+# 🎯 **A teljes PATCH 2–7 frissített, új Order‑modellhez igazított tervét**
+— minden pontot átnéztem, és ahol a régi OrderLine/CalcOrderLine logika szerepelt, ott kijavítottam.
+
+Ez lesz a *végleges, konzisztens roadmap*, amire már tényleg lehet építeni.
+
+---
+
+# ⭐ **PATCH 2 — OrderRepository (CSV import/export)**
+### ✔ Frissítve az új OrderItem modellhez
+
+## **2.1. Fájlok**
+- `orders/repository/order_repository.h`
+- `orders/repository/order_repository.cpp`
+
+## **2.2. Fázisok (frissítve)**
+
+### **2.1.a – Convert: CSV sor → OrderRow**
+OrderRow mezők (új modell alapján):
+
+```
+orderId
+customerName
+orderDate
+deadline
+defaultColor
+defaultHandlerSide
+defaultExternalPrefix
+note
+status
+
+itemId
+productId
+width_mm
+height_mm
+handlerSide
+externalId
+ownerName
+colorName
+qty
+modeName
+```
+
+### **2.1.b – Validate**
+- productId létezik?
+- width/height > 0?
+- qty >= 1?
+- modeName létezik a NeedCalculationRegistry-ben?
+- externalId nem ütközik?
+
+### **2.1.c – Build**
+OrderRow →
+- OrderHeader
+- OrderItem (N darab)
+- Order
+
+### **2.1.d – Assemble**
+Több CSV sor → egy Order objektum
+(azonos orderId alapján csoportosítva)
+
+### **2.1.e – saveToCSV**
+Order → CSV sorok
+Minden OrderItem külön sor.
+
+---
+
+# ⭐ **PATCH 3 — OrderService (CRUD + öröklés + externalId)**
+### ✔ Frissítve az új OrderItem modellhez
+
+## **3.1. Fájlok**
+- `orders/service/order_service.h`
+- `orders/service/order_service.cpp`
+
+## **3.2. Fázisok (frissítve)**
+
+### **3.1.a – CRUD workflow**
+- createOrder(OrderHeader)
+- addItem(Order&, OrderItem)
+- updateItem(Order&, OrderItem)
+- removeItem(Order&, itemId)
+- save(Order) → OrderRepository
+- load(orderId) → OrderRepository
+
+### **3.1.b – Default értékek örökítése**
+OrderItem mentése előtt:
+
+```
+if (item.ownerName.isEmpty()) item.ownerName = header.customerName;
+if (item.colorName.isEmpty()) item.colorName = header.defaultColor;
+if (item.handlerSide.isEmpty()) item.handlerSide = header.defaultHandlerSide;
+```
+
+### **3.1.c – externalId generálás**
+Ha externalId üres:
+
+```
+item.externalId = header.defaultExternalPrefix + nextRunningNumber();
+```
+
+### **3.1.d – Konzisztencia ellenőrzés**
+- productId létezik?
+- NeedCalculationRegistry ismeri a (productId, modeName) párost?
+- width/height > 0?
+
+### **3.1.e – Repository integráció**
+OrderService → OrderRepository.save/load
+
+---
+
+# ⭐ **PATCH 4 — OrderQuery**
+### ✔ Frissítve az új OrderItem modellhez
+
+## **4.1. Fájlok**
+- `orders/query/order_query.h`
+- `orders/query/order_query.cpp`
+
+## **4.2. Funkciók**
+
+### **4.1.a – név szerinti keresés**
+Order.header.customerName LIKE …
+
+### **4.1.b – dátum szerinti keresés**
+Order.header.orderDate BETWEEN …
+
+### **4.1.c – státusz szerinti keresés**
+Order.header.status == …
+
+### **4.1.d – externalId szerinti keresés**
+OrderItem.externalId == …
+
+---
+
+# ⭐ **PATCH 5 — StringCache (autocomplete)**
+### ✔ Frissítve az új OrderItem modellhez
+
+## **5.1. Cache mezők**
+- customerName (OrderHeader)
+- colorName (OrderItem)
+- handlerSide (OrderItem)
+- externalId prefix (OrderHeader)
+- productId → productName (ProductMaster)
+- modeName (NeedCalculationRegistry)
+
+## **5.2. Hookok**
+- insert/update Order → update cache
+- load cache on startup
+- save cache on shutdown
+
+---
+
+# ⭐ **PATCH 6 — OrderWorkbench UI (v1 skeleton)**
+### ✔ Frissítve az új OrderItem modellhez
+
+## **6.1. Fájlok**
+- `orders/view/order_workbench.h/.cpp`
+- `orders/view/order_dialog.h/.cpp`
+
+## **6.2. Panelek**
+
+### **6.1.a – OrderWorkbench layout**
+Bal oldalt: Order lista
+Jobb oldalt: OrderHeader + OrderItemTable
+
+### **6.1.b – OrderHeaderPanel**
+- customerName
+- orderDate
+- deadline
+- defaultColor
+- defaultHandlerSide
+- defaultExternalPrefix
+- note
+- status
+
+### **6.1.c – OrderItemTable**
+Oszlopok:
+
+```
+productId (autocomplete)
+width_mm
+height_mm
+colorName (autocomplete)
+handlerSide (L/R)
+externalId (auto)
+qty
+modeName (autocomplete)
+```
+
+### **6.1.d – Save/Load**
+OrderService.save/load
+
+### **6.1.e – StringCache integráció**
+Autocomplete mezők:
+
+- customerName
+- colorName
+- handlerSide
+- externalId prefix
+- modeName
+
+---
+
+# ⭐ **PATCH 7 — Tesztelési alapok**
+### ✔ Frissítve az új OrderItem modellhez
+
+## **7.1. Tesztek**
+
+### **7.1.a – OrderRepository teszt**
+- CSV → Order
+- Order → CSV
+- roundtrip
+
+### **7.1.b – OrderService teszt**
+- default öröklés
+- externalId generálás
+- CRUD
+- konzisztencia ellenőrzés
+
+### **7.1.c – OrderQuery teszt**
+- név szerinti keresés
+- dátum szerinti keresés
+- externalId szerinti keresés
+
+---
+
+# 🎉 **Verdikt: a teljes roadmap frissítve az új OrderItem modellhez — most már konzisztens, tiszta, végrehajtható.**
+
+Ha szeretnéd, indulhatunk is:
+
+👉 **Indítsuk PATCH 2-t (OrderRepository) az új modell szerint**
+
+***
+***
+**
+***
+
+PATCH 1 – TestSupportMixin és RegistryEngineBase összehangolása
+
+Probléma:
+
+    TestSupportMixin::insertForTest ezt hívja:
+
+cpp
+
+static_cast<Host*>(this)->insertInternal(e);
+
+    De a RegistryEngineBase‑ben az insertInternal már csak kommentben létezik, a tényleges API:
+
+cpp
+
+bool add(const TEntity& e);
+bool addAll(const QVector<TEntity>& v);
+void setAll(const QVector<TEntity>& v);
+
+Következmény: a mostani kódbázisban ez így nem fordulna (vagy máshol van egy saját insertInternal, de a snippetek alapján nincs).
+
+Lépés:
+
+    A TestSupportMixin‑ben az insertForTest‑et átállítjuk engine‑szintű API‑ra (pl. add(e)), vagy teljesen kivesszük, és csak addForTest/setAllForTest marad.
+
+    Ezzel teszt‑útvonalon is tisztán az engine‑szintű write API‑t használjuk, nem egy nem létező “insertInternal” réteget.
+
+PATCH 2 – NeedCalculationDetailRepository::buildFromRow hibás hibaüzenetek
+
+Probléma:
+
+A “új” buildFromRow‑ban a két hibaág fel van cserélve:
+cpp
+
+if (!calc) {
+    ctx.addError(... "⚠️ Ismeretlen Material barcode: '%1' (product=%2, mode=%3)" ...);
+    ...
+}
+
+if (calc->productId != product->id) {
+    ctx.addError(... "⚠️ Ismeretlen NeedCalculation: product='%1', mode='%2'" ...);
+    ...
+}
+
+    !calc esetén NeedCalculation hiányzik, mégis “Ismeretlen Material barcode” üzenet megy.
+
+    A második ág szövege logikailag jó, de a kettő sorrendje/üzenete így nagyon félrevezető.
+
+Lépés:
+
+    A két addError üzenetet logikailag helyreigazítjuk:
+
+        !calc → “Ismeretlen NeedCalculation: product=..., mode=...”
+
+        calc->productId != product->id → “NeedCalculation nem illeszkedik a Product‑hoz: product=..., mode=...”
+
+    A paraméterek (row.productBarcode, row.modeName, row.materialBarcode) maradnak, csak a szöveg legyen konzisztens.
+
+PATCH 3 – NeedCalculationDetailRegistry: formula‑validáció integrálása (opt/choose)
+
+Jelen állapot:
+
+    Van két helper:
+
+cpp
+
+static bool validateOpt(const QString& f);
+static bool validateChoose(const QString& f);
+
+    De a validateDomain jelenleg nem használja őket, csak:
+
+        üres formula OK
+
+        "unknown" tiltott
+
+        kind ∈ {Cutting, Kitting}
+
+        materialExists
+
+        NeedCalculation + Product létezés
+
+Ha a célod az, hogy a DSL‑szabályok (opt:/choose:) már most érvényesüljenek, akkor:
+
+Lépés:
+
+    validateDomain‑ben, a “formula üres → true” és “formula == unknown → false” után:
+
+        ha formula choose:‑szal kezdődik → validateChoose(formula) legyen kötelezően true
+
+        ha tartalmaz opt: tokeneket → validateOpt(formula) legyen kötelezően true
+
+    Ha bármelyik false → validateDomain false‑szal tér vissza.
+
+Ha viszont még shadow‑/kísérleti módban akarod tartani a DSL‑validációt, akkor ezt a patch‑et későbbre is tehetjük, és csak logolhatunk (pl. verbose módban).
+PATCH 4 – Repozitóriumok: Three‑Phase Import szerződés auditja
+
+A jelenlegi kód alapján a minta konzisztens, de érdemes a tervben expliciten rögzíteni, hogy nem kell már hozzányúlni, csak dokumentálni:
+
+    ProductRepository:
+
+        Stage 1: convertRowToProductRow
+
+        Stage 2.5: validateProductRow
+
+        Stage 2: buildProductFromRow (+ BarcodeValidator::checkAndRegister_CSV)
+
+        Stage 3: loadProductRows + buildAll + resolveParents
+
+    MaterialRepository:
+
+        Stage 1: convertRowToMaterialRow
+
+        Stage 2.5: validateMaterialRow
+
+        Stage 2: buildMaterialFromRow
+
+        Stage 3: loadMaterialRows + buildAll
+
+    NeedCalculationRepository:
+
+        Stage 1: convertRowToRow
+
+        Stage 2.5: validateRow
+
+        Stage 2: buildFromRow (Product barcode → id)
+
+        Stage 3: loadRows + buildAll
+
+    NeedCalculationDetailRepository:
+
+        Stage 1: convertRowToRow
+
+        Stage 2.5: validateRow
+
+        Stage 2: buildFromRow (Product + NeedCalculation + Material + kind)
+
+        Stage 3: loadRows + buildAll
+
+Lépés:
+
+    Csak dokumentációs/komment‑szintű finomhangolás: minden repo tetején a kommentet szinkronba hozni a tényleges lépésekkel (pl. NeedCalculationDetail‑nél már nem “formula‑alapú kind”, hanem “Material.cuttingMode → kind”).
+
+    Nincs szükség kódszintű nagy refaktorra, a szerződés a mostani kód alapján tartható.
+
+PATCH 5 – CRUD Workflow szerződés explicit megerősítése a registrykben
+
+A kódod már most is szépen tartja a WF‑4 szerződést, de a tervben érdemes külön lépésként rögzíteni:
+
+    ProductRegistry, NeedCalculationRegistry, NeedCalculationDetailRegistry, NeedRuleRegistry:
+
+        mind CrudWorkflowMixin/ConnectionWorkflowMixin‑re épülnek
+
+        publikus CRUD API:
+
+            insert(...) { return insertWithWorkflow(...); }
+
+            update(...) { return updateWithWorkflow(...); }
+
+            remove(...) { return removeWithWorkflow(...); }
+
+        persist() mindenhol csak repository‑t hív, nem módosít memóriát.
+
+Lépés:
+
+    Végigellenőrizni, hogy sehol nincs:
+
+        add, updateInternal, removeInternal, clear hívás domain‑szinten.
+
+        persist() kézi hívása workflow‑n kívül.
+
+    Ha találsz ilyet más fájlban, az külön, kis patch‑ben átáll insertWithWorkflow/updateWithWorkflow/removeWithWorkflow hívásra.
+
+A most beküldött fájlokban ilyen szabálysértést nem látok.
+PATCH 6 – TestDataBuilder és teszt‑útvonalak összehangolása az új engine‑/workflow‑réteggel
+
+Jelen állapot:
+
+    TestDataBuilder::prepareStandard():
+
+        preg.clearForTest();
+
+        mreg.clearForTest();
+
+        majd addForTest(...) hívások.
+
+    TestSupportMixin::clearForTest():
+
+        h->clear(); (engine‑level clear)
+
+        ha van persist() → hívja, így üres CSV‑t ír ki.
+
+Ez összhangban van a WF‑4 szerződéssel, de a PATCH 1 után:
+
+Lépés:
+
+    Ellenőrizni, hogy a tesztek sehol nem használják már az insertForTest‑et (ha átírjuk/eltávolítjuk).
+
+    Ha mégis, akkor átállítani őket addForTest/setAllForTest használatára.
+
+
+
+---
+
+⭐ A FELTÁRT PROBLÉMÁK ÖSSZEFOGLALÁSA (PATCH‑ALAP)
+
+Ez a lista lesz a patch‑generálás alapja.
+1) NeedCalculationDetailRepository::buildFromRow – hibás hibaüzenetek
+
+A kódban több helyen:
+Kód
+
+"⚠️ Ismeretlen Material barcode: '%1' (product=%2, mode=%3)"
+
+olyan helyen szerepel, ahol valójában:
+
+    productBarcode hibás
+
+    NeedCalculation hibás
+
+    vagy a hibaüzenet teljesen rossz mezőt ír ki
+
+→ PATCH szükséges: minden hibaüzenet javítása a megfelelő mezőkre.
+2) NeedCalculationDetailRepository::buildFromRow – hibás logikai sorrend
+
+A jelenlegi kód:
+
+    előbb product lookup
+
+    aztán NeedCalculation lookup
+
+    aztán Material lookup
+
+    aztán kind meghatározás
+
+Ez helyes, de a hibakezelés:
+
+    több helyen rossz mezőt logol
+
+    több helyen rossz hibaüzenetet ad
+
+    néhol product és material fel van cserélve
+
+→ PATCH: hibaüzenetek és logikai ágak javítása.
+3) NeedCalculationDetailRegistry::validateDomain – DSL validáció hiányzik
+
+A jelenlegi domain validáció NEM használja:
+
+    validateOpt()
+
+    validateChoose()
+
+    FormulaContract::isFormulaValid()
+
+    FormulaAnalysis
+
+Ez azt jelenti, hogy a DSL szabályok nincsenek érvényesítve, így hibás formulák is átmennek.
+
+→ PATCH: DSL validáció integrálása a validateDomain-be.
+4) NeedCalculationDetailRepository::buildFromRow – kind meghatározása hibás
+
+A jelenlegi kód:
+Kód
+
+kind = (mat && mat->cuttingMode == CuttingMode::Piece)
+       ? Kitting
+       : Cutting;
+
+Ez nem helyes, mert:
+
+    a formula is meghatározhatja a kind-et (fixed: → Kitting)
+
+    a material cuttingMode NEM feltétlenül jelenti, hogy a detail Kitting
+
+→ PATCH: kind meghatározása formula alapján, fallback material alapján.
+5) NeedRuleRegistry::afterInsert – MatrixGenerator hívás auditálatlan
+
+A jelenlegi kód:
+Kód
+
+MatrixGenerator::createDetail(m.id, r.rightId);
+
+Ez:
+
+    nem ellenőrzi, hogy a detail már létezik-e
+
+    nem auditálja a létrehozást
+
+    nem validálja a kind-et
+
+→ PATCH: auditált, workflow-kompatibilis detail létrehozás.
+6) NeedRuleRegistry::afterRemove – detail törlés nem auditált
+
+A jelenlegi kód:
+Kód
+
+NeedCalculationDetailRegistry::instance().remove(d.id);
+
+Ez workflow‑kompatibilis, de:
+
+    nincs log arról, hogy melyik detail törlődött
+
+    nincs fallback, ha a detail nem létezik
+
+→ PATCH: audit kiegészítése.
+7) MaterialRepository – shape/dimenzió validáció nem egységes
+
+A MaterialRepository:
+
+    több runtime validációt végez, mint a ProductRepository
+
+    de néhány helyen hiányzik a hibaüzenet konzisztencia
+
+→ PATCH: egységes hibaüzenet formátum.
+8) NeedCalculationRepository – hibaüzenetek néhol félrevezetők
+
+Pl.:
+Kód
+
+⚠️ Ismeretlen NeedCalculation: %1 / %2
+
+De valójában productBarcode vagy modeName a hibás.
+
+→ PATCH: hibaüzenetek javítása.
+9) NeedCalculationDetailRegistry::validateMaterial – RegistryManager használata
+
+A jelenlegi kód:
+Kód
+
+RegistryManager::instance().findEntity("MaterialMaster", materialId)
+
+Ez működik, de:
+
+    a projekt többi része közvetlenül a MaterialRegistry-t használja
+
+    a RegistryManager fallback, nem elsődleges lookup
+
+→ PATCH: közvetlen MaterialRegistry használat.

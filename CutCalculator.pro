@@ -74,6 +74,7 @@ SOURCES += \
     calculation/service/need_calculator.cpp \
     calculation/view/calculation_mode_detail_view.cpp \
     calcmodes/view/calculation_modes_view.cpp \
+    orders/repository/order_repository.cpp \
     products/dialogs/product_name_dialog.cpp \
     products/presenter/product_tree_presenter.cpp \
     products/validation/product_validation.cpp \
@@ -253,6 +254,10 @@ HEADERS += \
     calculation/service/need_calculator.h \
     calculation/view/calculation_mode_detail_view.h \
     calcmodes/view/calculation_modes_view.h \
+    orders/model/order.h \
+    orders/model/order_header.h \
+    orders/model/order_item.h \
+    orders/repository/order_repository.h \
     products/dialogs/product_name_dialog.h \
     products/presenter/product_tree_presenter.h \
     products/validation/product_validation.h \
