@@ -754,6 +754,19 @@ A dokumentum alapján készen állunk a konkrét tervezésre:
     • OrderService workflow
 A következő lépés: a registry-k és repository-k részletes specifikációja.
 
+
+***
+***
+***
+
+előbb a Order modul végleges CSV formátumának megtervezése
+1) CSV formátum megtervezése
+2) Convert Phase (Row struct + mezőszám + formátum)
+3) Build Phase (Row → Order / OrderHeader / OrderItem)
+4) Assemble Phase (registry.setAll)
+5) Export (Order → CSV)
+majd aztán StartupManager / OrderService integráció
+
 ***
 ***
 ***
@@ -1328,3 +1341,97 @@ Ez működik, de:
     a RegistryManager fallback, nem elsődleges lookup
 
 → PATCH: közvetlen MaterialRegistry használat.
+
+
+***
+  ***
+  ***
+
+CutData/
+  common/
+    materials.csv
+    products.csv
+    barcodes.csv
+    ral_colors/
+
+  CutCalculator/
+    needrules.csv
+    needcalculations.csv
+    needcalc_details.csv
+    orders/
+      order_headers.csv
+      order_items.csv
+    ui_snapshots/
+    logs/
+    cache/
+    settings.ini
+
+  CuttingPlannerPro/
+    cutting_plans/
+    ui_snapshots/
+    logs/
+    cache/
+    settings.ini
+
+  test/
+    CutCalculator/
+    CuttingPlannerPro/
+
+
+ha programrendszerben gondolkozunk, akkor a fájloknak is tükrözniük kell a moduláris architektúrát:
+
+de jellemzően üzleti domainenkénti elválasztás szerint, azaz az egyes programok sajátja: 
+
+products/
+  products.csv
+calculations/
+  needrules.csv
+  needcalculations.csv
+  needcalc_details.csv
+orders/
+  order_headers.csv
+  order_items.csv
+stock/
+  stock.csv
+  storages.csv
+  leftovers.csv
+common/
+  ral_colors/
+  barcodes.csv
+  materials.csv
+  materialgroups.csv
+  materialgroup_members.csv
+cutting\
+  cuttingmachines.csv
+  cuttingmachine_materialtypes.csv
+cutting_plans/
+    cutting_plan_1.csv
+    cuttingplan_20250727-180645.txt
+CuttingPlannerPro/
+    ui_snapshots/
+    logs/
+    emoji_overlay_cache/
+    settings.ini
+CutCalculator/
+    ui_snapshots/
+    logs/
+    emoji_overlay_cache/
+    settings.ini
+
+test/
+    CutCalculator/
+    CuttingPlannerPro/
+
+config/
+  global_settings.ini
+  license.txt
+  environment.json
+users/
+    zoli/
+    admin/
+    guest/
+backups/
+  2026-04-22/
+    orders/
+    stock/
+    calculations/

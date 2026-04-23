@@ -54,3 +54,16 @@ public: \
     static constexpr bool has_registration_macro = true; \
 private: \
     inline static bool _isAutoRegistered = RegisterMe<Derived>::autoRegister();
+
+#define REGISTRY_CTOR(RegistryType, EntityType) \
+private: \
+    RegistryType() \
+    : RegistryEngineBase(#RegistryType, #EntityType) \
+{ \
+        static_assert(std::is_class_v<RegistryType>, \
+                      "REGISTRY_CTOR: first argument must be a class type (registry)"); \
+        static_assert(std::is_class_v<EntityType>, \
+                      "REGISTRY_CTOR: second argument must be an entity class/struct"); \
+        static_assert(std::is_same_v<typename RegistryType::Derived, RegistryType>, \
+                      "REGISTRY_CTOR: RegistryType must match the CRTP Derived type"); \
+}

@@ -111,7 +111,7 @@ void RolettaCalculationTester::verify_builder(const TestRolettaBuilder::Ids& ids
 // 🧪 Rugós roletta – ROL_R
 void RolettaCalculationTester::test_rugos_roletta(const TestRolettaBuilder::Ids& ids)
 {
-    OrderLine line;
+    OrderItem line;
     line.productId  = ids.ROL_R;
     line.width_mm   = 1200;
     line.height_mm  = 1500;
@@ -161,7 +161,7 @@ void RolettaCalculationTester::test_rugos_roletta(const TestRolettaBuilder::Ids&
 // 🧪 Tetőtéri roletta – ROL_RT
 void RolettaCalculationTester::test_tetoteri_roletta(const TestRolettaBuilder::Ids& ids)
 {
-    OrderLine line;
+    OrderItem line;
     line.productId   = ids.ROL_RT;
     line.width_mm    = 1000;
     line.height_mm   = 1400;
@@ -198,7 +198,7 @@ void RolettaCalculationTester::test_tetoteri_roletta(const TestRolettaBuilder::I
 // 🧪 Gyöngyös alap roletta – GY_A23
 void RolettaCalculationTester::test_alap_roletta(const TestRolettaBuilder::Ids& ids)
 {
-    OrderLine line;
+    OrderItem line;
     line.productId  = ids.GY_A23;
     line.width_mm   = 800;
     line.height_mm  = 1200;

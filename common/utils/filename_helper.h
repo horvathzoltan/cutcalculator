@@ -27,7 +27,10 @@ enum class FileKind {
     CacheDir,
     MainWindow_SnapshotFile,
     BOM_Workbench_SnapshotFile,
-    UIState_SnapshotFile
+    UIState_SnapshotFile,
+
+    OrderHeaders,
+    OrderItems
 };
 
 enum class FileAccess {
@@ -139,6 +142,10 @@ private:
     //QString getRalColorsFilePath(const QString& path) const;
 
 
+    QString configPath(const QString &mainRoot, const QString &fileName) const;
+    QString join(const QString &root, const QString &sub) const;
+    QString crudRead(const QString &dataRoot, const QString &testRoot, const QString &fileName, bool isTest) const;
+    QString makeTestWritePath(const QString &dataRoot, const QString &fileName) const;
 public:
     // 🔁 Példány elérése
     static FileNameHelper& instance();

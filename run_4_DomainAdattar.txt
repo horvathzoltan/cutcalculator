@@ -1,0 +1,272 @@
+📘 DOMAIN‑ORIENTÁLT ADATTÁR SPECIFIKÁCIÓ (v1.0)
+
+Zoltán gyártási rendszeréhez
+
+------------------------------------------------------------------------
+
+1. Bevezetés
+
+Ez a dokumentum definiálja a gyártási rendszer perzisztens adattárának
+domain‑orientált felépítését.
+A specifikáció célja:
+
+-   egységes, stabil adattárstruktúra biztosítása
+-   domain‑alapú szervezés (nem program‑alapú)
+-   hosszú távú fenntarthatóság
+-   egyszerű backup és migráció
+-   tiszta, konzisztens repository‑architektúra támogatása
+
+A rendszer több alkalmazásból áll (CutCalculator, CuttingPlannerPro
+stb.), de az adattár nem programok szerint szerveződik, hanem
+domain‑entitások szerint.
+
+------------------------------------------------------------------------
+
+2. Fő szervezőelv: DOMAIN
+
+Az adattár gyökere:
+
+    data/
+
+Minden domain‑entitás saját, izolált mappát kap:
+
+    data/
+      products/
+      materials/
+      calculations/
+      orders/
+      stock/
+      cutting/
+      cutting_plans/
+
+A domain‑adatok függetlenek a programoktól.
+A programok csak UI‑szintű komponensek, nem szervezőelemek.
+
+------------------------------------------------------------------------
+
+3. Domainok részletes specifikációja
+
+3.1 Products domain
+
+Cél: A gyártható termékek master‑adatai.
+
+    data/products/
+      products.csv
+
+products.csv mezők:
+
+-   productId (UUID)
+-   productCode
+-   productName
+-   productType
+-   isActive
+-   createdAt
+-   updatedAt
+
+------------------------------------------------------------------------
+
+3.2 Materials domain
+
+Cél: Anyagok, anyagcsoportok, RAL színek, vonalkódok.
+
+    data/materials/
+      materials.csv
+      materialgroups.csv
+      materialgroup_members.csv
+      barcodes.csv
+      ral_colors/
+
+materials.csv mezők:
+
+-   materialId
+-   name
+-   thickness_mm
+-   width_mm
+-   type
+-   supplier
+-   isActive
+
+materialgroups.csv mezők:
+
+-   groupId
+-   groupName
+
+materialgroup_members.csv mezők:
+
+-   groupId
+-   materialId
+
+barcodes.csv mezők:
+
+-   barcode
+-   materialId
+
+------------------------------------------------------------------------
+
+3.3 Calculations domain
+
+Cél: A NeedCalculator szabályai és részletes számítási táblái.
+
+    data/calculations/
+      needrules.csv
+      needcalculations.csv
+      needcalc_details.csv
+
+needrules.csv mezők:
+
+-   ruleId
+-   productId
+-   ruleType
+-   expression
+
+------------------------------------------------------------------------
+
+3.4 Orders domain
+
+Cél: Megrendelések és tételeik.
+
+    data/orders/
+      order_headers.csv
+      order_items.csv
+
+order_headers.csv mezők:
+
+-   orderId
+-   customerName
+-   externalId
+-   createdAt
+-   status
+
+order_items.csv mezők:
+
+-   itemId
+-   orderId
+-   productId
+-   width_mm
+-   height_mm
+-   handlerSide
+-   colorName
+-   order_qty
+-   modeName
+
+------------------------------------------------------------------------
+
+3.5 Stock domain
+
+Cél: Raktárkészlet, tárolók, maradékok.
+
+    data/stock/
+      stock.csv
+      storages.csv
+      leftovers.csv
+
+stock.csv mezők:
+
+-   stockId
+-   materialId
+-   length_mm
+-   quantity
+-   storageId
+
+------------------------------------------------------------------------
+
+3.6 Cutting domain
+
+Cél: Vágógépek és anyagtípus‑kompatibilitás.
+
+    data/cutting/
+      cuttingmachines.csv
+      cuttingmachine_materialtypes.csv
+
+------------------------------------------------------------------------
+
+3.7 Cutting Plans domain
+
+Cél: A CuttingPlannerPro által generált vágási tervek.
+
+    data/cutting_plans/
+      cutting_plan_*.csv
+      cuttingplan_*.txt
+
+------------------------------------------------------------------------
+
+4. Programok (UI‑szint)
+
+A programok nem tartalmaznak domain‑adatot, csak:
+
+-   settings
+-   logs
+-   ui_snapshots
+-   cache
+
+CutCalculator:
+
+    CutCalculator/
+      settings.ini
+      logs/
+      ui_snapshots/
+      emoji_overlay_cache/
+
+CuttingPlannerPro:
+
+    CuttingPlannerPro/
+      settings.ini
+      logs/
+      ui_snapshots/
+      emoji_overlay_cache/
+
+------------------------------------------------------------------------
+
+5. Globális konfiguráció
+
+    config/
+      global_settings.ini
+      environment.json
+      license.txt
+
+------------------------------------------------------------------------
+
+6. User‑specifikus adatok
+
+    users/
+      zoli/
+      admin/
+      guest/
+
+------------------------------------------------------------------------
+
+7. Backup struktúra
+
+Backup domain‑szinten történik:
+
+    backups/
+      2026-04-23/
+        products/
+        materials/
+        calculations/
+        orders/
+        stock/
+        cutting/
+        cutting_plans/
+
+------------------------------------------------------------------------
+
+8. Repository‑architektúra illeszkedése
+
+Minden registry/repository egy domain‑mappára mutat:
+
+-   ProductRepository → data/products/products.csv
+-   MaterialRepository → data/materials/materials.csv
+-   OrderRepository → data/orders/order_headers.csv + order_items.csv
+-   StockRepository → data/stock/stock.csv
+-   CuttingRepository → data/cutting/cuttingmachines.csv
+
+Ez a struktúra:
+
+-   auditálható
+-   verziózható
+-   migrálható
+-   programfüggetlen
+-   DDD‑kompatibilis
+-   hosszú távon stabil
+

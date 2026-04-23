@@ -74,7 +74,10 @@ SOURCES += \
     calculation/service/need_calculator.cpp \
     calculation/view/calculation_mode_detail_view.cpp \
     calcmodes/view/calculation_modes_view.cpp \
-    orders/repository/order_repository.cpp \
+    orders/registry/order_header_registry.cpp \
+    orders/registry/order_item_registry.cpp \
+    orders/repository/order_header_repository.cpp \
+    orders/repository/order_item_repository.cpp \
     products/dialogs/product_name_dialog.cpp \
     products/presenter/product_tree_presenter.cpp \
     products/validation/product_validation.cpp \
@@ -160,6 +163,7 @@ HEADERS += \
     calculation/service/raw_cut.h \
     calculation/service/raw_kit.h \
     calculation/service/worksheet_builder.h \
+    common/registry/mixins/simple_lookup_mixin.h \
     common/system/window_stability_monitor.h \
     common/ui_state/layout_critical_helper.h \
     common/ui_state/state_collector.h \
@@ -254,10 +258,12 @@ HEADERS += \
     calculation/service/need_calculator.h \
     calculation/view/calculation_mode_detail_view.h \
     calcmodes/view/calculation_modes_view.h \
-    orders/model/order.h \
     orders/model/order_header.h \
     orders/model/order_item.h \
-    orders/repository/order_repository.h \
+    orders/registry/order_header_registry.h \
+    orders/registry/order_item_registry.h \
+    orders/repository/order_header_repository.h \
+    orders/repository/order_item_repository.h \
     products/dialogs/product_name_dialog.h \
     products/presenter/product_tree_presenter.h \
     products/validation/product_validation.h \
@@ -391,6 +397,7 @@ DISTFILES += \
     run_4_BOMWorkbench.txt \
     run_4_ColorRegistry.txt \
     run_4_DataModelPhilosophy.md \
+    run_4_DomainAdattar.txt \
     run_4_GenerikusKapcsolotabla.txt \
     run_4_LogDoc.txt \
     run_4_Order.txt \

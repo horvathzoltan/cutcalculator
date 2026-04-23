@@ -2,7 +2,6 @@
 
 //#include "../core/registry_core.h"
 #include "common/registry/mixins/crud_workflow_mixin.h"
-#include "contract_checks.h"
 #include <QString>
 //#include "common/logger/logger.h"
 

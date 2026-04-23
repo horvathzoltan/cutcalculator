@@ -175,7 +175,7 @@ void FormulaEngineTester::testNeedCalculatorSimpleRoletta()
     NeedCalculationDetailRegistry::instance().insert(d2);
 
     // v2 OrderLine
-    OrderLine line;
+    OrderItem line;
     line.productId  = ids.P1;
     line.width_mm   = 1200;
     line.height_mm  = 1500;
@@ -231,7 +231,7 @@ void FormulaEngineTester::testNeedCalculatorInvalidFormulaAudit()
     Q_ASSERT(inserted);
 
     // v2 OrderLine
-    OrderLine line;
+    OrderItem line;
     line.productId  = ids.P1;
     line.width_mm   = 1200;
     line.height_mm  = 1500;
@@ -350,7 +350,7 @@ void FormulaEngineTester::testNeedCalculatorChooseTrue()
     NeedCalculationRegistry::instance().insert(mode);
 
     // v2 OrderLine
-    OrderLine line;
+    OrderItem line;
     line.productId   = ids.P1;
     line.width_mm    = 2000;
     line.height_mm   = 2000;
@@ -405,7 +405,7 @@ void FormulaEngineTester::testNeedCalculatorChooseFalse()
     NeedCalculationRegistry::instance().insert(mode);
 
     // v2 OrderLine
-    OrderLine line;
+    OrderItem line;
     line.productId   = ids.P1;
     line.width_mm    = 1000;   // feltétel hamis
     line.height_mm   = 1000;

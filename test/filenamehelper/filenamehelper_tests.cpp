@@ -203,7 +203,7 @@ void FileNameHelperTester::testFallbackLogic()
     f.setTestMode(false);
 
     // Töröljük a fő products.csv-t, hogy fallback aktiválódjon
-    QString prodMain = FileNameHelperTesterProxy::dataRoot("products.csv");
+    QString prodMain = FileNameHelperTesterProxy::dataRoot("products/products.csv");
     QFile::remove(prodMain);
 
     zInfo() << "NORMAL MODE fallback:";
@@ -220,7 +220,7 @@ void FileNameHelperTester::testFallbackLogic()
     f.setTestMode(true);
 
     // Töröljük a test products.csv-t
-    QString prodTest = FileNameHelperTesterProxy::dataRoot("products.csv");
+    QString prodTest = FileNameHelperTesterProxy::dataRoot("products/products.csv");
     QFile::remove(prodTest);
 
     zInfo() << "TEST MODE fallback:";

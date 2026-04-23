@@ -48,7 +48,7 @@ void NeedCalculatorPipelineTester::testLenDsl()
         );
     NeedCalculationDetailRegistry::instance().insert(d);
 
-    OrderLine line;
+    OrderItem line;
     line.productId = ids.P1;
     line.width_mm = 1200;
     line.height_mm = 800;
@@ -150,7 +150,7 @@ void NeedCalculatorPipelineTester::testQtyDsl()
         );
     NeedCalculationDetailRegistry::instance().insert(d);
 
-    OrderLine line;
+    OrderItem line;
     line.productId = ids.P1;
     line.width_mm = 1200;
     line.height_mm = 800;
@@ -198,7 +198,7 @@ void NeedCalculatorPipelineTester::testOptDsl()
         );
     NeedCalculationDetailRegistry::instance().insert(d);
 
-    OrderLine line;
+    OrderItem line;
     line.productId = ids.P1;
     line.width_mm = 1200;
     line.height_mm = 800;
@@ -245,7 +245,7 @@ void NeedCalculatorPipelineTester::testChooseDsl()
 
     NeedCalculationDetailRegistry::instance().insert(d);
 
-    OrderLine line;
+    OrderItem line;
     line.productId = ids.P1;
     line.width_mm = 2000;   // feltétel igaz
     line.height_mm = 800;
@@ -328,7 +328,7 @@ void NeedCalculatorPipelineTester::testKitting()
 
     NeedCalculationDetailRegistry::instance().insert(d);
 
-    OrderLine line;
+    OrderItem line;
     line.productId = ids.P1;
     line.width_mm = 1200;
     line.height_mm = 800;
@@ -375,7 +375,7 @@ void NeedCalculatorPipelineTester::testCutting()
         );
     NeedCalculationDetailRegistry::instance().insert(d);
 
-    OrderLine line;
+    OrderItem line;
     line.productId = ids.P1;
     line.width_mm = 1500;
     line.height_mm = 800;

@@ -15,7 +15,8 @@ WorksheetNeed WorksheetBuilder::fromOrderNeed(const OrderNeed& orderNeed)
     QVector<KitItem> kits;
 
     for (const auto& oin : orderNeed.orderItemNeeds) {
-        const OrderLine& line = oin.line;
+
+        const OrderItem& item = oin.item;
 
         for (const auto& itemNeed : oin.itemNeeds) {
 
@@ -24,12 +25,15 @@ WorksheetNeed WorksheetBuilder::fromOrderNeed(const OrderNeed& orderNeed)
                 Piece p;
                 p.materialBarcode = rc.materialBarcode;
                 p.requiredLength  = rc.requiredLength;
-                p.handlerSide     = line.handlerSide;
-                p.externalRef     = line.externalId;
-                p.ownerName       = line.ownerName;
-                p.colorName       = line.colorName;
-                p.fullWidth       = line.width_mm;
-                p.fullHeight      = line.height_mm;
+
+                // OrderItem metaadatok
+                p.handlerSide     = item.handlerSide;
+                p.externalRef     = item.externalId;
+                p.ownerName       = item.ownerName;
+                p.colorName       = item.colorName;
+                p.fullWidth       = item.width_mm;
+                p.fullHeight      = item.height_mm;
+
                 pieces.append(p);
             }
 
@@ -38,10 +42,13 @@ WorksheetNeed WorksheetBuilder::fromOrderNeed(const OrderNeed& orderNeed)
                 KitItem ki;
                 ki.materialBarcode = rk.materialBarcode;
                 ki.quantity        = rk.kitting_qty;
-                ki.ownerName       = line.ownerName;
-                ki.colorName       = line.colorName;
-                ki.fullWidth       = line.width_mm;
-                ki.fullHeight      = line.height_mm;
+
+                // OrderItem metaadatok
+                ki.ownerName       = item.ownerName;
+                ki.colorName       = item.colorName;
+                ki.fullWidth       = item.width_mm;
+                ki.fullHeight      = item.height_mm;
+
                 kits.append(ki);
             }
         }
@@ -52,3 +59,4 @@ WorksheetNeed WorksheetBuilder::fromOrderNeed(const OrderNeed& orderNeed)
 
     return ws;
 }
+

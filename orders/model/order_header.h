@@ -2,16 +2,26 @@
 
 #include <QString>
 #include <QDate>
+#include <QUuid>
+
+#include "common/model/identifiable_entity.h"
+
 
 /**
- * OrderHeader – a rendelés fejadatai.
+ * OrderHeader – a rendelés fejadatai
  *
- * Ezek azok az információk, amelyeket a user egyszer ad meg,
- * és minden OrderItem örökli őket (ownerName, defaultColor, stb.).
- *
- * A header NEM tartalmaz tételadatokat – csak a rendelés szintű metaadatokat.
+ * Entitásként viselkedik:
+ *  - saját technikai ID (IdentifiableEntity.id)
+ *  - saját névmező (IdentifiableEntity.name) → customerName-be tükrözhető
  */
-struct OrderHeader {
+
+struct OrderHeader : public IdentifiableEntity {
+    // Egyedi technikai azonosító a rendelés fejéhez.
+    // Registry és repository számára szükséges.
+
+    // IdentifiableEntity:
+    // QUuid id;
+    // QString name;  // ezt nem használjuk, de kötelező mező
 
     QString customerName;
     // A megrendelő neve.

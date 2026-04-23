@@ -3,6 +3,8 @@
 #include <QUuid>
 #include <QString>
 
+#include "common/model/identifiable_entity.h"
+
 /**
  * OrderItem – egyetlen megrendelt tétel teljes, véglegesített adatai.
  *
@@ -14,10 +16,14 @@
  * NINCS többé OrderLine / CalcOrderLine kettősség.
  * Ez az egyetlen igazságforrás egy rendelési tételhez.
  */
-struct OrderItem {
-    QUuid id;
-    // Egyedi technikai azonosító a rendelési tételhez.
-    // A teljes pipeline (Need, Worksheet, WorkOrder) erre hivatkozik.
+struct OrderItem : public IdentifiableEntity {
+    // IdentifiableEntity:
+    // QUuid id;
+    // QString name;  // nem használjuk, de kötelező mező
+
+
+    QUuid orderId;
+    // Annak az Order-nek az ID-ja, amelyhez ez a tétel tartozik.
 
     QUuid productId;
     // A megrendelt termék típusa (ProductMaster.id).
@@ -43,7 +49,7 @@ struct OrderItem {
     // A termék színe – véglegesített érték.
     // A user adja meg, vagy OrderHeader defaultból jön.
 
-    int qty = 1;
+    int order_qty = 1;
     // Hány darabot rendeltek ebből a tételből.
     // A NeedCalculator minden példányra külön fut.
 
