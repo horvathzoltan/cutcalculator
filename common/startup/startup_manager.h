@@ -53,4 +53,5 @@ private:
     //StartupStatus initNeedRuleRegistry();
 
     //void MatrixValidator_2();
+    void archiveLogs();
 };

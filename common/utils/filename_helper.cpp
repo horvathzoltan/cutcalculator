@@ -100,6 +100,7 @@ static const QMap<FileKind, FileKindInfo> FILE_INFO = {
     { FileKind::UiSnapshotFile, { "ui_snapshots/geometry_%1.ini", FileBehavior::Config } },
 
     { FileKind::LogDir, { "logs", FileBehavior::Config } },
+    { FileKind::LogArchiveDir, { "logs_archive", FileBehavior::Config } },
     { FileKind::SettingsIni, { "settings.ini", FileBehavior::Config } },
     { FileKind::CacheDir,           { "%1_cache", FileBehavior::Config } },
     { FileKind::MainWindow_SnapshotFile, { "ui_snapshots/geometry_%1.ini", FileBehavior::Config } },
@@ -249,8 +250,16 @@ QString FileNameHelper::pathFor(FileKind kind,
         }
 
         // 3/B) Minden más Config → MAIN alatt
+        if (kind == FileKind::LogArchiveDir) {
+            const QString mainRoot = _dataRoot_MAIN.filePath("");
+            const QString full = join(mainRoot, "CutCalculator/logs_archive");
+            QDir(full).mkpath(".");
+            return full;
+        }
+
         const QString mainRoot = _dataRoot_MAIN.filePath("");
         return configPath(mainRoot, fileName);
+
     }
 
     return "";

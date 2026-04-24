@@ -4,6 +4,8 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
 CONFIG += c++20
 
+LIBS += -lz
+
 DEFINES += TARGI=$$TARGET
 message( "TARGET = "$$TARGI )
 
@@ -26,11 +28,13 @@ SOURCES += \
     calculation/service/kit_aggregator.cpp \
     calculation/service/order_need_builder.cpp \
     calculation/service/worksheet_builder.cpp \
+    common/logger/log_archiver.cpp \
     common/system/window_stability_monitor.cpp \
     common/ui_state/layout_critical_helper.cpp \
     common/ui_state/state_collector.cpp \
     common/ui_state/state_handlers.cpp \
     common/ui_state/state_settings.cpp \
+    common/utils/zip/zip_writer_deflated.cpp \
     dsl/dsl_syntax_highlighter.cpp \
     dsl/dsl_completer.cpp \
     dsl/dsl_text_edit.cpp \
@@ -163,6 +167,7 @@ HEADERS += \
     calculation/service/raw_cut.h \
     calculation/service/raw_kit.h \
     calculation/service/worksheet_builder.h \
+    common/logger/log_archiver.h \
     common/registry/mixins/simple_lookup_mixin.h \
     common/system/window_stability_monitor.h \
     common/ui_state/layout_critical_helper.h \
@@ -170,6 +175,8 @@ HEADERS += \
     common/ui_state/state_handlers.h \
     common/ui_state/state_settings.h \
     common/utils/result.h \
+    common/utils/zip/izip_writer.h \
+    common/utils/zip/zip_writer_deflated.h \
     dsl/dsl_completer.h \
     dsl/dsl_syntax_highlighter.h \
     dsl/dsl_text_edit.h \

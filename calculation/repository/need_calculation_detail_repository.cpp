@@ -188,9 +188,9 @@ NeedCalculationDetailRepository::buildFromRow(
 
     if (!calc) {
         ctx.addError(ctx.currentLineNumber(),
-                      QString("⚠️ Ismeretlen sámítási mód: '%1' (product=%2, mode=%3)")
-                          .arg(row.materialBarcode, row.productBarcode, row.modeName),
-                      row.materialBarcode,
+                      QString("⚠️ Ismeretlen számítási mód: '%1' (product=%2, material=%3)")
+                          .arg(row.modeName, row.productBarcode,  row.materialBarcode),
+                      row.modeName,
                       row.formula);
         return std::nullopt;
     }
@@ -198,7 +198,7 @@ NeedCalculationDetailRepository::buildFromRow(
     // Biztonsági ellenőrzés (ritka, de fontos)
     if (calc->productId != product->id) {
         ctx.addError(ctx.currentLineNumber(),
-                     QString("⚠️ Ismeretlen NeedCalculation: product='%1', mode='%2'")
+                     QString("⚠️ NeedCalculation nem illeszkedik a Product‑hoz: product='%1', mode='%2'")
                          .arg(row.productBarcode, row.modeName),
                      row.modeName,
                      row.formula);
@@ -223,7 +223,6 @@ NeedCalculationDetailRepository::buildFromRow(
         (mat && mat->cuttingMode == CuttingMode::Piece)
             ? NeedCalculationDetail::DetailKind::Kitting
             : NeedCalculationDetail::DetailKind::Cutting;
-
 
     // 6) NeedCalculationDetail összeállítása
     NeedCalculationDetail d;

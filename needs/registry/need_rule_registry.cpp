@@ -81,7 +81,15 @@ void NeedRuleRegistry::afterRemove(const NeedRule& r)
         });
 
     for (const auto& d : details) {
-        NeedCalculationDetailRegistry::instance().remove(d.id);
+        // 5.1 Audit log: törlés oka
+        zInfo(QString("🧹 NeedRule törlés miatt detail törlés: detailId=%1, material=%2, product=%3")
+                  .arg(d.id.toString(), r.rightId.toString(), r.leftId.toString()));
+
+        // 5.2 Sikertelen törlés logolása
+        if (!NeedCalculationDetailRegistry::instance().remove(d.id)) {
+            zWarning(QString("⚠️ Sikertelen detail törlés NeedRule törlés miatt: detailId=%1")
+                         .arg(d.id.toString()));
+        }
     }
 }
 

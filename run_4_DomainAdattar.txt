@@ -1,24 +1,25 @@
-📘 DOMAIN‑ORIENTÁLT ADATTÁR SPECIFIKÁCIÓ (v1.0)
+📘 DOMAIN‑ORIENTÁLT ADATTÁR SPECIFIKÁCIÓ (v2.0 – aktuális rendszer szerint)
 
 Zoltán gyártási rendszeréhez
+2026. április
 
 ------------------------------------------------------------------------
 
 1. Bevezetés
 
-Ez a dokumentum definiálja a gyártási rendszer perzisztens adattárának
-domain‑orientált felépítését.
-A specifikáció célja:
+Ez a dokumentum definiálja a gyártási rendszer végleges,
+domain‑orientált adattárstruktúráját, amely:
 
--   egységes, stabil adattárstruktúra biztosítása
--   domain‑alapú szervezés (nem program‑alapú)
--   hosszú távú fenntarthatóság
--   egyszerű backup és migráció
--   tiszta, konzisztens repository‑architektúra támogatása
+-   programfüggetlen
+-   auditálható
+-   hosszú távon stabil
+-   DDD‑kompatibilis
+-   tesztelhető (domain‑tükrözött testadatokkal)
+-   támogatja a registry/repository architektúrát
 
-A rendszer több alkalmazásból áll (CutCalculator, CuttingPlannerPro
-stb.), de az adattár nem programok szerint szerveződik, hanem
-domain‑entitások szerint.
+A rendszer több alkalmazásból áll (CutCalculator, CuttingPlannerPro), de
+az adattár nem programok szerint, hanem domain‑entitások szerint
+szerveződik.
 
 ------------------------------------------------------------------------
 
@@ -26,21 +27,22 @@ domain‑entitások szerint.
 
 Az adattár gyökere:
 
-    data/
+    CutData/
 
-Minden domain‑entitás saját, izolált mappát kap:
+Minden domain saját, izolált mappát kap:
 
-    data/
+    CutData/
       products/
       materials/
       calculations/
       orders/
       stock/
+      unique_ids/
       cutting/
       cutting_plans/
 
-A domain‑adatok függetlenek a programoktól.
-A programok csak UI‑szintű komponensek, nem szervezőelemek.
+A programok csak UI‑szintű adatot tárolnak (settings, logs, snapshots,
+cache).
 
 ------------------------------------------------------------------------
 
@@ -48,9 +50,7 @@ A programok csak UI‑szintű komponensek, nem szervezőelemek.
 
 3.1 Products domain
 
-Cél: A gyártható termékek master‑adatai.
-
-    data/products/
+    CutData/products/
       products.csv
 
 products.csv mezők:
@@ -67,14 +67,10 @@ products.csv mezők:
 
 3.2 Materials domain
 
-Cél: Anyagok, anyagcsoportok, RAL színek, vonalkódok.
-
-    data/materials/
+    CutData/materials/
       materials.csv
       materialgroups.csv
       materialgroup_members.csv
-      barcodes.csv
-      ral_colors/
 
 materials.csv mezők:
 
@@ -86,15 +82,24 @@ materials.csv mezők:
 -   supplier
 -   isActive
 
-materialgroups.csv mezők:
+------------------------------------------------------------------------
 
--   groupId
--   groupName
+3.3 RAL Colors domain (ReadOnly)
 
-materialgroup_members.csv mezők:
+    CutData/ral_colors/
+      classic.csv
+      design.csv
+      p1.csv
+      p2.csv
 
--   groupId
--   materialId
+Ezek ReadOnly fájlok.
+
+------------------------------------------------------------------------
+
+3.4 Unique IDs domain
+
+    CutData/unique_ids/
+      barcodes.csv
 
 barcodes.csv mezők:
 
@@ -103,11 +108,9 @@ barcodes.csv mezők:
 
 ------------------------------------------------------------------------
 
-3.3 Calculations domain
+3.5 Calculations domain
 
-Cél: A NeedCalculator szabályai és részletes számítási táblái.
-
-    data/calculations/
+    CutData/calculations/
       needrules.csv
       needcalculations.csv
       needcalc_details.csv
@@ -121,11 +124,9 @@ needrules.csv mezők:
 
 ------------------------------------------------------------------------
 
-3.4 Orders domain
+3.6 Orders domain
 
-Cél: Megrendelések és tételeik.
-
-    data/orders/
+    CutData/orders/
       order_headers.csv
       order_items.csv
 
@@ -151,87 +152,93 @@ order_items.csv mezők:
 
 ------------------------------------------------------------------------
 
-3.5 Stock domain
+3.7 Stock domain
 
-Cél: Raktárkészlet, tárolók, maradékok.
-
-    data/stock/
+    CutData/stock/
       stock.csv
       storages.csv
       leftovers.csv
 
-stock.csv mezők:
-
--   stockId
--   materialId
--   length_mm
--   quantity
--   storageId
-
 ------------------------------------------------------------------------
 
-3.6 Cutting domain
+3.8 Cutting domain
 
-Cél: Vágógépek és anyagtípus‑kompatibilitás.
-
-    data/cutting/
+    CutData/cutting/
       cuttingmachines.csv
       cuttingmachine_materialtypes.csv
 
 ------------------------------------------------------------------------
 
-3.7 Cutting Plans domain
+3.9 Cutting Plans domain
 
-Cél: A CuttingPlannerPro által generált vágási tervek.
-
-    data/cutting_plans/
+    CutData/cutting_plans/
       cutting_plan_*.csv
       cuttingplan_*.txt
 
 ------------------------------------------------------------------------
 
-4. Programok (UI‑szint)
+4. Programok (UI‑szintű adatok)
 
-A programok nem tartalmaznak domain‑adatot, csak:
+A programok nem tartalmaznak domain‑adatot, csak UI‑szintű fájlokat:
 
--   settings
--   logs
--   ui_snapshots
--   cache
+CutCalculator
 
-CutCalculator:
-
-    CutCalculator/
+    CutData/CutCalculator/
       settings.ini
       logs/
+      logs_archive/
       ui_snapshots/
-      emoji_overlay_cache/
+      autocreated_cache/
 
-CuttingPlannerPro:
+CuttingPlannerPro
 
-    CuttingPlannerPro/
+    CutData/CuttingPlannerPro/
       settings.ini
       logs/
+      logs_archive/
       ui_snapshots/
-      emoji_overlay_cache/
+      autocreated_cache/
 
 ------------------------------------------------------------------------
 
-5. Globális konfiguráció
+5. Testadatok (domain‑tükrözött)
 
-    config/
-      global_settings.ini
-      environment.json
-      license.txt
+A testadatok a projektben vannak:
+
+    source/repos/CutCalculator/testdata/
+
+A program futás közben a CutData/test/ alá ír tesztadatot:
+
+    CutData/test/
+      products/
+      materials/
+      calculations/
+      orders/
+      stock/
+      unique_ids/
+      cutting/
+      cutting_plans/
+
+A ReadOnly fájlok test‑módban:
+
+    CutData/test/<domain>/test_<filename>.csv
 
 ------------------------------------------------------------------------
 
-6. User‑specifikus adatok
+6. Log archiválás (új – v2.0)
 
-    users/
-      zoli/
-      admin/
-      guest/
+A log könyvtárban max 10 aktív log marad.
+
+Ha több van:
+
+1.  ZIP készül:
+    logs_YYYYMMDD_HHMM.zip
+2.  Áthelyezés:
+    CutData/CutCalculator/logs_archive/
+3.  Régi logok törlése a logs/ könyvtárból
+
+A ZIP‑eket soha nem bontjuk ki, így nem keletkezik újra archiválandó
+fájl.
 
 ------------------------------------------------------------------------
 
@@ -240,12 +247,13 @@ CuttingPlannerPro:
 Backup domain‑szinten történik:
 
     backups/
-      2026-04-23/
+      2026-04-24/
         products/
         materials/
         calculations/
         orders/
         stock/
+        unique_ids/
         cutting/
         cutting_plans/
 
@@ -253,13 +261,14 @@ Backup domain‑szinten történik:
 
 8. Repository‑architektúra illeszkedése
 
-Minden registry/repository egy domain‑mappára mutat:
+Minden repository egy domain‑mappára mutat:
 
--   ProductRepository → data/products/products.csv
--   MaterialRepository → data/materials/materials.csv
--   OrderRepository → data/orders/order_headers.csv + order_items.csv
--   StockRepository → data/stock/stock.csv
--   CuttingRepository → data/cutting/cuttingmachines.csv
+-   ProductRepository → products/products.csv
+-   MaterialRepository → materials/materials.csv
+-   OrderRepository → orders/order_headers.csv, order_items.csv
+-   StockRepository → stock/stock.csv
+-   CuttingRepository → cutting/cuttingmachines.csv
+-   NeedCalculationRepository → calculations/needcalculations.csv
 
 Ez a struktúra:
 
@@ -270,3 +279,4 @@ Ez a struktúra:
 -   DDD‑kompatibilis
 -   hosszú távon stabil
 
+------------------------------------------------------------------------

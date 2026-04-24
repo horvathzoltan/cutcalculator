@@ -134,33 +134,47 @@ bool NeedCalculationDetailRegistry::remove(const QUuid &id) {
 // v2: domain validation uses updated formula rules (isFormulaValid)
 bool NeedCalculationDetailRegistry::validateDomain(const NeedCalculationDetail& d) const
 {
-    // Formula üres → valid
-    if (d.formula.trimmed().isEmpty())
+    const QString f = d.formula.trimmed();
+
+    // 1) Üres formula → valid
+    if (f.isEmpty())
         return true;
 
-    // Formula nem lehet "unknown"
-    if (d.formula.trimmed() == "unknown")
+    // 2) "unknown" → invalid
+    if (f == "unknown")
         return false;
 
-    // Kind ellenőrzés
+    // 3) Kind ellenőrzés
     if (d.kind != NeedCalculationDetail::DetailKind::Cutting &&
         d.kind != NeedCalculationDetail::DetailKind::Kitting)
         return false;
 
-    // Material létezzen
-    if (!materialExists(d.materialId))
+    // 4) Material létezzen
+    const auto* mat = MaterialRegistry::instance().findById(d.materialId);
+    if (!mat)
         return false;
 
-    // Calculation létezzen
+    // 5) Calculation létezzen
     const NeedCalculation* nc =
         NeedCalculationRegistry::instance().findById(d.needCalculationId);
     if (!nc)
         return false;
 
-    // Product létezzen
+    // 6) Product létezzen
     auto p = ProductRegistry::instance().findById(nc->productId);
     if (!p)
         return false;
+
+    // 7) Formula–material kompatibilitás
+    // if (mat->cuttingMode == CuttingMode::Piece) {
+    //     if (FormulaAnalysis::containsLengthVariables(f))
+    //         return false;
+    // }
+
+    // if (mat->cuttingMode == CuttingMode::Length) {
+    //     if (FormulaAnalysis::containsPieceVariables(f))
+    //         return false;
+    // }
 
     return true;
 }
@@ -252,9 +266,12 @@ bool NeedCalculationDetailRegistry::validateMaterial(const NeedCalculationDetail
     return materialExists(d.materialId);
 }
 
-bool NeedCalculationDetailRegistry::materialExists(const QUuid& materialId) {
-    const auto* ent =
-        RegistryManager::instance().findEntity("MaterialMaster", materialId);
-    return ent != nullptr;
-}
+// bool NeedCalculationDetailRegistry::materialExists(const QUuid& materialId) {
+//     const auto* ent =
+//         RegistryManager::instance().findEntity("MaterialMaster", materialId);
+//     return ent != nullptr;
+// }
 
+bool NeedCalculationDetailRegistry::materialExists(const QUuid& materialId) {
+    return MaterialRegistry::instance().findById(materialId) != nullptr;
+}

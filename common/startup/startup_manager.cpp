@@ -1,11 +1,13 @@
 #include "startup_manager.h"
 
+#include "common/logger/log_archiver.h"
 #include "common/utils/filename_helper.h"
 
 // --- Registryk és repositoryk ---
 #include "colors/registry/color_registry.h"
 #include "colors/repository/color_repository.h"
 
+#include "common/utils/zip/zip_writer_deflated.h"
 #include "materials/registry/material_registry.h"
 #include "materials/repository/material_repository.h"
 
@@ -73,15 +75,28 @@ StartupStatus StartupManager::initRalColors()
 //     return StartupStatus::success();
 // }
 
+
+// Log archiving before channels are opened
+void StartupManager::archiveLogs()
+{
+    const QString logDir = FileNameHelper::instance().pathFor(FileKind::LogDir, FileAccess::Write);
+    const QString archiveDir = FileNameHelper::instance().pathFor(FileKind::LogArchiveDir, FileAccess::Write);
+
+    ZipWriterDeflated zipWriter;
+    LogArchiver archiver(logDir, archiveDir, &zipWriter);
+    archiver.run();
+}
 // ============================================================
 // 🚀 TELJES STARTUP PIPELINE
 // ============================================================
 StartupStatus StartupManager::runStartupSequence()
 {
+    archiveLogs();
+
     QVector<StartupStatus> steps = {
 
-    // 1) RAL színek (speciális)
-    initRalColors(),
+        // 1) RAL színek (speciális)
+        initRalColors(),
 
         // 2) Barcode
         initRegistryGeneric<BarcodeRegistry, BarcodeRepository>(

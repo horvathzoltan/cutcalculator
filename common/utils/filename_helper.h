@@ -30,7 +30,8 @@ enum class FileKind {
     UIState_SnapshotFile,
 
     OrderHeaders,
-    OrderItems
+    OrderItems,
+    LogArchiveDir
 };
 
 enum class FileAccess {
