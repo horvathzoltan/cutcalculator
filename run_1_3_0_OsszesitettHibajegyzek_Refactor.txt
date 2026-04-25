@@ -1,3 +1,743 @@
+Zoltán, teljesen igazad van: **a rendszered két rétege nem harcol egymással — csak rosszul vannak elnevezve**, ezért kívülről úgy tűnik, mintha egy régi és egy új rendszer versengene.
+Amit most szeretnél, az pontosan az, ami hiányzik: **egy tiszta, pontonként végrehajtható átnevezési és rendrakási terv**, amely:
+
+- nem tör meg semmit,
+- nem keveri össze a két réteget,
+- és világossá teszi, hogy a WindowState és a WidgetState egyetlen egységes UI‑állapotkezelő rendszer két oldala.
+
+Most megkapod a **lépésről lépésre végrehajtható, biztonságos, refaktorálási tervet**, amelyet akár egyben, akár modulonként is végrehajthatsz.
+
+---
+
+# ⭐ **UI‑állapotkezelés nagy refaktorálási terve**
+## **WindowStateManager + WidgetStateManager bevezetése**
+*(minden lépés külön-külön is végrehajtható, nincs rejtett mellékhatás)*
+
+---
+
+# **1. LÉPÉS — Fogalmi tisztítás (névterek és osztálynevek átnevezése)**
+
+### 🎯 Cél
+A jelenlegi elnevezések (SnapshotManager, UIStateCollector) nem kommunikálják a felelősségi köröket.
+
+### ✔ Teendők
+
+1. **SnapshotManager → WindowStateManager**
+   - A fájl neve maradhat snapshot_manager.cpp, de az osztály neve legyen:
+     `class WindowStateManager`.
+
+2. **UIStateCollector → WidgetStateManager**
+   - A fájl neve maradhat state_collector.cpp, de az osztály neve legyen:
+     `class WidgetStateManager`.
+
+3. **StateSettings → WidgetStateSettings**
+   - Ez a WidgetState réteg része, így a név legyen egyértelmű.
+
+4. **LayoutCriticalHelper → WidgetDiscoveryHelper**
+   - Ez a név sokkal jobban tükrözi, hogy widgeteket gyűjt, nem layoutot.
+
+### 💡 Eredmény
+A rendszeredben két világ lesz:
+
+```
+WindowStateManager   → top-level window state
+WidgetStateManager   → internal widget state
+```
+
+Ez már önmagában megszünteti a „két rendszer harcol” érzést.
+
+---
+
+# **2. LÉPÉS — Függvények átnevezése (API tisztítás)**
+
+### 🎯 Cél
+A függvénynevek tükrözzék a felelősségi kört.
+
+### ✔ WindowStateManager API
+
+| Régi | Új |
+|------|-----|
+| restoreSnapshot_MainWindow | restoreWindowState |
+| saveSnapshot_MainWindow | saveWindowState |
+| loadUIState | loadWidgetState |
+| saveUIState | saveWidgetState |
+
+### ✔ WidgetStateManager API
+
+| Régi | Új |
+|------|-----|
+| collect | saveWidgetState |
+| restore | restoreWidgetState |
+
+### 💡 Eredmény
+A kód olvasója azonnal látja:
+
+- **WindowStateManager** → ablakgeometria
+- **WidgetStateManager** → belső widgetek állapota
+
+---
+
+# **3. LÉPÉS — Fájlok átnevezése (opcionális, de ajánlott)**
+
+### ✔ Javasolt új fájlnevek
+
+| Régi | Új |
+|------|-----|
+| snapshot_manager.h/cpp | window_state_manager.h/cpp |
+| state_collector.h/cpp | widget_state_manager.h/cpp |
+| state_settings.h/cpp | widget_state_settings.h/cpp |
+| layout_critical_helper.h/cpp | widget_discovery_helper.h/cpp |
+
+Ez a projektstruktúrát is letisztítja.
+
+---
+
+# **4. LÉPÉS — MainWindow kód tisztítása (a két réteg szétválasztása)**
+
+### 🎯 Cél
+A MainWindow-ban legyen világos, melyik réteg mikor fut.
+
+### ✔ WindowStateManager hívások
+
+- `onWindowStable()` elején:
+  `WindowStateManager::restoreWindowState(this);`
+
+- `resizeEvent`, `moveEvent`, `changeEvent`:
+  `WindowStateManager::saveWindowState(this);`
+
+- `closeEvent` végén:
+  `WindowStateManager::saveWindowState(this);`
+
+### ✔ WidgetStateManager hívások
+
+- `onWindowStable()` végén:
+  `WidgetStateManager::restoreWidgetState(this, "mainwindow_ui");`
+
+- `closeEvent()` végén:
+  `WidgetStateManager::saveWidgetState(this, "mainwindow_ui");`
+
+### 💡 Eredmény
+A MainWindow kódja világosan két részre válik:
+
+```
+WindowStateManager → ablakgeometria
+WidgetStateManager → belső widgetek
+```
+
+---
+
+# **5. LÉPÉS — BOMWorkbench tisztítása**
+
+### 🎯 Cél
+A BOMWorkbench csak akkor mentse magát, ha top‑level window.
+
+### ✔ BOMWorkbench új logika
+
+- Ha `isWindow() == true` → saját WidgetStateManager-t használ
+- Ha `isWindow() == false` → a MainWindow globális WidgetStateManager-e menti
+
+### ✔ BOMWorkbenchSaveState() eltávolítható
+Csak akkor kell, ha külön ablakban nyílik meg.
+
+---
+
+# **6. LÉPÉS — Dokumentáció frissítése**
+
+### 🎯 Cél
+A fejlesztő azonnal értse a rendszert.
+
+### ✔ Dokumentációs fejezetek
+
+1. **WindowState réteg**
+   - px‑alapú
+   - monitorprofil-függő
+   - WindowStabilityMonitor vezérli
+
+2. **WidgetState réteg**
+   - percent‑alapú
+   - auditPath‑alapú
+   - WidgetStateManager kezeli
+
+3. **A két réteg együtt adja a teljes UI‑állapotot**
+
+---
+
+# ⭐ **A teljes refaktor eredménye**
+
+- A rendszered **nem két konkurens rendszer**, hanem két réteg:
+  **WindowState + WidgetState = teljes UI állapot**
+- A kód olvashatóbb
+- A felelősségi körök világosak
+- A BOMWorkbench kézi mentése megszűnik
+- A MainWindow UI állapota egységesen kezelhető
+- A fejlesztők számára egyértelmű lesz, hogy mi miért történik
+
+---
+
+Zoltán, itt a **teljes, végrehajtható, fájlról‑fájlra, osztályról‑osztályra átnevezési mátrix**, amely *pontosan* megvalósítja azt a modellt, amit közösen kialakítottunk:
+
+# 🌍 **WindowStateManager**
+(top‑level window geometry, DPI, monitorprofil, px‑alapú)
+
+# 🌍 **WidgetStateManager**
+(belső widgetek állapota, percent‑alapú, auditPath‑vezérelt)
+
+Ez a mátrix **nem kód**, hanem egy **refaktorálási terv**, amelyet lépésenként végre tudsz hajtani.
+Semmi nem törik el, minden átnevezés egyértelmű, és a rendszered végre *egy kerek egésznek* fog látszani.
+
+---
+
+# ⭐ **1. FŐ ÁTNEVEZÉSI MÁTRIX (osztályok)**
+
+| Jelenlegi osztály | Új név | Miért? |
+|-------------------|--------|--------|
+| `SnapshotManager` | **WindowStateManager** | Egyértelmű: top‑level window state, px‑alapú |
+| `UIStateCollector` | **WidgetStateManager** | Egyértelmű: belső widget state, percent‑alapú |
+| `StateSettings` | **WidgetStateSettings** | Ez a WidgetState réteg része |
+| `LayoutCriticalHelper` | **WidgetDiscoveryHelper** | Ez widgeteket gyűjt, nem layoutot |
+| `GeometryHelper` | **WindowGeometryHelper** *(opcionális)* | Csak a WindowState réteghez tartozik |
+| `WindowStabilityMonitor` | **WindowStateStabilityMonitor** *(opcionális)* | Egyértelműbb, hogy WindowState-hez tartozik |
+
+---
+
+# ⭐ **2. FÜGGVÉNYEK ÁTNEVEZÉSI MÁTRIXA**
+
+## 🌍 **WindowStateManager API**
+
+| Jelenlegi | Új név | Megjegyzés |
+|-----------|--------|------------|
+| `restoreSnapshot_MainWindow(QWidget*)` | **restoreWindowState(QWidget*)** | Ez a fő restore |
+| `saveSnapshot_MainWindow(QWidget*)` | **saveWindowState(QWidget*)** | Ez a fő save |
+| `loadUIState(groupName)` | **loadWidgetState(groupName)`** | WidgetState réteghez tartozik |
+| `saveUIState(groupName, map)` | **saveWidgetState(groupName, map)`** | WidgetState réteghez tartozik |
+| `clearUIState(groupName)` | **clearWidgetState(groupName)`** | WidgetState réteghez tartozik |
+
+**Megjegyzés:**
+A SnapshotManager jelenleg *két világot* kezel:
+- WindowState (geometry)
+- WidgetState (UIState fájlok)
+
+Az átnevezés után ez világos lesz.
+
+---
+
+## 🌍 **WidgetStateManager API**
+
+| Jelenlegi | Új név |
+|-----------|--------|
+| `collect(QWidget*)` | **saveWidgetState(QWidget*)** |
+| `restore(QWidget*)` | **restoreWidgetState(QWidget*)** |
+| `keyFor(QWidget*)` | **computeWidgetKey(QWidget*)** |
+| `computeAuditPath(QWidget*)` | **computeWidgetPath(QWidget*)** |
+
+---
+
+# ⭐ **3. FÁJL ÁTNEVEZÉSI MÁTRIX**
+
+| Jelenlegi fájl | Új fájlnév |
+|----------------|------------|
+| `snapshot_manager.h/cpp` | **window_state_manager.h/cpp** |
+| `state_collector.h/cpp` | **widget_state_manager.h/cpp** |
+| `state_settings.h/cpp` | **widget_state_settings.h/cpp** |
+| `layout_critical_helper.h/cpp` | **widget_discovery_helper.h/cpp** |
+| `geometry_helper.h/cpp` | **window_geometry_helper.h/cpp** *(opcionális)* |
+
+---
+
+# ⭐ **4. MAINWINDOW ÁTNEVEZÉSI MÁTRIX**
+
+## 🌍 WindowState réteg (top‑level)
+
+| Jelenlegi hívás | Új hívás |
+|------------------|----------|
+| `SnapshotManager::restoreSnapshot_MainWindow(this)` | **WindowStateManager::restoreWindowState(this)** |
+| `SnapshotManager::saveSnapshot_MainWindow(this)` | **WindowStateManager::saveWindowState(this)** |
+
+## 🌍 WidgetState réteg (belső widgetek)
+
+| Jelenlegi | Új |
+|-----------|----|
+| `BOMWorkbenchSaveState()` | **saveEmbeddedWidgetStates()** *(ha marad)* |
+| `UIStateCollector("bom_workbench")` | **WidgetStateManager("bom_workbench")** |
+| `UIStateCollector("mainwindow_ui")` | **WidgetStateManager("mainwindow_ui")** |
+
+---
+
+# ⭐ **5. BOMWORKBENCH ÁTNEVEZÉSI MÁTRIX**
+
+| Jelenlegi | Új |
+|-----------|----|
+| `restoreUiState()` | **restoreWidgetState()** |
+| `saveUiState()` | **saveWidgetState()** |
+| `UIStateCollector c("bom_workbench")` | **WidgetStateManager c("bom_workbench")** |
+
+---
+
+# ⭐ **6. WIDGETDISCOVERY ÁTNEVEZÉSI MÁTRIX**
+
+| Jelenlegi | Új |
+|-----------|----|
+| `LayoutCriticalHelper::collect(root)` | **WidgetDiscoveryHelper::collect(root)** |
+| `LayoutCriticalHelper::isLayoutCritical(w)` | **WidgetDiscoveryHelper::isWidgetStateRelevant(w)** |
+
+---
+
+# ⭐ **7. KONCEPTUÁLIS ÁTNEVEZÉSI MÁTRIX (dokumentáció)**
+
+| Fogalom | Új név | Miért? |
+|---------|--------|--------|
+| „snapshot” | **WindowState** | Egyértelmű, hogy top‑level window |
+| „UIState” | **WidgetState** | Egyértelmű, hogy belső widgetek |
+| „snapshot restore” | **window state restore** | Nem keveredik a widget state-tel |
+| „UIState restore” | **widget state restore** | Nem keveredik a window state-tel |
+
+---
+
+# ⭐ **8. A TELJES RENDSZER ÚJ MODELLJE (áttekintő mátrix)**
+
+| Réteg | Osztály | Fájl | Felelősség |
+|-------|---------|------|------------|
+| **WindowState** | WindowStateManager | window_state_manager.cpp | főablak geometry, DPI, monitorprofil |
+| **WidgetState** | WidgetStateManager | widget_state_manager.cpp | belső widgetek állapota |
+| **WidgetState** | WidgetStateSettings | widget_state_settings.cpp | UIState fájlok kezelése |
+| **WidgetState** | WidgetDiscoveryHelper | widget_discovery_helper.cpp | widgetfa bejárása |
+| **WindowState** | WindowStateStabilityMonitor | window_state_stability_monitor.cpp | stabilitás detektálása |
+
+---
+
+# ⭐ **9. A REFRAKTORÁLÁS VÉGSŐ EREDMÉNYE**
+
+- A rendszered **nem két konkurens rendszer**, hanem két réteg:
+  **WindowState + WidgetState = teljes UI állapot**
+- A kód olvashatóbb
+- A felelősségi körök világosak
+- A BOMWorkbench kézi mentése megszűnik (embedded esetben)
+- A MainWindow UI állapota egységesen kezelhető
+- A fejlesztők számára egyértelmű lesz, hogy mi miért történik
+
+---
+
+Zoltán, akkor jöjjön **a nagy, végrehajtható, hibamentes refaktorálási sorrend**, amit *pont így* érdemes végigvinni, hogy:
+
+- semmi ne törjön el,
+- a build végig működjön,
+- a két réteg (WindowState + WidgetState) tisztán szétváljon,
+- a projektedben *végre* világos legyen, mi miért történik.
+
+Ez a sorrend **biztonságos**, **inkrementális**, és **minden lépés után fordítható** marad a projekt.
+
+---
+
+# ⭐ **A TELJES REFAKTORÁLÁSI SORREND (lépésről lépésre)**
+*(Ez a végrehajtható terv, nem csak elmélet.)*
+
+---
+
+# **1. LÉPÉS — A WidgetState réteg átnevezése (a könnyebbik rész)**
+*(Ez nem érinti a WindowState rendszert, ezért teljesen biztonságos első lépés.)*
+
+### 1.1. Fájlok átnevezése
+Ezeket a fájlokat nevezd át:
+
+| Régi | Új |
+|------|----|
+| `state_collector.h/cpp` | **widget_state_manager.h/cpp** |
+| `state_settings.h/cpp` | **widget_state_settings.h/cpp** |
+| `layout_critical_helper.h/cpp` | **widget_discovery_helper.h/cpp** |
+
+### 1.2. Osztályok átnevezése
+A fájlokban:
+
+| Régi osztály | Új osztály |
+|--------------|------------|
+| `UIStateCollector` | **WidgetStateManager** |
+| `StateSettings` | **WidgetStateSettings** |
+| `LayoutCriticalHelper` | **WidgetDiscoveryHelper** |
+
+### 1.3. API átnevezése
+A WidgetStateManager-ben:
+
+| Régi | Új |
+|------|----|
+| `collect()` | **saveWidgetState()** |
+| `restore()` | **restoreWidgetState()** |
+| `keyFor()` | **computeWidgetKey()** |
+| `computeAuditPath()` | **computeWidgetPath()** |
+
+### 1.4. BOMWorkbench átállítása
+A BOMWorkbench-ben:
+
+| Régi | Új |
+|------|----|
+| `restoreUiState()` | **restoreWidgetState()** |
+| `saveUiState()` | **saveWidgetState()** |
+| `UIStateCollector("bom_workbench")` | **WidgetStateManager("bom_workbench")** |
+
+### ✔ A projekt ekkor még mindig hibátlanul fordul.
+A WindowState réteghez még nem nyúltunk.
+
+---
+
+# **2. LÉPÉS — A WindowState réteg átnevezése (a nehezebb rész)**
+
+### 2.1. Fájlok átnevezése
+
+| Régi | Új |
+|------|----|
+| `snapshot_manager.h/cpp` | **window_state_manager.h/cpp** |
+
+### 2.2. Osztály átnevezése
+
+| Régi osztály | Új osztály |
+|--------------|------------|
+| `SnapshotManager` | **WindowStateManager** |
+
+### 2.3. API átnevezése
+
+| Régi | Új |
+|------|----|
+| `restoreSnapshot_MainWindow()` | **restoreWindowState()** |
+| `saveSnapshot_MainWindow()` | **saveWindowState()** |
+| `loadUIState()` | **loadWidgetState()`** |
+| `saveUIState()` | **saveWidgetState()`** |
+| `clearUIState()` | **clearWidgetState()`** |
+
+### 2.4. A MainWindow átállítása
+
+A MainWindow-ban:
+
+| Régi | Új |
+|------|----|
+| `SnapshotManager::instance().restoreSnapshot_MainWindow(this)` | **WindowStateManager::instance().restoreWindowState(this)** |
+| `SnapshotManager::instance().saveSnapshot_MainWindow(this)` | **WindowStateManager::instance().saveWindowState(this)** |
+
+### ✔ A projekt továbbra is fordul.
+A WidgetState réteg már külön név alatt fut.
+
+---
+
+# **3. LÉPÉS — A két réteg szétválasztása a MainWindow-ban**
+
+Ez a lépés teszi világossá a kódban is, hogy két külön réteg van.
+
+### 3.1. WindowState restore helye
+`onWindowStable()` elején:
+
+```cpp
+WindowStateManager::instance().restoreWindowState(this);
+```
+
+### 3.2. WidgetState restore helye
+`onWindowStable()` végén:
+
+```cpp
+WidgetStateManager c("mainwindow_ui");
+c.restoreWidgetState(this);
+```
+
+### 3.3. WindowState save helyei
+- `resizeEvent`
+- `moveEvent`
+- `changeEvent`
+- `closeEvent` végén
+
+### 3.4. WidgetState save helye
+`closeEvent()` végén:
+
+```cpp
+WidgetStateManager c("mainwindow_ui");
+c.saveWidgetState(this);
+```
+
+### ✔ A projekt ekkor már *logikailag is tiszta*.
+A két réteg nem keveredik.
+
+---
+
+# **4. LÉPÉS — BOMWorkbenchSaveState() egyszerűsítése**
+
+### 4.1. Embedded esetben felesleges
+Ha a MainWindow globális WidgetStateManager-t használ:
+
+```cpp
+void MainWindow::closeEvent(...) {
+    WidgetStateManager c("mainwindow_ui");
+    c.saveWidgetState(this);
+}
+```
+
+A BOMWorkbench is benne van a widgetfában → automatikusan mentődik.
+
+### 4.2. Meghagyjuk csak top‑level BOMWorkbench esetére
+
+```cpp
+if (bom->isWindow()) {
+    bom->saveWidgetState();
+}
+```
+
+### ✔ A BOMWorkbenchSaveState() 90%-ban eltűnik.
+Csak akkor fut, ha a BOMWorkbench külön ablak.
+
+---
+
+# **5. LÉPÉS — Dokumentáció frissítése**
+
+### 5.1. Új fogalmak
+- **WindowState** = top‑level window geometry
+- **WidgetState** = belső widgetek állapota
+
+### 5.2. Új rétegek
+- WindowStateManager
+- WidgetStateManager
+
+### 5.3. Új működési sorrend
+- WindowState restore → WidgetState restore → UI stabil
+
+---
+
+# ⭐ **6. LÉPÉS — (Opcionális) Kódtisztítás és kommentek egységesítése**
+
+### 6.1. Minden kommentben:
+- „snapshot” → „window state”
+- „UIState” → „widget state”
+
+### 6.2. Minden logban:
+- „Window snapshot restored” → „Window state restored”
+- „UIState saved” → „Widget state saved”
+
+---
+
+# ⭐ **A REFAKTORÁLÁS VÉGSŐ EREDMÉNYE**
+
+A rendszered így fog kinézni:
+
+```
+WindowStateManager
+    restoreWindowState()
+    saveWindowState()
+    (px, DPI, monitorprofil)
+
+WidgetStateManager
+    restoreWidgetState()
+    saveWidgetState()
+    (percent, auditPath, belső widgetek)
+```
+
+És a MainWindow:
+
+```
+onWindowStable():
+    WindowStateManager::restoreWindowState()
+    WidgetStateManager::restoreWidgetState()
+
+closeEvent():
+    WidgetStateManager::saveWidgetState()
+    WindowStateManager::saveWindowState()
+```
+
+Ez **tiszta**, **világos**, **szétválasztott**, **modern**, és **karbantartható**.
+
+---
+
+Zoltán, rendben — akkor most **nem diffet**, nem átnevezési mátrixot, hanem **egy valódi, végrehajtható, PATCH‑alapú, pontonkénti implementációs tervet** kapsz.
+Ez a terv **lépésről lépésre** végigvisz a teljes WindowStateManager / WidgetStateManager refaktoron úgy, hogy:
+
+- minden lépés után fordul a projekt,
+- semmi nem törik el,
+- a két réteg szépen szétválik,
+- a végén egy kristálytiszta UI‑állapotkezelő architektúrád lesz.
+
+Ez a terv **patch‑sorozatként** értelmezhető (PATCH 1 → PATCH 2 → …), mindegyik önállóan végrehajtható.
+
+---
+
+# ⭐ **PONTONKÉNT VÉGREHAJTHATÓ PATCHING TERV**
+## **WindowStateManager + WidgetStateManager refaktor**
+
+---
+
+# **PATCH 1 — WidgetState réteg átnevezése (biztonságos, független)**
+*(Ez a legkisebb kockázatú lépés, ezért ezzel kezdünk.)*
+
+### 1.1. Fájlok átnevezése
+- `state_collector.h/cpp` → `widget_state_manager.h/cpp`
+- `state_settings.h/cpp` → `widget_state_settings.h/cpp`
+- `layout_critical_helper.h/cpp` → `widget_discovery_helper.h/cpp`
+
+### 1.2. Osztályok átnevezése
+- `UIStateCollector` → `WidgetStateManager`
+- `StateSettings` → `WidgetStateSettings`
+- `LayoutCriticalHelper` → `WidgetDiscoveryHelper`
+
+### 1.3. API átnevezése
+- `collect()` → `saveWidgetState()`
+- `restore()` → `restoreWidgetState()`
+- `keyFor()` → `computeWidgetKey()`
+- `computeAuditPath()` → `computeWidgetPath()`
+
+### 1.4. BOMWorkbench átállítása
+- `restoreUiState()` → `restoreWidgetState()`
+- `saveUiState()` → `saveWidgetState()`
+- `UIStateCollector("bom_workbench")` → `WidgetStateManager("bom_workbench")`
+
+### ✔ EREDMÉNY
+A WidgetState réteg tiszta, átnevezve, a projekt fordul.
+
+---
+
+# **PATCH 2 — WindowState réteg átnevezése (SnapshotManager → WindowStateManager)**
+
+### 2.1. Fájlok átnevezése
+- `snapshot_manager.h/cpp` → `window_state_manager.h/cpp`
+
+### 2.2. Osztály átnevezése
+- `SnapshotManager` → `WindowStateManager`
+
+### 2.3. API átnevezése
+- `restoreSnapshot_MainWindow()` → `restoreWindowState()`
+- `saveSnapshot_MainWindow()` → `saveWindowState()`
+- `loadUIState()` → `loadWidgetState()`
+- `saveUIState()` → `saveWidgetState()`
+- `clearUIState()` → `clearWidgetState()`
+
+### ✔ EREDMÉNY
+A WindowState réteg neve világos, a projekt fordul.
+
+---
+
+# **PATCH 3 — MainWindow átállítása a két rétegre (szétválasztás)**
+
+### 3.1. WindowState restore helye
+`onWindowStable()` elején:
+
+```cpp
+WindowStateManager::instance().restoreWindowState(this);
+```
+
+### 3.2. WidgetState restore helye
+`onWindowStable()` végén:
+
+```cpp
+WidgetStateManager c("mainwindow_ui");
+c.restoreWidgetState(this);
+```
+
+### 3.3. WindowState save helyei
+- `resizeEvent`
+- `moveEvent`
+- `changeEvent`
+- `closeEvent` végén
+
+Mindegyikben:
+
+```cpp
+WindowStateManager::instance().saveWindowState(this);
+```
+
+### 3.4. WidgetState save helye
+`closeEvent()` végén:
+
+```cpp
+WidgetStateManager c("mainwindow_ui");
+c.saveWidgetState(this);
+```
+
+### ✔ EREDMÉNY
+A MainWindow kódja két tiszta részre válik:
+**WindowState** és **WidgetState**.
+
+---
+
+# **PATCH 4 — BOMWorkbenchSaveState() egyszerűsítése**
+
+### 4.1. Embedded esetben felesleges
+A MainWindow globális WidgetStateManager-e már menti a BOMWorkbench-et is.
+
+### 4.2. Meghagyjuk csak top‑level BOMWorkbench esetére
+
+```cpp
+if (bom->isWindow()) {
+    bom->saveWidgetState();
+}
+```
+
+### ✔ EREDMÉNY
+A BOMWorkbenchSaveState() 90%-ban eltűnik, csak top‑level esetben fut.
+
+---
+
+# **PATCH 5 — Dokumentáció és logok egységesítése**
+
+### 5.1. Kommentek átírása
+- „snapshot” → „window state”
+- „UIState” → „widget state”
+
+### 5.2. Logok átírása
+- `Window snapshot restored` → `Window state restored`
+- `UIState saved` → `Widget state saved`
+
+### ✔ EREDMÉNY
+A rendszer kommunikációja világos, a fejlesztők számára egyértelmű.
+
+---
+
+# **PATCH 6 — (Opcionális) WindowGeometryHelper átnevezése**
+
+Ha szeretnéd még tisztábbra:
+
+- `GeometryHelper` → `WindowGeometryHelper`
+
+Ez opcionális, de szépen illeszkedik a WindowState réteghez.
+
+---
+
+# ⭐ **A teljes patch-sorozat eredménye**
+
+A rendszered így fog kinézni:
+
+```
+WindowStateManager
+    restoreWindowState()
+    saveWindowState()
+    (px, DPI, monitorprofil)
+
+WidgetStateManager
+    restoreWidgetState()
+    saveWidgetState()
+    (percent, auditPath, belső widgetek)
+```
+
+A MainWindow:
+
+```
+onWindowStable():
+    WindowStateManager::restoreWindowState()
+    WidgetStateManager::restoreWidgetState()
+
+closeEvent():
+    WidgetStateManager::saveWidgetState()
+    WindowStateManager::saveWindowState()
+```
+
+Ez **tiszta**, **világos**, **szétválasztott**, **modern**, és **karbantartható**.
+
+---
+
+
+**
+
+**
+*
+
+*
+*
+*
+*
+*
+*
+
+
 ⭐ FEJLESZTÉSI ROADMAP v1.2
 ⭐ ORDER MODUL FOLYTATÁSI TERVE — PONTONKÉNT, VÉGREHAJTÁSRA KÉSZEN
 
