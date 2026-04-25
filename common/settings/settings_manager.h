@@ -92,12 +92,12 @@ public:
         return _store.value(Keys::CurrentTabIndex).toInt();
     }
 
-    void setProductTreeHeaderPercent(const QString& s) {
-        _store.setValue_persistent(Keys::ProductTreeHeaderPercent, s);
-    }
-    QString productTreeHeaderPercent() const {
-        return _store.value(Keys::ProductTreeHeaderPercent).toString();
-    }
+    // void setProductTreeHeaderPercent(const QString& s) {
+    //     _store.setValue_persistent(Keys::ProductTreeHeaderPercent, s);
+    // }
+    // QString productTreeHeaderPercent() const {
+    //     return _store.value(Keys::ProductTreeHeaderPercent).toString();
+    // }
 
     void setWindowGeometryPercent(const QString& s) {
         _store.setValue_persistent(Keys::WindowGeometryPercent, s);
@@ -121,27 +121,27 @@ public:
         return _store.value(Keys::MainSplitterPercent).toString();
     }
 
-    void setProductTypesSplitterPercent(const QString& s) {
-        _store.setValue_persistent(Keys::ProductTypesSplitterPercent, s);
-    }
-    QString productTypesSplitterPercent() const {
-        return _store.value(Keys::ProductTypesSplitterPercent).toString();
-    }
+    // void setProductTypesSplitterPercent(const QString& s) {
+    //     _store.setValue_persistent(Keys::ProductTypesSplitterPercent, s);
+    // }
+    // QString productTypesSplitterPercent() const {
+    //     return _store.value(Keys::ProductTypesSplitterPercent).toString();
+    // }
 
-    void setLeftVerticalSplitterPercent(const QString& s) {
-        _store.setValue_persistent(Keys::LeftVerticalSplitterPercent, s);
-    }
-    QString leftVerticalSplitterPercent() const {
-        return _store.value(Keys::LeftVerticalSplitterPercent).toString();
-    }
+    // void setLeftVerticalSplitterPercent(const QString& s) {
+    //     _store.setValue_persistent(Keys::LeftVerticalSplitterPercent, s);
+    // }
+    // QString leftVerticalSplitterPercent() const {
+    //     return _store.value(Keys::LeftVerticalSplitterPercent).toString();
+    // }
 
-    void setRightVerticalSplitterPercent(const QString& s) {
-        _store.setValue_persistent(Keys::RightVerticalSplitterPercent, s);
-    }
+    // void setRightVerticalSplitterPercent(const QString& s) {
+    //     _store.setValue_persistent(Keys::RightVerticalSplitterPercent, s);
+    // }
 
-    QString rightVerticalSplitterPercent() const {
-        return _store.value(Keys::RightVerticalSplitterPercent).toString();
-    }
+    // QString rightVerticalSplitterPercent() const {
+    //     return _store.value(Keys::RightVerticalSplitterPercent).toString();
+    // }
 
     void setFormulaEditorGeometryPercent(const QString& s) {
         _store.setValue_persistent(Keys::FormulaEditorGeometryPercent, s);

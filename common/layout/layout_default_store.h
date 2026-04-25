@@ -33,18 +33,18 @@ public:
     void setMainSplitterPercent(const QString& s);
 
     // BOMWorkbench splitters fallback
-    QString productTypesSplitterPercent() const;
-    void setProductTypesSplitterPercent(const QString& s);
+    // QString productTypesSplitterPercent() const;
+    // void setProductTypesSplitterPercent(const QString& s);
 
-    QString leftVerticalSplitterPercent() const;
-    void setLeftVerticalSplitterPercent(const QString& s);
+    // QString leftVerticalSplitterPercent() const;
+    // void setLeftVerticalSplitterPercent(const QString& s);
 
-    QString rightVerticalSplitterPercent() const;
-    void setRightVerticalSplitterPercent(const QString& s);
+    // QString rightVerticalSplitterPercent() const;
+    // void setRightVerticalSplitterPercent(const QString& s);
 
-    // BOMWorkbench tree header fallback
-    QString productTreeHeaderPercent() const;
-    void setProductTreeHeaderPercent(const QString& s);
+    // // BOMWorkbench tree header fallback
+    // QString productTreeHeaderPercent() const;
+    // void setProductTreeHeaderPercent(const QString& s);
 
     QString formulaEditorGeometryPercent() const;
     void setFormulaEditorGeometryPercent(const QString& s);

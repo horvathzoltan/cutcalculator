@@ -35,14 +35,6 @@ public:
     /// @return true, ha talált és sikeresen elindította a restore folyamatot.
     bool restoreSnapshot_MainWindow(QWidget* window);
 
-    /// BOMWorkbench snapshot betöltése (splitters + header percent stringek).
-    /// BOMWorkbench snapshot mentése.
-
-    //WorkbenchSnapshot restoreSnapshot_BOMWorkbench(const QString& workbenchName);
-
-    // void saveSnapshot_BOMWorkbench(const WorkbenchSnapshot& s,
-    //                                const QString& workbenchName);
-
     /// UIStateCollector monitorprofilos UI-state betöltése
     QVariantMap loadUIState(const QString& groupName) const;
 

@@ -4,7 +4,7 @@
 #include "project_root_locator.h"
 #include <QStandardPaths>
 
-FileNameHelper::RootPathContainer FileNameHelper::_brc;
+FileNameHelper::RootPathContainer FileNameHelper::_brc("brc");
 
 FileNameHelper::FileNameHelper() {init(__FILE__);}
 
@@ -194,32 +194,51 @@ QString FileNameHelper::pathFor(FileKind kind,
         // 2/A) READ
         if (access == FileAccess::Read) {
 
+            // READ-ONLY → mindig MAIN
             if (info.behavior == FileBehavior::ReadOnly)
                 return join(mainRoot, fileName);
 
-            return crudRead(dataRoot, testRoot, fileName, _isTest);
+            // CRUD READ teszt módban → DATA_ROOT (nem testdata!)
+            if (_isTest)
+                return join(dataRoot, fileName);
+
+            // CRUD READ normál módban → DATA_ROOT
+            return join(dataRoot, fileName);
         }
 
         // 2/B) WRITE
         if (access == FileAccess::Write) {
 
+            // READ-ONLY WRITE
             if (info.behavior == FileBehavior::ReadOnly) {
 
+                // normál módban tiltott
                 if (!_isTest) {
                     zError() << fileName << " is read-only; write not allowed in normal mode";
                     return "";
                 }
 
-                QString full = makeTestWritePath(dataRoot, fileName);
+                // teszt módban → testdata/test_<file>
+                QString full = makeTestWritePath(testRoot, fileName);
                 QDir(QFileInfo(full).path()).mkpath(".");
                 return full;
             }
 
+            // CRUD WRITE
+            if (_isTest) {
+                // teszt módban → testdata/test_<file>
+                QString full = makeTestWritePath(testRoot, fileName);
+                QDir(QFileInfo(full).path()).mkpath(".");
+                return full;
+            }
+
+            // normál mód → DATA_ROOT
             QString full = join(dataRoot, fileName);
             QDir(QFileInfo(full).path()).mkpath(".");
             return full;
         }
     }
+
 
     // 3) CONFIG behavior
     if (info.behavior == FileBehavior::Config) {
@@ -441,168 +460,9 @@ QString FileNameHelper::pathFor(FileKind kind,
 //         }
 
 
-
 //         return fullPath;
 //     }
 
 //     return "";
 // }
 
-
-// QString FileNameHelper::pathFor(FileKind kind,
-//                                 FileAccess access,
-//                                 const QString& overrideName) const
-// {
-//     //
-//     // 0) Alap érvényességi ellenőrzések
-//     //
-//     if (!isInitialized()) {
-//         zWarning("⚠️ FileNameHelper nincs inicializálva.");
-//         return "";
-//     }
-
-//     if (!FILE_INFO.contains(kind)) {
-//         zError() << "❌ pathFor – unknown FileKind:" << int(kind);
-//         return "";
-//     }
-
-//     const auto& info = FILE_INFO[kind];
-//     QString fileName = info.fileName;
-
-//     //
-//     // 1) Template (%1) kezelés
-//     //
-//     if (!overrideName.isEmpty()) {
-//         if (fileName.contains("%1"))
-//             fileName = fileName.arg(overrideName);
-//         else
-//             fileName = overrideName;
-//     }
-
-//     if (fileName.contains("%1") && overrideName.isEmpty()) {
-//         zError() << "❌ pathFor – template filename requires overrideName:" << fileName;
-//         return "";
-//     }
-
-//     //
-//     // 2) CRUD + ReadOnly – domain‑tükrözött adatfájlok
-//     //
-//     if (info.behavior == FileBehavior::Crud ||
-//         info.behavior == FileBehavior::ReadOnly)
-//     {
-//         const QString mainRoot = _dataRoot_MAIN.filePath("");
-//         const QString dataRoot = _dataRoot.filePath("");
-//         const QString testRoot = _dataRoot_TEST.filePath("");
-
-//         //
-//         // 2/A) READ
-//         //
-//         if (access == FileAccess::Read) {
-
-//             // READ-ONLY → mindig MAIN
-//             if (info.behavior == FileBehavior::ReadOnly)
-//                 return QDir::cleanPath(mainRoot + "/" + fileName);
-
-//             // CRUD READ
-//             QString p = QDir::cleanPath(dataRoot + "/" + fileName);
-
-//             if (_isTest)
-//                 return p;
-
-//             if (QFile::exists(p))
-//                 return p;
-
-//             return QDir::cleanPath(testRoot + "/" + fileName);
-//         }
-
-//         //
-//         // 2/B) WRITE
-//         //
-//         if (access == FileAccess::Write) {
-
-//             //
-//             // READ-ONLY WRITE → csak TEST módban engedett
-//             //
-//             if (info.behavior == FileBehavior::ReadOnly) {
-
-//                 if (!_isTest) {
-//                     zError() << fileName << " is read-only; write not allowed in normal mode";
-//                     return "";
-//                 }
-
-//                 // TEST MODE → test_ prefix, domain‑tükrözve
-//                 QFileInfo fi(fileName);
-//                 QString dir  = fi.path();       // pl. "materials"
-//                 QString base = fi.fileName();   // pl. "materials.csv"
-//                 QString testBase = "test_" + base;
-
-//                 QString full = dir.isEmpty()
-//                                    ? QDir::cleanPath(dataRoot + "/" + testBase)
-//                                    : QDir::cleanPath(dataRoot + "/" + dir + "/" + testBase);
-
-//                 QDir(QFileInfo(full).path()).mkpath(".");
-//                 return full;
-//             }
-
-//             //
-//             // CRUD WRITE → domain‑tükrözött
-//             //
-//             QString full = QDir::cleanPath(dataRoot + "/" + fileName);
-//             QDir(QFileInfo(full).path()).mkpath(".");
-//             return full;
-//         }
-//     }
-
-//     //
-//     // 3) CONFIG behavior
-//     //
-//     if (info.behavior == FileBehavior::Config) {
-
-//         //
-//         // 3/A) SettingsIni – speciális, NEM nyúlunk _dataRoot_MAIN‑hez
-//         //
-//         if (kind == FileKind::SettingsIni) {
-
-//             const QString primary = _brc.filePath("settings.ini");
-//             const QString fallbackUser =
-//                 QDir::home().filePath("CutData/CutCalculator/settings.ini");
-
-//             const QString testRoot = _dataRoot_TEST.filePath("");
-//             const QString testFallback = QDir::cleanPath(testRoot + "/settings.ini");
-
-//             if (access == FileAccess::Write)
-//                 return primary;
-
-//             if (QFileInfo::exists(primary))
-//                 return primary;
-
-//             if (QFileInfo::exists(testFallback))
-//                 return testFallback;
-
-//             if (QFileInfo::exists(fallbackUser))
-//                 return fallbackUser;
-
-//             return testFallback;
-//         }
-
-//         //
-//         // 3/B) Minden más Config → MAIN alatt
-//         //
-//         const QString mainRoot = _dataRoot_MAIN.filePath("");
-//         const QString basePrefix = "CutCalculator";
-
-//         QString full = QDir::cleanPath(mainRoot + "/" + basePrefix + "/" + fileName);
-
-//         QFileInfo fi(full);
-//         QDir dir(fi.isDir() ? full : fi.path());
-//         if (!dir.exists())
-//             dir.mkpath(".");
-
-//         return full;
-//     }
-
-//     //
-//     // 4) Ismeretlen behavior
-//     //
-//     return "";
-// }

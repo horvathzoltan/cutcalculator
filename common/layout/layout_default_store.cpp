@@ -38,45 +38,45 @@ void LayoutDefaultStore::setMainSplitterPercent(const QString& s)
     SettingsManager::instance().setMainSplitterPercent(s);
 }
 
-QString LayoutDefaultStore::productTypesSplitterPercent() const
-{
-    return SettingsManager::instance().productTypesSplitterPercent();
-}
+// QString LayoutDefaultStore::productTypesSplitterPercent() const
+// {
+//     return SettingsManager::instance().productTypesSplitterPercent();
+// }
 
-void LayoutDefaultStore::setProductTypesSplitterPercent(const QString& s)
-{
-    SettingsManager::instance().setProductTypesSplitterPercent(s);
-}
+// void LayoutDefaultStore::setProductTypesSplitterPercent(const QString& s)
+// {
+//     SettingsManager::instance().setProductTypesSplitterPercent(s);
+// }
 
-QString LayoutDefaultStore::leftVerticalSplitterPercent() const
-{
-    return SettingsManager::instance().leftVerticalSplitterPercent();
-}
+// QString LayoutDefaultStore::leftVerticalSplitterPercent() const
+// {
+//     return SettingsManager::instance().leftVerticalSplitterPercent();
+// }
 
-void LayoutDefaultStore::setLeftVerticalSplitterPercent(const QString& s)
-{
-    SettingsManager::instance().setLeftVerticalSplitterPercent(s);
-}
+// void LayoutDefaultStore::setLeftVerticalSplitterPercent(const QString& s)
+// {
+//     SettingsManager::instance().setLeftVerticalSplitterPercent(s);
+// }
 
-QString LayoutDefaultStore::rightVerticalSplitterPercent() const
-{
-    return SettingsManager::instance().rightVerticalSplitterPercent();
-}
+// QString LayoutDefaultStore::rightVerticalSplitterPercent() const
+// {
+//     return SettingsManager::instance().rightVerticalSplitterPercent();
+// }
 
-void LayoutDefaultStore::setRightVerticalSplitterPercent(const QString& s)
-{
-    SettingsManager::instance().setRightVerticalSplitterPercent(s);
-}
+// void LayoutDefaultStore::setRightVerticalSplitterPercent(const QString& s)
+// {
+//     SettingsManager::instance().setRightVerticalSplitterPercent(s);
+// }
 
-QString LayoutDefaultStore::productTreeHeaderPercent() const
-{
-    return SettingsManager::instance().productTreeHeaderPercent();
-}
+// QString LayoutDefaultStore::productTreeHeaderPercent() const
+// {
+//     return SettingsManager::instance().productTreeHeaderPercent();
+// }
 
-void LayoutDefaultStore::setProductTreeHeaderPercent(const QString& s)
-{
-    SettingsManager::instance().setProductTreeHeaderPercent(s);
-}
+// void LayoutDefaultStore::setProductTreeHeaderPercent(const QString& s)
+// {
+//     SettingsManager::instance().setProductTreeHeaderPercent(s);
+// }
 
 QString LayoutDefaultStore::formulaEditorGeometryPercent() const
 {

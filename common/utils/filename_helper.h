@@ -75,26 +75,35 @@ private:
             QString _rootPath;
             bool _initialized = false;
             InitSource _initSource = None;
+            QString _containerName = "unknown";
+
 
         public:
-            void setRootPath(const QString& path, InitSource source ) {
+            RootPathContainer() = delete;
+
+            explicit RootPathContainer(const QString& containerName)
+                : _containerName(containerName)
+            {}
+
+            void setRootPath(const QString& path, InitSource source) {
                 _initSource = source;
                 if (_initialized) {
-                    zWarning() << "FileNameHelper::setRootPath called twice; ignoring";
+                    zWarning() << "FileNameHelper::setRootPath("+_containerName+"): called twice; ignoring";
                     return;
                 }
 
                 _rootPath = QDir::cleanPath(path);
                 if (_rootPath.isEmpty()) {
-                    zWarning() << "ℹ️ FileNameHelper: empty datapath";
+                    zWarning() << "ℹ️ FileNameHelper("+_containerName+"): empty datapath";
                 } else {
                     _initialized = true;
-                    zInfo().noquote() << "✅ RootPath set:" << _rootPath;
+                    zInfo().noquote() << "✅ RootPath set("+_containerName+"):" << _rootPath;
                 }
             }
 
             QString filePath(const QString& fileName) const {
-                Q_ASSERT_X(_initialized, "FileNameHelper","setRootPath(path) must be called");
+                QString msg = "FileNameHelper("+_containerName+")";
+                Q_ASSERT_X(_initialized, msg.toStdString().c_str(),"setRootPath(path) must be called");
                 if(fileName.isEmpty()) {
                     return _rootPath;
                 }
@@ -112,23 +121,34 @@ private:
         bool _testMode = false;
 
     public:
-        void setTestMode(bool enabled) { _testMode = enabled; }
+        explicit TestableRootPathContainer(const QString& containerName)
+            : RootPathContainer(containerName)   // ← továbbadjuk a nevet
+        {}
+
+        void setTestMode(bool enabled) {
+            _testMode = enabled;
+        }
 
         QString filePath(const QString& fileName) const {
             if (_testMode) {
-                // automatikus test mappa
-                QDir dir(RootPathContainer::filePath("test"));
-                if (!dir.exists()) dir.mkpath(".");
+                // automatikus test mappa a konténer saját rootja alatt
+                QString base = RootPathContainer::filePath("");   // saját root
+                QDir dir(QDir(base).filePath("test"));
+
+                if (!dir.exists())
+                    dir.mkpath(".");
+
                 return dir.filePath(fileName);
             }
+
             return RootPathContainer::filePath(fileName);
         }
     };
 
 
-    RootPathContainer _dataRoot_TEST;
-    TestableRootPathContainer _dataRoot;
-    RootPathContainer _dataRoot_MAIN;
+    RootPathContainer _dataRoot_TEST = RootPathContainer("DATA_ROOT_TEST");
+    TestableRootPathContainer _dataRoot = TestableRootPathContainer("DATA_ROOT");
+    RootPathContainer _dataRoot_MAIN = RootPathContainer("DATA_ROOT_MAIN");
 
     static RootPathContainer _brc;
     // static QString _binaryPath;

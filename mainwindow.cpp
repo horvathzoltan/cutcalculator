@@ -9,7 +9,8 @@
 #include "materials/view/material_table_widget.h"
 #include "materials/view/material_table_manager.h"
 
-#include "workbench/view/bom_workbench.h"
+#include "workbench/view/bom/bom_workbench.h"
+#include "workbench/view/order/order_workbench.h"
 
 #include <QHeaderView>
 #include <QTimer>
@@ -40,6 +41,8 @@ MainWindow::MainWindow(QWidget *parent)
     initMaterialsTab();
     // 2. BOM Workbench tab
     initBOMWorkbenchTab();
+    // 3. Order Workbench tab
+    initOrderWorkbenchTab();
 
     zEvent("✅ MainWindow inited");
 }
@@ -49,6 +52,8 @@ void MainWindow::onWindowStable()
     // 1) Snapshot restore – ha van
     const bool restored =
         SnapshotManager::instance().restoreSnapshot_MainWindow(this);
+
+    _windowRestoredOnce = true;
 
     if (!restored) {
         // 2) fallback percent restore
@@ -81,7 +86,10 @@ void MainWindow::onWindowStable()
     }
 
     // 4) snapshot mentés stabil geometriáról
-    SnapshotManager::instance().saveSnapshot_MainWindow(this);
+    //SnapshotManager::instance().saveSnapshot_MainWindow(this);
+
+    // ⚠️ NINCS snapshot mentés itt!
+    // A mentés csak akkor történhet, ha a window már stabil és a restore befejeződött.
 }
 
 MainWindow::~MainWindow()
@@ -152,6 +160,10 @@ void MainWindow::closeEvent(QCloseEvent* event)
 
     // Fallback settings flush
     LayoutDefaultStore::instance().flush();
+
+    // Snapshot mentés kilépéskor
+    SnapshotManager::instance().saveSnapshot_MainWindow(this);
+
     event->accept();
 }
 
@@ -207,4 +219,10 @@ void MainWindow::initBOMWorkbenchTab()
 {
     auto* bomTab = new BOMWorkbench(ui->tabWidget);
     ui->tabWidget->addTab(bomTab, tr("BOM Workbench"));
+}
+
+void MainWindow::initOrderWorkbenchTab()
+{
+    auto* orderTab = new OrderWorkbench(ui->tabWidget);
+    ui->tabWidget->addTab(orderTab, tr("Orders"));
 }

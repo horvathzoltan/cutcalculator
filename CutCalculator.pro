@@ -113,7 +113,6 @@ SOURCES += \
     test/settings_manager_tester.cpp \
     ui/helpers/overlay_status_helper.cpp \
     ui/widgets/overlay_icon_widget.cpp \
-    workbench/view/bom_workbench.cpp \
     colors/model/named_color.cpp \
     colors/registry/color_registry.cpp \
     colors/repository/color_repository.cpp \
@@ -142,7 +141,11 @@ SOURCES += \
     products/view/product_tree_manager.cpp \
     products/view/product_tree_view.cpp \
     test/test_manager.cpp \
-    ui/adapters/log_view_adapter.cpp
+    ui/adapters/log_view_adapter.cpp \
+    workbench/view/bom/bom_workbench.cpp \
+    workbench/view/order/order_header_panel.cpp \
+    workbench/view/order/order_item_table.cpp \
+    workbench/view/order/order_workbench.cpp
 
 HEADERS += \
     barcodes/helpers/barcode_generator.h \
@@ -221,7 +224,6 @@ HEADERS += \
     common/registry/subscription_token.h \
     common/settings/settings_store.h \
     common/snapshot/snapshot_manager.h \
-    common/snapshot/workbench_snapshot.h \
     common/system/nameof.hpp \
     common/registry/feature/registry_catalog.h \
     common/system/verbose_class_initializer.h \
@@ -304,7 +306,6 @@ HEADERS += \
     ui/helpers/overlay_status_helper.h \
     ui/helpers/repository_overlay_widget.h \
     ui/widgets/overlay_icon_widget.h \
-    workbench/view/bom_workbench.h \
     colors/model/named_color.h \
     colors/registry/color_registry.h \
     colors/model/colorconstants.h \
@@ -353,7 +354,11 @@ HEADERS += \
     products/view/product_tree_view.h \
     test/test_manager.h \
     ui/adapters/log_view_adapter.h \
-    ui/style/color_helper.h
+    ui/style/color_helper.h \
+    workbench/view/bom/bom_workbench.h \
+    workbench/view/order/order_header_panel.h \
+    workbench/view/order/order_item_table.h \
+    workbench/view/order/order_workbench.h
 
 FORMS += \
     mainwindow.ui

@@ -99,7 +99,7 @@ int main(int argc, char *argv[])
     StartupStatusManager::setPreviewLimit(2);           // hány warning jelenjen meg előnézetben
     StartupStatusManager::setShowLogHint(true);         // mutassuk-e a "részletek a logban" sort
     QString fnh = LogManager::instance().currentFile(LogManager::Channel::Errors);
-        //FileNameHelper::instance().getHumanReadableLogFilePath();
+    //FileNameHelper::instance().getHumanReadableLogFilePath();
 
     StartupStatusManager::setHumanLogPath(fnh);// emberbarát fájlnév (ha van)
     bool startupOk = StartupStatusManager::handle(status);

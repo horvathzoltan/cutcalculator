@@ -41,6 +41,7 @@ private:
 
     void initMaterialsTab();   // material viewer init
     void initBOMWorkbenchTab(); // bom workbench init
+    void initOrderWorkbenchTab();
 
 /*product*/
     QTreeView* _productTreeView = nullptr;
