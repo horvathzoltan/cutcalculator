@@ -16,10 +16,9 @@ namespace StateHandlers
 void extractSplitter(QWidget* w, QVariantMap& m, const QString& key)
 {
     if (!w) {
-        zWarning() << "⚠️ extract: null widget for key" << key;
+        zWarning().noquote() << "⚠️ [WidgetState] Splitter extract skipped → null widget, key=" << key;
         return;
     }
-
 
     auto* splitter = qobject_cast<QSplitter*>(w);
     if (!splitter) return;
@@ -36,16 +35,16 @@ void extractSplitter(QWidget* w, QVariantMap& m, const QString& key)
         percents << double(v) / double(sum);
 
     m[key + "/sizes"] = percents;
+
+    zInfo().noquote() << "↳ [WidgetState] Splitter extracted →" << key;
 }
 
 void restoreSplitter(QWidget* w, QVariantMap& m, const QString& key)
 {
-
     auto* splitter = qobject_cast<QSplitter*>(w);
     if (!splitter) return;
 
     const auto percents = m.value(key + "/sizes").toList();
-
     if (percents.isEmpty()) return;
 
     const int total = splitter->orientation() == Qt::Horizontal
@@ -57,6 +56,8 @@ void restoreSplitter(QWidget* w, QVariantMap& m, const QString& key)
         sizes << int(v.toDouble() * total);
 
     splitter->setSizes(sizes);
+
+    zInfo().noquote() << "↳ [WidgetState] Splitter restored →" << key;
 }
 
 
@@ -66,7 +67,7 @@ void restoreSplitter(QWidget* w, QVariantMap& m, const QString& key)
 void extractHeader(QWidget* w, QVariantMap& m, const QString& key)
 {
     if (!w) {
-        zWarning() << "⚠️ extract: null widget for key" << key;
+        zWarning().noquote() << "⚠️ [WidgetState] Header extract skipped → null widget, key=" << key;
         return;
     }
 
@@ -103,6 +104,8 @@ void extractHeader(QWidget* w, QVariantMap& m, const QString& key)
 
     m[key + "/sortOrder"] =
         int(header->sortIndicatorOrder());
+
+    zInfo().noquote() << "↳ [WidgetState] Header extracted →" << key;
 }
 
 void restoreHeader(QWidget* w, QVariantMap& m, const QString& key)
@@ -151,6 +154,8 @@ void restoreHeader(QWidget* w, QVariantMap& m, const QString& key)
             }
         }
     }
+
+    zInfo().noquote() << "↳ [WidgetState] Header restored →" << key;
 }
 
 
@@ -160,7 +165,7 @@ void restoreHeader(QWidget* w, QVariantMap& m, const QString& key)
 void extractTabWidget(QWidget* w, QVariantMap& m, const QString& key)
 {
     if (!w) {
-        zWarning() << "⚠️ extract: null widget for key" << key;
+        zWarning().noquote() << "⚠️ [WidgetState] TabWidget extract skipped → null widget, key=" << key;
         return;
     }
 
@@ -168,6 +173,8 @@ void extractTabWidget(QWidget* w, QVariantMap& m, const QString& key)
     if (!tabs) return;
 
     m[key + "/currentIndex"] = tabs->currentIndex();
+
+    zInfo().noquote() << "↳ [WidgetState] TabWidget extracted →" << key;
 }
 
 void restoreTabWidget(QWidget* w, QVariantMap& m, const QString& key)
@@ -178,7 +185,10 @@ void restoreTabWidget(QWidget* w, QVariantMap& m, const QString& key)
     int idx = m.value(key + "/currentIndex", -1).toInt();
     if (idx >= 0 && idx < tabs->count())
         tabs->setCurrentIndex(idx);
+
+    zInfo().noquote() << "↳ [WidgetState] TabWidget restored →" << key;
 }
+
 
 
 // -----------------------------
@@ -187,7 +197,7 @@ void restoreTabWidget(QWidget* w, QVariantMap& m, const QString& key)
 void extractScrollArea(QWidget* w, QVariantMap& m, const QString& key)
 {
     if (!w) {
-        zWarning() << "⚠️ extract: null widget for key" << key;
+        zWarning().noquote() << "⚠️ [WidgetState] ScrollArea extract skipped → null widget, key=" << key;
         return;
     }
 
@@ -199,6 +209,8 @@ void extractScrollArea(QWidget* w, QVariantMap& m, const QString& key)
 
     if (auto* v = area->verticalScrollBar())
         m[key + "/scrollPosY"] = v->value();
+
+    zInfo().noquote() << "↳ [WidgetState] ScrollArea extracted →" << key;
 }
 
 void restoreScrollArea(QWidget* w, QVariantMap& m, const QString& key)
@@ -211,6 +223,9 @@ void restoreScrollArea(QWidget* w, QVariantMap& m, const QString& key)
 
     if (auto* v = area->verticalScrollBar())
         v->setValue(m.value(key + "/scrollPosY", v->value()).toInt());
+
+    zInfo().noquote() << "↳ [WidgetState] ScrollArea restored →" << key;
 }
+
 
 } // namespace StateHandlers

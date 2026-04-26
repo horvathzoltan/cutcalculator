@@ -9,7 +9,7 @@
 #include <calculation/registry/need_calculation_detail_registry.h>
 #include <QStyledItemDelegate>
 #include <common/layout/layout_default_store.h>
-#include <common/utils/geometry_helper.h>
+#include <common/utils/window_geometry_helper.h>
 
 #include "dsl/formula_analysis.h"
 #include "dsl/formula_contract.h"
@@ -416,7 +416,7 @@ void CalculationModeDetailView::restoreHeader()
     zInfo(QString("🟩 [DetailView] Restoring header pct = '%1'").arg(pct));
 
     if (!pct.isEmpty()) {
-        GeometryHelper::restoreHeaderState(_table->horizontalHeader(), pct);
+        WindowGeometryHelper::restoreHeaderState(_table->horizontalHeader(), pct);
 
         // restore után azonnal kiolvassuk a tényleges szélességeket
         QList<int> widths;

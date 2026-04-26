@@ -1,4 +1,4 @@
-#include "common/utils/geometry_helper.h"
+#include "common/utils/window_geometry_helper.h"
 #include "common/logger/logger.h"
 #include "common/system/verbose_manager.h"
 #include <QHeaderView>
@@ -34,7 +34,7 @@ static bool isGeometryReadyForRestore(QWidget* w) {
     return true;
 }
 
-bool GeometryHelper::isWindowGeometryReady(QWidget* w) {
+bool WindowGeometryHelper::isWindowGeometryReady(QWidget* w) {
     if (!w) return false;
 
     if (!w->isVisible())
@@ -50,7 +50,7 @@ bool GeometryHelper::isWindowGeometryReady(QWidget* w) {
 }
 
 /* window */
-QString GeometryHelper::saveWindowGeometry(QWidget* window) {
+QString WindowGeometryHelper::saveWindowGeometry(QWidget* window) {
     if (!window) {
         zWarning("⚠️ Window geometry save skipped: null window");
         return {};
@@ -99,7 +99,7 @@ QString GeometryHelper::saveWindowGeometry(QWidget* window) {
 
 
 
-void GeometryHelper::restoreWindowGeometry(QWidget* window,
+void WindowGeometryHelper::restoreWindowGeometry(QWidget* window,
                                            const QString& percentGeometry,
                                            const QSize& savedScreenSize)
 {
@@ -128,7 +128,7 @@ void GeometryHelper::restoreWindowGeometry(QWidget* window,
             window->setProperty("_gh_pending_restore", true);
             QTimer::singleShot(50, window, [window, percentGeometry, savedScreenSize]() {
                 window->setProperty("_gh_pending_restore", false);
-                GeometryHelper::restoreWindowGeometry(window, percentGeometry, savedScreenSize);
+                WindowGeometryHelper::restoreWindowGeometry(window, percentGeometry, savedScreenSize);
             });
         }
         return;
@@ -178,7 +178,7 @@ void GeometryHelper::restoreWindowGeometry(QWidget* window,
 
 /* splitter */
 
-QString GeometryHelper::saveSplitterState(QSplitter* splitter) {
+QString WindowGeometryHelper::saveSplitterState(QSplitter* splitter) {
     if (!splitter) {
         zWarning("⚠️ Splitter save skipped: null splitter");
         return {};
@@ -201,12 +201,12 @@ QString GeometryHelper::saveSplitterState(QSplitter* splitter) {
     return result;
 }
 
-void GeometryHelper::restoreSplitterState(QSplitter* splitter, const QString& percentState) {
+void WindowGeometryHelper::restoreSplitterState(QSplitter* splitter, const QString& percentState) {
     if (!splitter) return;
 
     if (!splitter->isVisible()) {
         QTimer::singleShot(0, splitter, [splitter, percentState]() {
-            GeometryHelper::restoreSplitterState(splitter, percentState);
+            WindowGeometryHelper::restoreSplitterState(splitter, percentState);
         });
         return;
     }
@@ -214,7 +214,7 @@ void GeometryHelper::restoreSplitterState(QSplitter* splitter, const QString& pe
     // Guard: Qt még nem inicializálta a gyerekeket → szemét count()
     if (splitter->count() <= 0 || splitter->count() > 20) {
         QTimer::singleShot(0, splitter, [splitter, percentState]() {
-            GeometryHelper::restoreSplitterState(splitter, percentState);
+            WindowGeometryHelper::restoreSplitterState(splitter, percentState);
         });
         return;
     }
@@ -222,7 +222,7 @@ void GeometryHelper::restoreSplitterState(QSplitter* splitter, const QString& pe
     // Guard: widget mérete még nincs kiosztva
     if (splitter->size().width() < 10 && splitter->size().height() < 10) {
         QTimer::singleShot(0, splitter, [splitter, percentState]() {
-            GeometryHelper::restoreSplitterState(splitter, percentState);
+            WindowGeometryHelper::restoreSplitterState(splitter, percentState);
         });
         return;
     }
@@ -231,7 +231,7 @@ void GeometryHelper::restoreSplitterState(QSplitter* splitter, const QString& pe
     auto s = splitter->sizes();
     if (s.isEmpty() || std::accumulate(s.begin(), s.end(), 0) < 10) {
         QTimer::singleShot(0, splitter, [splitter, percentState]() {
-            GeometryHelper::restoreSplitterState(splitter, percentState);
+            WindowGeometryHelper::restoreSplitterState(splitter, percentState);
         });
         return;
     }
@@ -273,12 +273,12 @@ void GeometryHelper::restoreSplitterState(QSplitter* splitter, const QString& pe
 
 /* screen helpers */
 
-QString GeometryHelper::serializeScreenSize(const QSize& sz) {
+QString WindowGeometryHelper::serializeScreenSize(const QSize& sz) {
     if (!sz.isValid()) return {};
     return QString("%1x%2").arg(sz.width()).arg(sz.height());
 }
 
-QSize GeometryHelper::parseScreenSize(const QString& s) {
+QSize WindowGeometryHelper::parseScreenSize(const QString& s) {
     const auto parts = s.split('x', Qt::SkipEmptyParts);
     if (parts.size() != 2) return {};
     bool okW = false, okH = false;
@@ -290,7 +290,7 @@ QSize GeometryHelper::parseScreenSize(const QString& s) {
 
 /* internals */
 
-double GeometryHelper::parsePercentToken(const QString& token) {
+double WindowGeometryHelper::parsePercentToken(const QString& token) {
     QString t = token.trimmed();
     if (t.endsWith('%')) t.chop(1);
     bool ok = false;
@@ -299,7 +299,7 @@ double GeometryHelper::parsePercentToken(const QString& token) {
     return v / 100.0;
 }
 
-QStringList GeometryHelper::toPercentTokens(const QList<int>& sizes) {
+QStringList WindowGeometryHelper::toPercentTokens(const QList<int>& sizes) {
     int total = 0;
     for (int s : sizes) total += s;
     QStringList tokens;
@@ -310,7 +310,7 @@ QStringList GeometryHelper::toPercentTokens(const QList<int>& sizes) {
     return tokens;
 }
 
-QList<int> GeometryHelper::scalePercentTokens(const QStringList& tokens, int totalPixels, int childCount) {
+QList<int> WindowGeometryHelper::scalePercentTokens(const QStringList& tokens, int totalPixels, int childCount) {
     QList<double> pcts;
     pcts.reserve(tokens.size());
     for (const auto& tok : tokens) {
@@ -345,7 +345,7 @@ QList<int> GeometryHelper::scalePercentTokens(const QStringList& tokens, int tot
 }
 
 
-QString GeometryHelper::saveHeaderState(QHeaderView* header) {
+QString WindowGeometryHelper::saveHeaderState(QHeaderView* header) {
     if (!header) return {};
     int total = 0;
     for (int i = 0; i < header->count(); ++i) {
@@ -362,82 +362,7 @@ QString GeometryHelper::saveHeaderState(QHeaderView* header) {
     return percents.join(",");
 }
 
-/*void GeometryHelper::restoreHeaderState(QHeaderView* header, const QString& percentState) {
-    if (!header) {
-        zWarning("⚠️ Header restore skipped: null header");
-        return;
-    }
-
-    QStringList parts = percentState.split(',', Qt::SkipEmptyParts);
-    if (parts.isEmpty()) {
-        zWarning(QString("⚠️ Invalid header percent string: '%1'").arg(percentState));
-        return;
-    }
-
-    QWidget* parent = header->parentWidget();
-
-    auto* table = qobject_cast<QTableView*>(header->parent());
-    int pw = table ? table->viewport()->width() : header->width();
-
-    if (pw < 50) {
-        QTimer::singleShot(0, header, [header, percentState]() {
-            GeometryHelper::restoreHeaderState(header, percentState);
-        });
-        return;
-    }
-
-
-    int total = 0;
-    for (int i = 0; i < header->count(); ++i) {
-        total += header->sectionSize(i);
-    }
-
-    if (total <= 0) {
-        total = parent ? parent->width() : header->width();
-        if (total <= 0) {
-            zWarning("⚠️ Header restore: total width still 0 → postponed again");
-            QTimer::singleShot(0, header, [header, percentState]() {
-                GeometryHelper::restoreHeaderState(header, percentState);
-            });
-            return;
-        }
-    }
-
-    QList<int> newSizes;
-    newSizes.reserve(header->count());
-
-    for (int i = 0; i < parts.size() && i < header->count(); ++i) {
-        QString p = parts[i].trimmed();
-        if (p.endsWith('%'))
-            p.chop(1);
-
-        bool ok = false;
-        double pct = p.toDouble(&ok) / 100.0;
-        if (!ok) {
-            zWarning(QString("⚠️ Invalid header percent token: '%1'").arg(parts[i]));
-            continue;
-        }
-
-        int px = static_cast<int>(std::lround(pct * total));
-        newSizes << px;
-        header->resizeSection(i, px);
-    }
-
-    // ✅ Clazy-clean: nincs range-loop detach
-    QStringList pxTokens;
-    pxTokens.reserve(newSizes.size());
-    for (int i = 0; i < newSizes.size(); ++i) {
-        pxTokens << QString::number(newSizes[i]) + "px";
-    }
-
-    // ✅ Clazy-clean: multi-arg .arg() használat
-    zInfo(QString("✅ Header state restored: %1 → [%2] (total=%3)")
-                   .arg(percentState,
-                        pxTokens.join(","),
-                        QString::number(total)));*/
-//}
-
-void GeometryHelper::restoreHeaderState(QHeaderView* header, const QString& percentState)
+void WindowGeometryHelper::restoreHeaderState(QHeaderView* header, const QString& percentState)
 {
     if (!header) {
         zWarning("⚠️ restoreHeaderState: header=null");
@@ -459,18 +384,18 @@ void GeometryHelper::restoreHeaderState(QHeaderView* header, const QString& perc
 
     int total = header->width();
 
-    if (IS_VERBOSE(GeometryHelper)) {
+    if (IS_VERBOSE(WindowGeometryHelper)) {
         zInfo(QString("🔧 restoreHeaderState: headerWidth=%1, percentState='%2'")
                   .arg(total)
                   .arg(percentState));
     }
 
     if (total <= 0) {
-        if (IS_VERBOSE(GeometryHelper)) {
+        if (IS_VERBOSE(WindowGeometryHelper)) {
             zInfo("↩️ restoreHeaderState postponed: header width <= 0");
         }
         QTimer::singleShot(0, header, [header, percentState]() {
-            GeometryHelper::restoreHeaderState(header, percentState);
+            WindowGeometryHelper::restoreHeaderState(header, percentState);
         });
         return;
     }
@@ -489,7 +414,7 @@ void GeometryHelper::restoreHeaderState(QHeaderView* header, const QString& perc
 
         int px = qRound(pct * total);
 
-        if (IS_VERBOSE(GeometryHelper)) {
+        if (IS_VERBOSE(WindowGeometryHelper)) {
             zInfo(QString("   → col %1: %2% → %3 px")
                       .arg(i)
                       .arg(pct * 100.0, 0, 'f', 1)
@@ -499,14 +424,44 @@ void GeometryHelper::restoreHeaderState(QHeaderView* header, const QString& perc
         header->resizeSection(i, px);
     }
 
-    if (IS_VERBOSE(GeometryHelper)) {
+
+    // --- PATCH 2: viewport width change re-evaluation -----------------------
+    int newViewport = header->viewport()->width();
+    if (newViewport > 0 && newViewport != total) {
+        if (IS_VERBOSE(WindowGeometryHelper)) {
+            zInfo(QString("↻ Header viewport changed after restore: %1 → %2 → recalculating")
+                      .arg(total)
+                      .arg(newViewport));
+        }
+
+        for (int i = 0; i < header->count(); ++i) {
+            QString p = parts[i].trimmed();
+            if (p.endsWith('%'))
+                p.chop(1);
+
+            bool ok = false;
+            double pct = p.toDouble(&ok) / 100.0;
+            if (!ok) continue;
+
+            int px = qRound(pct * newViewport);
+            header->resizeSection(i, px);
+        }
+
+        if (IS_VERBOSE(WindowGeometryHelper)) {
+            zInfo("✅ Header recalculated for updated viewport width");
+        }
+    }
+    // ------------------------------------------------------------------------
+
+
+    if (IS_VERBOSE(WindowGeometryHelper)) {
         zInfo("✅ restoreHeaderState finished");
     }
 }
 
 
 
-QString GeometryHelper::saveDialogGeometry(QDialog* dlg)
+QString WindowGeometryHelper::saveDialogGeometry(QDialog* dlg)
 {
     if (!dlg || !dlg->screen()) return {};
 
@@ -524,7 +479,7 @@ QString GeometryHelper::saveDialogGeometry(QDialog* dlg)
         .arg(pct(g.height(), screen.height()), 0, 'f', 1);
 }
 
-void GeometryHelper::restoreDialogGeometry(QDialog* dlg,
+void WindowGeometryHelper::restoreDialogGeometry(QDialog* dlg,
                                            const QString& percentGeometry,
                                            const QSize& savedScreen)
 {

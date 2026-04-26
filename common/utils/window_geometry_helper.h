@@ -14,7 +14,7 @@
 #include "common/logger/event_logger.h"
 
 /**
- * @class GeometryHelper
+ * @class WindowGeometryHelper
  * @brief Percent-based window and splitter state save/restore helper.
  *
  * Responsibility:
@@ -30,7 +30,7 @@
  * - Logging uses zEventINFO/zEventWARN to keep all steps audit-visible.
  * - No direct Settings access: the caller reads/writes strings with SettingsManager.
  */
-class GeometryHelper {
+class WindowGeometryHelper {
 public:
     /**
      * Save the current window geometry as percent string relative to its screen size.

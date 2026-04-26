@@ -10,28 +10,29 @@
 enum class FileKind {
     Materials,
     Products,
+    Barcodes,
+
     NeedRules,
     NeedCalculations,
     NeedCalculationDetails,
-    Barcodes,
 
     RalClassic,
     RalDesign,
     RalPlastic1,
     RalPlastic2,
 
-    UiSnapshotDir,   // könyvtár
-    UiSnapshotFile,  // fájl
     LogDir,
+    LogArchiveDir,
+
     SettingsIni,
     CacheDir,
-    MainWindow_SnapshotFile,
-    BOM_Workbench_SnapshotFile,
-    UIState_SnapshotFile,
+
+    UIState_Dir,            // ui_snapshots/
+    UIState_File,           // ui_state_<group>.ini
+    MainWindow_StateFile,   // geometry_<profile>.ini
 
     OrderHeaders,
     OrderItems,
-    LogArchiveDir
 };
 
 enum class FileAccess {

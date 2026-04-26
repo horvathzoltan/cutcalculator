@@ -29,11 +29,13 @@ SOURCES += \
     calculation/service/order_need_builder.cpp \
     calculation/service/worksheet_builder.cpp \
     common/logger/log_archiver.cpp \
+    common/ui_state/widget_discovery_helper.cpp \
+    common/ui_state/widget_state_manager.cpp \
+    common/ui_state/widget_state_settings.cpp \
+    common/window_state/window_state_manager.cpp \
     common/system/window_stability_monitor.cpp \
-    common/ui_state/layout_critical_helper.cpp \
-    common/ui_state/state_collector.cpp \
     common/ui_state/state_handlers.cpp \
-    common/ui_state/state_settings.cpp \
+    common/utils/window_geometry_helper.cpp \
     common/utils/zip/zip_writer_deflated.cpp \
     dsl/dsl_syntax_highlighter.cpp \
     dsl/dsl_completer.cpp \
@@ -50,12 +52,10 @@ SOURCES += \
     common/layout/layout_default_store.cpp \
     common/logger/logger_gui.cpp \
     common/settings/settings_store.cpp \
-    common/snapshot/snapshot_manager.cpp \
     common/system/verbose_class_initializer.cpp \
     common/system/verbose_manager.cpp \
     common/utils/attention_blinker.cpp \
     common/utils/cursor_aware_placement.cpp \
-    common/utils/geometry_helper.cpp \
     common/utils/table_formatter.cpp \
     expression/operator_info.cpp \
     expression/parser.cpp \
@@ -172,12 +172,14 @@ HEADERS += \
     calculation/service/worksheet_builder.h \
     common/logger/log_archiver.h \
     common/registry/mixins/simple_lookup_mixin.h \
+    common/ui_state/widget_discovery_helper.h \
+    common/ui_state/widget_state_manager.h \
+    common/ui_state/widget_state_settings.h \
+    common/window_state/window_state_manager.h \
     common/system/window_stability_monitor.h \
-    common/ui_state/layout_critical_helper.h \
-    common/ui_state/state_collector.h \
     common/ui_state/state_handlers.h \
-    common/ui_state/state_settings.h \
     common/utils/result.h \
+    common/utils/window_geometry_helper.h \
     common/utils/zip/izip_writer.h \
     common/utils/zip/zip_writer_deflated.h \
     dsl/dsl_completer.h \
@@ -223,7 +225,6 @@ HEADERS += \
     common/registry/mixins/test_support_mixin.h \
     common/registry/subscription_token.h \
     common/settings/settings_store.h \
-    common/snapshot/snapshot_manager.h \
     common/system/nameof.hpp \
     common/registry/feature/registry_catalog.h \
     common/system/verbose_class_initializer.h \
@@ -231,7 +232,6 @@ HEADERS += \
     common/utils/attention_blinker.h \
     common/utils/cursor_aware_placement.h \
     common/utils/font_utils.h \
-    common/utils/geometry_helper.h \
     common/utils/optional_utils.h \
     common/utils/table_formatter.h \
     connections/connection_entity.h \

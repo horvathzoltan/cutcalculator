@@ -30,6 +30,7 @@ public:
     // A fő ablakot adjuk át neki (MainWindow*)
     void attachTo(QWidget* window);
 
+    bool isFullyStable() const;
 signals:
     void windowStable();   // egyszer, amikor tényleg stabil
     void uiReadyForRestore(); // UIStateCollector restore trigger
@@ -40,6 +41,7 @@ private:
     QPointer<QWidget> _window;
     QTimer _timer;
     int _stableCount = 0;
+    bool _restoreTriggered = false;
     QString _lastProfile;
     double _lastDpi = 0.0;
     QRect _lastGeometry;
@@ -55,5 +57,5 @@ private:
     bool isStableOnce() const;
     bool areWidgetsStable(const QList<QWidget*>& widgets);
 
-    int computeAdaptiveThreshold(int widgetCount, bool dpiChanged, int recentInstability);
+    int computeAdaptiveThreshold(int widgetCount, bool dpiChanged, bool profileChanged, int recentInstability);
 };

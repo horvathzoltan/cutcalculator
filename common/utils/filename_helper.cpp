@@ -90,26 +90,28 @@ static const QMap<FileKind, FileKindInfo> FILE_INFO = {
     { FileKind::RalPlastic2, { "ral_colors/p2.csv",        FileBehavior::ReadOnly } },
 
     // CRUD
+    { FileKind::Barcodes,               { "unique_ids/barcodes.csv",               FileBehavior::Crud } },
     { FileKind::Products,               { "products/products.csv",               FileBehavior::Crud } },
+
+    // CALCULATIONS
     { FileKind::NeedRules,              { "calculations/needrules.csv",              FileBehavior::Crud } },
     { FileKind::NeedCalculations,       { "calculations/needcalculations.csv",       FileBehavior::Crud } },
     { FileKind::NeedCalculationDetails, { "calculations/needcalc_details.csv",       FileBehavior::Crud } },
-    { FileKind::Barcodes,               { "unique_ids/barcodes.csv",               FileBehavior::Crud } },
 
-    { FileKind::UiSnapshotDir,  { "ui_snapshots", FileBehavior::Config } },
-    { FileKind::UiSnapshotFile, { "ui_snapshots/geometry_%1.ini", FileBehavior::Config } },
+    // ORDERS
+    { FileKind::OrderHeaders, { "orders/order_headers.csv", FileBehavior::Crud } },
+    { FileKind::OrderItems,   { "orders/order_items.csv",   FileBehavior::Crud } },
 
+    // CONFIG
     { FileKind::LogDir, { "logs", FileBehavior::Config } },
     { FileKind::LogArchiveDir, { "logs_archive", FileBehavior::Config } },
     { FileKind::SettingsIni, { "settings.ini", FileBehavior::Config } },
     { FileKind::CacheDir,           { "%1_cache", FileBehavior::Config } },
-    { FileKind::MainWindow_SnapshotFile, { "ui_snapshots/geometry_%1.ini", FileBehavior::Config } },
-    //{ FileKind::BOM_Workbench_SnapshotFile, { "ui_snapshots/bom_workbench/%1.ini", FileBehavior::Config } },
-    { FileKind::UIState_SnapshotFile, { "ui_snapshots/ui_state_%1.ini", FileBehavior::Config } },
 
-    { FileKind::OrderHeaders, { "orders/order_headers.csv", FileBehavior::Crud } },
-    { FileKind::OrderItems,   { "orders/order_items.csv",   FileBehavior::Crud } }
-
+    // SNAPSHOTS
+    { FileKind::UIState_Dir,  { "ui_snapshots", FileBehavior::Config } },
+    { FileKind::UIState_File, { "ui_snapshots/ui_state_%1.ini", FileBehavior::Config } },
+    { FileKind::MainWindow_StateFile, { "ui_snapshots/geometry_%1.ini", FileBehavior::Config } }
 };
 
 QString FileNameHelper::join(const QString& root, const QString& sub) const {

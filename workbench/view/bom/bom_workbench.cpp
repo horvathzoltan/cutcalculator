@@ -9,7 +9,7 @@
 
 #include "common/logger/event_logger.h"
 
-#include "common/ui_state/state_collector.h"
+#include "common/ui_state/widget_state_manager.h"
 #include "needs/manager/material_requirements_manager.h"
 #include "needs/view/material_requirements_view.h"
 
@@ -17,7 +17,7 @@
 
 #include "calculation/manager/calculation_mode_detail_manager.h"
 
-#include "common/utils/geometry_helper.h"
+#include "common/utils/window_geometry_helper.h"
 #include "common/utils/qt_event_util.h"
 
 //#include "common/layout/layout_default_store.h"
@@ -242,13 +242,13 @@ void BOMWorkbench::tryRestore()
 
 void BOMWorkbench::restoreUiState()
 {
-    UIStateCollector c("bom_workbench");
-    c.restore(this);
+    WidgetStateManager c("bom_workbench");
+    c.restoreWidgetState(this);
 }
 
 void BOMWorkbench::saveUiState()
 {
-    UIStateCollector c("bom_workbench");
-    c.collect(this);
+    WidgetStateManager c("bom_workbench");
+    c.saveWidgetState(this);
 }
 

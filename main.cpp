@@ -14,13 +14,14 @@
 #include "common/system/lifecycle_manager.h"
 #include "common/startup/startup_status_manager.h"
 #include "common/registry/manager/registry_manager.h"
-#include "common/utils/geometry_helper.h"
-#include "common/snapshot/snapshot_manager.h"
+#include "common/utils/window_geometry_helper.h"
 
 #include "common/system/verbose_class_initializer.h"
 #include "common/registry/feature/registry_catalog.h"
 
 #include <expression/function_registry.h>
+
+#include <common/window_state/window_state_manager.h>
 //extern void registerAllVerbose();
 
 int main(int argc, char *argv[])
@@ -40,8 +41,8 @@ int main(int argc, char *argv[])
     SignalHelper::setCleanupHandler([](int sig){
         LifecycleManager::instance().onAbort(sig);
         if (auto* win = LifecycleManager::instance().mainWindow()) {
-            if (GeometryHelper::isWindowGeometryReady(win)) {
-                SnapshotManager::instance().saveSnapshot_MainWindow(win);
+            if (WindowGeometryHelper::isWindowGeometryReady(win)) {
+                WindowStateManager::instance().saveSnapshot_MainWindow(win);
             }
         }
     });
@@ -119,8 +120,8 @@ int main(int argc, char *argv[])
 
     QScreen* scr = QGuiApplication::primaryScreen();
     QObject::connect(scr, &QScreen::geometryChanged, &w, [&w]() {
-        if (GeometryHelper::isWindowGeometryReady(&w)) {
-            SnapshotManager::instance().saveSnapshot_MainWindow(&w);
+        if (WindowGeometryHelper::isWindowGeometryReady(&w)) {
+            WindowStateManager::instance().saveSnapshot_MainWindow(&w);
             zInfo("💾 Screen geometry changed → instant window snapshot saved");
         } else {
             zInfo("⏳ Screen geometry changed, but window not ready → snapshot skipped");

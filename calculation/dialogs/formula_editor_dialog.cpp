@@ -7,7 +7,7 @@
 #include <QPushButton>
 #include "dsl/dsl_syntax_highlighter.h"
 #include "dsl/dsl_completer.h"
-#include "common/utils/geometry_helper.h"
+#include "common/utils/window_geometry_helper.h"
 #include "common/layout/layout_default_store.h"
 
 FormulaEditorDialog::FormulaEditorDialog(const QString& initial, NeedCalculationDetail::DetailKind kind, QWidget* parent)
@@ -116,7 +116,7 @@ QString FormulaEditorDialog::formula() const {
 
 void FormulaEditorDialog::closeEvent(QCloseEvent* e)
 {
-    const QString geom = GeometryHelper::saveDialogGeometry(this);
+    const QString geom = WindowGeometryHelper::saveDialogGeometry(this);
     LayoutDefaultStore::instance().setFormulaEditorGeometryPercent(geom);
     QDialog::closeEvent(e);
 }
@@ -130,10 +130,10 @@ void FormulaEditorDialog::showEvent(QShowEvent* e)
 
     if (!geom.isEmpty()) {
         const QSize savedScreen =
-            GeometryHelper::parseScreenSize(
+            WindowGeometryHelper::parseScreenSize(
                 LayoutDefaultStore::instance().screenSizeString());
 
-        GeometryHelper::restoreDialogGeometry(this, geom, savedScreen);
+        WindowGeometryHelper::restoreDialogGeometry(this, geom, savedScreen);
     }
 }
 

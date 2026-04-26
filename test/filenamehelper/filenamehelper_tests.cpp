@@ -158,7 +158,7 @@ void FileNameHelperTester::testSnapshotpaths()
     // 1) Snapshot directory létrejön
     //
     QString snapDir =
-        f.pathFor(FileKind::UiSnapshotDir, FileAccess::Read);
+        f.pathFor(FileKind::UIState_Dir, FileAccess::Read);
 
     zInfo() << " snapshot dir:" << snapDir;
 
@@ -169,7 +169,7 @@ void FileNameHelperTester::testSnapshotpaths()
     // 2) Snapshot file path helyes
     //
     QString profile = "testprofile";
-    QString snapFile = f.pathFor(FileKind::UiSnapshotFile,
+    QString snapFile = f.pathFor(FileKind::UIState_File,
                                  FileAccess::Write,
                                  profile);
 
@@ -239,7 +239,7 @@ void FileNameHelperTester::testDirectoryCreation()
     auto& f = FileNameHelper::instance();
     f.setTestMode(true);
 
-    QString snap = f.pathFor(FileKind::UiSnapshotDir, FileAccess::Read);
+    QString snap = f.pathFor(FileKind::UIState_Dir, FileAccess::Read);
     zInfo() << " snapshot dir:" << snap << " exists:" << QDir(snap).exists();
 
     QString cache = f.pathFor(FileKind::CacheDir, FileAccess::Write, "autocreated");

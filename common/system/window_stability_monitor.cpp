@@ -15,10 +15,10 @@
 
 #include "common/logger/logger.h"
 #include "common/system/verbose_manager.h"
-#include "common/utils/geometry_helper.h"
-#include "common/snapshot/snapshot_manager.h"
+#include "common/utils/window_geometry_helper.h"
 
-#include <common/ui_state/layout_critical_helper.h>
+#include <common/ui_state/widget_discovery_helper.h>
+#include <common/window_state/window_state_manager.h>
 
 WindowStabilityMonitor& WindowStabilityMonitor::instance()
 {
@@ -49,9 +49,10 @@ void WindowStabilityMonitor::attachTo(QWidget* window)
     _splitterStableCount = 0;
     _childrenStableCount = 0;
     _recentInstabilityCount = 0;
+    _restoreTriggered = false;
 
     if (_window && _window->screen()) {
-        _lastProfile = SnapshotManager::instance().monitorProfileFor(_window);
+        _lastProfile = WindowStateManager::instance().monitorProfileFor(_window);
         _lastDpi = _window->screen()->logicalDotsPerInch();
         _lastGeometry = _window->geometry();
     }
@@ -71,7 +72,7 @@ bool WindowStabilityMonitor::isStableOnce() const
     if (_window->width() < 300 || _window->height() < 200)
         return false;
 
-    if (!GeometryHelper::isWindowGeometryReady(_window))
+    if (!WindowGeometryHelper::isWindowGeometryReady(_window))
         return false;
 
     // tabWidget létezzen, legyen benne tab, legyen értelmes mérete
@@ -100,7 +101,7 @@ bool WindowStabilityMonitor::isStableOnce() const
 
     // monitorprofil stabil?
     const QString profile =
-        SnapshotManager::instance().monitorProfileFor(_window);
+        WindowStateManager::instance().monitorProfileFor(_window);
     if (profile != _lastProfile)
         return false;
 
@@ -135,13 +136,13 @@ void WindowStabilityMonitor::poll()
 
     // --- Diagnosztikai log ---
     if (IS_VERBOSE_THIS()){
-    zInfo(QString("🔍 Poll: stableCount=%1 | winGeom=%2x%3 | tabsGeom=%4x%5 | splitterSizes=%6")
-              .arg(_stableCount)
-              .arg(_window->width())
-              .arg(_window->height())
-              .arg(_lastTabsGeometry.width())
-              .arg(_lastTabsGeometry.height())
-              .arg(_lastSplitterSizes.isEmpty() ? -1 : _lastSplitterSizes.first()));
+        zInfo(QString("🔍 Poll: stableCount=%1 | winGeom=%2x%3 | tabsGeom=%4x%5 | splitterSizes=%6")
+                  .arg(_stableCount)
+                  .arg(_window->width())
+                  .arg(_window->height())
+                  .arg(_lastTabsGeometry.width())
+                  .arg(_lastTabsGeometry.height())
+                  .arg(_lastSplitterSizes.isEmpty() ? -1 : _lastSplitterSizes.first()));
     }
 
     bool unstable = false;
@@ -165,7 +166,7 @@ void WindowStabilityMonitor::poll()
     }
 
     // --- Monitor profil változás ---
-    QString profile = SnapshotManager::instance().monitorProfileFor(_window);
+    QString profile = WindowStateManager::instance().monitorProfileFor(_window);
     if (profile != _lastProfile) {
         zInfo(QString("↩️ Instability: monitor profile changed '%1' → '%2'")
                   .arg(_lastProfile, profile));
@@ -244,7 +245,7 @@ void WindowStabilityMonitor::poll()
             _recentInstabilityCount--;
     }
 
-    QList<QWidget*> widgets = LayoutCriticalHelper::collect(_window);
+    QList<QWidget*> widgets = WidgetDiscoveryHelper::collect(_window);
     int widgetCount = widgets.size();
 
     bool childrenStable = areWidgetsStable(widgets);
@@ -255,9 +256,12 @@ void WindowStabilityMonitor::poll()
 
     // --- Stabilitási feltételek ellenőrzése ---
     if (isStableOnce() &&
-        _tabsStableCount >= 2 &&
-        _splitterStableCount >= 2 &&
-        _childrenStableCount >= 2) {
+        _tabsStableCount >= 1 &&
+        _splitterStableCount >= 1 &&
+        _childrenStableCount >= 1) {
+
+        bool dpiChangedNow = dpiChanged;
+        bool profileChangedNow = profileChanged;
 
         // --- Sanity-check: ha az elmúlt 2 ciklusban volt instabilitás, halasszuk ---
         if (_recentInstabilityCount > 0) {
@@ -267,24 +271,33 @@ void WindowStabilityMonitor::poll()
 
         _stableCount++;
 
-        int threshold = computeAdaptiveThreshold(widgetCount,
-                                                 dpiChanged || profileChanged,
-                                                 _recentInstabilityCount);
+        int threshold = computeAdaptiveThreshold(
+            widgetCount,
+            dpiChangedNow,
+            profileChangedNow,
+            _recentInstabilityCount
+            );
 
-        if (IS_VERBOSE_THIS()){
-            zInfo(QString("✔️ Stable cycle %1/%2 (widgets=%3, recentInst=%4)")
+        if (IS_VERBOSE_THIS()) {
+            zInfo(QString("✔️ Stable cycle %1/%2 (widgets=%3, recentInst=%4, dpi=%5, profile=%6)")
                       .arg(_stableCount)
                       .arg(threshold)
                       .arg(widgetCount)
-                      .arg(_recentInstabilityCount));
+                      .arg(_recentInstabilityCount)
+                      .arg(dpiChangedNow)
+                      .arg(profileChangedNow));
         }
 
         if (_stableCount >= threshold) {
-            zInfo("🎉 Window is fully stable → emitting windowStable()");
-            _timer.stop();
-            emit windowStable();
-            emit uiReadyForRestore();
+            if (!_restoreTriggered) {
+                _restoreTriggered = true;
+                zInfo("🎉 Window is fully stable → emitting windowStable()");
+                _timer.stop();
+                emit windowStable();
+                emit uiReadyForRestore();
+            }
         }
+
     } else {
         if (!unstable) {
             if (IS_VERBOSE_THIS()){
@@ -334,35 +347,47 @@ bool WindowStabilityMonitor::areWidgetsStable(const QList<QWidget*>& widgets)
 }
 
 
-
-
-
 int WindowStabilityMonitor::computeAdaptiveThreshold(int widgetCount,
                                                      bool dpiChanged,
+                                                     bool profileChanged,
                                                      int recentInstability)
 {
     int base = 2;
 
+    // --- PATCH 3: új complexity thresholds ---
     int complexity = 0;
-    if (widgetCount > 100) complexity = 3;
-    else if (widgetCount > 50) complexity = 2;
+    if (widgetCount > 150) complexity = 3;
+    else if (widgetCount > 80) complexity = 2;
     else if (widgetCount > 20) complexity = 1;
 
+    // --- PATCH 3: instability penalty ---
     int instabilityPenalty = 0;
     if (recentInstability > 8) instabilityPenalty = 3;
     else if (recentInstability > 5) instabilityPenalty = 2;
     else if (recentInstability > 3) instabilityPenalty = 1;
 
+    // --- PATCH 3: DPI és monitorprofil külön büntetés ---
     int dpiPenalty = dpiChanged ? 2 : 0;
+    int profilePenalty = profileChanged ? 1 : 0;
 
+    // --- PATCH 3: min stabilitási számlálók 2 → 1 ---
     int componentPenalty = 0;
-    if (_tabsStableCount < 2)      componentPenalty++;
-    if (_splitterStableCount < 2)  componentPenalty++;
-    if (_childrenStableCount < 2)  componentPenalty++;
+    if (_tabsStableCount < 1)      componentPenalty++;
+    if (_splitterStableCount < 1)  componentPenalty++;
+    if (_childrenStableCount < 1)  componentPenalty++;
 
-    return base + complexity + instabilityPenalty + dpiPenalty + componentPenalty;
+    return base
+           + complexity
+           + instabilityPenalty
+           + dpiPenalty
+           + profilePenalty
+           + componentPenalty;
 }
 
 
+bool WindowStabilityMonitor::isFullyStable() const
+{
+    return !_timer.isActive();
+}
 
 

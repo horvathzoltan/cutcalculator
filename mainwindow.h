@@ -48,10 +48,11 @@ private:
     ProductTreeManager* _productTreeManager = nullptr;
 
     bool _windowRestoredOnce = false;
+    bool _restoreInProgress = false;
     QString _initialMonitorProfile;   // induló monitorprofil (early restore-hoz)
     QString _lastSeenProfile;         // final placement stabilizációhoz
 
-    void BOMWorkbenchSaveState();
+    //void BOMWorkbenchSaveState();
 signals:
     void finalPlacementReached();
 

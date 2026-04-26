@@ -1,5 +1,5 @@
 #include "order_workbench.h"
-#include "common/ui_state/state_collector.h"
+#include "common/ui_state/widget_state_manager.h"
 #include <QTimer>
 
 OrderWorkbench::OrderWorkbench(QWidget* parent)
@@ -66,12 +66,12 @@ void OrderWorkbench::tryRestore()
 
 void OrderWorkbench::restoreUiState()
 {
-    UIStateCollector c("order_workbench");
-    c.restore(this);
+    WidgetStateManager c("order_workbench");
+    c.restoreWidgetState(this);
 }
 
 void OrderWorkbench::saveUiState()
 {
-    UIStateCollector c("order_workbench");
-    c.collect(this);
+    WidgetStateManager c("order_workbench");
+    c.saveWidgetState(this);
 }

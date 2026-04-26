@@ -1,30 +1,33 @@
-#include "common/snapshot/snapshot_manager.h"
+#include "window_state_manager.h"
 
 #include <QFile>
 #include <QScreen>
 #include <QGuiApplication>
 #include <QSettings>
 #include <QElapsedTimer>
+#include <QDateTime>
+
 
 //#include "common/logger/event_logger.h"   // zEventINFO/WARN
 
 //#include "workbench_snapshot.h"
 
 #include <common/utils/filename_helper.h>
-#include <common/utils/geometry_helper.h>
+#include <common/utils/window_geometry_helper.h>
 
 // --- Window snapshot throttle state ---
 static bool g_isRestoring = false;
 static QElapsedTimer g_throttleTimer;
 static QString g_lastSavedGeometry;
+static qint64 g_restoreCooldownUntilMs = 0;
 
-SnapshotManager& SnapshotManager::instance()
+WindowStateManager& WindowStateManager::instance()
 {
-    static SnapshotManager inst;
+    static WindowStateManager inst;
     return inst;
 }
 
-QString SnapshotManager::currentMonitorProfile(QWidget* window) const
+QString WindowStateManager::currentMonitorProfile(QWidget* window) const
 {
     // Monitorprofil: resolution + logicalDpi → "1920x1080_96dpi"
     QScreen* screen = nullptr;
@@ -48,51 +51,59 @@ QString SnapshotManager::currentMonitorProfile(QWidget* window) const
         .arg(dpi);
 }
 
-/* Window snapshot */
+/* Window state */
 
-void SnapshotManager::saveSnapshot_MainWindow(QWidget* window)
+void WindowStateManager::saveSnapshot_MainWindow(QWidget* window)
 {
     if (!window) {
-        zWarning("⚠️ Window snapshot save skipped: null window");
+        zWarning().noquote() << "⚠️ [WindowState] Save skipped → null window";
         return;
     }
 
     if (g_isRestoring) {
-        zInfo("⏳ Window snapshot skipped: restore in progress");
+        zInfo().noquote() << "⏳ [WindowState] Save skipped → restore in progress";
+        return;
+    }
+
+    const qint64 nowMs = QDateTime::currentMSecsSinceEpoch();
+    if (nowMs < g_restoreCooldownUntilMs) {
+        zInfo().noquote() << "⏳ [WindowState] Save skipped → restore cooldown active";
         return;
     }
 
     if (!g_throttleTimer.isValid()) {
         g_throttleTimer.start();
     } else if (g_throttleTimer.elapsed() < 500) {
-        zInfo("⏳ Window snapshot skipped: throttle (too frequent)");
+        zInfo().noquote() << "⏳ [WindowState] Save skipped → throttled (too frequent)";
         return;
     }
 
-    if (!GeometryHelper::isWindowGeometryReady(window)) {
-        zInfo("⏳ Window snapshot skipped: geometry not ready");
+    if (!WindowGeometryHelper::isWindowGeometryReady(window)) {
+        zInfo().noquote() << "⏳ [WindowState] Save skipped → geometry not ready";
         return;
     }
 
+    const QString monitorProfile = currentMonitorProfile(window);
     const QString path =
-        FileNameHelper::instance().pathFor(FileKind::MainWindow_SnapshotFile,
+        FileNameHelper::instance().pathFor(FileKind::MainWindow_StateFile,
                                            FileAccess::Write,
-                                           currentMonitorProfile(window));
+                                           monitorProfile);
 
-    const QString geom = GeometryHelper::saveWindowGeometry(window);
+    const QString geom = WindowGeometryHelper::saveWindowGeometry(window);
     if (geom.isEmpty()) {
+        zWarning().noquote() << "⚠️ [WindowState] Save skipped → empty geometry string";
         return;
     }
 
     if (geom == g_lastSavedGeometry) {
-        zInfo("⏳ Window snapshot skipped: geometry unchanged");
+        zInfo().noquote() << "⏳ [WindowState] Save skipped → geometry unchanged";
         return;
     }
     g_lastSavedGeometry = geom;
 
     QString screenStr;
     if (window->screen()) {
-        screenStr = GeometryHelper::serializeScreenSize(window->screen()->size());
+        screenStr = WindowGeometryHelper::serializeScreenSize(window->screen()->size());
     }
 
     QSettings snap(path, QSettings::IniFormat);
@@ -102,69 +113,83 @@ void SnapshotManager::saveSnapshot_MainWindow(QWidget* window)
 
     g_throttleTimer.restart();
 
-    zInfo(QString("💾 Window snapshot saved: %1").arg(path));
+    zInfo().noquote()
+        << QString("💾 [WindowState] Saved → %1 (profile=%2)")
+               .arg(path)
+               .arg(monitorProfile);
 }
 
 
-bool SnapshotManager::restoreSnapshot_MainWindow(QWidget* window)
+
+bool WindowStateManager::restoreSnapshot_MainWindow(QWidget* window)
 {
     if (!window) {
-        zWarning("⚠️ Window snapshot restore skipped: null window");
+        zWarning().noquote() << "⚠️ [WindowState] Restore skipped → null window";
         return false;
     }
 
-    // RAII guard – minden return esetén visszaállítja a flaget
     struct RestoreGuard {
         bool* flag;
         RestoreGuard(bool* f) : flag(f) { *flag = true; }
         ~RestoreGuard() { *flag = false; }
     } guard(&g_isRestoring);
 
-
+    const QString monitorProfile = currentMonitorProfile(window);
     const QString path =
-        FileNameHelper::instance().pathFor(FileKind::MainWindow_SnapshotFile,
+        FileNameHelper::instance().pathFor(FileKind::MainWindow_StateFile,
                                            FileAccess::Read,
-                                           currentMonitorProfile(window));
+                                           monitorProfile);
+
     if (path.isEmpty()) {
-        // path invalid → nincs értelme továbbmenni
+        zWarning().noquote() << "⚠️ [WindowState] Restore skipped → invalid path";
         return false;
     }
 
     if (!QFile::exists(path)) {
-        zWarning(QString("⚠️ No window snapshot file: %1").arg(path));
+        zWarning().noquote()
+        << QString("⚠️ [WindowState] No state file → %1 (profile=%2)")
+                .arg(path)
+                .arg(monitorProfile);
         return false;
     }
 
     QSettings snap(path, QSettings::IniFormat);
     const QString geom      = snap.value("Window/geometry").toString();
     const QString screenStr = snap.value("Window/screen").toString();
-    const QSize   savedScreen = GeometryHelper::parseScreenSize(screenStr);
+    const QSize   savedScreen = WindowGeometryHelper::parseScreenSize(screenStr);
 
     if (geom.isEmpty()) {
-        zWarning(QString("⚠️ Window snapshot restore: empty geometry string in file: %1").arg(path));
+        zWarning().noquote()
+        << QString("⚠️ [WindowState] Restore skipped → empty geometry in %1")
+                .arg(path);
         return false;
     }
 
-    // Guard-os, delayed restoreWindowGeometry – a GeometryHelper kezeli a timingot.
-    GeometryHelper::restoreWindowGeometry(window, geom, savedScreen);
+    WindowGeometryHelper::restoreWindowGeometry(window, geom, savedScreen);
 
-    g_throttleTimer.invalidate();   // restore után új throttle ciklus indul
+    g_restoreCooldownUntilMs = QDateTime::currentMSecsSinceEpoch() + 1000;
+    g_throttleTimer.invalidate();
 
-    zInfo(QString("✅ Window snapshot restored: %1").arg(path));
+    zInfo().noquote()
+        << QString("✅ [WindowState] Restored → %1 (profile=%2)")
+               .arg(path)
+               .arg(monitorProfile);
+
     return true;
 }
 
-QString SnapshotManager::monitorProfileFor(QWidget* w) const
+
+QString WindowStateManager::monitorProfileFor(QWidget* w) const
 {
     return currentMonitorProfile(w);
 }
 
-QVariantMap SnapshotManager::loadUIState(const QString& groupName) const
+QVariantMap WindowStateManager::loadWidgetState(const QString& groupName) const
 {
     QVariantMap result;
 
     const QString path =
-        FileNameHelper::instance().pathFor(FileKind::UIState_SnapshotFile,
+        FileNameHelper::instance().pathFor(FileKind::UIState_File,
                                            FileAccess::Read,
                                            groupName);
     if (path.isEmpty() || !QFile::exists(path)) {
@@ -182,10 +207,10 @@ QVariantMap SnapshotManager::loadUIState(const QString& groupName) const
     return result;
 }
 
-void SnapshotManager::clearUIState(const QString& groupName) const
+void WindowStateManager::clearWidgetState(const QString& groupName) const
 {
     const QString path =
-        FileNameHelper::instance().pathFor(FileKind::UIState_SnapshotFile,
+        FileNameHelper::instance().pathFor(FileKind::UIState_File,
                                            FileAccess::Write,
                                            groupName);
     if (path.isEmpty()) {
@@ -209,11 +234,11 @@ void SnapshotManager::clearUIState(const QString& groupName) const
 
 
 
-void SnapshotManager::saveUIState(const QString& groupName,
+void WindowStateManager::saveWidgetState(const QString& groupName,
                                   const QVariantMap& map) const
 {
     const QString path =
-        FileNameHelper::instance().pathFor(FileKind::UIState_SnapshotFile,
+        FileNameHelper::instance().pathFor(FileKind::UIState_File,
                                            FileAccess::Write,
                                            groupName);
     if (path.isEmpty()) {
