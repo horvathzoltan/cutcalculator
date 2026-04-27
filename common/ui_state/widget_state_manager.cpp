@@ -18,6 +18,8 @@
 #include <QComboBox>
 #include <QTimer>
 
+#include <common/utils/filename_helper.h>
+
 WidgetStateManager::WidgetStateManager(const QString& groupName)
     : _groupName(groupName)
 {
@@ -103,7 +105,17 @@ void WidgetStateManager::saveWidgetState(QWidget* root)
     s.save();
 
     zInfo().noquote()
-        << QString("📁 [WidgetState] State file written → group=%1").arg(_groupName);
+        << QString("📁 [WidgetState] State file written → %1 (group=%2)")
+               .arg(filePath(), _groupName);
+}
+
+QString WidgetStateManager::filePath() const
+{
+    return FileNameHelper::instance().pathFor(
+        FileKind::UIState_File,
+        FileAccess::Write,
+        _groupName
+        );
 }
 
 void WidgetStateManager::restoreWidgetState(QWidget* root)

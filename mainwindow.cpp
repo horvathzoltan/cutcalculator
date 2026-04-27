@@ -25,6 +25,10 @@
 
 #include <common/window_state/window_state_manager.h>
 
+#include <common/ui_state/workbench_state_manager.h>
+
+#include <workbench/view/materials/materials_workbench.h>
+
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -45,6 +49,24 @@ MainWindow::MainWindow(QWidget *parent)
     initBOMWorkbenchTab();
     // 3. Order Workbench tab
     initOrderWorkbenchTab();
+
+    // connect(ui->tabWidget, &QTabWidget::currentChanged, this,
+    //         [this](int newIndex) {
+    //             QWidget* newW = ui->tabWidget->widget(newIndex);
+    //             WorkbenchStateManager::instance().onTabActivated(newW); // csak wasShown flag + ID binding
+    //         });
+
+    connect(ui->tabWidget, &QTabWidget::currentChanged, this,
+            [this](int newIndex) {
+                if (newIndex < 0)
+                    return; // no tab
+
+                QWidget* newW = ui->tabWidget->widget(newIndex);
+                if (!newW)
+                    return;
+
+                WorkbenchStateManager::instance().onTabActivated(newW);
+            });
 
     zEvent("✅ MainWindow inited");
 }
@@ -172,13 +194,14 @@ void MainWindow::onWindowStable()
         }
     }
 
+    // 5) Workbench snapshot restore
+    QWidget* wb = ui->tabWidget->currentWidget();
+    WorkbenchStateManager::instance().onTabActivated(wb); // ← SNAPSHOT RESTORE
+
+
     // 4) finalPlacementReached
     // snapshot mentés itt NINCS — a mentés csak stabilitás után történik (resize/move/change eventekben)
     emit finalPlacementReached();
-
-    // 5) WidgetState restore
-    WidgetStateManager c("mainwindow_ui");
-    c.restoreWidgetState(this);
 
     _windowRestoredOnce = true;
     _restoreInProgress = false;
@@ -233,6 +256,22 @@ void MainWindow::changeEvent(QEvent* e) {
 
 void MainWindow::closeEvent(QCloseEvent* event)
 {
+    // Aktív tab mentése – ez továbbra is klasszikus setting
+    int idx = ui->tabWidget->currentIndex();
+    int max = ui->tabWidget->count();
+
+    if (idx >= 0 && idx < max) {
+        SettingsManager::instance().setCurrentTabIndex(idx);
+        zInfo(QString("💾 Saved active tab index: %1").arg(idx));
+    } else {
+        zWarning(QString("⚠️ NOT saving tab index → invalid at close time: %1 / %2")
+                     .arg(idx).arg(max));
+    }
+
+    WorkbenchStateManager::instance().beginClosing();
+        saveAllWorkbenchStates();
+    //ui->tabWidget->blockSignals(false);
+
     // Window fallback layout percent-based – UiDefaultStore kezeli a settings.ini-t
     const QString geom = WindowGeometryHelper::saveWindowGeometry(this);
     LayoutDefaultStore::instance().setWindowGeometryPercent(geom);
@@ -246,35 +285,36 @@ void MainWindow::closeEvent(QCloseEvent* event)
     const QString split = WindowGeometryHelper::saveSplitterState(ui->splitter);
     LayoutDefaultStore::instance().setMainSplitterPercent(split);
 
-    //BOMWorkbenchSaveState();
-
-    // Aktív tab mentése – ez továbbra is klasszikus setting
-    //SettingsManager::instance().setCurrentTabIndex(ui->tabWidget->currentIndex());
-    int idx = ui->tabWidget->currentIndex();
-    int max = ui->tabWidget->count();
-
-    if (idx >= 0 && idx < max) {
-        SettingsManager::instance().setCurrentTabIndex(idx);
-        zInfo(QString("💾 Saved active tab index: %1").arg(idx));
-    } else {
-        zWarning(QString("⚠️ NOT saving tab index → invalid at close time: %1 / %2")
-                     .arg(idx).arg(max));
-    }
 
     // Fallback settings flush
     LayoutDefaultStore::instance().flush();
 
-    // WidgetState save – belső widgetek állapota
-    {
-        WidgetStateManager c("mainwindow_ui");
-        c.saveWidgetState(this);
-    }
-
     // Snapshot mentés kilépéskor
     WindowStateManager::instance().saveSnapshot_MainWindow(this);
 
+    //WorkbenchStateManager::instance().saveAllVisible();
+
     event->accept();
 }
+
+void MainWindow::saveAllWorkbenchStates()
+{
+   // int original = ui->tabWidget->currentIndex();
+
+    for (int i = 0; i < ui->tabWidget->count(); ++i) {
+        QWidget* wb = ui->tabWidget->widget(i);
+        bool isShown = WorkbenchStateManager::instance().isShown(wb);
+        if(isShown){
+            ui->tabWidget->setCurrentIndex(i);
+            qApp->processEvents();   // layout felépül
+            WorkbenchStateManager::instance().onTabDeactivated(wb, /*immediate=*/true);
+        }
+    }
+
+    //ui->tabWidget->setCurrentIndex(original);
+    qApp->processEvents();
+}
+
 
 void MainWindow::initEventLogWidget() {
     if(_logAdapter) return;
@@ -292,35 +332,19 @@ void MainWindow::initEventLogWidget() {
 }
 
 void MainWindow::initMaterialsTab() {
-    // Keressünk egy tabot, vagy hozzunk létre egyet programból
-    // Feltételezzük, hogy a Designerben van egy QTabWidget: ui->tabWidget
-    // Hozzunk létre egy új QWidget-et a tabnak:
-    QWidget* materialViewerTab = new QWidget(ui->tabWidget);
-    materialViewerTab->setObjectName("materialViewerTab");
-
-    // Tegyünk rá egy vertikális layout-ot és a táblát:
-    auto* layout = new QVBoxLayout(materialViewerTab);
-    _materialsTable = new MaterialTableWidget(materialViewerTab);
-    layout->addWidget(_materialsTable);
-
-    // Manager példány
-    _materialsManager = new MaterialTableManager(_materialsTable, this);
-
-    // Tegyük be a tabWidget-be
+    auto* materialViewerTab = new MaterialsWorkbench(ui->tabWidget);
     ui->tabWidget->addTab(materialViewerTab, tr("Materials"));
-
-    // Töltés (registry → table)
-    _materialsManager->populateAll();
+    WorkbenchStateManager::instance().registerWorkbench("materials_tab", materialViewerTab);
 }
 
-void MainWindow::initBOMWorkbenchTab()
-{
+void MainWindow::initBOMWorkbenchTab(){
     auto* bomTab = new BOMWorkbench(ui->tabWidget);
     ui->tabWidget->addTab(bomTab, tr("BOM Workbench"));
+    WorkbenchStateManager::instance().registerWorkbench("bom_workbench", bomTab);
 }
 
-void MainWindow::initOrderWorkbenchTab()
-{
+void MainWindow::initOrderWorkbenchTab(){
     auto* orderTab = new OrderWorkbench(ui->tabWidget);
     ui->tabWidget->addTab(orderTab, tr("Orders"));
+    WorkbenchStateManager::instance().registerWorkbench("order_workbench", orderTab);
 }

@@ -32,6 +32,7 @@ SOURCES += \
     common/ui_state/widget_discovery_helper.cpp \
     common/ui_state/widget_state_manager.cpp \
     common/ui_state/widget_state_settings.cpp \
+    common/ui_state/workbench_state_manager.cpp \
     common/window_state/window_state_manager.cpp \
     common/system/window_stability_monitor.cpp \
     common/ui_state/state_handlers.cpp \
@@ -143,6 +144,7 @@ SOURCES += \
     test/test_manager.cpp \
     ui/adapters/log_view_adapter.cpp \
     workbench/view/bom/bom_workbench.cpp \
+    workbench/view/materials/materials_workbench.cpp \
     workbench/view/order/order_header_panel.cpp \
     workbench/view/order/order_item_table.cpp \
     workbench/view/order/order_workbench.cpp
@@ -175,6 +177,7 @@ HEADERS += \
     common/ui_state/widget_discovery_helper.h \
     common/ui_state/widget_state_manager.h \
     common/ui_state/widget_state_settings.h \
+    common/ui_state/workbench_state_manager.h \
     common/window_state/window_state_manager.h \
     common/system/window_stability_monitor.h \
     common/ui_state/state_handlers.h \
@@ -356,6 +359,7 @@ HEADERS += \
     ui/adapters/log_view_adapter.h \
     ui/style/color_helper.h \
     workbench/view/bom/bom_workbench.h \
+    workbench/view/materials/materials_workbench.h \
     workbench/view/order/order_header_panel.h \
     workbench/view/order/order_item_table.h \
     workbench/view/order/order_workbench.h

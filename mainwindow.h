@@ -53,6 +53,7 @@ private:
     QString _lastSeenProfile;         // final placement stabilizációhoz
 
     //void BOMWorkbenchSaveState();
+    void saveAllWorkbenchStates();
 signals:
     void finalPlacementReached();
 

@@ -114,4 +114,6 @@ private:
 
     const Handler* findHandler(const QMetaObject* mo) const;
     static QString computeWidgetPath(QWidget *w);
+
+    QString filePath() const;
 };

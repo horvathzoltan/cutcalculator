@@ -1,10 +1,12 @@
 #include "order_workbench.h"
-#include "common/ui_state/widget_state_manager.h"
 #include <QTimer>
+#include <common/ui_state/workbench_state_manager.h>
 
 OrderWorkbench::OrderWorkbench(QWidget* parent)
     : QWidget(parent)
 {
+    setObjectName("order_workbench");
+
     _layout = new QVBoxLayout(this);
     _layout->setContentsMargins(0, 0, 0, 0);
 
@@ -44,34 +46,9 @@ void OrderWorkbench::buildPanels()
     _splitter->addWidget(_itemTable);
 }
 
-void OrderWorkbench::showEvent(QShowEvent* event)
-{
-    QWidget::showEvent(event);
-    if (_restoredOnce) return;
 
-    QTimer::singleShot(0, this, [this]() {
-        _restoredOnce = true;
-        _isFullyShown = true;
-        tryRestore();
-    });
-}
-
-void OrderWorkbench::tryRestore()
-{
-    if (!_isFullyShown || !_canRestore)
-        return;
-
-    restoreUiState();
-}
-
-void OrderWorkbench::restoreUiState()
-{
-    WidgetStateManager c("order_workbench");
-    c.restoreWidgetState(this);
-}
-
-void OrderWorkbench::saveUiState()
-{
-    WidgetStateManager c("order_workbench");
-    c.saveWidgetState(this);
-}
+// void OrderWorkbench::hideEvent(QHideEvent* e)
+// {
+//     // WorkbenchStateManager::instance().onTabDeactivated(this);
+//     // QWidget::hideEvent(e);
+// }

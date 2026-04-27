@@ -40,13 +40,6 @@ class BOMWorkbench : public QWidget {
 public:
     explicit BOMWorkbench(QWidget* parent = nullptr);
 
-    /// UIStateCollector alapú visszaállítás
-    void restoreUiState();
-
-    /// UIStateCollector alapú mentés
-    void saveUiState();
-
-
 private:
     // UI váz
     QVBoxLayout* _layout = nullptr;
@@ -92,24 +85,7 @@ private:
     QToolBar* buildModesToolbar(QWidget* parent, CalculationModesView* modes_view);
     QToolBar* buildDetailsToolbar(QWidget* parent, CalculationModeDetailView* detail_view);
 
-    //bool event(QEvent *e) override;
-    void showEvent(QShowEvent* event) override;
-
-    bool _restoredOnce = false;
-
-    bool _isFullyShown = false;      // showEvent után lesz true
-    bool _canSaveSnapshots = false;  // finalPlacementReached után lesz true
-    bool _canRestore = false;
-
-    void tryRestore();
-
-private slots:
-    void onFinalPlacementReached() {
-        _canSaveSnapshots = true;
-        _canRestore = true;
-
-        // final placement után restoreState futtatása
-        tryRestore();
-    }
+// protected:
+//     void hideEvent(QHideEvent* e) override;
 
 };

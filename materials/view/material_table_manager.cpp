@@ -38,9 +38,9 @@ void MaterialTableManager::populateAll() {
         addMaterialRow(all[i], i);
 }
 
-void MaterialTableManager::refresh() {
-    populateAll();
-}
+// void MaterialTableManager::refresh() {
+//     populateAll();
+// }
 
 /**
  * Egy sor feltöltése: Anyag widget + egyéb oszlopok fromText itemek.

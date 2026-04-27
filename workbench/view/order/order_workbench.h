@@ -12,12 +12,6 @@ class OrderWorkbench : public QWidget {
 public:
     explicit OrderWorkbench(QWidget* parent = nullptr);
 
-    void restoreUiState();
-    void saveUiState();
-
-protected:
-    void showEvent(QShowEvent* event) override;
-
 private:
     // Layout
     QVBoxLayout* _layout = nullptr;
@@ -30,13 +24,11 @@ private:
     // Toolbar
     QToolBar* _toolbar = nullptr;
 
-    // State restore flags
-    bool _restoredOnce = false;
-    bool _isFullyShown = false;
-    bool _canRestore = true;
-
     // Builders
     void buildToolbar();
     void buildPanels();
-    void tryRestore();
+    // protected:
+    //     void hideEvent(QHideEvent* e) override;
+
+
 };

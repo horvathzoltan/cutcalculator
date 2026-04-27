@@ -242,6 +242,16 @@ void WindowStateManager::saveWidgetState(const QString& groupName,
                                            FileAccess::Write,
                                            groupName);
     if (path.isEmpty()) {
+        zWarning().noquote()
+        << QString("⚠️ [WidgetState::saveWidgetState] Save skipped → empty path (group=%1)")
+                .arg(groupName);
+        return;
+    }
+
+    if (map.isEmpty()) {
+        zWarning().noquote()
+        << QString("⚠️ [WidgetState::saveWidgetState] Empty map → no keys written (group=%1, path=%2)")
+                .arg(groupName, path);
         return;
     }
 
@@ -252,4 +262,9 @@ void WindowStateManager::saveWidgetState(const QString& groupName,
     }
     snap.endGroup();
     snap.sync();
+
+    zInfo().noquote()
+        << QString("💾 [WidgetState::saveWidgetState] QSettings sync completed → %1 (keys=%2)")
+               .arg(path)
+               .arg(map.size());
 }
