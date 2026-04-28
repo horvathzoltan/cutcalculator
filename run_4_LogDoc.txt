@@ -1,184 +1,211 @@
-Zoltán, értem, mire van szükséged: **egy olyan feljegyzésre**, amit majd *szó szerint* be tudsz illeszteni a
-**CutCalculator Prompt & Architecture Handbook v1.0** megfelelő fejezetébe —
-és mellé egy **konkrét, lépésről‑lépésre végrehajtható tervet**, hogy a Logger‑szerepek hogyan kerüljenek be a dokumentumba, és mit kell lecserélni vagy pontosítani.
+📘 Feljegyzés a CutCalculator Logger‑architektúrához
 
-A jegyzetet úgy írom meg, mintha már a kézikönyv része lenne:
-tömör, rendszerszintű, architekturális, és a projekt nyelvén beszél.
+(illeszthető a Handbook v1.0 „Logging Architecture” fejezetébe)
 
----
+🎯 Bevezetés
 
-# 📘 **Feljegyzés a CutCalculator Logger‑architektúrához**
-*(illeszthető a Handbook v1.0 „Logging Architecture” fejezetébe)*
+A CutCalculator log‑architektúrája három, egymástól élesen elkülönülő
+rétegre épül:
 
-## 🎯 **Bevezetés**
+1.  DebugLog – fejlesztői diagnosztika (TRACE, DEBUG)
+2.  SystemLog – technikai és domain audit (INFO, WARNING, ERROR)
+3.  EventLog – user‑szintű workflow események (INFO)
 
-A CutCalculator log‑architektúrája három, egymástól élesen elkülönülő rétegre épül:
+A Logger osztály mindhárom réteget kiszolgálja, de eltérő célokkal,
+eltérő életciklussal és eltérő következményekkel.
 
-1. **DebugLog** – fejlesztői diagnosztika (TRACE, DEBUG)
-2. **SystemLog** – technikai és domain audit (INFO, WARNING, ERROR)
-3. **EventLog** – user‑szintű workflow események (INFO)
+A rendszer stabilitása és auditálhatósága érdekében a három réteg nem
+keverhető, és minden loghívásnak egyértelműen beazonosítható szerepe
+van.
 
-A Logger osztály mindhárom réteget kiszolgálja, de **eltérő célokkal, eltérő életciklussal és eltérő következményekkel**.
+🗂️ A LogArchiver szerepe a log-architektúrában
 
-A rendszer stabilitása és auditálhatósága érdekében a három réteg **nem keverhető**, és minden loghívásnak egyértelműen beazonosítható szerepe van.
+A LogArchiver a három logréteg kimeneti oldalán helyezkedik el. Nem dönt
+a log szintjéről, nem módosítja a log tartalmát — kizárólag a már
+létrejött logfájlok életciklusát kezeli.
 
----
+Feladatai: - a logfájlok bundle-ökbe rendezése timestamp alapján - a
+bundle-ök konzisztencia-ellenőrzése - a régi bundle-ök archiválása
+ZIP-be - a régi logfájlok törlése
 
-# 🧩 **1. DebugLog – fejlesztői diagnosztika (TRACE, DEBUG)**
+A LogArchiver tehát a logolási rendszer karbantartó és archiváló rétege,
+nem része a logolási döntési fának.
 
-A DebugLog kizárólag fejlesztői eszköz.
-Nem része a rendszer működésének, nem auditálható, nem kerül be a végfelhasználói logokba.
+------------------------------------------------------------------------
 
-### TRACE – „itt jár a kód”
-- minimális információ
-- stack trace nélkül
-- stepping támogatás
-- csak QT_DEBUG alatt aktív
-- nem állítja meg a futást
+🧩 1. DebugLog – fejlesztői diagnosztika (TRACE, DEBUG)
 
-### DEBUG – „mély hibakeresés”
-- stack trace generálódik
-- fejlesztői diagnosztika
-- Linuxon `_isBreakOnError == true` esetén **megállítja a futást** (exit)
-- Windowsra opcionálisan `__debugbreak()` tehető
-- csak fejlesztés közben használjuk
+A DebugLog kizárólag fejlesztői eszköz. Nem része a rendszer
+működésének, nem auditálható, nem kerül be a végfelhasználói logokba.
 
-**Szabály:**
-TRACE/DEBUG csak akkor kerülhet be a kódba, ha a fejlesztőnek *nincs rálátása* a vezérlés útjára, vagy egy adott debug‑szituációban célzott diagnosztikai üzenetet akar elhelyezni.
+TRACE – „itt jár a kód”
 
----
+-   minimális információ
+-   stack trace nélkül
+-   stepping támogatás
+-   csak QT_DEBUG alatt aktív
+-   nem állítja meg a futást
 
-# 🧩 **2. SystemLog – technikai és domain audit (INFO, WARNING, ERROR)**
+DEBUG – „mély hibakeresés”
 
-A SystemLog a CutCalculator belső működésének auditálható rétege.
-Minden domain művelet, repository/registry interakció és technikai állapotváltozás ide kerül.
+-   stack trace generálódik
+-   fejlesztői diagnosztika
+-   Linuxon _isBreakOnError == true esetén megállítja a futást (exit)
+-   Windowsra opcionálisan __debugbreak() tehető
+-   csak fejlesztés közben használjuk
 
-### INFO – „normál működés”
-- auditálható
-- domain műveletek
-- technikai műveletek
-- snapshot restore
-- registry insert/update/remove
-- repository load/save
+Szabály: TRACE/DEBUG csak akkor kerülhet be a kódba, ha a fejlesztőnek
+nincs rálátása a vezérlés útjára, vagy egy adott debug‑szituációban
+célzott diagnosztikai üzenetet akar elhelyezni.
 
-### WARNING – „hiba történt, de tovább tudunk menni”
-- fallback
-- részleges siker
-- invalid input
-- degradált működés
-- a program folytatható
+------------------------------------------------------------------------
 
-**Ökölszabály:**
-> Ha a program tovább tud menni → WARNING.
+🧩 2. SystemLog – technikai és domain audit (INFO, WARNING, ERROR)
 
-### ERROR – „hiba történt, és nem tudunk tovább menni”
-- kritikus hiba
-- nincs fallback
-- nincs default
-- a rendszer működésképtelen
-- stack trace generálódik
-- exit() / abort()
+A SystemLog a CutCalculator belső működésének auditálható rétege. Minden
+domain művelet, repository/registry interakció és technikai
+állapotváltozás ide kerül.
 
-**Ökölszabály:**
-> Ha a program nem tud tovább menni → ERROR.
+INFO – „normál működés”
 
-Példák ERROR-ra:
-- osztás nullával
-- beállításfájl nem nyitható meg
-- repository nem írható
-- sérült registry
+-   auditálható
+-   domain műveletek
+-   technikai műveletek
+-   snapshot restore
+-   registry insert/update/remove
+-   repository load/save
 
----
+WARNING – „hiba történt, de tovább tudunk menni”
 
-# 🧩 **3. EventLog – user‑szintű workflow események (INFO)**
+-   fallback
+-   részleges siker
+-   invalid input
+-   degradált működés
+-   a program folytatható
+
+Ökölszabály: > Ha a program tovább tud menni → WARNING.
+
+ERROR – „hiba történt, és nem tudunk tovább menni”
+
+-   kritikus hiba
+-   nincs fallback
+-   nincs default
+-   a rendszer működésképtelen
+-   stack trace generálódik
+-   exit() / abort()
+
+Ökölszabály: > Ha a program nem tud tovább menni → ERROR.
+
+Példák ERROR-ra: - osztás nullával - beállításfájl nem nyitható meg -
+repository nem írható - sérült registry
+
+------------------------------------------------------------------------
+
+🧩 3. EventLog – user‑szintű workflow események (INFO)
 
 Az EventLog a felhasználó által kiváltott UI‑eseményeket rögzíti:
 
-- dialógus megnyitása
-- gombnyomás
-- drag & drop
-- BOMWorkbench megnyitása
-- snapshot restore UI‑szinten
-- user által indított műveletek
+-   dialógus megnyitása
+-   gombnyomás
+-   drag & drop
+-   BOMWorkbench megnyitása
+-   snapshot restore UI‑szinten
+-   user által indított műveletek
 
-**Szabály:**
-EventLog soha nem tartalmazhat WARNING vagy ERROR szintet.
-A user‑szintű hibák UI‑visszajelzéssel kezelendők, nem logszinten.
+Szabály: EventLog soha nem tartalmazhat WARNING vagy ERROR szintet. A
+user‑szintű hibák UI‑visszajelzéssel kezelendők, nem logszinten.
 
----
+------------------------------------------------------------------------
 
-# 🧩 **4. A három réteg közötti döntési fa**
+🧩 4. A három réteg közötti döntési fa
 
-```
-Hiba történt?
-    |
-    ├── Nem → INFO (SystemLog vagy EventLog)
-    |
-    └── Igen →
-           |
-           ├── Tudunk tovább menni? → WARNING (SystemLog)
-           |
-           └── Nem tudunk → ERROR (SystemLog)
-```
+    Hiba történt?
+        |
+        ├── Nem → INFO (SystemLog vagy EventLog)
+        |
+        └── Igen →
+               |
+               ├── Tudunk tovább menni? → WARNING (SystemLog)
+               |
+               └── Nem tudunk → ERROR (SystemLog)
 
 DebugLog nem része ennek a döntési fának — az külön fejlesztői eszköz.
 
----
+------------------------------------------------------------------------
 
-# 🧩 **5. Logger API szereptérkép**
+🧩 5. Logger API szereptérkép
 
-| Logger hívás | Szint | Réteg | Mikor használjuk |
-|--------------|-------|--------|-------------------|
-| `zTrace()` | TRACE | DebugLog | vezérléskövetés |
-| `zDebug()` | DEBUG | DebugLog | mély hibakeresés |
-| `zInfo()` | INFO | SystemLog | domain/technikai esemény |
-| `zWarning()` | WARNING | SystemLog | nem kritikus hiba |
-| `zError()` | ERROR | SystemLog | kritikus hiba |
-| `zEventINFO()` | INFO | EventLog | user‑szintű esemény |
+  Logger hívás   Szint     Réteg       Mikor használjuk
+  -------------- --------- ----------- --------------------------
+  zTrace()       TRACE     DebugLog    vezérléskövetés
+  zDebug()       DEBUG     DebugLog    mély hibakeresés
+  zInfo()        INFO      SystemLog   domain/technikai esemény
+  zWarning()     WARNING   SystemLog   nem kritikus hiba
+  zError()       ERROR     SystemLog   kritikus hiba
+  zEventINFO()   INFO      EventLog    user‑szintű esemény
 
----
+------------------------------------------------------------------------
 
-# 🧩 **6. Integrációs terv – mit kell lecserélni és hol**
+🧱 A LogArchiver és a logrétegek kapcsolata
 
-Ez a konkrét, végrehajtható terv a Handbook frissítéséhez.
+A LogArchiver minden logréteget egyformán kezel: - DebugLog →
+archiválható, de nem auditálandó - SystemLog → archiválható és
+auditálandó - EventLog → archiválható, de nem auditálandó
 
-## 6.1. A „Logging Architecture” fejezetbe beillesztendő új alfejezetek
-- **„Logger Roles and Responsibilities”**
-- **„Three‑Layer Logging Model”**
-- **„Decision Tree for Log Severity”**
-- **„DebugLog vs SystemLog vs EventLog”**
-- **„When to Use Which Log Macro”**
+A LogArchiver számára a logfájl tartalma irreleváns. A fájlnév
+struktúrája és a timestamp a meghatározó.
 
-## 6.2. A meglévő dokumentumban cserélendő vagy pontosítandó részek
-- mindenhol, ahol a logolás „egyszintűnek” van leírva → átírni háromszintűre
-- a régi „AuditLog” kifejezést teljesen törölni
-- a „verbose logging” részt átírni a Logger `_isVerbose` működésére
-- a snapshot‑architektúra logolását átírni EventLog + SystemLog kettősre
-- a Presenter/Manager logolási szabályokat frissíteni (UI → EventLog, domain → SystemLog)
+A LogArchiver nem értelmezi: - a log szintjét (INFO/WARNING/ERROR) - a
+log forrását (UI, domain, debug) - a log tartalmát
 
-## 6.3. Kódoldali változtatások (ha szükséges)
-- minden UI‑szintű `zInfo()` → `zEventINFO()`
-- minden domain‑szintű `zEventINFO()` → `zInfo()`
-- minden nem kritikus hiba `zError()` → `zWarning()`
-- minden kritikus hiba `zWarning()` → `zError()`
-- TRACE/DEBUG csak fejlesztői célra maradjon
+A LogArchiver kizárólag a fájlrendszer-szintű rotációért felel.
 
-## 6.4. Dokumentációs checklist
-- [ ] Logger szintek táblázata
-- [ ] Döntési fa
-- [ ] Példák INFO/WARNING/ERROR használatra
-- [ ] Példák EventLog használatra
-- [ ] DebugLog szerepének elkülönítése
-- [ ] Presenter/Manager logolási szabályok
-- [ ] Snapshot‑restore logolási szabályok
-- [ ] Registry/Repository audit szabályok
+🔄 A logfájlok életciklusa (end-to-end)
 
----
+1.  A Logger létrehozza a logfájlt:
 
-# 🟢 **Ha szeretnéd, megírom a teljes „Logging Architecture” fejezetet is, könyv‑szintű minőségben.**
-Csak szólj, és elkészítem a v1.0‑hoz illeszkedő, tipográfiailag is egységes változatot.
+    -   prefix: events_ / log_ / audit_ / perf_
+    -   timestamp: YYYYMMDD_HHMMSS
+    -   formátum: _.txt
 
+2.  A logfájl bekerül a log könyvtárba.
 
-Prompt DSL logolási szabályok
+3.  A LogArchiver futása során:
 
-UI/UX Guidelines ikonokkal
+    -   beolvassa a logfájlokat
+    -   bundle-ökbe rendezi őket timestamp alapján
+    -   ellenőrzi a bundle integritását
+    -   archiválja a régi bundle-öket ZIP-be
+    -   törli a régi logfájlokat
+
+4.  A ZIP-ek a rendszer hosszú távú auditálható naplói.
+
+🧪 LogArchiver – bundle-konzisztencia szabályok
+
+A LogArchiver csak akkor archivál egy bundle-t, ha az teljesíti az
+alábbi feltételeket:
+
+-   minden fájl neve illeszkedik a regexre:
+    ^(events|log|audit|perf).txt$
+-   minden fájl ugyanahhoz a timestamphez tartozik
+-   van legalább 1 events_ fájl
+-   van legalább 1 log_ fájl
+-   legfeljebb 1 perf_ fájl
+-   legfeljebb 1 audit_ fájl
+-   a bundle legalább 2 fájlt tartalmaz
+
+A hibás bundle-ök logolva és eldobva.
+
+📦 A LogArchiver audit-szerepe
+
+A LogArchiver minden kihagyott fájlt és bundle-t auditálható módon
+logol:
+
+-   skipped invalid filename
+-   skipped inconsistent bundle
+-   skipped incomplete bundle
+-   skipped invalid prefix distribution
+-   skipped empty bundle
+
+Ez biztosítja, hogy a log-archiválás folyamata visszakövethető, és
+minden döntés dokumentált.

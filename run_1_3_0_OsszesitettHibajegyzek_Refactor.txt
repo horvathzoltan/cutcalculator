@@ -1,3 +1,308 @@
+⭐ 1) Kiindulási állapot – mit tudunk?
+
+A kódból látszik:
+
+-   ✔ OrderHeaderRegistry kész
+-   ✔ OrderItemRegistry kész
+-   ✔ OrderNeedBuilder kész
+-   ✔ WorksheetBuilder kész
+-   ✔ Logger + LogManager + LogArchiver kész
+-   ✔ BOMWorkbench kész
+-   ❌ Order UI modul még nincs implementálva
+-   ❌ OrderHeaderPanel nincs
+-   ❌ OrderItemTable nincs
+-   ❌ Save/Load workflow nincs
+-   ❌ Filter mezők nincsenek
+-   ❌ StringCache nincs
+-   ❌ Worksheet UI nincs
+
+→ A domain teljes, a UI hiányzik.
+
+Most jön a UI‑réteg felépítése.
+
+------------------------------------------------------------------------
+
+⭐ 2) A teljes Order modul felépítése (UI + workflow)
+
+A modul 3 fő részből áll:
+
+1.  OrderHeaderPanel – a fejléc mezői
+2.  OrderItemTable – a tételek táblázata
+3.  OrderWorkbench – a teljes UI konténer (header + items + toolbar)
+
+Ezekre épül a Save/Load workflow, a filter mezők és a Worksheet
+pipeline.
+
+------------------------------------------------------------------------
+
+⭐ 3) Pontonként végrehajtható terv
+
+🔥 1. OrderWorkbench létrehozása (konténer UI)
+
+-   QWidget alapú panel
+-   felső rész: OrderHeaderPanel
+-   alsó rész: OrderItemTable
+-   jobb oldalon opcionális Worksheet preview (később)
+-   toolbar: Save, New, Delete, Worksheet Generate
+
+Eredmény: üres, de működő konténer.
+
+------------------------------------------------------------------------
+
+🔥 2. OrderHeaderPanel – mezők létrehozása
+
+UI mezők:
+
+-   customerName (QLineEdit)
+-   orderDate (QDateEdit)
+-   defaultColor (QComboBox)
+-   defaultHandlerSide (QComboBox)
+-   defaultExternalPrefix (QLineEdit)
+-   note (QPlainTextEdit)
+-   status (QComboBox)
+-   deadline (QDateEdit)
+
+Layout:
+
+-   két oszlopos grid
+-   bal oldalon fő mezők
+-   jobb oldalon note + status
+
+ObjectName-ek:
+
+-   header_customerName
+-   header_orderDate
+-   header_defaultColor
+-   stb.
+
+------------------------------------------------------------------------
+
+🔥 3. OrderHeaderPanel – binding API
+
+-   void setHeader(const OrderHeader&)
+-   OrderHeader toHeader() const
+-   mezők kétirányú frissítése
+-   default értékek kezelése
+
+------------------------------------------------------------------------
+
+🔥 4. OrderHeaderPanel – validáció
+
+-   customerName kötelező
+-   status kötelező
+-   dátumok validak
+-   hibák UI‑szintű jelzése (piros keret, tooltip)
+
+------------------------------------------------------------------------
+
+🔥 5. OrderItemTable – oszlopok létrehozása
+
+Oszlopok:
+
+-   productId (QComboBox delegate)
+-   width_mm (QSpinBox delegate)
+-   height_mm (QSpinBox delegate)
+-   handlerSide (QComboBox)
+-   colorName (QComboBox)
+-   externalId (QLineEdit)
+-   order_qty (QSpinBox)
+-   modeName (QComboBox)
+
+------------------------------------------------------------------------
+
+🔥 6. OrderItemTable – sorhozzáadás / törlés
+
+-   “Add item” gomb
+-   “Delete item” gomb
+-   új sor default értékekkel
+-   externalId automatikus generálása (registry logika alapján)
+
+------------------------------------------------------------------------
+
+🔥 7. OrderItemTable – binding API
+
+-   void setItems(const QVector<OrderItem>&)
+-   QVector<OrderItem> toItems() const
+-   delegatek → model → domain objektumok
+
+------------------------------------------------------------------------
+
+🔥 8. Save workflow implementálása
+
+Lépések:
+
+1.  header = headerPanel.toHeader()
+2.  items = itemTable.toItems()
+3.  OrderHeaderRegistry::instance().update(header)
+4.  OrderItemRegistry::instance().update(item) minden tételre
+5.  UI refresh
+6.  success → zEventINFO(“Order saved”)
+
+------------------------------------------------------------------------
+
+🔥 9. Load workflow implementálása
+
+1.  header = OrderHeaderRegistry::findById(id)
+2.  items = OrderItemRegistry::findByOrderId(id)
+3.  headerPanel.setHeader(header)
+4.  itemTable.setItems(items)
+5.  UI refresh
+
+------------------------------------------------------------------------
+
+🔥 10. Filter mezők implementálása
+
+UI mezők:
+
+-   customerName filter (QLineEdit)
+-   status filter (QComboBox)
+-   date interval (QDateEdit + QDateEdit)
+
+Query:
+
+    registry.findAll([&](const OrderHeader& h){
+        return h.customerName.contains(text)
+            && h.status == selectedStatus
+            && h.orderDate in interval;
+    });
+
+------------------------------------------------------------------------
+
+🔥 11. StringCache implementálása
+
+Cache:
+
+-   customerNameCache
+-   colorNameCache
+-   handlerSideCache
+-   externalIdPrefixCache
+
+Feltöltés:
+
+-   repository load után
+-   registry readAll() alapján
+
+UI integráció:
+
+-   QCompleter a mezőkhöz
+
+------------------------------------------------------------------------
+
+🔥 12. Worksheet pipeline integráció
+
+-   OrderNeedBuilder::build(headerId)
+-   WorksheetBuilder::fromOrderNeed()
+-   Worksheet UI panel (később)
+-   “Generate Worksheet” gomb
+
+------------------------------------------------------------------------
+
+⭐ 4) A végső lépés: Implementációs / Patching terv (STRICT MODE)
+
+Ez a végrehajtható patch‑sorozat:
+
+------------------------------------------------------------------------
+
+PATCH 1 — OrderHeaderPanel mezők + layout
+
+-   új fájl: order_header_panel.h / .cpp
+-   mezők létrehozása
+-   layout összeállítása
+-   objectName-ek beállítása
+
+------------------------------------------------------------------------
+
+PATCH 2 — OrderHeaderPanel binding API
+
+-   setHeader()
+-   toHeader()
+-   mezők kétirányú frissítése
+
+------------------------------------------------------------------------
+
+PATCH 3 — OrderHeaderPanel validáció
+
+-   kötelező mezők
+-   hibajelzés
+-   validációs API
+
+------------------------------------------------------------------------
+
+PATCH 4 — OrderItemTable oszlopok + delegatek
+
+-   QTableView + QStandardItemModel
+-   delegatek
+-   comboboxok registryből
+
+------------------------------------------------------------------------
+
+PATCH 5 — OrderItemTable binding API
+
+-   setItems()
+-   toItems()
+
+------------------------------------------------------------------------
+
+PATCH 6 — Save workflow
+
+-   headerPanel → registry.update
+-   itemTable → registry.update
+-   UI refresh
+
+------------------------------------------------------------------------
+
+PATCH 7 — Load workflow
+
+-   registry.findById
+-   registry.findByOrderId
+-   UI frissítés
+
+------------------------------------------------------------------------
+
+PATCH 8 — Filter mezők
+
+-   UI mezők
+-   findAll lambda
+-   táblázat frissítése
+
+------------------------------------------------------------------------
+
+PATCH 9 — StringCache
+
+-   cache osztály
+-   feltöltés
+-   QCompleter integráció
+
+------------------------------------------------------------------------
+
+PATCH 10 — Worksheet pipeline integráció
+
+-   OrderNeedBuilder
+-   WorksheetBuilder
+-   Worksheet UI panel
+-   “Generate Worksheet” gomb
+
+------------------------------------------------------------------------
+
+⭐ Készen állok a PATCH 1 generálására.
+
+Mondd ki:
+
+👉 „kérem a PATCH 1‑et”
+
+És már adom is a drop‑in, STRICT MODE kompatibilis kódot.
+
+**
+***
+
+*
+*
+*
+*
+*
+
+*
+
 ⭐ 4) A folytatás részletes, pontonként végrehajtható terve
 
 (a végén: részletes implementációs/patching terv)
