@@ -1,553 +1,326 @@
-⭐ 1) Kiindulási állapot – mit tudunk?
-
-A kódból látszik:
-
--   ✔ OrderHeaderRegistry kész
--   ✔ OrderItemRegistry kész
--   ✔ OrderNeedBuilder kész
--   ✔ WorksheetBuilder kész
--   ✔ Logger + LogManager + LogArchiver kész
--   ✔ BOMWorkbench kész
--   ❌ Order UI modul még nincs implementálva
--   ❌ OrderHeaderPanel nincs
--   ❌ OrderItemTable nincs
--   ❌ Save/Load workflow nincs
--   ❌ Filter mezők nincsenek
--   ❌ StringCache nincs
--   ❌ Worksheet UI nincs
-
-→ A domain teljes, a UI hiányzik.
-
-Most jön a UI‑réteg felépítése.
+Oké, akkor csináljunk ebből egy tiszta, auditálható PATCH 22 tervet –
+lépésről lépésre.
 
 ------------------------------------------------------------------------
 
-⭐ 2) A teljes Order modul felépítése (UI + workflow)
+1. Cél és scope – mit hoz PATCH 22?
 
-A modul 3 fő részből áll:
+Fókusz: belső workbench‑állapot mentése / visszaállítása, nem
+UI‑geometria.
 
-1.  OrderHeaderPanel – a fejléc mezői
-2.  OrderItemTable – a tételek táblázata
-3.  OrderWorkbench – a teljes UI konténer (header + items + toolbar)
+Konkrétan az OrderWorkbench esetén:
 
-Ezekre épül a Save/Load workflow, a filter mezők és a Worksheet
-pipeline.
+-   utolsó kiválasztott rendelés ID mentése
+-   (később bővíthető) szűrő / kereső állapot mentése
+-   mindez ini‑ben, a meglévő UI snapshot mellett, külön prefix alatt
+-   restore eseményblokkolással, hogy ne „robotizáljuk” a workbenchet
 
-------------------------------------------------------------------------
+A WorkbenchStateManager:
 
-⭐ 3) Pontonként végrehajtható terv
-
-🔥 1. OrderWorkbench létrehozása (konténer UI)
-
--   QWidget alapú panel
--   felső rész: OrderHeaderPanel
--   alsó rész: OrderItemTable
--   jobb oldalon opcionális Worksheet preview (később)
--   toolbar: Save, New, Delete, Worksheet Generate
-
-Eredmény: üres, de működő konténer.
+-   marad UI snapshot manager
+-   kiegészül egy „custom state” réteggel (kulcs‑érték alapú, ini‑ben)
 
 ------------------------------------------------------------------------
 
-🔥 2. OrderHeaderPanel – mezők létrehozása
+2. Döntés: közös ini, külön prefix
 
-UI mezők:
+-   Ugyanaz az ini, amit a WidgetStateManager és a WorkbenchStateManager
+    már használ.
 
--   customerName (QLineEdit)
--   orderDate (QDateEdit)
--   defaultColor (QComboBox)
--   defaultHandlerSide (QComboBox)
--   defaultExternalPrefix (QLineEdit)
--   note (QPlainTextEdit)
--   status (QComboBox)
--   deadline (QDateEdit)
+-   Külön namespace / prefix a custom state-nek, pl.:
 
-Layout:
+    -   order_workbench/customState/selectedOrderId
+    -   order_workbench/customState/filterCustomer
+    -   stb.
 
--   két oszlopos grid
--   bal oldalon fő mezők
--   jobb oldalon note + status
+Előnyök:
 
-ObjectName-ek:
-
--   header_customerName
--   header_orderDate
--   header_defaultColor
--   stb.
+-   egy workbench = egy logikai namespace
+-   snapshot + custom state nem keveredik, de együtt él
+-   minimális diff, nincs új fájlformátum, nincs új storage‑réteg
 
 ------------------------------------------------------------------------
 
-🔥 3. OrderHeaderPanel – binding API
+3. IWorkbenchCustomState interface – a szerződés
 
--   void setHeader(const OrderHeader&)
--   OrderHeader toHeader() const
--   mezők kétirányú frissítése
--   default értékek kezelése
+Új interface, amit bármely workbench implementálhat, ha custom state‑et
+akar:
 
-------------------------------------------------------------------------
+    class IWorkbenchCustomState {
+    public:
+        virtual ~IWorkbenchCustomState() = default;
 
-🔥 4. OrderHeaderPanel – validáció
+        virtual QVariantMap saveCustomState() const = 0;
+        virtual void restoreCustomState(const QVariantMap& state) = 0;
+    };
 
--   customerName kötelező
--   status kötelező
--   dátumok validak
--   hibák UI‑szintű jelzése (piros keret, tooltip)
+Elv:
 
-------------------------------------------------------------------------
-
-🔥 5. OrderItemTable – oszlopok létrehozása
-
-Oszlopok:
-
--   productId (QComboBox delegate)
--   width_mm (QSpinBox delegate)
--   height_mm (QSpinBox delegate)
--   handlerSide (QComboBox)
--   colorName (QComboBox)
--   externalId (QLineEdit)
--   order_qty (QSpinBox)
--   modeName (QComboBox)
+-   Workbench tudja, mit akar menteni (ID, filter, search, stb.)
+-   Workbench tudja, hogyan kell visszaállítani
+-   WorkbenchStateManager csak tárol, nem értelmez
 
 ------------------------------------------------------------------------
 
-🔥 6. OrderItemTable – sorhozzáadás / törlés
+4. WorkbenchStateManager bővítése – custom state API
 
--   “Add item” gomb
--   “Delete item” gomb
--   új sor default értékekkel
--   externalId automatikus generálása (registry logika alapján)
+4.1. Public API bővítése
 
-------------------------------------------------------------------------
+    class WorkbenchStateManager : public QObject {
+        Q_OBJECT
+    public:
+        static WorkbenchStateManager& instance();
 
-🔥 7. OrderItemTable – binding API
+        void registerWorkbench(const QString& id, QWidget* wb);
+        void onTabActivated(QWidget* wb);
+        void onTabDeactivated(QWidget* wb, bool immediate = false);
 
--   void setItems(const QVector<OrderItem>&)
--   QVector<OrderItem> toItems() const
--   delegatek → model → domain objektumok
+        void beginClosing();
+        bool isShown(QWidget *wb);
 
-------------------------------------------------------------------------
+    private:
+        // ...
+        QVariantMap loadCustomState(const QString& id);
+        void saveCustomState(const QString& id, const QVariantMap& state);
+    };
 
-🔥 8. Save workflow implementálása
+4.2. Implementáció (ini‑alapú, a meglévő settings infra fölött)
 
-Lépések:
+A WidgetStateSettings / SettingsStore / SettingsManager mintájára:
 
-1.  header = headerPanel.toHeader()
-2.  items = itemTable.toItems()
-3.  OrderHeaderRegistry::instance().update(header)
-4.  OrderItemRegistry::instance().update(item) minden tételre
-5.  UI refresh
-6.  success → zEventINFO(“Order saved”)
+-   loadCustomState(id):
+    -   beolvassa az id + "/customState/..." alatti kulcsokat
+    -   QVariantMap-ként adja vissza
+-   saveCustomState(id, state):
+    -   kiírja az id + "/customState/..." alá a kulcsokat
 
-------------------------------------------------------------------------
+Kulcsminta:
 
-🔥 9. Load workflow implementálása
-
-1.  header = OrderHeaderRegistry::findById(id)
-2.  items = OrderItemRegistry::findByOrderId(id)
-3.  headerPanel.setHeader(header)
-4.  itemTable.setItems(items)
-5.  UI refresh
-
-------------------------------------------------------------------------
-
-🔥 10. Filter mezők implementálása
-
-UI mezők:
-
--   customerName filter (QLineEdit)
--   status filter (QComboBox)
--   date interval (QDateEdit + QDateEdit)
-
-Query:
-
-    registry.findAll([&](const OrderHeader& h){
-        return h.customerName.contains(text)
-            && h.status == selectedStatus
-            && h.orderDate in interval;
-    });
+-   id + "/customState/selectedOrderId"
+-   id + "/customState/filterCustomer"
 
 ------------------------------------------------------------------------
 
-🔥 11. StringCache implementálása
+5. WorkbenchStateManager – integráció a tab‑aktiválási ciklusba
 
-Cache:
+5.1. onTabActivated – restore sorrend
 
--   customerNameCache
--   colorNameCache
--   handlerSideCache
--   externalIdPrefixCache
+Most:
 
-Feltöltés:
+-   csak WidgetStateManager(id).restoreWidgetState(wb);
 
--   repository load után
--   registry readAll() alapján
+Ezután:
 
-UI integráció:
+    void WorkbenchStateManager::onTabActivated(QWidget* wb) {
+        if (_closing)
+            return;
 
--   QCompleter a mezőkhöz
+        QString id = findIdByWidget(wb);
+        if (id.isEmpty())
+            return;
 
-------------------------------------------------------------------------
+        auto& info = _workbenches[id];
+        if (!info.wasShown) {
+            WidgetStateManager c(id);
+            c.restoreWidgetState(wb);
 
-🔥 12. Worksheet pipeline integráció
+            // Custom state restore
+            if (auto* cs = qobject_cast<IWorkbenchCustomState*>(wb)) {
+                QVariantMap m = loadCustomState(id);
+                cs->restoreCustomState(m);
+            }
 
--   OrderNeedBuilder::build(headerId)
--   WorksheetBuilder::fromOrderNeed()
--   Worksheet UI panel (később)
--   “Generate Worksheet” gomb
+            info.wasShown = true;
+        }
+    }
 
-------------------------------------------------------------------------
+5.2. onTabDeactivated – save sorrend
 
-⭐ 4) A végső lépés: Implementációs / Patching terv (STRICT MODE)
+Most:
 
-Ez a végrehajtható patch‑sorozat:
+-   csak WidgetStateManager(id).saveWidgetState(wb);
 
-------------------------------------------------------------------------
+Ezután:
 
-PATCH 1 — OrderHeaderPanel mezők + layout
+    auto doSave = [id, wb]() {
+        WidgetStateManager c(id);
+        c.saveWidgetState(wb);
 
--   új fájl: order_header_panel.h / .cpp
--   mezők létrehozása
--   layout összeállítása
--   objectName-ek beállítása
-
-------------------------------------------------------------------------
-
-PATCH 2 — OrderHeaderPanel binding API
-
--   setHeader()
--   toHeader()
--   mezők kétirányú frissítése
-
-------------------------------------------------------------------------
-
-PATCH 3 — OrderHeaderPanel validáció
-
--   kötelező mezők
--   hibajelzés
--   validációs API
+        if (auto* cs = qobject_cast<IWorkbenchCustomState*>(wb)) {
+            QVariantMap m = cs->saveCustomState();
+            saveCustomState(id, m);
+        }
+    };
 
 ------------------------------------------------------------------------
 
-PATCH 4 — OrderItemTable oszlopok + delegatek
+6. OrderWorkbench – IWorkbenchCustomState implementáció
 
--   QTableView + QStandardItemModel
--   delegatek
--   comboboxok registryből
+6.1. Header módosítás
 
-------------------------------------------------------------------------
+    class OrderWorkbench : public QWidget, public IWorkbenchCustomState {
+        Q_OBJECT
+    public:
+        explicit OrderWorkbench(QWidget* parent = nullptr);
 
-PATCH 5 — OrderItemTable binding API
+    protected:
+        void hideEvent(QHideEvent* e) override;
 
--   setItems()
--   toItems()
+    public:
+        QVariantMap saveCustomState() const override;
+        void restoreCustomState(const QVariantMap& state) override;
 
-------------------------------------------------------------------------
+    private:
+        // ...
+    };
 
-PATCH 6 — Save workflow
+6.2. saveCustomState – mit mentünk első körben?
 
--   headerPanel → registry.update
--   itemTable → registry.update
--   UI refresh
+MVP:
 
-------------------------------------------------------------------------
+-   utolsó kiválasztott rendelés ID
 
-PATCH 7 — Load workflow
+    QVariantMap OrderWorkbench::saveCustomState() const
+    {
+        QVariantMap m;
+        if (_listPanel) {
+            QUuid id = _listPanel->selectedOrderId();
+            if (!id.isNull())
+                m["selectedOrderId"] = id.toString();
+        }
+        return m;
+    }
 
--   registry.findById
--   registry.findByOrderId
--   UI frissítés
+6.3. restoreCustomState – biztonságos visszaállítás
 
-------------------------------------------------------------------------
+    void OrderWorkbench::restoreCustomState(const QVariantMap& state)
+    {
+        if (!_listPanel)
+            return;
 
-PATCH 8 — Filter mezők
+        QSignalBlocker b1(_listPanel);
 
--   UI mezők
--   findAll lambda
--   táblázat frissítése
+        const QString idStr = state.value("selectedOrderId").toString();
+        if (idStr.isEmpty())
+            return;
 
-------------------------------------------------------------------------
+        QUuid id(idStr);
+        if (id.isNull())
+            return;
 
-PATCH 9 — StringCache
+        _listPanel->selectById(id);
+    }
 
--   cache osztály
--   feltöltés
--   QCompleter integráció
+Fontos:
 
-------------------------------------------------------------------------
-
-PATCH 10 — Worksheet pipeline integráció
-
--   OrderNeedBuilder
--   WorksheetBuilder
--   Worksheet UI panel
--   “Generate Worksheet” gomb
-
-------------------------------------------------------------------------
-
-⭐ Készen állok a PATCH 1 generálására.
-
-Mondd ki:
-
-👉 „kérem a PATCH 1‑et”
-
-És már adom is a drop‑in, STRICT MODE kompatibilis kódot.
-
-**
-***
-
-*
-*
-*
-*
-*
-
-*
-
-⭐ 4) A folytatás részletes, pontonként végrehajtható terve
-
-(a végén: részletes implementációs/patching terv)
+-   csak ID‑t állítunk vissza
+-   nincs Presenter hívás innen
+-   a selectById() belsőleg válthat orderSelected signalt → ezt később
+    finomíthatjuk (pl. külön „silentSelectById” API-val), de első körben
+    elég, ha a QSignalBlocker a ListPanel szintjén blokkolja a
+    jelzéseket.
 
 ------------------------------------------------------------------------
 
-🔥 A) OrderHeaderPanel – részletes fejlesztési terv
+7. OrderHeaderListPanel – publikus API a kiválasztáshoz
 
-1) UI mezők létrehozása
+Ha még nincs, kell:
 
--   customerName (QLineEdit)
--   orderDate (QDateEdit)
--   defaultColor (QComboBox)
--   defaultHandlerSide (QComboBox)
--   defaultExternalPrefix (QLineEdit)
--   note (QPlainTextEdit)
--   status (QComboBox)
--   deadline (QDateEdit)
+    class OrderHeaderListPanel : public QWidget {
+        Q_OBJECT
+    public:
+        QUuid selectedOrderId() const;
+        void selectById(const QUuid& id);
 
-2) Layout kialakítása
+    signals:
+        void orderSelected(const QUuid& id);
 
--   két oszlopos grid
--   bal oldalon a fő mezők
--   jobb oldalon note + státusz
+    private:
+        QTableWidget* _table = nullptr;
+        // ...
+    };
 
-3) Model binding (kétirányú)
+selectById implementációja már megbeszélt:
 
--   setHeader(const OrderHeader&)
--   OrderHeader toHeader() const
-
-4) Validáció
-
--   customerName kötelező
--   status kötelező
--   date mezők validak
-
-5) Change notification
-
--   headerChanged(OrderHeader) signal
+-   végigmegy a sorokon
+-   UserRole‑ban tárolt ID alapján kiválasztja a sort
 
 ------------------------------------------------------------------------
 
-🔥 B) OrderItemTable – részletes fejlesztési terv
+8. Implementációs terv + files.txt
 
-1) Oszlopok
+8.1. Lépésenkénti implementációs terv
 
--   productId (combobox)
--   width_mm
--   height_mm
--   handlerSide
--   colorName
--   externalId
--   order_qty
--   modeName
+1.  Komment WorkbenchStateManager elé
+    – amit már megfogalmaztunk: tisztázza, hogy UI snapshot manager, nem
+    belső state manager.
 
-2) Sorhozzáadás / törlés
+2.  IWorkbenchCustomState interface létrehozása
 
--   “Add item”
--   “Delete item”
+    -   új header: pl. common/ui_state/i_workbench_custom_state.h
 
-3) Cellaszerkesztés
+3.  WorkbenchStateManager bővítése
 
--   delegatek
--   validáció
+    -   loadCustomState(id) + saveCustomState(id, state) privát
+        metódusok
+    -   onTabActivated + onTabDeactivated módosítása a custom state
+        hívásokkal
 
-4) Model binding
+4.  OrderWorkbench módosítása
 
--   setItems(QVector<OrderItem>)
--   QVector<OrderItem> toItems() const
+    -   öröklődés IWorkbenchCustomState-ből
+    -   saveCustomState() + restoreCustomState() implementálása
+    -   (opcionális) a korábbi hideEvent-es WidgetStateManager hívások
+        eltávolítása, ha még maradtak
 
-------------------------------------------------------------------------
+5.  OrderHeaderListPanel API ellenőrzése / bővítése
 
-🔥 C) Save / Load workflow – részletes terv
+    -   selectedOrderId()
+    -   selectById(const QUuid&)
 
-1) Save
+6.  Build + manuális teszt
 
--   header = headerPanel.toHeader()
--   items = itemTable.toItems()
--   registry.update(header)
--   registry.update(items)
--   success → UI refresh
+    -   Order tab megnyit → kiválasztasz egy rendelést → kilépés →
+        újraindítás → tab restore után ellenőrzöd, hogy ugyanaz az order
+        van fókuszban.
 
-2) Load
+7.  Későbbi bővítés (nem része most a patchnek, de előkészítve):
 
--   header = OrderHeaderRegistry::findById(id)
--   items = OrderItemRegistry::findByOrderId(id)
--   headerPanel.setHeader(header)
--   itemTable.setItems(items)
+    -   filter mezők mentése (filterCustomer, filterStatus, stb.)
+    -   keresőmező mentése
+    -   ezek hozzáadása a saveCustomState / restoreCustomState-hez
 
 ------------------------------------------------------------------------
 
-🔥 D) Filter mezők – részletes terv
+8.2. files.txt – minimális, de teljes fájllista PATCH 22-höz
 
-1) UI mezők
+    common/ui_state/workbench_state_manager.h
+    common/ui_state/workbench_state_manager.cpp
 
--   customerName filter
--   status filter
--   date interval
+    common/ui_state/widget_state_manager.h
+    common/ui_state/widget_state_manager.cpp
+    common/ui_state/widget_state_settings.h
+    common/ui_state/widget_state_settings.cpp
 
-2) Query
+    common/ui_state/i_workbench_custom_state.h    # ÚJ FILE
 
-    registry.findAll([&](const OrderHeader& h){
-        return h.customerName.contains(text)
-            && h.status == selectedStatus
-            && h.orderDate in interval;
-    });
+    orders/view/order_header_list_panel.h
+    orders/view/order_header_list_panel.cpp
 
-------------------------------------------------------------------------
+    workbench/view/order/order_workbench.h
+    workbench/view/order/order_workbench.cpp
 
-🔥 E) StringCache – részletes terv
+    common/settings/settings_store.h
+    common/settings/settings_store.cpp
+    common/settings/settings_manager.h
+    common/settings/settings_manager.cpp
 
-1) Cache osztály
-
--   customerNameCache
--   colorNameCache
--   handlerSideCache
--   externalIdPrefixCache
-
-2) Feltöltés
-
--   repository load után
-
-3) UI integráció
-
--   QCompleter
+(Ezek közül a settings‑es fájlok csak akkor kellenek, ha a custom state
+mentéséhez közvetlenül használod őket; ha a WidgetStateSettings már ad
+egy kész QSettings‑réteget, akkor elég azt használni.)
 
 ------------------------------------------------------------------------
 
-🔥 F) Worksheet pipeline integráció
-
-1) OrderNeedBuilder::build(headerId)
-
-2) WorksheetBuilder::fromOrderNeed()
-
-3) Worksheet UI (később)
-
-------------------------------------------------------------------------
-
-⭐ 5) Részletes implementációs / patching terv
-
-(DROP‑IN, PATCH‑ALAPÚ, végrehajtható)
-
-PATCH 1 — OrderHeaderPanel mezők + layout
-
--   új mezők létrehozása
--   layout összeállítása
--   objectName-ek beállítása
-
-PATCH 2 — OrderHeaderPanel binding API
-
--   setHeader(const OrderHeader&)
--   OrderHeader toHeader() const
-
-PATCH 3 — OrderHeaderPanel validáció
-
--   customerName kötelező
--   status kötelező
--   date mezők validálása
-
-PATCH 4 — OrderItemTable oszlopok
-
--   model + delegatek
--   comboboxok feltöltése registryből
-
-PATCH 5 — OrderItemTable binding API
-
--   setItems()
--   toItems()
-
-PATCH 6 — Save workflow
-
--   headerPanel → registry.update
--   itemTable → registry.update
-
-PATCH 7 — Load workflow
-
--   registry.findById
--   registry.findByOrderId
--   UI frissítés
-
-PATCH 8 — Filter mezők
-
--   UI mezők
--   findAll lambda
-
-PATCH 9 — StringCache implementáció
-
--   cache osztály
--   feltöltés
--   QCompleter
-
-PATCH 10 — Worksheet pipeline integráció
-
--   OrderNeedBuilder
--   WorksheetBuilder
--   UI hook
-
-------------------------------------------------------------------------
-
-
----
----
----
-
-orders/registry/order_header_registry.h
-orders/registry/order_header_registry.cpp
-
-orders/registry/order_item_registry.h
-orders/registry/order_item_registry.cpp
-
-calculation/service/order_need_builder.h
-calculation/service/order_need_builder.cpp
-
-calculation/service/worksheet_builder.h
-calculation/service/worksheet_builder.cpp
-
-# TODO:
-# orders/service/string_cache.h
-# orders/service/string_cache.cpp
-
-orders/registry/order_header_registry.h
-orders/registry/order_item_registry.h
-
-workbench/view/bom/bom_workbench.h
-workbench/view/bom/bom_workbench.cpp
-
-common/registry/base/registry_engine_base.h
-common/registry/mixins/crud_workflow_mixin.h
-common/registry/mixins/connection_workflow_mixin.h
-
-products/registry/product_registry.h
-products/registry/product_registry.cpp
-
-materials/registry/material_registry.h
-materials/registry/material_registry.cpp
-
-common/logger/logger.h
-common/logger/logger.cpp
-
-common/logger/logger_gui.h
-common/logger/logger_gui.cpp
-
-common/logger/event_logger.h
-common/logger/event_logger.cpp
-
-common/logger/log_manager.h
-common/logger/log_manager.cpp
-
+Ha szeretnéd, a következő körben megírhatjuk konkrétan a
+i_workbench_custom_state.h és a WorkbenchStateManager új metódusainak
+kódját, drop‑in diff formában.

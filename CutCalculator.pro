@@ -79,6 +79,8 @@ SOURCES += \
     calculation/service/need_calculator.cpp \
     calculation/view/calculation_mode_detail_view.cpp \
     calcmodes/view/calculation_modes_view.cpp \
+    orders/manager/order_manager.cpp \
+    orders/presenter/order_workbench_presenter.cpp \
     orders/registry/order_header_registry.cpp \
     orders/registry/order_item_registry.cpp \
     orders/repository/order_header_repository.cpp \
@@ -145,8 +147,10 @@ SOURCES += \
     ui/adapters/log_view_adapter.cpp \
     workbench/view/bom/bom_workbench.cpp \
     workbench/view/materials/materials_workbench.cpp \
-    workbench/view/order/order_header_panel.cpp \
-    workbench/view/order/order_item_table.cpp \
+    orders/view/handler_side_dialog.cpp \
+    orders/view/order_header_list_panel.cpp \
+    orders/view/order_header_panel.cpp \
+    orders/view/order_item_table.cpp \
     workbench/view/order/order_workbench.cpp
 
 HEADERS += \
@@ -270,8 +274,10 @@ HEADERS += \
     calculation/service/need_calculator.h \
     calculation/view/calculation_mode_detail_view.h \
     calcmodes/view/calculation_modes_view.h \
+    orders/manager/order_manager.h \
     orders/model/order_header.h \
     orders/model/order_item.h \
+    orders/presenter/order_workbench_presenter.h \
     orders/registry/order_header_registry.h \
     orders/registry/order_item_registry.h \
     orders/repository/order_header_repository.h \
@@ -360,8 +366,10 @@ HEADERS += \
     ui/style/color_helper.h \
     workbench/view/bom/bom_workbench.h \
     workbench/view/materials/materials_workbench.h \
-    workbench/view/order/order_header_panel.h \
-    workbench/view/order/order_item_table.h \
+    orders/view/handler_side_dialog.h \
+    orders/view/order_header_list_panel.h \
+    orders/view/order_header_panel.h \
+    orders/view/order_item_table.h \
     workbench/view/order/order_workbench.h
 
 FORMS += \
