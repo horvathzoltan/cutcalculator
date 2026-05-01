@@ -14,6 +14,7 @@ public:
 
     QUuid selectedOrderId() const;
     void selectById(const QUuid& id);
+    void silentSelectById(const QUuid& id);
 
     void refresh();
 

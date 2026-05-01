@@ -1,5 +1,4 @@
 #include "order_workbench.h"
-#include "common/ui_state/widget_state_manager.h"
 #include <QTimer>
 #include <common/ui_state/workbench_state_manager.h>
 
@@ -17,10 +16,13 @@ OrderWorkbench::OrderWorkbench(QWidget* parent)
     // Toolbar
     buildToolbar();
 
-    auto newAction = _toolbar->actions()[0];
-    auto saveAction = _toolbar->actions()[1];
-    auto loadAction = _toolbar->actions()[2];
-    auto deleteAction = _toolbar->actions()[3];
+    const auto& actions = _toolbar->actions();
+
+    auto newAction    = actions.at(0);
+    auto saveAction   = actions.at(1);
+    auto loadAction   = actions.at(2);
+    auto deleteAction = actions.at(3);
+
 
     connect(newAction, &QAction::triggered, this, [this]() {
         _presenter->newOrder();
@@ -98,10 +100,34 @@ void OrderWorkbench::buildPanels()
     _rightSplitter->addWidget(_itemTable);
 }
 
+QVariantMap OrderWorkbench::saveCustomState() const
+{
+    QVariantMap m;
 
+    if (_listPanel) {
+        QUuid id = _listPanel->selectedOrderId();
+        if (!id.isNull())
+            m.insert("selectedOrderId", id.toString());
+    }
 
-// void OrderWorkbench::hideEvent(QHideEvent* e)
-// {
-//     // WorkbenchStateManager::instance().onTabDeactivated(this);
-//     // QWidget::hideEvent(e);
-// }
+    return m;
+}
+
+void OrderWorkbench::restoreCustomState(const QVariantMap& state)
+{
+    if (!_listPanel)
+        return;
+
+    QSignalBlocker b1(_listPanel);
+
+    const QString idStr = state.value("selectedOrderId").toString();
+    if (idStr.isEmpty())
+        return;
+
+    QUuid id(idStr);
+    if (id.isNull())
+        return;
+
+    _listPanel->silentSelectById(id);
+}
+

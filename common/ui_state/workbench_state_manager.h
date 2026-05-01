@@ -85,4 +85,6 @@ private:
 
     explicit WorkbenchStateManager(QObject* parent = nullptr);
     QString findIdByWidget(QWidget* wb) const;
+    QVariantMap loadCustomState(const QString& id);
+    void saveCustomState(const QString& id, const QVariantMap& state);
 };

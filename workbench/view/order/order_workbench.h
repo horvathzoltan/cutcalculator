@@ -4,6 +4,8 @@
 #include <QToolBar>
 #include <QVBoxLayout>
 
+#include <common/ui_state/i_workbench_custom_state.h>
+
 #include "orders/view/order_header_panel.h"
 #include "orders/view/order_item_table.h"
 #include "orders/view/order_header_list_panel.h"
@@ -14,7 +16,7 @@
 
 
 
-class OrderWorkbench : public QWidget {
+class OrderWorkbench : public QWidget, public IWorkbenchCustomState  {
     Q_OBJECT
 public:
     explicit OrderWorkbench(QWidget* parent = nullptr);
@@ -42,5 +44,8 @@ private:
     //     void hideEvent(QHideEvent* e) override;
 
 
+public:
+    QVariantMap saveCustomState() const override;
+    void restoreCustomState(const QVariantMap& state) override;
 
 };

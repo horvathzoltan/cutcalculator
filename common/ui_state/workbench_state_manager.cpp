@@ -1,9 +1,11 @@
+#include "widget_state_settings.h"
 #include "workbench_state_manager.h"
 #include "common/logger/logger.h"
 #include "common/ui_state/widget_state_manager.h"
 #include <QCoreApplication>
 #include <QTimer>
 #include <QWidget>
+#include <common/window_state/window_state_manager.h>
 
 WorkbenchStateManager& WorkbenchStateManager::instance() {
     static WorkbenchStateManager inst;
@@ -96,3 +98,47 @@ QString WorkbenchStateManager::findIdByWidget(QWidget* wb) const
     }
     return {};
 }
+
+QVariantMap WorkbenchStateManager::loadCustomState(const QString& id)
+{
+    QVariantMap result;
+
+    WidgetStateSettings s(id);
+    const QVariantMap& map = s.map();
+
+    const QString prefix = "customState/";
+
+    for (auto it = map.begin(); it != map.end(); ++it) {
+        if (it.key().startsWith(prefix)) {
+            const QString subKey = it.key().mid(prefix.size());
+            result.insert(subKey, it.value());
+        }
+    }
+
+    return result;
+}
+
+void WorkbenchStateManager::saveCustomState(const QString& id, const QVariantMap& state)
+{
+    WidgetStateSettings s(id);
+    QVariantMap& map = s.map();
+
+    const QString prefix = "customState/";
+
+    // előző customState törlése
+    QStringList toRemove;
+    for (auto it = map.begin(); it != map.end(); ++it) {
+        if (it.key().startsWith(prefix))
+            toRemove << it.key();
+    }
+    for (const QString& k : toRemove)
+        map.remove(k);
+
+    // új értékek írása
+    for (auto it = state.begin(); it != state.end(); ++it) {
+        map.insert(prefix + it.key(), it.value());
+    }
+
+    s.save();
+}
+

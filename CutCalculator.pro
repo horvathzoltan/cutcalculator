@@ -178,6 +178,7 @@ HEADERS += \
     calculation/service/worksheet_builder.h \
     common/logger/log_archiver.h \
     common/registry/mixins/simple_lookup_mixin.h \
+    common/ui_state/i_workbench_custom_state.h \
     common/ui_state/widget_discovery_helper.h \
     common/ui_state/widget_state_manager.h \
     common/ui_state/widget_state_settings.h \

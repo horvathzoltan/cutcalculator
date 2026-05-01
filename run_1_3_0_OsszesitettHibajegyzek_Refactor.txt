@@ -1,326 +1,216 @@
-Oké, akkor csináljunk ebből egy tiszta, auditálható PATCH 22 tervet –
-lépésről lépésre.
+Zoltán, akkor összerakom pontosan azt a tervet, amit kérsz:
+
+-   pontonkénti, auditálható fejlesztési terv
+-   új OrderItem műveletekhez (Add / Edit / Delete)
+-   toolbar‑ral
+-   utolsó előtti pont: minimális, de teljes files.txt a .pro alapján
+-   utolsó pont: patching terv (minden lépés snippet‑képes)
+
+Ez lesz a PATCH 23 – OrderItem műveletek (Add / Edit / Delete) teljes,
+auditálható terve.
 
 ------------------------------------------------------------------------
 
-1. Cél és scope – mit hoz PATCH 22?
+⭐ PATCH 23 – OrderItem műveletek (Add / Edit / Delete)
 
-Fókusz: belső workbench‑állapot mentése / visszaállítása, nem
-UI‑geometria.
-
-Konkrétan az OrderWorkbench esetén:
-
--   utolsó kiválasztott rendelés ID mentése
--   (később bővíthető) szűrő / kereső állapot mentése
--   mindez ini‑ben, a meglévő UI snapshot mellett, külön prefix alatt
--   restore eseményblokkolással, hogy ne „robotizáljuk” a workbenchet
-
-A WorkbenchStateManager:
-
--   marad UI snapshot manager
--   kiegészül egy „custom state” réteggel (kulcs‑érték alapú, ini‑ben)
+Auditálható, pontonkénti fejlesztési terv
 
 ------------------------------------------------------------------------
 
-2. Döntés: közös ini, külön prefix
+1) Cél és scope
 
--   Ugyanaz az ini, amit a WidgetStateManager és a WorkbenchStateManager
-    már használ.
+A jelenlegi OrderItemTable:
 
--   Külön namespace / prefix a custom state-nek, pl.:
+-   csak megjelenít
+-   csak szerkeszt
+-   nem tud új sort felvenni
+-   nem tud sort törölni
+-   nincs toolbar
+-   nincs Presenter oldali támogatás
 
-    -   order_workbench/customState/selectedOrderId
-    -   order_workbench/customState/filterCustomer
-    -   stb.
+A PATCH 23 célja:
 
-Előnyök:
-
--   egy workbench = egy logikai namespace
--   snapshot + custom state nem keveredik, de együtt él
--   minimális diff, nincs új fájlformátum, nincs új storage‑réteg
-
-------------------------------------------------------------------------
-
-3. IWorkbenchCustomState interface – a szerződés
-
-Új interface, amit bármely workbench implementálhat, ha custom state‑et
-akar:
-
-    class IWorkbenchCustomState {
-    public:
-        virtual ~IWorkbenchCustomState() = default;
-
-        virtual QVariantMap saveCustomState() const = 0;
-        virtual void restoreCustomState(const QVariantMap& state) = 0;
-    };
-
-Elv:
-
--   Workbench tudja, mit akar menteni (ID, filter, search, stb.)
--   Workbench tudja, hogyan kell visszaállítani
--   WorkbenchStateManager csak tárol, nem értelmez
+-   Add Item – új üres OrderItem hozzáadása
+-   Delete Item – kijelölt sor törlése
+-   Edit Item – már működik, marad
+-   Auto‑empty row – mindig legyen legalul egy üres sor
+-   Toolbar – Add / Delete gombokkal
+-   Presenter integráció – domain műveletekhez kötve
+-   OrderManager integráció – új OrderItem létrehozása, törlése
 
 ------------------------------------------------------------------------
 
-4. WorkbenchStateManager bővítése – custom state API
+2) UX / UI döntések
 
-4.1. Public API bővítése
+Toolbar gombok:
 
-    class WorkbenchStateManager : public QObject {
-        Q_OBJECT
-    public:
-        static WorkbenchStateManager& instance();
+-   ➕ Add item
+-   ❌ Delete item
 
-        void registerWorkbench(const QString& id, QWidget* wb);
-        void onTabActivated(QWidget* wb);
-        void onTabDeactivated(QWidget* wb, bool immediate = false);
+A toolbar a jobb oldali panel tetején lesz, közvetlenül az
+OrderItemTable felett.
 
-        void beginClosing();
-        bool isShown(QWidget *wb);
+Viselkedés:
 
-    private:
-        // ...
-        QVariantMap loadCustomState(const QString& id);
-        void saveCustomState(const QString& id, const QVariantMap& state);
-    };
-
-4.2. Implementáció (ini‑alapú, a meglévő settings infra fölött)
-
-A WidgetStateSettings / SettingsStore / SettingsManager mintájára:
-
--   loadCustomState(id):
-    -   beolvassa az id + "/customState/..." alatti kulcsokat
-    -   QVariantMap-ként adja vissza
--   saveCustomState(id, state):
-    -   kiírja az id + "/customState/..." alá a kulcsokat
-
-Kulcsminta:
-
--   id + "/customState/selectedOrderId"
--   id + "/customState/filterCustomer"
+-   Add → új üres sor + automatikus scroll
+-   Delete → kijelölt sor törlése (ha van)
+-   Auto‑empty row → ha az utolsó sor nem üres, automatikusan létrejön
+    egy új üres sor
 
 ------------------------------------------------------------------------
 
-5. WorkbenchStateManager – integráció a tab‑aktiválási ciklusba
+3) Domain döntések
 
-5.1. onTabActivated – restore sorrend
+Az OrderItem:
 
-Most:
+-   rendelkezik saját ID‑val (QUuid)
+-   a repository kezeli a CRUD műveleteket
+-   a Presenter a domain API‑t hívja
+-   a UI csak a táblát kezeli
 
--   csak WidgetStateManager(id).restoreWidgetState(wb);
+Ezért:
 
-Ezután:
-
-    void WorkbenchStateManager::onTabActivated(QWidget* wb) {
-        if (_closing)
-            return;
-
-        QString id = findIdByWidget(wb);
-        if (id.isEmpty())
-            return;
-
-        auto& info = _workbenches[id];
-        if (!info.wasShown) {
-            WidgetStateManager c(id);
-            c.restoreWidgetState(wb);
-
-            // Custom state restore
-            if (auto* cs = qobject_cast<IWorkbenchCustomState*>(wb)) {
-                QVariantMap m = loadCustomState(id);
-                cs->restoreCustomState(m);
-            }
-
-            info.wasShown = true;
-        }
-    }
-
-5.2. onTabDeactivated – save sorrend
-
-Most:
-
--   csak WidgetStateManager(id).saveWidgetState(wb);
-
-Ezután:
-
-    auto doSave = [id, wb]() {
-        WidgetStateManager c(id);
-        c.saveWidgetState(wb);
-
-        if (auto* cs = qobject_cast<IWorkbenchCustomState*>(wb)) {
-            QVariantMap m = cs->saveCustomState();
-            saveCustomState(id, m);
-        }
-    };
+-   Add → Presenter.createItem(orderId)
+-   Delete → Presenter.deleteItem(itemId)
+-   Edit → már működik (Presenter.saveOrder() kezeli)
 
 ------------------------------------------------------------------------
 
-6. OrderWorkbench – IWorkbenchCustomState implementáció
+4) OrderItemTable bővítése
 
-6.1. Header módosítás
+Új metódusok:
 
-    class OrderWorkbench : public QWidget, public IWorkbenchCustomState {
-        Q_OBJECT
-    public:
-        explicit OrderWorkbench(QWidget* parent = nullptr);
-
-    protected:
-        void hideEvent(QHideEvent* e) override;
-
-    public:
-        QVariantMap saveCustomState() const override;
-        void restoreCustomState(const QVariantMap& state) override;
-
-    private:
-        // ...
-    };
-
-6.2. saveCustomState – mit mentünk első körben?
-
-MVP:
-
--   utolsó kiválasztott rendelés ID
-
-    QVariantMap OrderWorkbench::saveCustomState() const
-    {
-        QVariantMap m;
-        if (_listPanel) {
-            QUuid id = _listPanel->selectedOrderId();
-            if (!id.isNull())
-                m["selectedOrderId"] = id.toString();
-        }
-        return m;
-    }
-
-6.3. restoreCustomState – biztonságos visszaállítás
-
-    void OrderWorkbench::restoreCustomState(const QVariantMap& state)
-    {
-        if (!_listPanel)
-            return;
-
-        QSignalBlocker b1(_listPanel);
-
-        const QString idStr = state.value("selectedOrderId").toString();
-        if (idStr.isEmpty())
-            return;
-
-        QUuid id(idStr);
-        if (id.isNull())
-            return;
-
-        _listPanel->selectById(id);
-    }
-
-Fontos:
-
--   csak ID‑t állítunk vissza
--   nincs Presenter hívás innen
--   a selectById() belsőleg válthat orderSelected signalt → ezt később
-    finomíthatjuk (pl. külön „silentSelectById” API-val), de első körben
-    elég, ha a QSignalBlocker a ListPanel szintjén blokkolja a
-    jelzéseket.
+-   addEmptyRow()
+-   deleteSelectedRow()
+-   ensureEmptyRowAtBottom()
+-   keyPressEvent() override (Enter → új sor)
 
 ------------------------------------------------------------------------
 
-7. OrderHeaderListPanel – publikus API a kiválasztáshoz
+5) OrderWorkbenchPresenter bővítése
 
-Ha még nincs, kell:
+Új metódusok:
 
-    class OrderHeaderListPanel : public QWidget {
-        Q_OBJECT
-    public:
-        QUuid selectedOrderId() const;
-        void selectById(const QUuid& id);
+-   addItem()
+-   deleteItem(const QUuid& itemId)
 
-    signals:
-        void orderSelected(const QUuid& id);
-
-    private:
-        QTableWidget* _table = nullptr;
-        // ...
-    };
-
-selectById implementációja már megbeszélt:
-
--   végigmegy a sorokon
--   UserRole‑ban tárolt ID alapján kiválasztja a sort
+Ezek hívják az OrderManager megfelelő metódusait.
 
 ------------------------------------------------------------------------
 
-8. Implementációs terv + files.txt
+6) OrderManager bővítése
 
-8.1. Lépésenkénti implementációs terv
+Új metódusok:
 
-1.  Komment WorkbenchStateManager elé
-    – amit már megfogalmaztunk: tisztázza, hogy UI snapshot manager, nem
-    belső state manager.
+-   createItem(orderId)
+-   deleteItem(itemId)
 
-2.  IWorkbenchCustomState interface létrehozása
-
-    -   új header: pl. common/ui_state/i_workbench_custom_state.h
-
-3.  WorkbenchStateManager bővítése
-
-    -   loadCustomState(id) + saveCustomState(id, state) privát
-        metódusok
-    -   onTabActivated + onTabDeactivated módosítása a custom state
-        hívásokkal
-
-4.  OrderWorkbench módosítása
-
-    -   öröklődés IWorkbenchCustomState-ből
-    -   saveCustomState() + restoreCustomState() implementálása
-    -   (opcionális) a korábbi hideEvent-es WidgetStateManager hívások
-        eltávolítása, ha még maradtak
-
-5.  OrderHeaderListPanel API ellenőrzése / bővítése
-
-    -   selectedOrderId()
-    -   selectById(const QUuid&)
-
-6.  Build + manuális teszt
-
-    -   Order tab megnyit → kiválasztasz egy rendelést → kilépés →
-        újraindítás → tab restore után ellenőrzöd, hogy ugyanaz az order
-        van fókuszban.
-
-7.  Későbbi bővítés (nem része most a patchnek, de előkészítve):
-
-    -   filter mezők mentése (filterCustomer, filterStatus, stb.)
-    -   keresőmező mentése
-    -   ezek hozzáadása a saveCustomState / restoreCustomState-hez
+Mindkettő a repository‑t hívja.
 
 ------------------------------------------------------------------------
 
-8.2. files.txt – minimális, de teljes fájllista PATCH 22-höz
+7) OrderWorkbench UI bővítése
 
-    common/ui_state/workbench_state_manager.h
-    common/ui_state/workbench_state_manager.cpp
+A jobb oldali panel tetejére új toolbar:
 
-    common/ui_state/widget_state_manager.h
-    common/ui_state/widget_state_manager.cpp
-    common/ui_state/widget_state_settings.h
-    common/ui_state/widget_state_settings.cpp
+-   Add item
+-   Delete item
 
-    common/ui_state/i_workbench_custom_state.h    # ÚJ FILE
-
-    orders/view/order_header_list_panel.h
-    orders/view/order_header_list_panel.cpp
-
-    workbench/view/order/order_workbench.h
-    workbench/view/order/order_workbench.cpp
-
-    common/settings/settings_store.h
-    common/settings/settings_store.cpp
-    common/settings/settings_manager.h
-    common/settings/settings_manager.cpp
-
-(Ezek közül a settings‑es fájlok csak akkor kellenek, ha a custom state
-mentéséhez közvetlenül használod őket; ha a WidgetStateSettings már ad
-egy kész QSettings‑réteget, akkor elég azt használni.)
+A gombok a Presenter metódusait hívják.
 
 ------------------------------------------------------------------------
 
-Ha szeretnéd, a következő körben megírhatjuk konkrétan a
-i_workbench_custom_state.h és a WorkbenchStateManager új metódusainak
-kódját, drop‑in diff formában.
+8) Integrációs sorrend
+
+1.  OrderItemTable – UI logika
+2.  Presenter – domain hívások
+3.  Manager – repository hívások
+4.  Workbench – toolbar + connect
+5.  Teszt:
+    -   új order → add item → edit → save
+    -   load order → delete item → save
+    -   auto‑empty row működik
+
+------------------------------------------------------------------------
+
+⭐ 9) files.txt – minimális, de teljes lista a fejlesztéshez
+
+A .pro alapján csak a szükséges fájlok:
+
+orders/view/order_item_table.h
+orders/view/order_item_table.cpp
+
+orders/view/order_workbench.h
+orders/view/order_workbench.cpp
+
+orders/presenter/order_workbench_presenter.h
+orders/presenter/order_workbench_presenter.cpp
+
+orders/manager/order_manager.h
+orders/manager/order_manager.cpp
+
+orders/model/order_item.h
+orders/repository/order_item_repository.h
+orders/repository/order_item_repository.cpp
+orders/registry/order_item_registry.h
+
+Ez a lista minimális, de teljes ahhoz, hogy:
+
+-   UI
+-   Presenter
+-   Manager
+-   Domain
+-   Repository
+
+oldalon végig tudd vezetni az Add / Edit / Delete műveleteket.
+
+------------------------------------------------------------------------
+
+⭐ 10) PATCHING TERV (drop‑in, snippet‑képes)
+
+Ez az utolsó pont, ahogy kérted.
+
+PATCH 23.1 – OrderItemTable UI bővítése
+
+-   addEmptyRow()
+-   deleteSelectedRow()
+-   ensureEmptyRowAtBottom()
+-   keyPressEvent override
+
+PATCH 23.2 – OrderWorkbench toolbar bővítése
+
+-   új toolbar
+-   addItemAction
+-   deleteItemAction
+-   connect → Presenter
+
+PATCH 23.3 – Presenter bővítése
+
+-   addItem()
+-   deleteItem(itemId)
+-   UI refresh
+
+PATCH 23.4 – OrderManager bővítése
+
+-   createItem(orderId)
+-   deleteItem(itemId)
+
+PATCH 23.5 – Repository bővítése
+
+-   insert
+-   delete
+-   load by orderId
+
+PATCH 23.6 – Integrációs teszt
+
+-   új order → add item → save
+-   load → delete item → save
+-   auto‑empty row működik
+
+------------------------------------------------------------------------
+
+⭐ Kész a teljes, auditálható PATCH 23 fejlesztési terv.
+
+Ha szeretnéd, most indulhat a PATCH 23.1 – OrderItemTable UI bővítése:
+
+👉 PATCH 23.1 – OrderItemTable addEmptyRow() implementálása

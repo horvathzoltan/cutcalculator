@@ -131,6 +131,12 @@ void OrderHeaderListPanel::selectById(const QUuid& id)
     }
 }
 
+void OrderHeaderListPanel::silentSelectById(const QUuid& id)
+{
+    QSignalBlocker b1(_table);
+    selectById(id);
+}
+
 void OrderHeaderListPanel::refresh()
 {
     rebuildList();
