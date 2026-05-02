@@ -115,3 +115,17 @@ bool OrderManager::deleteOrder(const QUuid& id)
     emit orderDeleted(id);
     return true;
 }
+
+bool OrderManager::createItem(const OrderItem& it)
+{
+    auto& reg = OrderItemRegistry::instance();
+    return reg.insert(it);
+}
+
+bool OrderManager::deleteItem(const QUuid& itemId)
+{
+    auto& reg = OrderItemRegistry::instance();
+    return reg.remove(itemId);
+}
+
+

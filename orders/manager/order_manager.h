@@ -20,6 +20,9 @@ public:
 
     bool deleteOrder(const QUuid& id);
 
+    bool createItem(const OrderItem& it);
+    bool deleteItem(const QUuid& itemId);
+
 signals:
     void orderSaved(const QUuid& id);
     void orderDeleted(const QUuid& id);

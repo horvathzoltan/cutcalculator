@@ -1,5 +1,6 @@
 #pragma once
 #include <QObject>
+#include <QToolBar>
 #include <QUuid>
 
 #include "orders/model/order_header.h"
@@ -23,6 +24,10 @@ public:
     void saveOrder();
     void deleteOrder();
     void refreshListAndSelect(const QUuid& id);
+
+    void addItem();
+    void deleteItem();
+    QToolBar* buildItemToolbar(QWidget* parent);
 
 private:
     OrderHeaderPanel* _headerPanel = nullptr;

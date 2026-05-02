@@ -182,13 +182,18 @@ QToolBar* BOMWorkbench::buildMaterialToolbar(QWidget* parent, MaterialRequiremen
 QToolBar* BOMWorkbench::buildModesToolbar(QWidget* parent, CalculationModesView* view)
 {
     Q_UNUSED(view);
-    return _modesPresenter->buildToolbar(parent);
+    auto* tb = _modesPresenter->buildToolbar(parent);
+    tb->setObjectName("bom_modes_toolbar");
+    return tb;
 }
 
 QToolBar* BOMWorkbench::buildDetailsToolbar(QWidget* parent, CalculationModeDetailView* view)
 {
     Q_UNUSED(view);
-    return _detailPresenter->buildToolbar(parent);
+    auto* tb = _detailPresenter->buildToolbar(parent);
+    tb->setObjectName("bom_details_toolbar");
+    return tb;
+
 }
 
 // void BOMWorkbench::hideEvent(QHideEvent* e)

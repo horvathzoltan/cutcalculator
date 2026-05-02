@@ -37,6 +37,9 @@ private:
     // Toolbar
     QToolBar* _toolbar = nullptr;
 
+    QToolBar* _itemToolbar = nullptr;
+    // régi item toolbar actionök eltávolítva
+
     // Builders
     void buildToolbar();
     void buildPanels();

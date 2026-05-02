@@ -91,3 +91,77 @@ void OrderWorkbenchPresenter::deleteOrder()
     _manager->deleteOrder(_currentOrderId);
     newOrder();
 }
+
+void OrderWorkbenchPresenter::addItem()
+{
+    if (_currentOrderId.isNull())
+        return;
+
+    // 1) Header kell az ownerName miatt
+    OrderHeader h = _headerPanel->toHeader(_currentOrderId);
+
+    // 2) Jelenlegi tételek
+    QVector<OrderItem> items = _itemTable->toItems(_currentOrderId, h.customerName);
+
+    // 3) Új tétel
+    OrderItem it;
+    it.id = QUuid::createUuid();
+    it.orderId = _currentOrderId;
+    it.ownerName = h.customerName;
+    it.order_qty = 1;
+
+    items.append(it);
+
+    // 4) UI frissítés
+    _itemTable->setItems(items);
+
+    // 5) Scroll az utolsó sorra
+    _itemTable->scrollToBottom();
+}
+
+void OrderWorkbenchPresenter::deleteItem()
+{
+    if (_currentOrderId.isNull())
+        return;
+
+    auto items = _itemTable->selectedItems();
+    if (items.isEmpty())
+        return;
+
+    int row = items.first()->row();
+
+    // ID lekérése
+    QVariant idv = _itemTable->item(row, 0)->data(Qt::UserRole + 100);
+    if (!idv.isValid())
+        return;
+
+    QUuid itemId = idv.toUuid();
+    if (itemId.isNull())
+        return;
+
+    // Domain törlés
+    _manager->deleteItem(itemId);
+
+    // UI frissítés
+    QVector<OrderItem> refreshed = _manager->loadItems(_currentOrderId);
+    _itemTable->setItems(refreshed);
+}
+
+QToolBar* OrderWorkbenchPresenter::buildItemToolbar(QWidget* parent)
+{
+    auto* tb = new QToolBar(parent);
+
+    QAction* addAct    = tb->addAction(QStringLiteral("➕ Új tétel"));
+    QAction* removeAct = tb->addAction(QStringLiteral("🗑️ Tétel törlése"));
+
+    QObject::connect(addAct, &QAction::triggered, this, [this]() {
+        addItem();
+    });
+
+    QObject::connect(removeAct, &QAction::triggered, this, [this]() {
+        deleteItem();
+    });
+
+    return tb;
+}
+
