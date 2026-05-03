@@ -1,6 +1,7 @@
 #include "orders/presenter/order_workbench_presenter.h"
-
 #include <QMessageBox>
+#include "common/ui/crud/crud_toolbar_factory.h"
+#include "orders/registry/order_item_registry.h"
 
 OrderWorkbenchPresenter::OrderWorkbenchPresenter(OrderHeaderPanel* headerPanel,
                                                  OrderItemTable* itemTable,
@@ -147,21 +148,39 @@ void OrderWorkbenchPresenter::deleteItem()
     _itemTable->setItems(refreshed);
 }
 
+// QToolBar* OrderWorkbenchPresenter::buildItemToolbar(QWidget* parent)
+// {
+//     auto* tb = new QToolBar(parent);
+
+//     QAction* addAct    = tb->addAction(QStringLiteral("➕ Új tétel"));
+//     QAction* removeAct = tb->addAction(QStringLiteral("🗑️ Tétel törlése"));
+
+//     QObject::connect(addAct, &QAction::triggered, this, [this]() {
+//         addItem();
+//     });
+
+//     QObject::connect(removeAct, &QAction::triggered, this, [this]() {
+//         deleteItem();
+//     });
+
+//     return tb;
+// }
+
+
+
+
+
 QToolBar* OrderWorkbenchPresenter::buildItemToolbar(QWidget* parent)
 {
-    auto* tb = new QToolBar(parent);
+    CrudToolbarConfig cfg;
+    cfg.parent = parent;
+    cfg.actions = { CrudAction::Add, CrudAction::Delete };
+    cfg.callbacks.onAdd    = [this]() { addItem(); };
+    cfg.callbacks.onDelete = [this]() { deleteItem(); };
+    cfg.overlay = CrudOverlay::Enabled;
 
-    QAction* addAct    = tb->addAction(QStringLiteral("➕ Új tétel"));
-    QAction* removeAct = tb->addAction(QStringLiteral("🗑️ Tétel törlése"));
-
-    QObject::connect(addAct, &QAction::triggered, this, [this]() {
-        addItem();
-    });
-
-    QObject::connect(removeAct, &QAction::triggered, this, [this]() {
-        deleteItem();
-    });
-
+    auto* tb = CrudToolbarFactory::create<OrderItemRegistry>(cfg);
+    tb->setObjectName("order_item_toolbar");
     return tb;
 }
 

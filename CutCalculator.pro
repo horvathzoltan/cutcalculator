@@ -29,6 +29,7 @@ SOURCES += \
     calculation/service/order_need_builder.cpp \
     calculation/service/worksheet_builder.cpp \
     common/logger/log_archiver.cpp \
+    common/ui/crud/crud_toolbar_factory.cpp \
     common/ui_state/widget_discovery_helper.cpp \
     common/ui_state/widget_state_manager.cpp \
     common/ui_state/widget_state_settings.cpp \
@@ -178,6 +179,7 @@ HEADERS += \
     calculation/service/worksheet_builder.h \
     common/logger/log_archiver.h \
     common/registry/mixins/simple_lookup_mixin.h \
+    common/ui/crud/crud_toolbar_factory.h \
     common/ui_state/i_workbench_custom_state.h \
     common/ui_state/widget_discovery_helper.h \
     common/ui_state/widget_state_manager.h \
