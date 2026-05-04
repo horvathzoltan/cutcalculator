@@ -12,22 +12,6 @@ OrderWorkbench::OrderWorkbench(QWidget* parent)
     _layout = new QVBoxLayout(this);
     _layout->setContentsMargins(0, 0, 0, 0);
 
-    // Toolbar
-    buildToolbar();
-
-    const auto& actions = _toolbar->actions();
-
-    auto newAction    = actions.at(0);   // 🆕 Új rendelés
-    auto saveAction   = actions.at(1);   // 💾 Mentés
-    auto loadAction   = actions.at(2);   // 📂 Betöltés
-    auto deleteAction = actions.at(3);   // 🗑️ Törlés
-
-    // top toolbar connect-ek később kerülnek be – presenter még nem létezik
-
-    // _listPanel még nem létezik – connect később kerül be
-
-    _layout->addWidget(_toolbar);
-
     // Splitter
     _splitter = new QSplitter(Qt::Horizontal, this);
     _splitter->setObjectName("order_main_splitter");
@@ -58,56 +42,74 @@ OrderWorkbench::OrderWorkbench(QWidget* parent)
         this
         );
 
-    connect(newAction, &QAction::triggered, this, [this]() {
-        _presenter->newOrder();
-    });
+    // HEADER TOOLBAR ITT ÉPÜL – a headerek listája fölé kerül
+    auto* headerToolbar = _presenter->buildHeaderToolbar(_listPanel);
+    headerToolbar->setObjectName("order_header_toolbar");
+    if (auto* listLayout = qobject_cast<QVBoxLayout*>(_listPanel->layout())) {
+        listLayout->insertWidget(1, headerToolbar);
+    }
 
-    connect(saveAction, &QAction::triggered, this, [this]() {
-        _presenter->saveOrder();
-    });
-
-    connect(loadAction, &QAction::triggered, this, [this]() {
-        QUuid id = _listPanel->selectedOrderId();
-        if (!id.isNull())
-            _presenter->loadOrder(id);
-    });
-
-    connect(deleteAction, &QAction::triggered, this, [this]() {
-        _presenter->deleteOrder();
-    });
+    _presenter->refreshHeaderOverlay();
 
     // Presenter által épített item toolbar
     _itemToolbar = _presenter->buildItemToolbar(_rightSplitter);
     _itemToolbar->setObjectName("order_item_toolbar");
+
+    if (auto* itemContainer = _itemTable->parentWidget()) {
+        if (auto* itemLayout = qobject_cast<QVBoxLayout*>(itemContainer->layout())) {
+            itemLayout->insertWidget(0, _itemToolbar);
+        }
+    }
 
     // listPanel a splitterbe
     _splitter->addWidget(_listPanel);
     _splitter->addWidget(_rightSplitter);
 
     // itemToolbar beillesztése a buildPanels által létrehozott itemContainer layout elejére
-    if (auto* itemContainer = _itemTable->parentWidget()) {
-        if (auto* itemLayout = qobject_cast<QVBoxLayout*>(itemContainer->layout())) {
-            itemLayout->insertWidget(0, _itemToolbar);
-        }
-    }
+    // if (auto* itemContainer = _itemTable->parentWidget()) {
+    //     if (auto* itemLayout = qobject_cast<QVBoxLayout*>(itemContainer->layout())) {
+    //         itemLayout->insertWidget(0, _itemToolbar);
+    //     }
+    // }
 }
 
-void OrderWorkbench::buildToolbar()
-{
-    _toolbar = new QToolBar("Order Actions", this);
-    _toolbar->setObjectName("order_toolbar");
+// void OrderWorkbench::buildToolbar()
+// {
+//     _toolbar = new QToolBar("Order Actions", this);
+//     _toolbar->setObjectName("order_toolbar");
 
-    _toolbar->addAction("🆕 Új rendelés");
-    _toolbar->addAction("💾 Mentés");
-    _toolbar->addAction("📂 Betöltés");
-    _toolbar->addAction("🗑️ Törlés");
+//     _toolbar->addAction("🆕 Új rendelés");
+//     _toolbar->addAction("💾 Mentés");
+//     _toolbar->addAction("📂 Betöltés");
+//     _toolbar->addAction("🗑️ Törlés");
 
-}
+// }
 
 void OrderWorkbench::buildPanels()
 {
     _headerPanel = new OrderHeaderPanel(_rightSplitter);
     _headerPanel->setObjectName("order_header_panel");
+
+
+    // Placeholder a header panel helyére, ha nincs kiválasztott order
+    _headerPlaceholder = new QWidget(_rightSplitter);
+    auto* phLayout = new QVBoxLayout(_headerPlaceholder);
+    phLayout->setAlignment(Qt::AlignCenter);
+
+    auto* phLabel = new QLabel(
+        "📭 Nincs kiválasztott rendelés\n\n"
+        "A bal oldali listában válassz egy rendelést,\n"
+        "vagy kattints a „+ Új” gombra egy új rendelés létrehozásához.",
+        _headerPlaceholder
+        );
+    phLabel->setAlignment(Qt::AlignCenter);
+    phLabel->setStyleSheet("font-size: 16px; color: #666;");
+
+    phLayout->addWidget(phLabel);
+
+    // Alapértelmezetten a placeholder látszik
+    _headerPlaceholder->show();
+    _headerPanel->hide();
 
     _itemTable = new OrderItemTable(_rightSplitter);
     _itemTable->setObjectName("order_item_table");
@@ -115,15 +117,36 @@ void OrderWorkbench::buildPanels()
     _rightSplitter->addWidget(_headerPanel);
 
     auto* itemContainer = new QWidget(_rightSplitter);
+
+    // Placeholder az item tábla helyére, ha nincs kiválasztott order
+    _itemPlaceholder = new QWidget(_rightSplitter);
+    auto* iphLayout = new QVBoxLayout(_itemPlaceholder);
+    iphLayout->setAlignment(Qt::AlignCenter);
+
+    auto* iphLabel = new QLabel(
+        "📦 Nincsenek tételek\n\n"
+        "A tételek itt fognak megjelenni, miután létrehozol vagy kiválasztasz egy rendelést.",
+        _itemPlaceholder
+        );
+    iphLabel->setAlignment(Qt::AlignCenter);
+    iphLabel->setStyleSheet("font-size: 16px; color: #666;");
+
+    iphLayout->addWidget(iphLabel);
+
+    // Alapértelmezetten a placeholder látszik
+    _itemPlaceholder->show();
+    _itemTable->hide();
+
     auto* itemLayout = new QVBoxLayout(itemContainer);
     itemLayout->setContentsMargins(0,0,0,0);
     // itemToolbar a ctor-ban kerül beillesztésre (Presenter építi)
-
     itemLayout->addWidget(_itemTable);
-
     itemContainer->setLayout(itemLayout);
-
     _rightSplitter->addWidget(itemContainer);
+
+    // itemToolbar a Presenter által épül, itt illesztjük be a tábla fölé
+    // if (_itemToolbar)
+    //     itemLayout->insertWidget(0, _itemToolbar);
 
 }
 
@@ -158,3 +181,31 @@ void OrderWorkbench::restoreCustomState(const QVariantMap& state)
     _listPanel->silentSelectById(id);
 }
 
+
+void OrderWorkbench::showHeaderPlaceholder(bool show)
+{
+    if (!_headerPlaceholder || !_headerPanel)
+        return;
+
+    if (show) {
+        _headerPanel->hide();
+        _headerPlaceholder->show();
+    } else {
+        _headerPlaceholder->hide();
+        _headerPanel->show();
+    }
+}
+
+void OrderWorkbench::showItemPlaceholder(bool show)
+{
+    if (!_itemPlaceholder || !_itemTable)
+        return;
+
+    if (show) {
+        _itemTable->hide();
+        _itemPlaceholder->show();
+    } else {
+        _itemPlaceholder->hide();
+        _itemTable->show();
+    }
+}

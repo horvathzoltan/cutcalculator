@@ -141,3 +141,30 @@ void OrderHeaderListPanel::refresh()
 {
     rebuildList();
 }
+
+
+int OrderHeaderListPanel::visibleRowCount() const
+{
+    return _table ? _table->rowCount() : 0;
+}
+
+QUuid OrderHeaderListPanel::nextOrderIdAfter(const QUuid& id) const
+{
+    for (int row = 0; row < _table->rowCount(); ++row) {
+        auto* idItem = _table->item(row, 0);
+        if (!idItem)
+            continue;
+
+        if (idItem->data(Qt::UserRole).toString() == id.toString()) {
+            int nextRow = row + 1;
+            if (nextRow < _table->rowCount()) {
+                auto* nextItem = _table->item(nextRow, 0);
+                if (nextItem)
+                    return QUuid(nextItem->data(Qt::UserRole).toString());
+            }
+            return QUuid();
+        }
+    }
+    return QUuid();
+}
+

@@ -18,6 +18,8 @@ public:
 
     void refresh();
 
+    int visibleRowCount() const;
+    QUuid nextOrderIdAfter(const QUuid &id) const;
 signals:
     void orderSelected(const QUuid& id);
 

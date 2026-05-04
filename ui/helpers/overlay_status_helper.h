@@ -32,8 +32,8 @@ public:
     enum class State {
         EmptyRepo,
         NoVisibleRows,
-        Normal
-        //Incomplete
+        Normal,
+        Unknown
     };
 
 

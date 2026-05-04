@@ -15,6 +15,10 @@ public:
     {
         setBaseEmoji("📄"); // v2: unified document base emoji
         setObjectName(objectName);
+
+        // 🔥 Alapértelmezett állapot: UNKNOWN
+        setState(OverlayStatusHelper::State::Unknown);
+
         if(tb) tb->addWidget(this);
     }
 

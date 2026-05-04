@@ -52,4 +52,7 @@ OrderHeader OrderHeaderPanel::toHeader(const QUuid& id) const
     return h;
 }
 
-
+void OrderHeaderPanel::clear()
+{
+    setHeader(OrderHeader{}); // vagy explicit mező nullázás
+}

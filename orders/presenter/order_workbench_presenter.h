@@ -3,6 +3,8 @@
 #include <QToolBar>
 #include <QUuid>
 
+#include <ui/helpers/repository_overlay_widget.h>
+
 #include "orders/model/order_header.h"
 #include "orders/model/order_item.h"
 #include "orders/manager/order_manager.h"
@@ -28,12 +30,20 @@ public:
     void addItem();
     void deleteItem();
     QToolBar* buildItemToolbar(QWidget* parent);
+    QToolBar* buildHeaderToolbar(QWidget* parent);
+
+    void refreshHeaderOverlay();
+
+    void showHeaderPlaceholder(bool show);
 
 private:
     OrderHeaderPanel* _headerPanel = nullptr;
     OrderItemTable* _itemTable = nullptr;
     OrderManager* _manager = nullptr;
-    OrderHeaderListPanel* _listPanel = nullptr;
+    OrderHeaderListPanel* _listPanel = nullptr;    
+    RepositoryOverlayWidget<OrderItemRegistry>* _itemOverlay = nullptr;
+    RepositoryOverlayWidget<OrderHeaderRegistry>* _headerOverlay = nullptr;
 
     QUuid _currentOrderId;
+    void refreshListAndSelectNextAfter(const QUuid &deletedId);
 };

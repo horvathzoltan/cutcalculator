@@ -16,6 +16,7 @@ public:
     void setHeader(const OrderHeader& h);
     OrderHeader toHeader(const QUuid& id) const;
 
+    void clear();
 private:
     QFormLayout* _layout = nullptr;
 

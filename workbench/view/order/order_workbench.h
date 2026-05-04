@@ -20,7 +20,8 @@ class OrderWorkbench : public QWidget, public IWorkbenchCustomState  {
     Q_OBJECT
 public:
     explicit OrderWorkbench(QWidget* parent = nullptr);
-
+    void showHeaderPlaceholder(bool show);
+    void showItemPlaceholder(bool show);
 private:
     OrderWorkbenchPresenter* _presenter = nullptr;
     OrderManager* _orderManager = nullptr;
@@ -32,7 +33,10 @@ private:
 
     OrderHeaderListPanel* _listPanel = nullptr;
     OrderHeaderPanel* _headerPanel = nullptr;
+    QWidget* _headerPlaceholder = nullptr;
+
     OrderItemTable* _itemTable = nullptr;
+    QWidget* _itemPlaceholder = nullptr;
 
     // Toolbar
     QToolBar* _toolbar = nullptr;
@@ -41,7 +45,7 @@ private:
     // régi item toolbar actionök eltávolítva
 
     // Builders
-    void buildToolbar();
+    //void buildToolbar();
     void buildPanels();
     // protected:
     //     void hideEvent(QHideEvent* e) override;

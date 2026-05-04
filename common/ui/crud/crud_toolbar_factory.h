@@ -25,12 +25,17 @@ enum class CrudOverlay {
     Enabled
 };
 
+struct CrudToolbarResult {
+    QToolBar* toolbar;
+    QWidget* overlay;   // vagy konkrétan RepositoryOverlayWidget<RegistryT>*
+};
+
 // ------------------------------------------------------------
 // Konfig struktúra
 // ------------------------------------------------------------
 struct CrudToolbarConfig {
     QWidget* parent = nullptr;
-    QWidget* view   = nullptr;   // opcionális, ha később kell
+    QWidget* view   = nullptr;
 
     std::vector<CrudAction> actions;
 
@@ -52,10 +57,30 @@ struct CrudToolbarConfig {
 class CrudToolbarFactory {
 public:
     template<typename RegistryT>
-    static QToolBar* create(const CrudToolbarConfig& cfg)
+    static CrudToolbarResult create(const CrudToolbarConfig& cfg)
     {
-        auto* tb = new QToolBar(cfg.parent);
+        CrudToolbarResult result;
 
+        auto* tb = new QToolBar(cfg.parent);
+        result.toolbar = tb;
+
+        // --------------------------------------------------------
+        // 1) OVERLAY ELŐRE
+        // --------------------------------------------------------
+        RepositoryOverlayWidget<RegistryT>* overlayWidget = nullptr;
+
+        if (cfg.overlay == CrudOverlay::Enabled) {
+            overlayWidget = new RepositoryOverlayWidget<RegistryT>(
+                tb,
+                QStringLiteral("CrudToolbarOverlay")
+                );
+        }
+
+        result.overlay = overlayWidget;
+
+        // --------------------------------------------------------
+        // 2) CRUD ACTION BUTTONS
+        // --------------------------------------------------------
         QAction* addAct    = nullptr;
         QAction* delAct    = nullptr;
         QAction* renAct    = nullptr;
@@ -115,12 +140,6 @@ public:
             }
         }
 
-        // Opcionális overlay – RegistryT::instance().size() alapján
-        if (cfg.overlay == CrudOverlay::Enabled) {
-            // A widget magát hozzáadja a toolbarhoz a konstruktorban
-            new RepositoryOverlayWidget<RegistryT>(tb, QStringLiteral("CrudToolbarOverlay"));
-        }
-
-        return tb;
+        return result;
     }
 };
