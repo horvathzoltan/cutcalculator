@@ -34,7 +34,7 @@ public:
 
     void refreshHeaderOverlay();
 
-    void showHeaderPlaceholder(bool show);
+    //void showHeaderPlaceholder(bool show);
 
 private:
     OrderHeaderPanel* _headerPanel = nullptr;

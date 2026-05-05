@@ -198,7 +198,6 @@ void MainWindow::onWindowStable()
     QWidget* wb = ui->tabWidget->currentWidget();
     WorkbenchStateManager::instance().onTabActivated(wb); // ← SNAPSHOT RESTORE
 
-
     // 4) finalPlacementReached
     // snapshot mentés itt NINCS — a mentés csak stabilitás után történik (resize/move/change eventekben)
     emit finalPlacementReached();

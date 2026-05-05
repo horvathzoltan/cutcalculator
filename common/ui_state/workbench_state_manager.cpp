@@ -33,8 +33,17 @@ void WorkbenchStateManager::onTabActivated(QWidget* wb) {
 
     auto& info = _workbenches[id];
     if (!info.wasShown) {
+
+        // 1) Mindig restore
         WidgetStateManager c(id);
         c.restoreWidgetState(wb);
+
+        // 2) Ha van postRestoreFix, meghívjuk (NEM skip-el dönt)
+        int methodIndex = wb->metaObject()->indexOfMethod("postRestoreFix()");
+        if (methodIndex >= 0) {
+            QMetaObject::invokeMethod(wb, "postRestoreFix");
+        }
+
         info.wasShown = true;
     }
 }

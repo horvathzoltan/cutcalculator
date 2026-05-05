@@ -4,6 +4,8 @@
 #include "common/ui/crud/crud_toolbar_factory.h"
 #include "orders/registry/order_item_registry.h"
 #include "workbench/view/order/order_workbench.h"
+#include <common/ui_state/workbench_state_manager.h>
+#include "orders/registry/order_header_registry.h"
 
 OrderWorkbenchPresenter::OrderWorkbenchPresenter(OrderHeaderPanel* headerPanel,
                                                  OrderItemTable* itemTable,
@@ -16,8 +18,6 @@ OrderWorkbenchPresenter::OrderWorkbenchPresenter(OrderHeaderPanel* headerPanel,
     _manager(manager),
     _listPanel(listPanel)
 {
-    newOrder();
-
     // Manager jelek → Presenter
     connect(_manager, &OrderManager::orderSaved,
             this, &OrderWorkbenchPresenter::refreshListAndSelect);
@@ -43,8 +43,11 @@ void OrderWorkbenchPresenter::refreshListAndSelect(const QUuid& id)
     if (!_listPanel)
         return;
 
-    _listPanel->refresh();      // ⭐ publikus API
-    _listPanel->selectById(id); // ⭐ publikus API
+    _listPanel->refresh();
+    _listPanel->selectById(id);
+
+    if (auto* wb = qobject_cast<OrderWorkbench*>(parent()))
+        wb->updateUIState();
 
     if (_headerOverlay)
         _headerOverlay->refresh(_listPanel->visibleRowCount());
@@ -71,6 +74,10 @@ void OrderWorkbenchPresenter::refreshListAndSelectNextAfter(const QUuid& deleted
 
     if (_headerOverlay)
         _headerOverlay->refresh(_listPanel->visibleRowCount());
+
+    if (auto* wb = qobject_cast<OrderWorkbench*>(parent()))
+        wb->updateUIState();
+
 }
 
 
@@ -88,22 +95,28 @@ void OrderWorkbenchPresenter::newOrder()
     h.note = "";
     h.status = "NEW";
 
-    showHeaderPlaceholder(false);
+    // 1) HeaderPanel feltöltése
     _headerPanel->setHeader(h);
 
+    // 2) ItemTable ürítése
     _itemTable->setRowCount(0);
 
+    // 3) Lista frissítése és kiválasztás
+    _listPanel->refresh();
+    _listPanel->selectById(_currentOrderId);
+
+    // 4) UI állapot frissítése
     if (auto* wb = qobject_cast<OrderWorkbench*>(parent()))
-        wb->showItemPlaceholder(true);
+        wb->updateUIState();
 
-
+    // 5) Overlay frissítések
     if (_itemOverlay)
         _itemOverlay->refresh(0);
 
     if (_headerOverlay)
         _headerOverlay->refresh(_listPanel->visibleRowCount());
-
 }
+
 
 void OrderWorkbenchPresenter::loadOrder(const QUuid& id)
 {
@@ -112,12 +125,15 @@ void OrderWorkbenchPresenter::loadOrder(const QUuid& id)
         return;
 
     _currentOrderId = id;
-    showHeaderPlaceholder(false);
+    //showHeaderPlaceholder(false);
+    if (auto* wb = qobject_cast<OrderWorkbench*>(parent()))
+        wb->updateUIState();
+
     _headerPanel->setHeader(*headerOpt);
 
     QVector<OrderItem> items = _manager->loadItems(id);
     if (auto* wb = qobject_cast<OrderWorkbench*>(parent()))
-        wb->showItemPlaceholder(items.isEmpty());
+        wb->updateUIState();
 
     _itemTable->setItems(items);
 
@@ -145,7 +161,7 @@ void OrderWorkbenchPresenter::deleteOrder()
     _manager->deleteOrder(_currentOrderId);
 
     if (auto* wb = qobject_cast<OrderWorkbench*>(parent()))
-        wb->showItemPlaceholder(true);
+        wb->updateUIState();
 }
 
 
@@ -185,11 +201,12 @@ void OrderWorkbenchPresenter::addItem()
 
     items.append(it);
 
+    _itemTable->setItems(items);
+
     // 4) UI frissítés
     if (auto* wb = qobject_cast<OrderWorkbench*>(parent()))
-        wb->showItemPlaceholder(false);
+        wb->updateUIState();
 
-    _itemTable->setItems(items);
 
     // 5) Scroll az utolsó sorra
     _itemTable->scrollToBottom();
@@ -221,6 +238,10 @@ void OrderWorkbenchPresenter::deleteItem()
     // UI frissítés
     QVector<OrderItem> refreshed = _manager->loadItems(_currentOrderId);
     _itemTable->setItems(refreshed);
+
+    if (auto* wb = qobject_cast<OrderWorkbench*>(parent()))
+        wb->updateUIState();
+
 }
 
 QToolBar* OrderWorkbenchPresenter::buildItemToolbar(QWidget* parent)
@@ -231,6 +252,7 @@ QToolBar* OrderWorkbenchPresenter::buildItemToolbar(QWidget* parent)
     cfg.callbacks.onAdd    = [this]() { addItem(); };
     cfg.callbacks.onDelete = [this]() { deleteItem(); };
     cfg.overlay = CrudOverlay::Enabled;
+    cfg.labelPrefix = "tétel";
 
     // 🔥 ÚJ: a Factory most CrudToolbarResult‑ot ad vissza
     auto r = CrudToolbarFactory::create<OrderItemRegistry>(cfg);
@@ -261,6 +283,7 @@ QToolBar* OrderWorkbenchPresenter::buildHeaderToolbar(QWidget* parent)
     cfg.callbacks.onDelete = [this]() { deleteOrder(); };
     //cfg.callbacks.onRename = [this]() { renameOrder(); }; // ha kell
     cfg.overlay = CrudOverlay::Enabled;
+    cfg.labelPrefix = "rendelés";
 
     auto r = CrudToolbarFactory::create<OrderHeaderRegistry>(cfg);
 
@@ -277,22 +300,22 @@ void OrderWorkbenchPresenter::refreshHeaderOverlay()
 }
 
 
-void OrderWorkbenchPresenter::showHeaderPlaceholder(bool show)
-{
-    if (!_headerPanel || !_listPanel)
-        return;
+// void OrderWorkbenchPresenter::showHeaderPlaceholder(bool show)
+// {
+//     if (!_headerPanel || !_listPanel)
+//         return;
 
-    if (show) {
-        _headerPanel->hide();
-        if (auto* wb = qobject_cast<OrderWorkbench*>(parent())) {
-            wb->showHeaderPlaceholder(true);
-        }
+//     if (show) {
+//         _headerPanel->hide();
+//         if (auto* wb = qobject_cast<OrderWorkbench*>(parent())) {
+//             wb->showHeaderPlaceholder(true);
+//         }
 
-    } else {
-        if (auto* wb = qobject_cast<OrderWorkbench*>(parent())) {
-            wb->showHeaderPlaceholder(false);
-        }
+//     } else {
+//         if (auto* wb = qobject_cast<OrderWorkbench*>(parent())) {
+//             wb->showHeaderPlaceholder(false);
+//         }
 
-        _headerPanel->show();
-    }
-}
+//         _headerPanel->show();
+//     }
+// }

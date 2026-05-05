@@ -5,6 +5,7 @@
 #include <QAction>
 #include <functional>
 #include <vector>
+#include <QString>
 
 #include "ui/helpers/repository_overlay_widget.h"
 
@@ -49,6 +50,7 @@ struct CrudToolbarConfig {
     } callbacks;
 
     CrudOverlay overlay = CrudOverlay::None;
+    QString labelPrefix;
 };
 
 // ------------------------------------------------------------
@@ -90,13 +92,17 @@ public:
 
         for (auto action : cfg.actions) {
             switch (action) {
-            case CrudAction::Add:
-                addAct = tb->addAction(QStringLiteral("➕ Új"));
+            case CrudAction::Add: {
+                QString text = cfg.labelPrefix.isEmpty()
+                ? QStringLiteral("➕ Új")
+                : QStringLiteral("➕ Új %1").arg(cfg.labelPrefix);
+                addAct = tb->addAction(text);
                 if (cfg.callbacks.onAdd) {
                     QObject::connect(addAct, &QAction::triggered,
                                      tb, [cb = cfg.callbacks.onAdd]() { cb(); });
                 }
                 break;
+            }
 
             case CrudAction::Delete:
                 delAct = tb->addAction(QStringLiteral("🗑️ Törlés"));

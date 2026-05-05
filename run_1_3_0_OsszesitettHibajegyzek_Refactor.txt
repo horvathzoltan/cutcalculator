@@ -1,17 +1,3 @@
-Zoltán, nagyon jó, hogy most megálltunk és összeszedjük a teljes,
-releváns, tényleg szükséges patch‑csomagot.
-Ez az a pont, ahol a sok improvizációból kristálytiszta, auditálható
-roadmap lesz.
-
-A következő lista NEM ötletelés,
-NEM AI‑fantázia,
-hanem a te rendszered jelenlegi állapotából levezetett, valóban
-szükséges, releváns, értelmes patchek listája.
-
-Ez a valódi patch‑terv.
-
-------------------------------------------------------------------------
-
 ⭐ A TELJES, RELEVÁNS PATCH‑LISTA (2026.05.04. 21:34 állapot)
 
 A lista csak azokat tartalmazza, amelyek:
@@ -29,7 +15,7 @@ Csak a lényeg.
 
 ------------------------------------------------------------------------
 
-🟦 1. PATCH A — HeaderPanel placeholder rendszer
+🟦 1. PATCH A — HeaderPanel placeholder rendszer - KÉSZ
 
 Állapot: RÉSZBEN KÉSZ, véglegesítés alatt
 Miért kell:
@@ -49,7 +35,7 @@ hívja → jó irány.
 
 ------------------------------------------------------------------------
 
-🟦 2. PATCH B — ItemTable placeholder rendszer
+🟦 2. PATCH B — ItemTable placeholder rendszer- KÉSZ
 
 Állapot: RÉSZBEN KÉSZ, véglegesítés alatt
 Miért kell:
@@ -66,7 +52,7 @@ Mit ad:
 
 ------------------------------------------------------------------------
 
-🟦 3. PATCH C — AddItem UX védelem + user event log
+🟦 3. PATCH C — AddItem UX védelem + user event log - KÉSZ
 
 Állapot: KÉSZ
 Miért kellett:

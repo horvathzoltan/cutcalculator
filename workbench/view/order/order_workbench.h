@@ -20,8 +20,6 @@ class OrderWorkbench : public QWidget, public IWorkbenchCustomState  {
     Q_OBJECT
 public:
     explicit OrderWorkbench(QWidget* parent = nullptr);
-    void showHeaderPlaceholder(bool show);
-    void showItemPlaceholder(bool show);
 private:
     OrderWorkbenchPresenter* _presenter = nullptr;
     OrderManager* _orderManager = nullptr;
@@ -31,7 +29,10 @@ private:
     QSplitter* _splitter = nullptr;
     QSplitter* _rightSplitter = nullptr;
 
+    QWidget* _listContainer = nullptr;
     OrderHeaderListPanel* _listPanel = nullptr;
+    QWidget* _listPlaceholder = nullptr;
+
     OrderHeaderPanel* _headerPanel = nullptr;
     QWidget* _headerPlaceholder = nullptr;
 
@@ -42,6 +43,8 @@ private:
     QToolBar* _toolbar = nullptr;
 
     QToolBar* _itemToolbar = nullptr;
+    QWidget* _itemContainer = nullptr;
+
     // régi item toolbar actionök eltávolítva
 
     // Builders
@@ -49,10 +52,18 @@ private:
     void buildPanels();
     // protected:
     //     void hideEvent(QHideEvent* e) override;
+    void showHeaderPlaceholder(bool show);
+    void showItemPlaceholder(bool show);
 
 
 public:
     QVariantMap saveCustomState() const override;
     void restoreCustomState(const QVariantMap& state) override;
 
+    //void updateListPlaceholder();
+
+
+
+Q_INVOKABLE void postRestoreFix();
+    void updateUIState();
 };
