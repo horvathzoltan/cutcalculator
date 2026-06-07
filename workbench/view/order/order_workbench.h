@@ -22,13 +22,110 @@ public:
     explicit OrderWorkbench(QWidget* parent = nullptr);
 
     enum class State {
+
+        //
+        // 0) INITIAL EMPTY
+        // ------------------------------------------------------------------
+        // A rendszer teljesen üres:
+        //   • OrderHeaderRegistry üres (nincs egyetlen mentett rendelés sem)
+        //   • és a panelen sincs még header (originalOpt = nullopt)
+        //
+        // UI:
+        //   • bal oldali lista helyett placeholder
+        //   • header panel helyett placeholder
+        //   • item table helyett placeholder
+        //   • csak a “+ Új” gomb aktív
+        //
         InitialEmpty,
+
+
+        //
+        // 1) NEW HEADER EDITING
+        // ------------------------------------------------------------------
+        // Új rendelést hozunk létre, de MÉG NEM módosítottuk.
+        // Feltételek:
+        //   • registry üres VAGY a panelen lévő header ID nincs a registryben
+        //   • M = false (nincs módosítás)
+        //
+        // UI:
+        //   • header panel látszik
+        //   • lista és item table NEM látszik
+        //   • Save/Cancel NEM aktív
+        //
         NewHeaderEditing,
+
+
+        //
+        // 2) NEW HEADER EDITED
+        // ------------------------------------------------------------------
+        // Új rendelést hozunk létre, és MÁR módosítottuk.
+        // Feltételek:
+        //   • registry üres VAGY a panelen lévő header ID nincs a registryben
+        //   • M = true (van módosítás)
+        //
+        // UI:
+        //   • header panel látszik
+        //   • lista és item table NEM látszik
+        //   • Save/Cancel AKTÍV
+        //
         NewHeaderEdited,
+
+
+        //
+        // 3) LIST NO SELECTION
+        // ------------------------------------------------------------------
+        // A registry NEM üres, de a felhasználó nem választott ki semmit.
+        // Feltételek:
+        //   • registry nem üres
+        //   • originalOpt = nullopt (panel üres)
+        //
+        // UI:
+        //   • bal oldali lista látszik
+        //   • header panel helyett placeholder
+        //   • item table helyett placeholder
+        //
         ListNoSelection,
+
+
+        //
+        // 4) HEADER SELECTED
+        // ------------------------------------------------------------------
+        // Egy meglévő rendelés van kiválasztva, és NINCS módosítva.
+        // Feltételek:
+        //   • registry nem üres
+        //   • originalOpt létezik
+        //   • original.id megtalálható a registryben (E = true)
+        //   • M = false
+        //
+        // UI:
+        //   • lista látszik
+        //   • header panel látszik
+        //   • item table látszik
+        //   • Modify/Delete aktív
+        //   • Save/Cancel NEM aktív
+        //
         HeaderSelected,
+
+
+        //
+        // 5) HEADER EDITING
+        // ------------------------------------------------------------------
+        // Egy meglévő rendelést szerkesztünk, és MÓDOSULT.
+        // Feltételek:
+        //   • registry nem üres
+        //   • originalOpt létezik
+        //   • original.id megtalálható a registryben (E = true)
+        //   • M = true
+        //
+        // UI:
+        //   • lista látszik
+        //   • header panel látszik
+        //   • item table látszik
+        //   • Save/Cancel aktív
+        //
         HeaderEditing
     };
+
 
     struct UiState {
         bool listVisible;
