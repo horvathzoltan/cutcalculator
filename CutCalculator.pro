@@ -29,7 +29,6 @@ SOURCES += \
     calculation/service/order_need_builder.cpp \
     calculation/service/worksheet_builder.cpp \
     common/logger/log_archiver.cpp \
-    common/ui/crud/crud_toolbar_factory.cpp \
     common/ui_state/widget_discovery_helper.cpp \
     common/ui_state/widget_state_manager.cpp \
     common/ui_state/widget_state_settings.cpp \
@@ -152,7 +151,8 @@ SOURCES += \
     orders/view/order_header_list_panel.cpp \
     orders/view/order_header_panel.cpp \
     orders/view/order_item_table.cpp \
-    workbench/view/order/order_workbench.cpp
+    workbench/view/order/order_workbench.cpp \
+    workbench/view/order/order_workbench_ui_builder.cpp
 
 HEADERS += \
     barcodes/helpers/barcode_generator.h \
@@ -179,7 +179,10 @@ HEADERS += \
     calculation/service/worksheet_builder.h \
     common/logger/log_archiver.h \
     common/registry/mixins/simple_lookup_mixin.h \
+    common/ui/crud/actionmap.h \
     common/ui/crud/crud_toolbar_factory.h \
+    common/ui/crud/entity_toolbar_factory.h \
+    common/ui/crud/list_toolbar_factory.h \
     common/ui_state/i_workbench_custom_state.h \
     common/ui_state/widget_discovery_helper.h \
     common/ui_state/widget_state_manager.h \
@@ -373,7 +376,8 @@ HEADERS += \
     orders/view/order_header_list_panel.h \
     orders/view/order_header_panel.h \
     orders/view/order_item_table.h \
-    workbench/view/order/order_workbench.h
+    workbench/view/order/order_workbench.h \
+    workbench/view/order/order_workbench_ui_builder.h
 
 FORMS += \
     mainwindow.ui

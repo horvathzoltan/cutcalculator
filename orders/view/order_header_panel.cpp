@@ -32,27 +32,43 @@ void OrderHeaderPanel::setHeader(const OrderHeader& h)
     _note->setPlainText(h.note);
     _statusLabel->setText(h.status);
 
-    setProperty("headerId", h.id);
+    _original = h;
+    //_headerId = h.id;
 }
 
-OrderHeader OrderHeaderPanel::toHeader(const QUuid& id) const
+std::optional<OrderHeader> OrderHeaderPanel::header() const
 {
-    OrderHeader h;
+    if (!_original)
+        return std::nullopt;
 
-    QVariant idv = property("headerId");
-    h.id = idv.isValid() ? idv.toUuid() : id;
-
+    OrderHeader h = *_original;
     h.customerName = _customerName->text();
-    h.orderDate = QDate::fromString(_orderDateLabel->text(), Qt::ISODate);
+
+    QString txt = _orderDateLabel->text();
+    h.orderDate = txt.isEmpty() ? QDate() : QDate::fromString(txt, Qt::ISODate);
+
+    //h.orderDate = QDate::fromString(_orderDateLabel->text(), Qt::ISODate);
     h.deadline = _deadline->date();
     h.defaultExternalPrefix = _defaultExternalPrefix->text();
     h.note = _note->toPlainText();
     h.status = _statusLabel->text();
-
     return h;
 }
 
+
 void OrderHeaderPanel::clear()
 {
-    setHeader(OrderHeader{}); // vagy explicit mező nullázás
+    _original.reset();
+
+    _customerName->clear();
+    _orderDateLabel->setText("");
+    _deadline->setDate(QDate()); // üres dátum
+    _defaultExternalPrefix->clear();
+    _note->clear();
+    _statusLabel->clear();
 }
+
+QLineEdit* OrderHeaderPanel::customerNameEdit() const { return _customerName; }
+QDateEdit* OrderHeaderPanel::deadlineEdit() const { return _deadline; }
+QLineEdit* OrderHeaderPanel::defaultExternalPrefixEdit() const { return _defaultExternalPrefix; }
+QTextEdit* OrderHeaderPanel::noteEdit() const { return _note; }

@@ -100,22 +100,27 @@ void OrderHeaderListPanel::rebuildList()
     }
 }
 
-QUuid OrderHeaderListPanel::selectedOrderId() const
+std::optional<QUuid> OrderHeaderListPanel::selectedOrderId() const
 {
     if (!_table)
-        return QUuid();
+        return std::nullopt;
 
     auto items = _table->selectedItems();
     if (items.isEmpty())
-        return QUuid();
+        return std::nullopt;
 
     int row = items.first()->row();
     auto* idItem = _table->item(row, 0);
     if (!idItem)
-        return QUuid();
+        return std::nullopt;
 
-    return QUuid(idItem->data(Qt::UserRole).toString());
+    QUuid id(idItem->data(Qt::UserRole).toString());
+    if (id.isNull())
+        return std::nullopt;
+
+    return id;
 }
+
 
 void OrderHeaderListPanel::selectById(const QUuid& id)
 {

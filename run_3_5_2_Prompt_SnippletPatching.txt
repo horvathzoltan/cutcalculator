@@ -52,8 +52,7 @@ A snippet mindig két blokk:
 -   Ha a módosított blokkban volt komment → frissítem.
 -   Ha elavult → módosítom.
 -   Ha a logika része → megtartom.
--   Ha új logika kerül be → rövid kommentet adok hozzá, ha a fájl
-    stílusa is használ kommenteket.
+-   Ha új logika kerül be → ellátom rövid, tömör kommentekkel
 
 ------------------------------------------------------------------------
 
@@ -65,8 +64,8 @@ Ha teljesen új kódrészlet jön:
 -   Egyetlen ```cpp blokkban adom
 -   Előtte megadom:
     -   fájlnév
-    -   beszúrás helye
-    -   Qt Creator sablon javaslat
+    -   beszúrás helye, azaz az új fájl helye a projectben
+    -   Qt Creator sablon javaslat: osztály vagy .h only
 
 ------------------------------------------------------------------------
 
@@ -111,4 +110,3 @@ Minden snippet előtt megadom:
 -   a patch célját 1 mondatban
 
 ------------------------------------------------------------------------
-

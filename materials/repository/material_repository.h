@@ -34,6 +34,15 @@ private:
         QString colorStr; // 🎨 Opcionális színmező (RAL, HEX vagy üres)
         QString cuttingMode;
         QString paintingMode;
+
+        // ÚJ MEZŐK
+        QString trimStr;
+        QString minLeftOverStr;
+        QString scrapStr;
+        QString goodLeftOverMinStr;
+        QString goodLeftOverMaxStr;
+        QString externalCodeStr;
+        QString descriptionStr;
     };
 
     // --- Stage 1: Convert ---

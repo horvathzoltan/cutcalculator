@@ -29,10 +29,10 @@ MaterialRepository::convertRowToMaterialRow(const QVector<QString>& parts,
     if (parts.size() < 11) {
         ctx.addError(ctx.currentLineNumber(), "⚠️ Kevés mező (11 szükséges)");
         return std::nullopt;
-    } else if (parts.size() > 11) {
+    }/* else if (parts.size() > 11) {
         ctx.addError(ctx.currentLineNumber(), "⚠️ Túl sok mező (11 szükséges)");
         return std::nullopt;
-    }
+    }*/
 
     MaterialRow row;
     row.name        = parts[0].trimmed();
@@ -46,6 +46,14 @@ MaterialRepository::convertRowToMaterialRow(const QVector<QString>& parts,
     row.colorStr    = parts[8].trimmed();
     row.cuttingMode = parts[9].trimmed();
     row.paintingMode= parts[10].trimmed();
+
+    if (parts.size() >= 12) row.trimStr            = parts[11].trimmed();
+    if (parts.size() >= 13) row.minLeftOverStr     = parts[12].trimmed();
+    if (parts.size() >= 14) row.scrapStr           = parts[13].trimmed();
+    if (parts.size() >= 15) row.goodLeftOverMinStr = parts[14].trimmed();
+    if (parts.size() >= 16) row.goodLeftOverMaxStr = parts[15].trimmed();
+    if (parts.size() >= 17) row.externalCodeStr    = parts[16].trimmed();
+    if (parts.size() >= 18) row.descriptionStr     = parts[17].trimmed();
 
     return CsvImporter::AuditedRow<MaterialRow>{
         ctx.currentLineNumber(),
@@ -188,6 +196,24 @@ MaterialRepository::buildMaterialFromRow(const MaterialRow& row,
 
     if (!BarcodeValidator::checkAndRegister_CSV(row.barcode, "Material", m.id, m.name, ctx))
         return std::nullopt;
+
+    bool okTrim, okMinLeft, okScrap, okGoodMin, okGoodMax;
+
+    m.trim_mm              = row.trimStr.toInt(&okTrim);
+    m.minLeftOver_mm       = row.minLeftOverStr.toInt(&okMinLeft);
+    m.scrap_mm             = row.scrapStr.toInt(&okScrap);
+    m.goodLeftOver_Min_mm  = row.goodLeftOverMinStr.toInt(&okGoodMin);
+    m.goodLeftOver_Max_mm  = row.goodLeftOverMaxStr.toInt(&okGoodMax);
+
+    if (!okTrim)        m.trim_mm             = 0;
+    if (!okMinLeft)     m.minLeftOver_mm      = 0;
+    if (!okScrap)       m.scrap_mm            = 0;
+    if (!okGoodMin)     m.goodLeftOver_Min_mm = 0;
+    if (!okGoodMax)     m.goodLeftOver_Max_mm = 0;
+
+    m.externalCode = row.externalCodeStr;
+    m.description  = row.descriptionStr;
+
 
     return m;
 

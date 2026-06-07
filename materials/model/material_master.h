@@ -33,5 +33,11 @@ struct MaterialMaster : public BarcodeIdentifiableEntity {
     PaintingMode paintingMode = PaintingMode::Paintable; // jelzi, ha az anyag festhető
     CuttingMode cuttingMode = CuttingMode::Length; // 🔧 Alapértelmezés: szálhossz vágás
 
-    QString comment;       // opcionális, UI-ba is jó
+    int trim_mm = 0;
+    int minLeftOver_mm = 0;
+    int scrap_mm = 0;
+    int goodLeftOver_Min_mm = 0;
+    int goodLeftOver_Max_mm = 0;
+    QString externalCode;
+    QString description;
 };

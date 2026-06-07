@@ -51,6 +51,7 @@ struct CrudToolbarConfig {
 
     CrudOverlay overlay = CrudOverlay::None;
     QString labelPrefix;
+    QString objectNamePrefix;
 };
 
 // ------------------------------------------------------------
@@ -97,6 +98,8 @@ public:
                 ? QStringLiteral("➕ Új")
                 : QStringLiteral("➕ Új %1").arg(cfg.labelPrefix);
                 addAct = tb->addAction(text);
+                if (!cfg.objectNamePrefix.isEmpty())
+                    addAct->setObjectName(cfg.objectNamePrefix + "_add");
                 if (cfg.callbacks.onAdd) {
                     QObject::connect(addAct, &QAction::triggered,
                                      tb, [cb = cfg.callbacks.onAdd]() { cb(); });
@@ -106,6 +109,8 @@ public:
 
             case CrudAction::Delete:
                 delAct = tb->addAction(QStringLiteral("🗑️ Törlés"));
+                if (!cfg.objectNamePrefix.isEmpty())
+                    delAct->setObjectName(cfg.objectNamePrefix + "_delete");
                 if (cfg.callbacks.onDelete) {
                     QObject::connect(delAct, &QAction::triggered,
                                      tb, [cb = cfg.callbacks.onDelete]() { cb(); });
@@ -114,6 +119,8 @@ public:
 
             case CrudAction::Rename:
                 renAct = tb->addAction(QStringLiteral("✏️ Átnevezés"));
+                if (!cfg.objectNamePrefix.isEmpty())
+                    renAct->setObjectName(cfg.objectNamePrefix + "_modify");
                 if (cfg.callbacks.onRename) {
                     QObject::connect(renAct, &QAction::triggered,
                                      tb, [cb = cfg.callbacks.onRename]() { cb(); });

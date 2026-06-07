@@ -12,7 +12,7 @@ class OrderHeaderListPanel : public QWidget {
 public:
     explicit OrderHeaderListPanel(QWidget* parent = nullptr);
 
-    QUuid selectedOrderId() const;
+    std::optional<QUuid> selectedOrderId() const;
     void selectById(const QUuid& id);
     void silentSelectById(const QUuid& id);
 

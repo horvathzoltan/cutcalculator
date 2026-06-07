@@ -15,26 +15,26 @@
 class OrderWorkbenchPresenter : public QObject {
     Q_OBJECT
 public:
+public:
     explicit OrderWorkbenchPresenter(OrderHeaderPanel* headerPanel,
                                      OrderItemTable* itemTable,
                                      OrderManager* manager,
                                      OrderHeaderListPanel* listPanel,
+                                     RepositoryOverlayWidget<OrderHeaderRegistry>* headerOverlay,
+                                     RepositoryOverlayWidget<OrderItemRegistry>* itemOverlay,
                                      QObject* parent);
 
     void newOrder();
     void loadOrder(const QUuid& id);
     void saveOrder();
-    void deleteOrder();
+    void deleteCurrentOrder();
+    void renameCurrentOrder();
     void refreshListAndSelect(const QUuid& id);
 
     void addItem();
     void deleteItem();
-    QToolBar* buildItemToolbar(QWidget* parent);
-    QToolBar* buildHeaderToolbar(QWidget* parent);
 
     void refreshHeaderOverlay();
-
-    //void showHeaderPlaceholder(bool show);
 
 private:
     OrderHeaderPanel* _headerPanel = nullptr;
@@ -46,4 +46,5 @@ private:
 
     QUuid _currentOrderId;
     void refreshListAndSelectNextAfter(const QUuid &deletedId);
+    void onItemTableChanged();
 };

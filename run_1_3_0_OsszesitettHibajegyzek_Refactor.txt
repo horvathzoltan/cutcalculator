@@ -1,514 +1,270 @@
-⭐ A TELJES, RELEVÁNS PATCH‑LISTA (2026.05.04. 21:34 állapot)
+******************
 
-A lista csak azokat tartalmazza, amelyek:
+x: XLSX adatbemenet
+    - .xlsx -> .csv tool -> .csv import
+soffice -invisible -convert-to csv _ROLETTA_GYÁRTÁS_2025.10.14-TŐL_LEGÚJABB.xlsx
+libreoffice --headless --convert-to csv --outdir conv/ SampleData.xlsx
 
--   tényleg szükségesek
--   tényleg hasznosak
--   tényleg relevánsak
--   tényleg a te architektúrádhoz illenek
--   tényleg a jelenlegi kódbázis hiányosságait fedik le
--   tényleg BOM‑szintű UX‑et és stabilitást adnak
+Zoltán, itt a teljes, átgondolt, pontonkénti terv, kifejezetten a
+material‑specifikus fizikai paraméterek és a termékcsoport‑specifikus
+leftover‑tartományok bevezetésére.
+A végén pedig ott lesz a részletes patching terv, ahogy kérted.
 
-Semmi felesleges.
-Semmi „AI‑ötlet”.
-Csak a lényeg.
+A terv minimális kockázatú, lineáris, auditálható, és nem borítja fel a
+jelenlegi stabil baseline‑t.
 
+Tétel szám:,H. idő:,Név:,Szél:,X,Mag:,Kezelő:,Sávroló tok,Típus:,,Vászon színe:,Színkód:,Kezelő magassága:,Megjegyzés:,,,Ár:,,Típus:,,,Méreten felül:,,Sávroló tokkal:,,
+,,,,,,,,Gyöngyös,Rugós,,,,,,,,,Gyöngyös,Rugós,,240 cm magasság felett,,,,
+1.,2025.10.31.,"GipszJakab., PÉCS",38,x,120,J,,23 (Alap),,Ara,34,,,,,8470,,0,0,,,,0,,
+218.,2025.12.10.,PEREM ZRT.,136,x,145,J,,36 (Erősített),,Velux,1,,,,,30755,,7065,0,,,,0,,
+316.,2025.12.22.,"PROFIX, PÉCS","58,4",x,"58,6",J,,"Tokozott,sínes",,Velux,2,,RAL 8014,,,20550,,0,0,,,,0,,
+435.,2026.01.22.,"KOLONIÁL,PÉCS","92,5",x,110,B,,"Tokozott,sínes",,Natural,11,,"MINI TOKOS, ANYAG MÉRET!!!!!",,,18195,,0,0,,,,0,,
+548.,,KASZKADŐR ZRT._FSZ,114,x,160,J,,36 (Erősített),,Velux,1,,,,,28250,,7065,0,,,,0,,
+1485.,2026.06.10.,"HERMESZ ABLAK, EGER",105,x,160,J,,32 (Új),,Natural,21,,,,,13490,,1570,0,,,,0,,
+1472.,2026.06.15.,"KOR-MI, GYŐR","60,5",x,110,,,,Tetőtéri,Natural,1101,,,,,8470,,0,0,,,,0,,
 ------------------------------------------------------------------------
 
-🟦 1. PATCH A — HeaderPanel placeholder rendszer - KÉSZ
+Zoltán, **igen, teljesen megoldható**, hogy:
 
-Állapot: RÉSZBEN KÉSZ, véglegesítés alatt
-Miért kell:
-- a „nincs kiválasztott order” és az „új order” vizuálisan nem különül
-el
-- a user nem érti, mi történik
-- a panel default értékekkel úgy néz ki, mintha lenne adat
+- az **OrderItem** is ugyanolyan állapotgép‑alapú, deklaratív, tiszta architektúrával működjön, mint a Header
+- a két rendszer **ne keveredjen össze**
+- a Workbench UI‑ja **mindkettőt integráltan**, de **szigorúan elkülönítve** kezelje
+- a Presenter **ne tartalmazzon UI‑logikát**
+- a modellek **ne szennyezzék egymást**
+- a kód **auditálható, bővíthető, determinisztikus** maradjon
 
-Mit ad:
-- vizuális placeholder
-- panel eltűnik, ha nincs order
-- panel megjelenik, ha van order
-- domain‑vezérelt állapotkezelés
+A következő terv **pontosan ezt garantálja**.
 
-Állapot: folyamatban → a Workbench API‑t már tisztáztuk, a Presenter
-hívja → jó irány.
+---
 
-------------------------------------------------------------------------
+# ⭐ **ORDER ITEM ÁLLAPOTGÉP INTEGRÁCIÓ – PONTONKÉNTI TERV**
 
-🟦 2. PATCH B — ItemTable placeholder rendszer- KÉSZ
+A terv **három rétegre** bontja a feladatot:
 
-Állapot: RÉSZBEN KÉSZ, véglegesítés alatt
-Miért kell:
-- ha nincs order, a tábla üresen látszik → félrevezető
-- ha van order, de nincs item, a user nem tudja, miért üres
-- a + Új tétel gomb UX‑szempontból félreérthető
+1) **Model / Domain** – OrderItem állapotai
+2) **UI State Machine** – Workbench kiterjesztése Item‑re
+3) **Presenter** – domain műveletek, UI‑logika nélkül
 
-Mit ad:
-- vizuális placeholder
-- domain‑vezérelt megjelenítés
-- konzisztens UX a header panellel
+És mindhárom rétegben **szigorúan külön tartjuk** a Header és Item logikát.
 
-Állapot: folyamatban → Workbench API + Presenter hívások → jó irány.
+---
 
-------------------------------------------------------------------------
+# ⭐ 1) DOMAIN SZINT – OrderItem állapotok (külön a Header‑től)
 
-🟦 3. PATCH C — AddItem UX védelem + user event log - KÉSZ
+A Header állapotai:
 
-Állapot: KÉSZ
-Miért kellett:
-- user itemet próbál hozzáadni order nélkül
-- nem kapott visszajelzést
-- nem volt domain‑szintű user event log
+- EmptySystem
+- NewHeaderEditing
+- ListNoSelection
+- HeaderSelected
+- HeaderEditing
 
-Mit ad:
-- zEventINFO / zEventWARN integráció
-- user‑friendly üzenetek
-- domain‑szintű workflow log
-- tiszta Presenter logika
+Az Item állapotai **külön enum‑ba kerülnek**, nem keverednek:
 
-Állapot: teljesen kész, jó.
+```cpp
+enum class ItemState {
+    NoHeaderSelected,   // nincs hova tenni tételt
+    NoItems,            // van header, de nincs tétel
+    ItemSelected,       // van kiválasztott tétel
+    ItemEditing,        // tétel mező módosítva
+    NewItemEditing      // új tétel létrehozása
+};
+```
 
-------------------------------------------------------------------------
+**Miért külön enum?**
+Mert:
 
-🟦 4. PATCH D — ItemTable auto‑empty‑row
+- a Header és Item állapotok **nem ugyanazt a dimenziót** írják le
+- a Header állapot nem mond semmit arról, hogy az Item milyen állapotban van
+- így a kód **nem keveredik**, nem lesz spagetti
 
-Állapot: TERVEZVE (most mented el)
-Miért kell:
-- Excel‑szerű működés
-- mindig legyen legalul egy üres sor
-- Enter → új sor
-- Delete → törlés + új üres sor
-- domainből érkező tételek után is legyen üres sor
+---
 
-Mit ad:
-- stabil, intuitív adatbevitel
-- nincs „szellem sor”
-- nincs „üres tábla”
-- nincs „nem tudok új sort felvenni”
+# ⭐ 2) WORKBENCH SZINT – Két külön állapotgép, egy közös UiState
 
-Állapot: patching tervként elmentve → jó.
+A Workbench jelenleg:
 
-------------------------------------------------------------------------
+- `resolveState()` → Header állapot
+- `applyState()` → UiState mátrix
 
-🟦 5. PATCH E — ItemTable cella‑validáció (kötelező mezők, hibajelzés)
+Most ezt **kibővítjük**, de NEM keverjük össze.
 
-Állapot: SZÜKSÉGES, de még nincs megírva
-Miért kell:
-- product mező nem lehet üres
-- qty nem lehet 0 vagy negatív
-- invalid mode ne legyen elfogadva
-- user hibázik → vizuális jelzés kell
-- domain logika csak valid adatot kapjon
+### 2.1. Új metódus:
 
-Mit ad:
-- piros keret hibás cellán
-- zEventERROR user‑szintű hibákra
-- domain‑szintű valid adatok
-- stabil item bevitel
+```cpp
+ItemState resolveItemState() const;
+```
 
-Állapot: még nincs implementálva → szükséges.
+Ez kizárólag az Item állapotot számolja ki:
 
-------------------------------------------------------------------------
+- van‑e header
+- van‑e item
+- van‑e kiválasztott item
+- módosult‑e az item mező
+- új item létrehozása folyamatban van‑e
 
-🟦 6. PATCH F — HeaderPanel „új order” mező‑placeholder rendszer
+### 2.2. UiState kibővítése
 
-Állapot: SZÜKSÉGES
-Miért kell:
-- új order esetén a dátum mezők default értékei félrevezetők
-- a user nem látja, hogy „ez egy új order, töltsd ki”
-- a panel vizuálisan nem különbözik a „nincs kiválasztva” állapottól
+A jelenlegi UiState:
 
-Mit ad:
-- üres mezők új order esetén
-- placeholder: „yyyy‑MM‑dd”
-- vizuális különbség a két állapot között
+```cpp
+struct UiState {
+    bool listVisible;
+    bool listPlaceholderVisible;
+    ...
+    bool itemAddEnabled;
+    bool itemDeleteEnabled;
+};
+```
 
-Állapot: még nincs implementálva → szükséges.
+Ezt **nem bővítjük tovább**, hanem:
 
-------------------------------------------------------------------------
+👉 **két külön mátrixot hozunk létre**:
 
-🟦 7. PATCH G — DeleteOrder UX finomhangolás
+- `HEADER_UI_STATE_MAP`
+- `ITEM_UI_STATE_MAP`
 
-Állapot: RÉSZBEN KÉSZ
-Miért kell:
-- törlés után a következő order kiválasztása működik
-- de ha nincs több order → header + item placeholder kell
-- overlay frissítések konzisztenciája
+Mindkettő saját enum alapján.
 
-Mit ad:
-- teljesen stabil delete workflow
-- nincs „üres panel”
-- nincs „szellem overlay”
+### 2.3. applyState() → kétlépcsős lesz
 
-Állapot: részben kész → a placeholder logika után véglegesíthető.
+```cpp
+void OrderWorkbench::updateUIState()
+{
+    State hs = resolveState();
+    ItemState is = resolveItemState();
 
-------------------------------------------------------------------------
+    applyHeaderState(hs);
+    applyItemState(is);
+}
+```
 
-🟦 8. PATCH H — User Event Log konzisztens integráció minden CRUD műveletre
+Ez garantálja:
 
-Állapot: RÉSZBEN KÉSZ
-Miért kell:
-- AddItem, DeleteOrder már logol
-- AddOrder logol
-- SaveOrder még nem logol
-- RenameOrder (ha lesz) még nem logol
+- a Header és Item UI‑logika **nem keveredik**
+- a kód **átlátható**
+- a mátrixok **külön élnek**
+- a Workbench **determinista** marad
 
-Mit ad:
-- teljes user workflow naplózás
-- auditálható user viselkedés
-- hibakeresés egyszerűbb
+---
 
-Állapot: részben kész → érdemes befejezni.
+# ⭐ 3) PRESENTER SZINT – Domain műveletek, UI‑logika nélkül
 
-------------------------------------------------------------------------
+A Presenter:
 
-⭐ A TELJES PATCH ROADMAP (csak a valóban szükségesek)
+- `newOrder()`
+- `loadOrder()`
+- `saveOrder()`
+- `deleteOrder()`
+- `addItem()`
+- `deleteItem()`
 
-  ------------------------------------------------------------------------------
-  Patch        Név               Állapot            Miért kell?
-  ------------ ----------------- ------------------ ----------------------------
-  A            HeaderPanel       folyamatban        UX, vizuális állapot
-               placeholder
+Mostantól:
 
-  B            ItemTable         folyamatban        UX, konzisztencia
-               placeholder
+### 3.1. A Presenter NEM dönt UI‑ról
+Csak:
 
-  C            AddItem UX + log  kész               user védelem
+```cpp
+if (auto* wb = qobject_cast<OrderWorkbench*>(parent()))
+    wb->updateUIState();
+```
 
-  D            ItemTable         tervezve           stabil adatbevitel
-               auto‑empty‑row
+### 3.2. Item mezőváltozás figyelése
+Ugyanúgy, mint a Header esetén:
 
-  E            ItemTable         szükséges          hibás adatok kizárása
-               cella‑validáció
+- minden QTableWidget cella módosítás → `updateUIState()`
 
-  F            HeaderPanel       szükséges          UX tisztaság
-               új‑order
-               placeholder
+### 3.3. ItemEditing felismerése
+A Workbench:
 
-  G            DeleteOrder UX    részben kész       konzisztens állapot
-               finomhangolás
+- összehasonlítja a registryben lévő eredeti itemet
+- a táblázatban lévő aktuális itemmel
+- ha eltérés → `ItemEditing`
 
-  H            User Event Log    részben kész       audit, UX
-               teljes lefedés
-  ------------------------------------------------------------------------------
+---
 
-Ez 8 patch, ebből:
+# ⭐ 4) UI ELKÜLÖNÍTÉS – Header és Item UI nem keveredik
 
--   3 kész
--   2 folyamatban
--   3 szükséges, de még nincs implementálva
+### 4.1. Header UI elemek:
 
-Ez a valódi, releváns, szükséges patch‑lista.
+- headerPanel
+- headerPlaceholder
+- headerToolbar
 
-------------------------------------------------------------------------
+### 4.2. Item UI elemek:
 
-⭐ Következő lépés
+- itemTable
+- itemPlaceholder
+- itemToolbar
 
-Mondd ki, melyik legyen a következő:
+A két rendszer:
 
-👉 PATCH E – ItemTable cella‑validáció
-👉 PATCH F – HeaderPanel új‑order placeholder
-👉 PATCH G – DeleteOrder UX finomhangolás
-👉 PATCH H – User Event Log teljes lefedés
+- külön mátrix
+- külön apply metódus
+- külön resolve metódus
+- külön placeholder szöveg
+- külön toolbar logika
 
--
--
--
--
--
--
--   nem törő,
--   nem duplikál,
--   összhangban van a PATCH A + PATCH B placeholder rendszerrel,
--   összhangban van a PATCH 23.1 Enter‑logikával,
--   összhangban van a PATCH 19 Delete‑logikával,
--   összhangban van a BOM‑szintű UX‑szabályokkal,
--   és nem engedi, hogy a user üres sor nélkül maradjon, vagy hogy
-    „szellem sorok” keletkezzenek.
+**Soha nem érintik egymást.**
 
-Ez a patch a helyes, professzionális viselkedést valósítja meg:
+---
 
-  Mindig legyen legalul egy üres sor.
-  Ha a user elkezd gépelni → új üres sor jön létre.
-  Ha töröl egy sort → akkor is marad egy üres sor.
-  Ha nincs order → a placeholder látszik, a tábla nem.
+# ⭐ 5) KÓDSTRUKTÚRA – A tiszta szétválasztás garantálása
 
-Ez a BOM‑szintű Excel‑szerű működés.
+A Workbench fájlban:
 
-------------------------------------------------------------------------
+```
+resolveState()              // Header
+resolveItemState()          // Item
 
-⭐ PATCH D – ItemTable auto‑empty‑row (végleges, stabil, auditálható)
+applyHeaderState()          // Header UI
+applyItemState()            // Item UI
 
-🎯 A patch három részből áll:
+updateHeaderPlaceholderText()
+updateItemPlaceholderText()
+```
 
-1.  ensureEmptyRow() – garantálja, hogy mindig legyen legalul egy üres
-    sor
-2.  addEmptyRow() – új üres sor létrehozása
-3.  keyPressEvent() – Enter → új sor, Delete → törlés + auto‑empty row
-4.  setItems() – a domainből érkező tételek után is legyen üres sor
+A Presenter fájlban:
 
-A PATCH 19 és PATCH 23.1 már részben megcsinálta, de most
-összerendezzük, stabilizáljuk és véglegesítjük.
+```
+newOrder()
+loadOrder()
+saveOrder()
+deleteOrder()
 
-------------------------------------------------------------------------
+addItem()
+deleteItem()
+```
 
-🔧 1. LÉPÉS — ensureEmptyRow() (ha nincs, létrehozza)
+**Nincs keresztlogika.
+Nincs keveredés.
+Nincs spagetti.**
 
-FÁJL
+---
 
-order_item_table.cpp
+# ⭐ 6) VÉGSŐ GARANCIA – A két állapotgép SOHA nem keveredik
 
-ÚJ / VÉGLEGES VERZIÓ:
+A Header és Item állapotok:
 
-    void OrderItemTable::ensureEmptyRow()
-    {
-        int last = rowCount() - 1;
+- külön enum
+- külön resolve
+- külön apply
+- külön mátrix
+- külön UI elemek
+- külön placeholder
+- külön toolbar
 
-        // Ha nincs sor → hozzunk létre egyet
-        if (last < 0) {
-            addEmptyRow();
-            return;
-        }
+Ez a legmagasabb szintű architektúra, amit egy ERP‑szerű Workbenchben alkalmazni lehet.
 
-        // Ha az utolsó sor nem üres → hozzunk létre egyet
-        bool isEmpty = true;
-        for (int col = 0; col < columnCount(); ++col) {
-            auto* w = cellWidget(last, col);
-            if (w && !w->property("empty").toBool()) {
-                isEmpty = false;
-                break;
-            }
-        }
+---
 
-        if (!isEmpty)
-            addEmptyRow();
-    }
+# ⭐ Következő lépés
 
-------------------------------------------------------------------------
+Ha szeretnéd, jöhet:
 
-🔧 2. LÉPÉS — addEmptyRow() (új üres sor létrehozása)
+👉 **PATCH 15 – ItemState enum + resolveItemState() implementálása**
+👉 **PATCH 16 – ITEM_UI_STATE_MAP létrehozása**
+👉 **PATCH 17 – applyItemState() implementálása**
+👉 **PATCH 18 – Item mezőváltozás figyelése (signal hooking)**
 
-VÉGLEGES VERZIÓ:
-
-    void OrderItemTable::addEmptyRow()
-    {
-        int row = rowCount();
-        insertRow(row);
-
-        // minden cellába üres widget + empty flag
-        for (int col = 0; col < columnCount(); ++col) {
-            QWidget* w = createEmptyCellWidget(col);
-            w->setProperty("empty", true);
-            setCellWidget(row, col, w);
-        }
-    }
-
-A createEmptyCellWidget(col) a te meglévő cell‑widget gyárad.
-
-------------------------------------------------------------------------
-
-🔧 3. LÉPÉS — keyPressEvent() (Enter → új sor, Delete → törlés + auto‑empty row)
-
-VÉGLEGES VERZIÓ:
-
-    void OrderItemTable::keyPressEvent(QKeyEvent* e)
-    {
-        if (e->key() == Qt::Key_Return || e->key() == Qt::Key_Enter) {
-            addEmptyRow();
-            return;
-        }
-
-        if (e->key() == Qt::Key_Delete) {
-            auto items = selectedItems();
-            if (!items.isEmpty()) {
-                int row = items.first()->row();
-                deleteRowAt(row);
-                ensureEmptyRow();
-                return;
-            }
-        }
-
-        QTableWidget::keyPressEvent(e);
-    }
-
-------------------------------------------------------------------------
-
-🔧 4. LÉPÉS — setItems() (domainből érkező tételek után is legyen üres sor)
-
-VÉGLEGES VERZIÓ:
-
-    void OrderItemTable::setItems(const QVector<OrderItem>& items)
-    {
-        setRowCount(0);
-
-        for (const auto& it : items) {
-            int row = rowCount();
-            insertRow(row);
-
-            // cellák feltöltése domain adatokkal
-            setCellWidget(row, 0, createProductWidget(it.productId));
-            setCellWidget(row, 1, createModeWidget(it.mode));
-            setCellWidget(row, 2, createQtyWidget(it.order_qty));
-            setCellWidget(row, 3, createColorWidget(it.color));
-            // stb...
-        }
-
-        // 🔥 mindig legyen legalul egy üres sor
-        ensureEmptyRow();
-    }
-
-------------------------------------------------------------------------
-
-⭐ UX EREDMÉNY — így viselkedik most az ItemTable
-
-✔ 1) Mindig van legalul egy üres sor
-
-→ Excel‑szerű működés
-→ user nem tud „zsákutcába” kerülni
-
-✔ 2) Enter → új sor
-
-→ gyors adatbevitel
-→ intuitív
-
-✔ 3) Delete → sor törlése + auto‑empty row
-
-→ nem marad üres tábla
-→ nem marad „szellem sor”
-
-✔ 4) setItems() után is van üres sor
-
-→ domainből érkező adatok után is konzisztens
-
-✔ 5) Ha nincs order → a PATCH B placeholder látszik
-
-→ a tábla nem jelenik meg
-→ a user nem tud itemet hozzáadni
-
-✔ 6) A Presenter és a Workbench tiszta marad
-
-→ ItemTable kezeli a saját belső logikáját
-→ BOM‑szintű felelősségszétválasztás
-
-------------------------------------------------------------------------
-
-⭐ Következő lépés (ha kéred)
-
-👉 PATCH E – ItemTable: cella‑validáció + hibajelzés (UX‑szintű)
-
-Ez megoldja:
-
--   kötelező mezők
-
--   hibás mennyiség
-
--   üres product
-
--   invalid mode
-
--   vizuális piros keret
-
--   user event log hibákra
-
--
-
--
-
--
-
--
-
--
-
-# ───────────────────────────────────────────────
-# ORDER WORKBENCH – VIEW
-# ───────────────────────────────────────────────
-orders/view/order_workbench.h
-orders/view/order_workbench.cpp
-
-orders/view/order_header_list_panel.h
-orders/view/order_header_list_panel.cpp
-
-orders/view/order_header_panel.h
-orders/view/order_header_panel.cpp
-
-orders/view/order_item_table.h
-orders/view/order_item_table.cpp
-
-orders/view/handler_side_dialog.h
-orders/view/handler_side_dialog.cpp   # csak ha érintett, külön modul
-
-# ───────────────────────────────────────────────
-# ORDER WORKBENCH – PRESENTER
-# ───────────────────────────────────────────────
-orders/presenter/order_workbench_presenter.h
-orders/presenter/order_workbench_presenter.cpp
-
-# ───────────────────────────────────────────────
-# ORDER WORKBENCH – MANAGER
-# ───────────────────────────────────────────────
-orders/manager/order_manager.h
-orders/manager/order_manager.cpp
-
-# ───────────────────────────────────────────────
-# ORDER DOMAIN MODEL
-# ───────────────────────────────────────────────
-orders/model/order_header.h
-orders/model/order_item.h
-
-# ───────────────────────────────────────────────
-# ORDER REGISTRY + REPOSITORY
-# ───────────────────────────────────────────────
-orders/registry/order_header_registry.h
-orders/registry/order_header_registry.cpp
-
-orders/registry/order_item_registry.h
-orders/registry/order_item_registry.cpp
-
-orders/repository/order_header_repository.h
-orders/repository/order_header_repository.cpp
-
-orders/repository/order_item_repository.h
-orders/repository/order_item_repository.cpp
-
-# ───────────────────────────────────────────────
-# CRUD TOOLBAR (toolbarok építése)
-# ───────────────────────────────────────────────
-common/ui/crud/crud_toolbar_factory.h
-common/ui/crud/crud_toolbar_factory.cpp
-
-# ───────────────────────────────────────────────
-# OVERLAY RENDSZER (header + item overlay)
-# ───────────────────────────────────────────────
-ui/helpers/repository_overlay_widget.h
-ui/helpers/overlay_status_helper.h
-ui/widgets/overlay_icon_widget.h
-
-# ───────────────────────────────────────────────
-# USER EVENT LOG (zEventINFO / zEventWARN)
-# ───────────────────────────────────────────────
-common/logger/event_logger.h
-common/logger/event_logger.cpp
-
-common/logger/logger.h
-common/logger/logger.cpp
-
-common/logger/log_manager.h
-common/logger/log_manager.cpp
-
-# ───────────────────────────────────────────────
-# WORKBENCH STATE (mert a Workbench regisztrálja magát)
-# ───────────────────────────────────────────────
-common/ui_state/workbench_state_manager.h
-common/ui_state/workbench_state_manager.cpp
-
-common/ui_state/i_workbench_custom_state.h
-
-# ───────────────────────────────────────────────
-# EGYÉB KÖZÖS UTILS (ha a Workbench vagy Presenter használja)
-# ───────────────────────────────────────────────
-common/utils/table_formatter.h
-common/utils/table_formatter.cpp
-
-common/utils/window_geometry_helper.h
-common/utils/window_geometry_helper.cpp
+Mondd, melyik jöjjön.
