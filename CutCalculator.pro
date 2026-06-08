@@ -377,7 +377,11 @@ HEADERS += \
     orders/view/order_header_panel.h \
     orders/view/order_item_table.h \
     workbench/view/order/order_workbench.h \
-    workbench/view/order/order_workbench_ui_builder.h
+    workbench/view/order/order_workbench_ui_builder.h \
+    workbench/view/order/order_workbench_ui_model.h \
+    workbench/view/order/state/header_editor_state_machine.h \
+    workbench/view/order/state/item_state_machine.h \
+    workbench/view/order/state/list_state_machine.h
 
 FORMS += \
     mainwindow.ui

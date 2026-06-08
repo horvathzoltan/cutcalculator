@@ -147,6 +147,7 @@ static ListToolbarResult create(const ListToolbarConfig& cfg)
 
         auto* tb = new QToolBar(cfg.parent);
         result.toolbar = tb;
+        //result.actionPointers.toolbar = tb;
 
         // ⭐ OVERLAY
         auto* overlay = new RepositoryOverlayWidget<RegistryT>(

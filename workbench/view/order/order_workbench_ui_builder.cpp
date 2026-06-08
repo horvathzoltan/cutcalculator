@@ -8,10 +8,10 @@
 #include <common/ui/crud/list_toolbar_factory.h>
 #include <common/ui/crud/entity_toolbar_factory.h>
 
-OrderWorkbench::UIModel
+OrderWorkbenchUIModel
 OrderWorkbenchUIBuilder::build(OrderWorkbench* wb)
 {
-    OrderWorkbench::UIModel ui;
+    OrderWorkbenchUIModel ui;
 
     // MAIN LAYOUT + SPLITTER
     auto* layout = new QVBoxLayout(wb);
@@ -133,6 +133,7 @@ OrderWorkbenchUIBuilder::build(OrderWorkbench* wb)
         lcLayout->insertWidget(0, tb1.toolbar);
 
         ui.listActions = tb1.actionPointers;
+        ui.listToolBar = tb1.toolbar;
         ui.headerOverlay = static_cast<RepositoryOverlayWidget<OrderHeaderRegistry>*>(tb1.overlay);
     }
 
@@ -151,7 +152,8 @@ OrderWorkbenchUIBuilder::build(OrderWorkbench* wb)
         };
 
         auto tb1 = EntityToolbarFactory::create<OrderHeaderRegistry>(cfg);
-        //ui.headerToolbar = tb1.toolbar;
+        ui.headerToolbar = tb1.toolbar;
+        ui.headerActions = tb1.actionPointers;
         tb1.toolbar->setObjectName("order_header_toolbar");
 
         if (auto* headerLayout = qobject_cast<QVBoxLayout*>(ui.headerContainer->layout())) {
@@ -174,6 +176,8 @@ OrderWorkbenchUIBuilder::build(OrderWorkbench* wb)
         auto tb1 = EntityToolbarFactory::create<OrderItemRegistry>(cfg);
         ui.itemOverlay = static_cast<RepositoryOverlayWidget<OrderItemRegistry>*>(tb1.overlay);
         ui.itemToolbar = tb1.toolbar;
+        ui.itemActions = tb1.actionPointers;
+
         ui.itemToolbar->setObjectName("order_item_toolbar");
 
         if (auto* itemLayout = qobject_cast<QVBoxLayout*>(ui.itemContainer->layout())) {

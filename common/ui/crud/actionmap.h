@@ -2,11 +2,13 @@
 
 #include <QAction>
 #include <QMap>
+#include <QToolBar>
 
 template<typename T>
 class ActionMap {
 public:
     QMap<T, QAction*> map;
+    //QToolBar* toolbar;
 
     template<typename Obj, typename Method>
     void connect(T action, Obj* receiver, Method method) {
@@ -22,5 +24,10 @@ public:
 
     void insert(T action, QAction* act) {
         map.insert(action, act);
+    }
+
+    void setEnabled(T action, bool enabled) const {
+        if (map.contains(action) && map[action])
+            map[action]->setEnabled(enabled);
     }
 };
