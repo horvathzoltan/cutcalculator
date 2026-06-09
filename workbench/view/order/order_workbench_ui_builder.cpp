@@ -4,6 +4,7 @@
 #include <QVBoxLayout>
 #include <QLabel>
 
+#include "common/ui/placeholder_widget.h"
 #include "workbench/view/order/order_workbench.h"
 #include <common/ui/crud/list_toolbar_factory.h>
 #include <common/ui/crud/entity_toolbar_factory.h>
@@ -34,20 +35,11 @@ OrderWorkbenchUIBuilder::build(OrderWorkbench* wb)
     ui.listPanel->setMinimumWidth(250);
 
     // LIST PLACEHOLDER
-    ui.listPlaceholder = new QWidget(ui.listContainer);
-    ui.listPlaceholder->setMinimumWidth(250);
-
-    auto* lpLayout = new QVBoxLayout(ui.listPlaceholder);
-    lpLayout->setAlignment(Qt::AlignCenter);
-
-    auto* lpLabel = new QLabel(
+    ui.listPlaceholder = new PlaceholderWidget(ui.listContainer);
+    ui.listPlaceholder->setText(
         "📭 Még nincs egyetlen rendelés sem\n\n"
-        "Kattints a „+ Új” gombra az első rendelés létrehozásához.",
-        ui.listPlaceholder
+        "Kattints a „+ Új” gombra az első rendelés létrehozásához."
         );
-    lpLabel->setAlignment(Qt::AlignCenter);
-    lpLabel->setStyleSheet("font-size: 16px; color: #666;");
-    lpLayout->addWidget(lpLabel);
 
     ui.listPlaceholder->show();
     ui.listPanel->hide();

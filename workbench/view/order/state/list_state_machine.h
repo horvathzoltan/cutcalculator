@@ -1,60 +1,92 @@
 #pragma once
 
+#include "common/ui_state/element_state.h"
+#include "common/ui_state/uistate.h"
+#include "common/ui_state/uistate_applier.h"
 #include "workbench/view/order/order_workbench_ui_model.h"
-#include "orders/registry/order_header_registry.h"
+#include <QObject>
 #include <QToolBar>
 
-namespace ListStateMachine {
+class ListStateMachine {
 
 enum class State {
     Hidden,
     Visible
 };
 
-// ─────────────────────────────────────────────────────────────
-//  UI STATE STRUCT
-// ─────────────────────────────────────────────────────────────
-struct UiState {
-    bool listVisible;
-    bool placeholderVisible;
-
-    bool addEnabled;
-    bool deleteEnabled;
-    bool renameEnabled;
-    bool refreshEnabled;
+enum class UiElement {
+    List,
+    Placeholder,
+    Add,
+    Delete,
+    Rename,
+    Refresh
 };
 
 // ─────────────────────────────────────────────────────────────
 //  UI STATE MAP (DEKLARATÍV MÁTRIX)
 // ─────────────────────────────────────────────────────────────
-static const QMap<State, UiState> UI_STATE_MAP = {
 
-{ State::Hidden,
-    { false, true,
-     true, false, false, true }   // refresh mindig engedélyezett
-},
+inline static const UiState<UiElement> hiddenState =
+{
+    { UiElement::List, Visibility::Hidden},
+    { UiElement::Placeholder, Visibility::Visible },
+    { UiElement::Add, Enabledness::Enabled },
+    { UiElement::Delete, Enabledness::Disabled },
+    { UiElement::Rename, Enabledness::Disabled },
+    { UiElement::Refresh, Enabledness::Enabled }
+};
 
-{ State::Visible,
-    { true,  false,
-            true,  true,  true,  true }
+inline static const QMap<State, UiState<UiElement>> UI_STATE_MAP = {
+
+{
+     State::Hidden, hiddenState
+    },
+
+{
+     State::Visible,
+     {
+      { UiElement::List ,Visibility::Visible},
+      { UiElement::Placeholder, Visibility::Hidden },
+      { UiElement::Add, Enabledness::Enabled },
+      { UiElement::Delete, Enabledness::Enabled },
+      { UiElement::Rename, Enabledness::Enabled },
+      { UiElement::Refresh, Enabledness::Enabled }
+    }
 }
 };
 
+
+QMap<UiElement, QObject*> widgets;
+
+public:
+void init(const OrderWorkbenchUIModel& ui)
+{
+    if(!widgets.isEmpty()) return;
+
+    widgets.insert(UiElement::List, ui.listPanel);
+    widgets.insert(UiElement::Placeholder, ui.listPlaceholder);
+    widgets.insert(UiElement::Add, ui.listActions[ListAction::Add]);
+    widgets.insert(UiElement::Delete, ui.listActions[ListAction::Delete]);
+    widgets.insert(UiElement::Rename, ui.listActions[ListAction::Rename]);
+    widgets.insert(UiElement::Refresh, ui.listActions[ListAction::Refresh]);
+}
 // ─────────────────────────────────────────────────────────────
 //  RESOLVE (logikai állapotgép) – változatlan
 // ─────────────────────────────────────────────────────────────
-inline State resolve(
-    const OrderWorkbenchUIModel& ui,
-    const OrderHeaderRegistry& registry
-    ) {
-    if (registry.isEmpty())
-        return State::Hidden;
 
-    // if (ui.listPanel) {
-    //     auto selectedId = ui.listPanel->selectedOrderId();
-    //     if (!selectedId.has_value())
-    //         return State::Visible;
-    // }
+struct ResolveModel{
+    bool registryIsEmpty;
+};
+
+State resolve(const ResolveModel& m)
+{
+    if(widgets.isEmpty()){
+        zWarning("ListStateMachine::resolve called before init!");
+    }
+
+    if (m.registryIsEmpty)
+        return State::Hidden;
 
     return State::Visible;
 }
@@ -62,27 +94,18 @@ inline State resolve(
 // ─────────────────────────────────────────────────────────────
 //  APPLY (DEKLARATÍV) – nincs switch, nincs logika
 // ─────────────────────────────────────────────────────────────
-inline void apply(
-    const OrderWorkbenchUIModel& ui,
-    State s
-    ) {
-    const UiState u = UI_STATE_MAP.value(s);
-
-    // LISTA + PLACEHOLDER
-    ui.listPanel->setVisible(u.listVisible);
-    ui.listPlaceholder->setVisible(u.placeholderVisible);
-
-    // TOOLBAR - ha mindíg látszik, kell mindíg true???
-    // if (ui.listToolBar)
-    //     ui.listToolBar->setVisible(true);
-
-    // LISTA TOOLBAR
-    if (ui.listToolBar) {
-        ui.listActions.setEnabled(ListAction::Add,    u.addEnabled);
-        ui.listActions.setEnabled(ListAction::Delete, u.deleteEnabled);
-        ui.listActions.setEnabled(ListAction::Rename, u.renameEnabled);
-        ui.listActions.setEnabled(ListAction::Refresh, u.refreshEnabled);
+void apply(State s)
+{
+    if(widgets.isEmpty()){
+        zWarning("ListStateMachine::apply called before init!");
     }
+
+    const UiState stateMap = UI_STATE_MAP.value(s);
+
+    UiStateApplier::apply(stateMap, widgets);
 }
 
-} // namespace ListStateMachine
+};
+
+
+

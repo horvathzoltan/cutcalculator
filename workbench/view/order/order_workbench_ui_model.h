@@ -6,6 +6,7 @@
 #include <ui/helpers/repository_overlay_widget.h>
 #include "common/ui/crud/entity_toolbar_factory.h"
 #include "common/ui/crud/list_toolbar_factory.h"
+#include "common/ui/placeholder_widget.h"
 #include "orders/view/order_header_panel.h"
 #include "orders/view/order_item_table.h"
 #include "orders/view/order_header_list_panel.h"
@@ -21,7 +22,7 @@ struct OrderWorkbenchUIModel {
     OrderHeaderPanel* headerPanel;
     OrderItemTable* itemTable;
 
-    QWidget* listPlaceholder;
+    PlaceholderWidget* listPlaceholder;
     QWidget* headerPlaceholder;
     QWidget* itemPlaceholder;
 

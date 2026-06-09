@@ -29,6 +29,7 @@ SOURCES += \
     calculation/service/order_need_builder.cpp \
     calculation/service/worksheet_builder.cpp \
     common/logger/log_archiver.cpp \
+    common/ui/placeholder_widget.cpp \
     common/ui_state/widget_discovery_helper.cpp \
     common/ui_state/widget_state_manager.cpp \
     common/ui_state/widget_state_settings.cpp \
@@ -183,7 +184,11 @@ HEADERS += \
     common/ui/crud/crud_toolbar_factory.h \
     common/ui/crud/entity_toolbar_factory.h \
     common/ui/crud/list_toolbar_factory.h \
+    common/ui/placeholder_widget.h \
+    common/ui_state/element_state.h \
     common/ui_state/i_workbench_custom_state.h \
+    common/ui_state/uistate.h \
+    common/ui_state/uistate_applier.h \
     common/ui_state/widget_discovery_helper.h \
     common/ui_state/widget_state_manager.h \
     common/ui_state/widget_state_settings.h \

@@ -154,6 +154,8 @@ Q_INVOKABLE void OrderWorkbench::postRestoreFix()
 
 void OrderWorkbench::updateUIState()
 {
+    listSM.init(_ui);   // ← csak egyszer fog lefutni, mert belül guard van
+
     auto& registry = OrderHeaderRegistry::instance();
     bool modified = isHeaderModified();
 
@@ -162,8 +164,11 @@ void OrderWorkbench::updateUIState()
     HeaderEditorStateMachine::apply(_ui, h);
 
     // LIST
-    auto l = ListStateMachine::resolve(_ui, registry);
-    ListStateMachine::apply(_ui, l);
+    ListStateMachine::ResolveModel resolveModel_list {
+            registry.isEmpty()
+    };
+    auto l = listSM.resolve(resolveModel_list);
+    listSM.apply(l);
 
     // ITEM
     auto i = ItemStateMachine::resolve(_ui, registry);

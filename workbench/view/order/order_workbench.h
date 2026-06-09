@@ -60,6 +60,8 @@ private:
 
     // placeholder szöveg frissítése állapot alapján
 
+    ListStateMachine listSM;   // ← ITT A HELYE
+
     bool isHeaderModified() const;
 public:
     QVariantMap saveCustomState() const override;
