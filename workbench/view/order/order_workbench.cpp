@@ -155,13 +155,30 @@ Q_INVOKABLE void OrderWorkbench::postRestoreFix()
 void OrderWorkbench::updateUIState()
 {
     listSM.init(_ui);   // ← csak egyszer fog lefutni, mert belül guard van
+    headerSM.init(_ui);
 
     auto& registry = OrderHeaderRegistry::instance();
     bool modified = isHeaderModified();
 
     // HEADER
-    auto h = HeaderEditorStateMachine::resolve(_ui, registry, modified);
-    HeaderEditorStateMachine::apply(_ui, h);
+    bool isOriginalInRegistry = false;
+    bool hasOriginal = false;
+    if (_ui.headerPanel){
+        auto originalOpt = _ui.headerPanel->originalHeader();
+        const OrderHeader& original = *originalOpt;
+        isOriginalInRegistry = registry.existsById(original.id);
+        hasOriginal = _ui.headerPanel->originalHeader().has_value();
+    }
+
+    HeaderEditorStateMachine::ResolveModel resolveModel_header{
+            registry.isEmpty(),
+            modified,
+            hasOriginal,
+            isOriginalInRegistry
+    };
+
+    auto h = headerSM.resolve(resolveModel_header);
+    headerSM.apply(h);
 
     // LIST
     ListStateMachine::ResolveModel resolveModel_list {

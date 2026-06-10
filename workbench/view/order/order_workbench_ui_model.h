@@ -23,9 +23,8 @@ struct OrderWorkbenchUIModel {
     OrderItemTable* itemTable;
 
     PlaceholderWidget* listPlaceholder;
-    QWidget* headerPlaceholder;
-    QWidget* itemPlaceholder;
-
+    PlaceholderWidget* headerPlaceholder;
+    PlaceholderWidget* itemPlaceholder;
 
     RepositoryOverlayWidget<OrderHeaderRegistry>* headerOverlay;
     RepositoryOverlayWidget<OrderItemRegistry>* itemOverlay;

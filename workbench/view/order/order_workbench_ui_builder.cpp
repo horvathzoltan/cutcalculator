@@ -59,15 +59,8 @@ OrderWorkbenchUIBuilder::build(OrderWorkbench* wb)
     ui.headerPanel = new OrderHeaderPanel(ui.headerContainer);
     ui.headerPanel->setObjectName("order_header_panel");
 
-    ui.headerPlaceholder = new QWidget(ui.headerContainer);
-    auto* phLayout = new QVBoxLayout(ui.headerPlaceholder);
-    phLayout->setAlignment(Qt::AlignCenter);
-
-    QString headerText;
-    auto* phLabel = new QLabel(headerText, ui.headerPlaceholder);
-    phLabel->setAlignment(Qt::AlignCenter);
-    phLabel->setStyleSheet("font-size: 16px; color: #666;");
-    phLayout->addWidget(phLabel);
+    ui.headerPlaceholder = new PlaceholderWidget(ui.headerContainer);
+    ui.headerPlaceholder->setText("Nincs kiválasztott rendelés");
 
     ui.headerPlaceholder->show();
     ui.headerPanel->hide();
@@ -81,15 +74,8 @@ OrderWorkbenchUIBuilder::build(OrderWorkbench* wb)
     ui.itemTable = new OrderItemTable(ui.itemContainer);
     ui.itemTable->setObjectName("order_item_table");
 
-    ui.itemPlaceholder = new QWidget(ui.itemContainer);
-    auto* iphLayout = new QVBoxLayout(ui.itemPlaceholder);
-    iphLayout->setAlignment(Qt::AlignCenter);
-
-    QString itemText;
-    auto* iphLabel = new QLabel(itemText, ui.itemPlaceholder);
-    iphLabel->setAlignment(Qt::AlignCenter);
-    iphLabel->setStyleSheet("font-size: 16px; color: #666;");
-    iphLayout->addWidget(iphLabel);
+    ui.itemPlaceholder = new PlaceholderWidget(ui.itemContainer);
+    ui.itemPlaceholder->setText("Nincs tétel ehhez a rendeléshez");
 
     ui.itemPlaceholder->show();
     ui.itemTable->hide();
@@ -120,7 +106,7 @@ OrderWorkbenchUIBuilder::build(OrderWorkbench* wb)
         // Callbacks a Presenter fogja később beállítani (itt csak UI-t építünk)
 
         ListToolbarResult tb1 =
-            ListToolbarFactory::create<OrderHeaderRegistry>(cfg);        
+            ListToolbarFactory::create<OrderHeaderRegistry>(cfg);
         tb1.toolbar->setObjectName("order_header_list_toolbar");
         lcLayout->insertWidget(0, tb1.toolbar);
 

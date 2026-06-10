@@ -180,6 +180,7 @@ HEADERS += \
     calculation/service/worksheet_builder.h \
     common/logger/log_archiver.h \
     common/registry/mixins/simple_lookup_mixin.h \
+    common/system/enum_utils.h \
     common/ui/crud/actionmap.h \
     common/ui/crud/crud_toolbar_factory.h \
     common/ui/crud/entity_toolbar_factory.h \

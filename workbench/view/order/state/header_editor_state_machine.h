@@ -1,12 +1,13 @@
 #pragma once
 
+#include "common/ui_state/uistate.h"
+#include "common/ui_state/uistate_applier.h"
 #include "workbench/view/order/order_workbench_ui_model.h"
-#include "orders/registry/order_header_registry.h"
-#include <optional>
 #include <QLabel>
 #include <QToolBar>
+#include "common/system/enum_utils.h"
 
-namespace HeaderEditorStateMachine {
+class HeaderEditorStateMachine {
 
 enum class State {
     None,
@@ -16,119 +17,157 @@ enum class State {
     ExistingModified
 };
 
-// ─────────────────────────────────────────────────────────────
-//  UI STATE STRUCT
-// ─────────────────────────────────────────────────────────────
-struct UiState {
-    bool headerVisible;
-    bool placeholderVisible;
+#define UIELEMENT_LIST(X) \
+    X(HeaderPanel)               \
+        X(HeaderPlaceholder)         \
+        X(Modify)                    \
+        X(Delete)                    \
+        X(Save)                      \
+        X(Cancel)
 
-    bool modifyEnabled;
-    bool deleteEnabled;
-    bool saveEnabled;
-    bool cancelEnabled;
-
-    QString placeholderText;
-};
+zEnum(UiElement, UIELEMENT_LIST);
+zEnum_helpers(UiElement, UIELEMENT_LIST);
 
 // ─────────────────────────────────────────────────────────────
 //  UI STATE MAP (DEKLARATÍV MÁTRIX)
 // ─────────────────────────────────────────────────────────────
-static const QMap<State, UiState> UI_STATE_MAP = {
 
-{ State::None,
-    { false, true,
-        false, false, false, false,
-        "📭 Nincs kiválasztott rendelés\n\n"
-        "A bal oldali listából válassz egy rendelést,\n"
-        "vagy kattints a „+ Új” gombra egy új rendelés létrehozásához."
-    }
-},
 
+inline static const UiState<UiElement> noneState =
+{
+    { UiElement::HeaderPanel, Visibility::Hidden },
+    { UiElement::HeaderPlaceholder, {Visibility::Visible, "📭 Nincs kiválasztott rendelés\n\nA bal oldali listából válassz egy rendelést,\nvagy kattints a „+ Új” gombra egy új rendelés létrehozásához." }},
+
+    { UiElement::Modify, Enabledness::Disabled },
+    { UiElement::Delete, Enabledness::Disabled },
+    { UiElement::Save,   Enabledness::Disabled },
+    { UiElement::Cancel, Enabledness::Disabled }
+};
+
+inline static const QMap<State, UiState<UiElement>> UI_STATE_MAP = {
+
+    {
+      State::None, noneState
+    },
     { State::New,
-        { true, false,
-            false, false, false, false,
-            "📝 Új rendelés létrehozása folyamatban…"
+        {
+            { UiElement::HeaderPanel,      Visibility::Visible },
+      { UiElement::HeaderPlaceholder, {Visibility::Hidden, "📝 Új rendelés létrehozása folyamatban…" }},
+
+            { UiElement::Modify, Enabledness::Disabled },
+            { UiElement::Delete, Enabledness::Disabled },
+            { UiElement::Save,   Enabledness::Disabled },
+            { UiElement::Cancel, Enabledness::Disabled }
         }
     },
 
     { State::NewModified,
-        { true, false,
-            false, false, true, true,
-            "📝 Új rendelés módosítva…\n"
-            "Mentéshez kattints a „Mentés” gombra."
+        {
+            { UiElement::HeaderPanel,      Visibility::Visible },
+      { UiElement::HeaderPlaceholder,{Visibility::Hidden, "📝 Új rendelés módosítva…\nMentéshez kattints a „Mentés” gombra." }},
+
+            { UiElement::Modify, Enabledness::Disabled },
+            { UiElement::Delete, Enabledness::Disabled },
+            { UiElement::Save,   Enabledness::Enabled },
+            { UiElement::Cancel, Enabledness::Enabled }
         }
     },
 
     { State::Existing,
-        { true, false,
-         true, true, false, false,
-         "" }
+        {
+            { UiElement::HeaderPanel,      Visibility::Visible },
+            { UiElement::HeaderPlaceholder,Visibility::Hidden },
+
+            { UiElement::Modify, Enabledness::Enabled },
+            { UiElement::Delete, Enabledness::Enabled },
+            { UiElement::Save,   Enabledness::Disabled },
+            { UiElement::Cancel, Enabledness::Disabled }
+        }
     },
 
-{ State::ExistingModified,
-        { true, false,
-         false, false, true, true,
-         "" }
-}
+    { State::ExistingModified,
+        {
+            { UiElement::HeaderPanel,      Visibility::Visible },
+                { UiElement::HeaderPlaceholder,Visibility::Hidden },
+
+                { UiElement::Modify, Enabledness::Disabled },
+                { UiElement::Delete, Enabledness::Disabled },
+                { UiElement::Save,   Enabledness::Enabled },
+            { UiElement::Cancel, Enabledness::Enabled }
+        }
+    }
+
+};
+
+
+inline static QMap<UiElement, QObject*> widgets;
+
+public:
+inline void init(const OrderWorkbenchUIModel& ui)
+{
+    if (!widgets.isEmpty())
+        return;
+
+    widgets.insert(UiElement::HeaderPanel,       ui.headerPanel);
+    widgets.insert(UiElement::HeaderPlaceholder, ui.headerPlaceholder);
+
+    widgets.insert(UiElement::Modify, ui.headerActions[EntityAction::Modify]);
+    widgets.insert(UiElement::Delete, ui.headerActions[EntityAction::Delete]);
+    widgets.insert(UiElement::Save,   ui.headerActions[EntityAction::Save]);
+    widgets.insert(UiElement::Cancel, ui.headerActions[EntityAction::Cancel]);
+
+    for(UiElement e : UiElementHelpers::values){
+        if (!widgets.contains(e)) {
+            zWarning(QStringLiteral("HeaderEditorStateMachine::init – UiElement hiányzik a widgets mapből: %1")
+                         .arg(UiElementHelpers::toString(e)));
+        }
+    }
 };
 
 // ─────────────────────────────────────────────────────────────
 //  RESOLVE (logikai állapotgép) – változatlan
 // ─────────────────────────────────────────────────────────────
-inline State resolve(
-    const OrderWorkbenchUIModel& ui,
-    const OrderHeaderRegistry& registry,
-    bool modified
-    ) {
-    std::optional<OrderHeader> originalOpt;
-    if (ui.headerPanel)
-        originalOpt = ui.headerPanel->originalHeader();
 
-    if (registry.isEmpty()) {
-        if (!originalOpt)
-            return State::None;
-        return modified ? State::NewModified : State::New;
+struct ResolveModel{
+    bool registryIsEmpty;
+    bool modified;
+    bool hasOriginal;
+    bool existsInRegistry;
+};
+
+inline State resolve(const ResolveModel& r) {
+    if(widgets.isEmpty()){
+        zWarning("ListStateMachine::resolve called before init!");
     }
 
-    if (!originalOpt)
+    if (r.registryIsEmpty) {
+        if (!r.hasOriginal)
+            return State::None;
+        return r.modified ? State::NewModified : State::New;
+    }
+
+    if (!r.hasOriginal)
         return State::None;
 
-    const OrderHeader& original = *originalOpt;
-    bool exists = registry.existsById(original.id);
+    if (!r.existsInRegistry)
+        return r.modified ? State::NewModified : State::New;
 
-    if (!exists)
-        return modified ? State::NewModified : State::New;
-
-    return modified ? State::ExistingModified : State::Existing;
+    return r.modified ? State::ExistingModified : State::Existing;
 }
 
 // ─────────────────────────────────────────────────────────────
 //  APPLY (DEKLARATÍV) – nincs switch, nincs logika
 // ─────────────────────────────────────────────────────────────
-inline void apply(
-    const OrderWorkbenchUIModel& ui,
-    State s
-    ) {
-    const UiState u = UI_STATE_MAP.value(s);
-
-    // PANEL / PLACEHOLDER
-    ui.headerPanel->setVisible(u.headerVisible);
-    ui.headerPlaceholder->setVisible(u.placeholderVisible);
-
-    // TOOLBAR
-    // TOOLBAR BUTTONS — ActionMap alapján, NEM findChild alapján
-    if(ui.headerToolbar){
-        ui.headerActions.setEnabled(EntityAction::Modify, u.modifyEnabled);
-        ui.headerActions.setEnabled(EntityAction::Delete, u.deleteEnabled);
-        ui.headerActions.setEnabled(EntityAction::Save,   u.saveEnabled);
-        ui.headerActions.setEnabled(EntityAction::Cancel, u.cancelEnabled);
+inline void apply(State s)
+{
+    if(widgets.isEmpty()){
+        zWarning("ListStateMachine::apply called before init!");
     }
 
-    // PLACEHOLDER TEXT
-    if (auto* lbl = ui.headerPlaceholder->findChild<QLabel*>()) {
-        lbl->setText(u.placeholderText);
-    }
+    const UiState stateMap = UI_STATE_MAP.value(s);
+
+    UiStateApplier::apply(stateMap, widgets);
 }
 
-} // namespace HeaderEditorStateMachine
+
+};

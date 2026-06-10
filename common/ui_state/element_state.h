@@ -17,8 +17,12 @@ struct ElementState
 
     ElementState(Enabledness v) : enabled(v) {}
 
+    ElementState(Visibility v, QString t) : visible(v),text(std::move(t)) {}
+
+    ElementState(Enabledness v, QString t) : enabled(v),text(std::move(t)) {}
+
     ElementState(Visibility v, Enabledness e)
-        : visible(v), enabled(e) {}
+         : visible(v), enabled(e) {}
 
     ElementState(Visibility v, Enabledness e, QString t)
         : visible(v), enabled(e), text(std::move(t)) {}

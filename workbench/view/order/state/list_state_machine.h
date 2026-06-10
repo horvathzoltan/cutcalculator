@@ -37,9 +37,10 @@ inline static const UiState<UiElement> hiddenState =
     { UiElement::Refresh, Enabledness::Enabled }
 };
 
-inline static const QMap<State, UiState<UiElement>> UI_STATE_MAP = {
-
+inline static const QMap<State, UiState<UiElement>> UI_STATE_MAP =
 {
+
+    {
      State::Hidden, hiddenState
     },
 
