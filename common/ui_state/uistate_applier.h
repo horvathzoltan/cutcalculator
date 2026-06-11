@@ -34,4 +34,15 @@ inline void apply(const UiState<Key>& stateMap, const QMap<Key2, QObject*>& widg
     }
 }
 
+
+template<typename Key, typename Key2, typename Helpers>
+inline void validateWidgets(const QMap<Key2, QObject*>& widgets) {
+    for (Key e : Helpers::values) {
+        if (!widgets.contains(e)) {
+            zWarning(QStringLiteral("UiStateApplier::validateWidgets – Hiányzó UiElement: %1")
+                         .arg(Helpers::toString(e)));
+        }
+    }
+}
+
 } // namespace UiStateApplier

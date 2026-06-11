@@ -4,44 +4,45 @@
 #include "common/ui_state/uistate.h"
 #include "common/ui_state/uistate_applier.h"
 #include "workbench/view/order/order_workbench_ui_model.h"
-#include <QObject>
-#include <QToolBar>
+#include "common/system/enum_utils.h"
+#include "common/system/class_name_helper.h"
 
 class ListStateMachine {
+
+zClassName
 
 enum class State {
     Hidden,
     Visible
 };
 
-enum class UiElement {
-    List,
-    Placeholder,
-    Add,
-    Delete,
-    Rename,
-    Refresh
-};
+#define LIST_UIELEMENT_LIST(X) \
+    X(List) \
+        X(Placeholder) \
+        X(Add) \
+        X(Delete) \
+        X(Rename) \
+        X(Refresh)
+
+zEnum(UiElement, LIST_UIELEMENT_LIST);
+zEnum_helpers(UiElement, LIST_UIELEMENT_LIST);
 
 // ─────────────────────────────────────────────────────────────
 //  UI STATE MAP (DEKLARATÍV MÁTRIX)
 // ─────────────────────────────────────────────────────────────
 
-inline static const UiState<UiElement> hiddenState =
-{
-    { UiElement::List, Visibility::Hidden},
-    { UiElement::Placeholder, Visibility::Visible },
-    { UiElement::Add, Enabledness::Enabled },
-    { UiElement::Delete, Enabledness::Disabled },
-    { UiElement::Rename, Enabledness::Disabled },
-    { UiElement::Refresh, Enabledness::Enabled }
-};
-
 inline static const QMap<State, UiState<UiElement>> UI_STATE_MAP =
 {
 
     {
-     State::Hidden, hiddenState
+     State::Hidden, {
+                        { UiElement::List, Visibility::Hidden},
+                        { UiElement::Placeholder, Visibility::Visible },
+                        { UiElement::Add, Enabledness::Enabled },
+                        { UiElement::Delete, Enabledness::Disabled },
+                        { UiElement::Rename, Enabledness::Disabled },
+                        { UiElement::Refresh, Enabledness::Enabled }
+                    }
     },
 
 {
@@ -58,7 +59,7 @@ inline static const QMap<State, UiState<UiElement>> UI_STATE_MAP =
 };
 
 
-QMap<UiElement, QObject*> widgets;
+inline static QMap<UiElement, QObject*> widgets;
 
 public:
 void init(const OrderWorkbenchUIModel& ui)
@@ -71,6 +72,8 @@ void init(const OrderWorkbenchUIModel& ui)
     widgets.insert(UiElement::Delete, ui.listActions[ListAction::Delete]);
     widgets.insert(UiElement::Rename, ui.listActions[ListAction::Rename]);
     widgets.insert(UiElement::Refresh, ui.listActions[ListAction::Refresh]);
+
+    UiStateApplier::validateWidgets<UiElement, UiElement, UiElementHelpers>(widgets);
 }
 // ─────────────────────────────────────────────────────────────
 //  RESOLVE (logikai állapotgép) – változatlan
@@ -80,10 +83,10 @@ struct ResolveModel{
     bool registryIsEmpty;
 };
 
-State resolve(const ResolveModel& m)
+State resolve(ResolveModel m)
 {
     if(widgets.isEmpty()){
-        zWarning("ListStateMachine::resolve called before init!");
+        zWarning(L("%1::resolve called before init!").arg(className()));
     }
 
     if (m.registryIsEmpty)
@@ -98,7 +101,7 @@ State resolve(const ResolveModel& m)
 void apply(State s)
 {
     if(widgets.isEmpty()){
-        zWarning("ListStateMachine::apply called before init!");
+        zWarning(L("%1::apply called before init!").arg(className()));
     }
 
     const UiState stateMap = UI_STATE_MAP.value(s);

@@ -1,11 +1,14 @@
 #pragma once
 
+#include "common/system/class_name_helper.h"
 #include "common/ui/crud/entity_toolbar_factory.h"
+#include "common/ui_state/uistate_applier.h"
 #include "workbench/view/order/order_workbench_ui_model.h"
-#include "orders/registry/order_header_registry.h"
-#include <QToolBar>
+#include "common/system/enum_utils.h"
+#include <common/ui_state/uistate.h>
 
-namespace ItemStateMachine {
+class ItemStateMachine {
+zClassName
 
 enum class State {
     Hidden,
@@ -13,54 +16,85 @@ enum class State {
     Editing
 };
 
-// ─────────────────────────────────────────────────────────────
-//  UI STATE STRUCT
-// ─────────────────────────────────────────────────────────────
-struct UiState {
-    bool tableVisible;
-    bool placeholderVisible;
-    bool toolbarVisible;
+#define ITEM_UIELEMENT_LIST(X) \
+    X(Table) \
+        X(Placeholder) \
+        X(Toolbar) \
+        X(Add) \
+        X(Delete)
 
-    bool addEnabled;
-    bool deleteEnabled;
-};
+zEnum(UiElement, ITEM_UIELEMENT_LIST);
+zEnum_helpers(UiElement, ITEM_UIELEMENT_LIST);
 
 // ─────────────────────────────────────────────────────────────
 //  UI STATE MAP (DEKLARATÍV MÁTRIX)
 // ─────────────────────────────────────────────────────────────
-static const QMap<State, UiState> UI_STATE_MAP = {
 
-{ State::Hidden,
-    { false, true,  false,
-     false, false }
-},
-
-    { State::Visible,
-        { true,  false, true,
-         true,  true }
-    },
-
-{ State::Editing,
-    { true,  false, true,
-            true,  true }
-}
+inline static const QMap<State, UiState<UiElement>> UI_STATE_MAP = {
+    { State::Hidden,   {
+                        { UiElement::Table,       Visibility::Hidden },
+                        { UiElement::Placeholder, Visibility::Visible },
+                        { UiElement::Toolbar,     Visibility::Hidden },
+                        { UiElement::Add,         Enabledness::Disabled },
+                        { UiElement::Delete,      Enabledness::Disabled }
+                    } },
+    { State::Visible, {
+                         { UiElement::Table,       Visibility::Visible },
+                         { UiElement::Placeholder, Visibility::Hidden },
+                         { UiElement::Toolbar,     Visibility::Visible },
+                         { UiElement::Add,         Enabledness::Enabled },
+                         { UiElement::Delete,      Enabledness::Enabled }
+                     } },
+    { State::Editing, {
+                         { UiElement::Table,       Visibility::Visible },
+                         { UiElement::Placeholder, Visibility::Hidden },
+                         { UiElement::Toolbar,     Visibility::Visible },
+                         { UiElement::Add,         Enabledness::Enabled },
+                         { UiElement::Delete,      Enabledness::Enabled }
+                     } }
 };
+
+// ─────────────────────────────────────────────────────────────
+//  INIT
+// ─────────────────────────────────────────────────────────────
+
+inline static QMap<UiElement, QObject*> widgets;
+
+public:
+inline void init(const OrderWorkbenchUIModel& ui)
+{
+    if (!widgets.isEmpty())
+        return;
+
+    widgets.insert(UiElement::Table,       ui.itemTable);
+    widgets.insert(UiElement::Placeholder, ui.itemPlaceholder);
+    widgets.insert(UiElement::Toolbar,     ui.itemToolbar);
+
+    widgets.insert(UiElement::Add,         ui.itemActions[EntityAction::Add]);
+    widgets.insert(UiElement::Delete,      ui.itemActions[EntityAction::Delete]);
+
+    UiStateApplier::validateWidgets<UiElement, UiElement, UiElementHelpers>(widgets);
+}
 
 // ─────────────────────────────────────────────────────────────
 //  RESOLVE (logikai állapotgép) – változatlan
 // ─────────────────────────────────────────────────────────────
-inline State resolve(
-    const OrderWorkbenchUIModel& ui,
-    const OrderHeaderRegistry& registry
-    ) {
-    if (registry.isEmpty())
+
+struct ResolveModel {
+    bool registryIsEmpty;
+    bool hasSelection;
+};
+
+inline State resolve(ResolveModel r) {
+    if(widgets.isEmpty()){
+        zWarning(L("%1::resolve called before init!").arg(className()));
+    }
+
+    if (r.registryIsEmpty)
         return State::Hidden;
 
-    if (ui.listPanel) {
-        auto selectedId = ui.listPanel->selectedOrderId();
-        if (!selectedId.has_value())
-            return State::Hidden;
-    }
+    if (!r.hasSelection)
+        return State::Hidden;
 
     return State::Visible;
 }
@@ -68,25 +102,14 @@ inline State resolve(
 // ─────────────────────────────────────────────────────────────
 //  APPLY (DEKLARATÍV) – nincs switch, nincs logika
 // ─────────────────────────────────────────────────────────────
-inline void apply(
-    const OrderWorkbenchUIModel& ui,
-    State s
-    ) {
-    const UiState u = UI_STATE_MAP.value(s);
-
-    // TABLE + PLACEHOLDER
-    ui.itemTable->setVisible(u.tableVisible);
-    ui.itemPlaceholder->setVisible(u.placeholderVisible);
-
-    // TOOLBAR
-    if (ui.itemToolbar)
-        ui.itemToolbar->setVisible(u.toolbarVisible);
-
-    // TOOLBAR BUTTONS — ActionMap alapján, NEM index alapján
-    if (ui.itemToolbar) {
-        ui.itemActions.setEnabled(EntityAction::Add,    u.addEnabled);
-        ui.itemActions.setEnabled(EntityAction::Delete, u.deleteEnabled);
+inline void apply(State s) {
+    if(widgets.isEmpty()){
+        zWarning(L("%1::apply called before init!").arg(className()));
     }
+
+    const UiState stateMap = UI_STATE_MAP.value(s);
+
+    UiStateApplier::apply(stateMap, widgets);
 }
 
-} // namespace ItemStateMachine
+};
